@@ -158,6 +158,26 @@ function truncateForSummary(text: string, maxChars: number): string {
   return `${sliced}\n\n[... ${truncatedChars} more characters truncated]`;
 }
 
+function formatConversationMediaMarker(
+  role: "User" | "Tool result",
+  content: readonly { type: string }[],
+): string | undefined {
+  let images = 0;
+  let videos = 0;
+  for (const block of content) {
+    if (block.type === "image") {
+      images += 1;
+    } else if (block.type === "video") {
+      videos += 1;
+    }
+  }
+  const counts = [
+    images > 0 ? `${images} image attachment${images === 1 ? "" : "s"}` : undefined,
+    videos > 0 ? `${videos} video attachment${videos === 1 ? "" : "s"}` : undefined,
+  ].filter((value): value is string => value !== undefined);
+  return counts.length > 0 ? `[${role} media]: ${counts.join(", ")}` : undefined;
+}
+
 /** Extract text that compaction both estimates and includes in summary prompts. */
 export function getCompactionContentBlockText(block: {
   type: string;
@@ -182,15 +202,21 @@ export function serializeConversation(messages: Message[]): string {
 
   for (const msg of messages) {
     if (msg.role === "user") {
-      const content =
-        typeof msg.content === "string"
-          ? msg.content
-          : msg.content
-              .filter((c): c is { type: "text"; text: string } => c.type === "text")
-              .map((c) => c.text)
-              .join("");
+      const structuredContent = typeof msg.content === "string" ? undefined : msg.content;
+      const content = structuredContent
+        ? structuredContent
+            .filter((c): c is { type: "text"; text: string } => c.type === "text")
+            .map((c) => c.text)
+            .join("")
+        : msg.content;
       if (content) {
         parts.push(`[User]: ${content}`);
+      }
+      const mediaMarker = structuredContent
+        ? formatConversationMediaMarker("User", structuredContent)
+        : undefined;
+      if (mediaMarker) {
+        parts.push(mediaMarker);
       }
     } else if (msg.role === "assistant") {
       const textParts: string[] = [];
@@ -224,6 +250,10 @@ export function serializeConversation(messages: Message[]): string {
       const content = msg.content.map(getCompactionContentBlockText).join("");
       if (content) {
         parts.push(`[Tool result]: ${truncateForSummary(content, TOOL_RESULT_MAX_CHARS)}`);
+      }
+      const mediaMarker = formatConversationMediaMarker("Tool result", msg.content);
+      if (mediaMarker) {
+        parts.push(mediaMarker);
       }
     }
   }

@@ -190,12 +190,15 @@ export async function dispatchEmbeddedRunAttempt(input: {
     runtime,
     pluginHarnessOwnsTransport: control.pluginHarnessOwnsTransport,
   });
+  const preparedPromptWithMediaOutcome = promptMedia.videoOmissions.length
+    ? `${preparedExecApprovalContinuation.prompt}\n\n${promptMedia.videoOmissions.join("\n")}`
+    : preparedExecApprovalContinuation.prompt;
   // Plugin harnesses own their tool materialization, so the host cannot attest
   // a message tool. Finalize conservatively instead of leaking phantom guidance.
   const pluginHarnessPrompt =
     control.pluginHarnessOwnsTransport && params.finalizePromptForResolvedTools
       ? applyResolvedToolPromptFinalizer({
-          prompt: preparedExecApprovalContinuation.prompt,
+          prompt: preparedPromptWithMediaOutcome,
           activeToolNames: [],
           finalize: params.finalizePromptForResolvedTools,
         })
@@ -260,7 +263,7 @@ export async function dispatchEmbeddedRunAttempt(input: {
         }
       : {}),
     skillsSnapshot: params.skillsSnapshot,
-    prompt: pluginHarnessPrompt ?? preparedExecApprovalContinuation.prompt,
+    prompt: pluginHarnessPrompt ?? preparedPromptWithMediaOutcome,
     transcriptPrompt:
       pluginHarnessPrompt !== undefined && params.transcriptPrompt === undefined
         ? preparedExecApprovalContinuation.prompt
@@ -271,6 +274,9 @@ export async function dispatchEmbeddedRunAttempt(input: {
     skipPreparedUserTurnMessage: runtime.skipPreparedUserTurnMessage,
     currentInboundEventKind: params.currentInboundEventKind,
     currentInboundContext: params.currentInboundContext,
+    inputMedia: promptMedia.inputMedia,
+    handledVideoSourceIndexes: params.handledVideoSourceIndexes,
+    handledVideoSourceIds: params.handledVideoSourceIds,
     images: promptMedia.images,
     imageOrder: promptMedia.imageOrder,
     media: promptMedia.media,

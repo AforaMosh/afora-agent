@@ -2805,7 +2805,7 @@ describe("createCliJsonlStreamingParser", () => {
     ]);
   });
 
-  it("frames coalesced Claude image and PDF lines before omitting retained binary bytes", () => {
+  it("frames coalesced Claude image, video, and PDF lines before omitting retained binary bytes", () => {
     const results: CliToolResultDelta[] = [];
     const pluginLines: string[] = [];
     const parser = createCliJsonlStreamingParser({
@@ -2818,10 +2818,11 @@ describe("createCliJsonlStreamingParser", () => {
       onAssistantDelta: () => {},
       onToolResult: (result) => results.push(result),
     });
-    const base64 = "a".repeat(4_300_000);
+    const base64 = "a".repeat(2_900_000);
     const rawLines: string[] = [];
     for (const [type, mediaType] of [
       ["image", "image/png"],
+      ["video", "video/mp4"],
       ["document", "application/pdf"],
     ] as const) {
       rawLines.push(
@@ -2856,17 +2857,18 @@ describe("createCliJsonlStreamingParser", () => {
         }),
       );
     }
-    const resultLine = JSON.stringify({ type: "result", result: "both attachments read" });
+    const resultLine = JSON.stringify({ type: "result", result: "all attachments read" });
     parser.push(`${[...rawLines, resultLine].join("\n")}\n`);
     parser.finish();
 
     expect(parser.getErrorText()).toBeNull();
-    expect(parser.getOutput()?.text).toBe("both attachments read");
-    expect(results).toHaveLength(2);
+    expect(parser.getOutput()?.text).toBe("all attachments read");
+    expect(results).toHaveLength(3);
     expect(pluginLines).toEqual([...rawLines, resultLine]);
     for (const [index, type, mediaType] of [
       [0, "image", "image/png"],
-      [1, "document", "application/pdf"],
+      [1, "video", "video/mp4"],
+      [2, "document", "application/pdf"],
     ] as const) {
       expect(results[index]).toEqual({
         toolCallId: `read-${type}`,
@@ -2879,7 +2881,7 @@ describe("createCliJsonlStreamingParser", () => {
             title: `${type} attachment`,
             source: { type: "base64", media_type: mediaType },
             omitted: true,
-            bytes: 3_225_000,
+            bytes: 2_175_000,
           },
           { type: "image", source: { type: "url", url: "https://example.test/keep.png" } },
           {

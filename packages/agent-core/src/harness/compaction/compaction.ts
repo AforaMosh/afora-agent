@@ -1,4 +1,5 @@
 import {
+  estimateNativeVideoTokens,
   resolveClaudeFable5ModelIdentity,
   type Model,
   type SimpleStreamOptions,
@@ -229,15 +230,21 @@ export function shouldCompact(
   return contextTokens > contextWindow - settings.reserveTokens;
 }
 
-const IMAGE_BLOCK_CHARS = 4800;
+const MEDIA_BLOCK_CHARS = 4800;
 
 function countContentBlockChars(
-  content: Array<{ type: string; content?: unknown; text?: string }>,
+  content: Array<{ type: string; content?: unknown; data?: string; text?: string }>,
 ): number {
   let chars = 0;
   for (const block of content) {
     if (block.type === "image") {
-      chars += IMAGE_BLOCK_CHARS;
+      chars += MEDIA_BLOCK_CHARS;
+    } else if (block.type === "video") {
+      chars +=
+        estimateNativeVideoTokens({
+          base64: block.data ?? "",
+          minimumTokens: Math.ceil(MEDIA_BLOCK_CHARS / CHARS_PER_TOKEN_ESTIMATE),
+        }) * CHARS_PER_TOKEN_ESTIMATE;
     } else {
       chars += estimateStringChars(getCompactionContentBlockText(block));
     }

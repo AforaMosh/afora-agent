@@ -1,20 +1,27 @@
 import path from "node:path";
+import { formatNativeVideoOmission, type NativeVideoOmissionReason } from "@openclaw/llm-core";
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 import { formatErrorMessage } from "../../../infra/errors.js";
 import { assertNoWindowsNetworkPath, safeFileURLToPath } from "../../../infra/local-file-access.js";
-import type { ImageContent } from "../../../llm/types.js";
+import type { ImageContent, MediaContent, Model } from "../../../llm/types.js";
 import {
   attachRuntimePromptMediaFacts,
   isImageMediaFact,
   normalizeMediaFacts,
+  readPersistedMediaBlockFactIndexes,
   readRuntimePromptImageOrder,
   readRuntimePromptMediaFacts,
   readPersistedMediaFacts,
-  type MediaFact,
 } from "../../../media/media-facts.js";
-import { resolveMediaReferenceLocalPath } from "../../../media/media-reference.js";
+import {
+  resolveInboundMediaReference,
+  resolveMediaReferenceLocalPath,
+} from "../../../media/media-reference.js";
 import type { PromptImageOrderEntry } from "../../../media/prompt-image-order.js";
-import { finalizeRuntimePromptImages } from "../../../media/runtime-prompt-image-provenance.js";
+import {
+  finalizeRuntimePromptImages,
+  readRuntimePromptImageFactIndexes,
+} from "../../../media/runtime-prompt-image-provenance.js";
 import { loadWebMedia } from "../../../media/web-media.js";
 import { resolveUserPath } from "../../../utils.js";
 import type { ImageSanitizationLimits } from "../../image-sanitization.js";
@@ -41,6 +48,15 @@ import {
   readPersistedMediaImageLayout,
   resolveLayoutInlineFactIndexes,
 } from "./prompt-image-metadata.js";
+import {
+  hydrateNativePromptMedia,
+  type DetectedPromptMediaRef,
+  type PromptImageLoadParams,
+  type PromptImageLoadResult,
+  type PromptMediaLoadParams,
+  type PromptMediaLoadResult,
+  type PromptMediaReadOptions,
+} from "./prompt-media.js";
 
 export { hasHydratableMediaImages } from "./images.media-refs.js";
 
@@ -72,11 +88,7 @@ const PATH_PATTERN = new RegExp(PATH_REGEX_SOURCE, "gi");
 const LEGACY_ATTACHMENT_MARKER_PATTERN =
   /\[(?:media attached(?:\s+\d+\/\d+)?:|Image:\s*source:)\s*[^\]]+\]/gi;
 
-interface DetectedImageRef {
-  raw: string;
-  type: "path" | "media-uri";
-  resolved: string;
-}
+type DetectedImageRef = DetectedPromptMediaRef;
 
 function isImageExtension(filePath: string): boolean {
   const ext = normalizeLowercaseStringOrEmpty(path.extname(filePath));
@@ -279,24 +291,20 @@ function rawAliasDedupeKey(alias: string): string | undefined {
     : undefined;
 }
 
-async function loadImageFromRef(
+async function loadPromptMediaFromRef(
   ref: DetectedImageRef,
   workspaceDir: string,
-  options?: {
-    maxBytes?: number;
-    workspaceOnly?: boolean;
-    localRoots?: readonly string[];
-    sandbox?: { root: string; bridge: SandboxFsBridge };
-  },
-): Promise<ImageContent | null> {
+  options: PromptMediaReadOptions,
+): Promise<MediaContent | null> {
   try {
     let targetPath = ref.resolved;
+    let managedInboundHostRead = false;
 
-    if (!options?.sandbox) {
+    if (!options.sandbox) {
       targetPath = await resolveMediaReferenceLocalPath(targetPath);
     }
 
-    if (options?.sandbox) {
+    if (options.sandbox) {
       try {
         const resolved = await resolveSandboxedBridgeMediaPath({
           sandbox: {
@@ -309,39 +317,57 @@ async function loadImageFromRef(
         });
         targetPath = resolved.resolved;
       } catch (err) {
-        log.debug(
-          `Native image: sandbox validation failed for ${ref.resolved}: ${formatErrorMessage(err)}`,
-        );
-        return null;
+        // Gateway-owned inbound video is intentionally never staged: the sandbox's
+        // tool-file limit is smaller than the model's native-video contract.
+        const inbound =
+          options.kind === "video"
+            ? await resolveInboundMediaReference(targetPath).catch(() => undefined)
+            : undefined;
+        if (!inbound) {
+          log.debug(
+            `Native ${options.kind}: sandbox validation failed for ${ref.resolved}: ${formatErrorMessage(err)}`,
+          );
+          return null;
+        }
+        targetPath = inbound.physicalPath;
+        managedInboundHostRead = true;
       }
     } else if (!path.isAbsolute(targetPath)) {
       targetPath = path.resolve(workspaceDir, targetPath);
     }
 
-    const media = options?.sandbox
-      ? await loadWebMedia(targetPath, {
-          maxBytes: options.maxBytes,
-          sandboxValidated: true,
-          readFile: createSandboxBridgeReadFile({ sandbox: options.sandbox }),
-        })
-      : await loadWebMedia(
-          targetPath,
-          options?.workspaceOnly || options?.localRoots
-            ? { maxBytes: options.maxBytes, localRoots: options.localRoots ?? [workspaceDir] }
-            : options?.maxBytes,
-        );
+    const media =
+      options.sandbox && !managedInboundHostRead
+        ? await loadWebMedia(targetPath, {
+            maxBytes: options.maxBytes,
+            sandboxValidated: true,
+            readFile: createSandboxBridgeReadFile({ sandbox: options.sandbox }),
+          })
+        : await loadWebMedia(
+            targetPath,
+            options.workspaceOnly || options.localRoots || managedInboundHostRead
+              ? {
+                  maxBytes: options.maxBytes,
+                  localRoots: managedInboundHostRead
+                    ? [...(options.localRoots ?? [workspaceDir]), path.dirname(targetPath)]
+                    : (options.localRoots ?? [workspaceDir]),
+                }
+              : options.maxBytes,
+          );
 
-    if (media.kind !== "image") {
-      log.debug(`Native image: not an image file: ${targetPath} (got ${media.kind})`);
+    if (media.kind !== options.kind) {
+      log.debug(`Native ${options.kind}: unexpected media kind: ${targetPath} (got ${media.kind})`);
       return null;
     }
 
-    const mimeType = media.contentType ?? "image/jpeg";
+    const mimeType = media.contentType ?? (options.kind === "image" ? "image/jpeg" : "video/mp4");
     const data = media.buffer.toString("base64");
 
-    return { type: "image", data, mimeType };
+    return options.kind === "image"
+      ? { type: "image", data, mimeType }
+      : { type: "video", data, mimeType };
   } catch (err) {
-    log.debug(`Native image: failed to load ${ref.resolved}: ${formatErrorMessage(err)}`);
+    log.debug(`Native ${options.kind}: failed to load ${ref.resolved}: ${formatErrorMessage(err)}`);
     return null;
   }
 }
@@ -350,28 +376,9 @@ function modelSupportsImages(model: { input?: string[] }): boolean {
   return model.input?.includes("image") ?? false;
 }
 
-export async function detectAndLoadPromptImages(params: {
-  prompt: string;
-  media?: readonly MediaFact[];
-  workspaceDir: string;
-  model: { input?: string[] };
-  existingImages?: ImageContent[];
-  existingImageFactIndexes?: readonly ImageFactIndex[];
-  imageOrder?: PromptImageOrderEntry[];
-  mediaImageLayout?: MediaImageLayout;
-  maxBytes?: number;
-  maxDimensionPx?: number;
-  workspaceOnly?: boolean;
-  localRoots?: readonly string[];
-  sandbox?: { root: string; bridge: SandboxFsBridge };
-}): Promise<{
-  images: ImageContent[];
-  imageFactIndexes: ImageFactIndex[];
-  detectedRefs: DetectedImageRef[];
-  failedMediaCount: number;
-  loadedCount: number;
-  skippedCount: number;
-}> {
+export async function detectAndLoadPromptImages(
+  params: PromptImageLoadParams,
+): Promise<PromptImageLoadResult> {
   if (!modelSupportsImages(params.model)) {
     return {
       images: [],
@@ -403,11 +410,7 @@ export async function detectAndLoadPromptImages(params: {
   // skips and inline sanitization failures dispatch as success.
   const unsuppressedImageFactIndexes = normalizeMediaFacts(params.media).flatMap(
     (fact, factIndex) =>
-      isImageMediaFact(fact) &&
-      fact.hydrationSuppressed !== true &&
-      !suppressedFactIndexes.has(factIndex)
-        ? [factIndex]
-        : [],
+      isImageMediaFact(fact) && !suppressedFactIndexes.has(factIndex) ? [factIndex] : [],
   );
   const inferredExistingImageFactIndexes =
     imageOrder && unsuppressedImageFactIndexes.length === imageOrder.length
@@ -522,12 +525,14 @@ export async function detectAndLoadPromptImages(params: {
   const loadRef = async (
     ref: DetectedImageRef & { workspaceDir?: string },
   ): Promise<ImageContent | null> => {
-    const image = await loadImageFromRef(ref, ref.workspaceDir ?? params.workspaceDir, {
+    const loaded = await loadPromptMediaFromRef(ref, ref.workspaceDir ?? params.workspaceDir, {
+      kind: "image",
       maxBytes: params.maxBytes,
       workspaceOnly: params.workspaceOnly,
       localRoots: params.localRoots ?? (params.workspaceOnly ? [params.workspaceDir] : undefined),
       sandbox: params.sandbox,
     });
+    const image = loaded?.type === "image" ? loaded : null;
     if (image) {
       loadedCount++;
       log.debug(`Native image: loaded ${ref.type} ${ref.resolved}`);
@@ -587,12 +592,24 @@ export async function detectAndLoadPromptImages(params: {
   };
 }
 
+/** Hydrates native model media while preserving the shipped image-only SDK entry point. */
+export async function detectAndLoadPromptMedia(
+  params: PromptMediaLoadParams,
+): Promise<PromptMediaLoadResult> {
+  return await hydrateNativePromptMedia(params, {
+    detectImages: detectAndLoadPromptImages,
+    loadMedia: loadPromptMediaFromRef,
+  });
+}
+
 /** Hydrates non-enumerable facts carried by queued user turns before provider replay. */
 export async function hydratePromptMediaMessages(
   messages: AgentMessage[],
   options: {
     workspaceDir: string;
-    model: { input?: string[] };
+    model: Pick<Model, "input" | "nativeVideoInput">;
+    handledVideoSourceIds?: readonly string[];
+    handledVideoSourceIndexes?: readonly number[];
     maxBytes?: number;
     maxDimensionPx?: number;
     workspaceOnly?: boolean;
@@ -610,14 +627,24 @@ export async function hydratePromptMediaMessages(
     const resolvedMedia = runtimeMedia ?? readPersistedMediaFacts(message) ?? [];
     const runtimeImageOrder = readRuntimePromptImageOrder(message);
     const mediaImageLayout = readPersistedMediaImageLayout(message);
-    if (!resolvedMedia.length) {
-      continue;
-    }
     const content = Array.isArray(message.content)
       ? message.content
       : [{ type: "text" as const, text: message.content }];
-    const existingImages = content.filter((block): block is ImageContent => block.type === "image");
+    const existingMedia = content.filter(
+      (block): block is MediaContent => block.type === "image" || block.type === "video",
+    );
+    const existingImages = existingMedia.filter(
+      (block): block is ImageContent => block.type === "image",
+    );
+    if (!resolvedMedia.length && !existingMedia.some((block) => block.type === "video")) {
+      continue;
+    }
     const persistedImageFactIndexes = readPersistedImageBlockFactIndexes(message);
+    const persistedMediaFactIndexes = readPersistedMediaBlockFactIndexes(message);
+    const existingMediaFactIndexes =
+      persistedMediaFactIndexes?.length === existingMedia.length
+        ? persistedMediaFactIndexes
+        : readRuntimePromptImageFactIndexes(existingMedia);
     const inlineLayoutFactIndexes = mediaImageLayout?.slots.flatMap((slot) =>
       slot.kind === "inline" ? [slot.factIndex ?? null] : [],
     );
@@ -632,12 +659,41 @@ export async function hydratePromptMediaMessages(
       (inlineLayoutFactIndexes?.length === existingImages.length
         ? inlineLayoutFactIndexes
         : legacyImageFactIndexes?.slice(0, existingImages.length));
-    const result = await detectAndLoadPromptImages({
+    const result = await detectAndLoadPromptMedia({
       prompt: "",
       media: resolvedMedia,
       workspaceDir: options.workspaceDir,
       model: options.model,
-      existingImages,
+      existingMedia,
+      existingMediaFactIndexes,
+      handledVideoSourceIds: [
+        ...(options.handledVideoSourceIds ?? []),
+        ...(Array.isArray((meta as Record<string, unknown> | undefined)?.mediaVideoDescriptions)
+          ? (
+              (meta as Record<string, unknown>).mediaVideoDescriptions as Array<{
+                sourceId?: unknown;
+              }>
+            ).flatMap((description) =>
+              typeof description.sourceId === "string" ? [description.sourceId] : [],
+            )
+          : []),
+      ],
+      handledVideoSourceIndexes: [
+        ...(options.handledVideoSourceIndexes ?? []),
+        ...(Array.isArray((meta as Record<string, unknown> | undefined)?.mediaVideoDescriptions)
+          ? (
+              (meta as Record<string, unknown>).mediaVideoDescriptions as Array<{
+                sourceIndex?: unknown;
+              }>
+            ).flatMap((description) =>
+              typeof description.sourceIndex === "number" &&
+              Number.isSafeInteger(description.sourceIndex) &&
+              description.sourceIndex >= 0
+                ? [description.sourceIndex]
+                : [],
+            )
+          : []),
+      ],
       existingImageFactIndexes,
       imageOrder: runtimeImageOrder,
       mediaImageLayout,
@@ -656,10 +712,51 @@ export async function hydratePromptMediaMessages(
     } else {
       delete nextMeta.mediaImageBlockFactIndexes;
     }
+    if (result.media.length > 0) {
+      nextMeta.mediaBlockFactIndexes = readRuntimePromptImageFactIndexes(result.media) ?? [];
+    } else {
+      delete nextMeta.mediaBlockFactIndexes;
+    }
+    const previousOmissions = Array.isArray(nextMeta.mediaVideoOmissions)
+      ? (nextMeta.mediaVideoOmissions as Array<{ reason?: unknown }>)
+      : [];
+    const omissionTextsToReplace = previousOmissions.flatMap((entry) =>
+      typeof entry.reason === "string" &&
+      ["unsupported", "unavailable", "invalid", "mime", "item-size", "count", "aggregate"].includes(
+        entry.reason,
+      )
+        ? [formatNativeVideoOmission(entry.reason as NativeVideoOmissionReason)]
+        : [],
+    );
+    const retainedContent = content.filter((block) => {
+      if (block.type === "image" || block.type === "video") {
+        return false;
+      }
+      if (block.type !== "text") {
+        return true;
+      }
+      const omissionIndex = omissionTextsToReplace.indexOf(block.text);
+      if (omissionIndex < 0) {
+        return true;
+      }
+      omissionTextsToReplace.splice(omissionIndex, 1);
+      return false;
+    });
+    if (result.videoOmissions.length > 0) {
+      nextMeta.mediaVideoOmissions = result.videoOmissions.map(
+        ({ sourceId, sourceIndex, reason }) => ({
+          ...(sourceId ? { sourceId } : {}),
+          sourceIndex,
+          reason,
+        }),
+      );
+    } else {
+      delete nextMeta.mediaVideoOmissions;
+    }
     hydrated ??= messages.slice();
     const hydratedMessage = {
       ...message,
-      content: [...content.filter((block) => block.type !== "image"), ...result.images],
+      content: [...retainedContent, ...result.orderedBlocks],
     } as AgentMessage;
     if (Object.keys(nextMeta).length > 0) {
       (hydratedMessage as unknown as Record<string, unknown>)["__openclaw"] = nextMeta;

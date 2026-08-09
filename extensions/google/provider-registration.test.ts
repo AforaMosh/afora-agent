@@ -66,3 +66,50 @@ describe("buildGoogleProvider createStreamFn", () => {
     expect(streamFns.createGenerativeAi).not.toHaveBeenCalled();
   });
 });
+
+describe("buildGoogleProvider native video contract", () => {
+  const normalize = (overrides: Partial<Model> = {}, provider = "google") =>
+    buildGoogleProvider().normalizeResolvedModel?.({
+      provider,
+      modelId: overrides.id ?? "gemini-2.5-flash",
+      model: model({
+        provider,
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+        input: ["text", "image", "video"],
+        ...overrides,
+      }),
+    } as never);
+
+  it("attaches the bounded AI Studio ordinary-chat contract", () => {
+    expect(normalize()).toMatchObject({
+      nativeVideoInput: {
+        wireFamily: "google-inline-data",
+        maxDecodedBytesPerItem: 8 * 1024 * 1024,
+        maxItems: 4,
+        maxAggregateDecodedBytes: 12 * 1024 * 1024,
+        aggregateScope: "all-inline-media",
+        maxSerializedRequestBytesExclusive: 20_000_000,
+      },
+    });
+  });
+
+  it.each([
+    ["Vertex", { api: "google-vertex" }, "google-vertex"],
+    ["CLI", { api: "google-gemini-cli" }, "google-gemini-cli"],
+    ["Computer Use", { id: "gemini-2.5-computer-use-preview-10-2025" }, "google"],
+    ["Gemma", { id: "gemma-3-27b-it" }, "google"],
+    ["custom proxy", { baseUrl: "https://proxy.example.test/v1beta" }, "google"],
+    [
+      "query-bearing AI Studio URL",
+      { baseUrl: "https://generativelanguage.googleapis.com/v1beta?key=inline" },
+      "google",
+    ],
+    [
+      "credential-bearing AI Studio URL",
+      { baseUrl: "https://user" + ":secret@generativelanguage.googleapis.com/v1beta" },
+      "google",
+    ],
+  ] as const)("does not attach native video for %s", (_label, overrides, provider) => {
+    expect(normalize(overrides as Partial<Model>, provider)).not.toHaveProperty("nativeVideoInput");
+  });
+});

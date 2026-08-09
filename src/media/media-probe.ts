@@ -3,6 +3,7 @@ import type { MediaKind } from "@openclaw/media-core/constants";
 import {
   asPositiveSafeInteger as parsePositiveInteger,
   asSafeIntegerInRange,
+  parseStrictInteger,
 } from "@openclaw/normalization-core/number-coercion";
 import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
 import { runFfprobe } from "./ffmpeg-exec.js";
@@ -11,6 +12,7 @@ export type MediaProbeKind = Extract<MediaKind, "audio" | "video">;
 
 /** Best-effort metadata reported by one bounded ffprobe invocation. */
 export type MediaProbeResult = {
+  sizeBytes?: number;
   durationMs?: number;
   width?: number;
   height?: number;
@@ -43,6 +45,10 @@ type MediaProbeBatchOptions = {
 
 type FfprobeSource = { kind: "fileDescriptor"; fd: number } | { kind: "buffer"; buffer: Buffer };
 
+function parseNonNegativeInteger(value: unknown): number | undefined {
+  const parsed = parseStrictInteger(value);
+  return parsed !== undefined && parsed >= 0 ? parsed : undefined;
+}
 function parseDurationMs(value: unknown): number | undefined {
   if (typeof value !== "number" && typeof value !== "string") {
     return undefined;
@@ -108,6 +114,7 @@ function parseFfprobeMediaMetadata(
   const durationMs =
     (selectedDurations.length > 0 ? Math.max(...selectedDurations) : undefined) ??
     parseDurationMs(format?.duration);
+  const sizeBytes = parseNonNegativeInteger(format?.size);
   const width = parsePositiveInteger(videoStream?.width);
   const height = parsePositiveInteger(videoStream?.height);
   const audioCodec = normalizeCodecName(audioStream?.codec_name);
@@ -117,6 +124,7 @@ function parseFfprobeMediaMetadata(
   const audioStreamIndex = parseStreamIndex(audioStream?.index);
   const videoStreamIndex = parseStreamIndex(videoStream?.index);
   return {
+    ...(sizeBytes !== undefined ? { sizeBytes } : {}),
     ...(durationMs ? { durationMs } : {}),
     ...(kind === "video" && width && height ? { width, height } : {}),
     ...(audioCodec ? { audioCodec } : {}),
@@ -136,7 +144,7 @@ function buildFfprobeMetadataArgs(protocol: "fd" | "pipe"): string[] {
     "-protocol_whitelist",
     protocol,
     "-show_entries",
-    "format=duration:stream=index,codec_type,codec_name,profile,pix_fmt,duration,width,height:stream_disposition=default,attached_pic",
+    "format=duration,size:stream=index,codec_type,codec_name,profile,pix_fmt,duration,width,height:stream_disposition=default,attached_pic",
     "-of",
     "json",
     ...(isFileDescriptor ? ["-fd", "0"] : []),
@@ -190,6 +198,7 @@ function toMediaProbeResult(
     return {};
   }
   return {
+    ...(result.sizeBytes !== undefined ? { sizeBytes: result.sizeBytes } : {}),
     ...(result.durationMs ? { durationMs: result.durationMs } : {}),
     ...(kind === "video" && result.width && result.height
       ? { width: result.width, height: result.height }

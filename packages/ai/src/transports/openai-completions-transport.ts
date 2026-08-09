@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { Context, Model, StreamFn } from "@openclaw/llm-core";
+import {
+  estimateNativeVideoTokens,
+  type Context,
+  type Model,
+  type StreamFn,
+} from "@openclaw/llm-core";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import OpenAI from "openai";
@@ -8,6 +13,7 @@ import { getEnvApiKey } from "../env-api-keys.js";
 import { convertMessages } from "../openai-completions-messages.js";
 import type { OpenAICompletionsOptions } from "../provider-options.js";
 import { resolveCacheRetention } from "../providers/cache-retention.js";
+import { enforceOpenAICompatibleChatVideoRequestLimits } from "../providers/openai-compatible-video-content.js";
 import {
   createOpenAICompletionsToolCallDeltaNormalizer,
   finalizeOpenAICompletionsToolCalls,
@@ -331,6 +337,7 @@ export function createOpenAICompletionsTransportStreamFn(): StreamFn {
         if (nextParams !== undefined) {
           params = nextParams as typeof params;
         }
+        enforceOpenAICompatibleChatVideoRequestLimits(params, model);
         if (
           (options as { openclawCodeModeToolSurface?: unknown } | undefined)
             ?.openclawCodeModeToolSurface === true
@@ -1423,6 +1430,24 @@ function estimateOpenAICompletionsContentChars(value: unknown): number {
     const record = block as Record<string, unknown>;
     if (record.type === "image_url" || record.type === "input_image") {
       adjustedChars += OPENAI_COMPLETIONS_IMAGE_CHAR_ESTIMATE;
+      continue;
+    }
+    if (record.type === "video_url" || record.type === "input_video") {
+      const videoUrl = record.video_url;
+      const serializedUrl =
+        typeof videoUrl === "string"
+          ? videoUrl
+          : isRecord(videoUrl) && typeof videoUrl.url === "string"
+            ? videoUrl.url
+            : "";
+      const base64Start = serializedUrl.indexOf(";base64,");
+      adjustedChars +=
+        estimateNativeVideoTokens({
+          base64: base64Start < 0 ? "" : serializedUrl.slice(base64Start + 8),
+          minimumTokens: Math.ceil(
+            OPENAI_COMPLETIONS_IMAGE_CHAR_ESTIMATE / CHARS_PER_TOKEN_ESTIMATE,
+          ),
+        }) * CHARS_PER_TOKEN_ESTIMATE;
       continue;
     }
     const text = record.text;

@@ -43,10 +43,7 @@ export function buildPersistedMediaImageLayout(params: {
       continue;
     }
     imageFactIndexes.push(factIndex);
-    if (
-      (factIndex < params.ctxMediaCount && describedAttachmentIndexes.has(factIndex)) ||
-      fact.hydrationSuppressed === true
-    ) {
+    if (factIndex < params.ctxMediaCount && describedAttachmentIndexes.has(factIndex)) {
       suppressedFactIndexes.push(factIndex);
     }
   }

@@ -63,6 +63,7 @@ import { splitSystemPromptCacheBoundary } from "../utils/system-prompt-cache-bou
 import { resolveCacheRetention } from "./cache-retention.js";
 import { isCloudflareProvider, resolveCloudflareBaseUrl } from "./cloudflare.js";
 import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.js";
+import { enforceOpenAICompatibleChatVideoRequestLimits } from "./openai-compatible-video-content.js";
 import {
   createOpenAICompletionsToolCallDeltaNormalizer,
   finalizeOpenAICompletionsToolCalls,
@@ -179,6 +180,7 @@ export const streamOpenAICompletions: StreamFunction<
       if (nextParams !== undefined) {
         params = nextParams as typeof params;
       }
+      enforceOpenAICompatibleChatVideoRequestLimits(params as Record<string, unknown>, model);
       firstEventAbort = createFirstStreamEventAbortController(options?.signal);
       const requestOptions = {
         signal: firstEventAbort.signal,

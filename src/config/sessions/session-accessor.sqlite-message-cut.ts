@@ -3,6 +3,7 @@ import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/recor
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
+import { readPersistedMediaFacts } from "../../media/media-facts.js";
 import { extractAssistantVisibleText } from "../../shared/chat-message-content.js";
 import {
   openOpenClawAgentDatabase,
@@ -33,8 +34,10 @@ import type {
   SessionBranchSummary,
   SessionBranchSwitchMutationParams,
   SessionBranchSwitchMutationResult,
+  SessionEditorMediaRef,
   SessionMessageCutMutationParams,
   SessionMessageCutMutationResult,
+  SessionMessageCutPreflightResult,
 } from "./session-accessor.types.js";
 import { buildSessionCreationStamp } from "./session-entry-provenance.js";
 import { inheritSessionSelection } from "./session-entry-selection.js";
@@ -51,7 +54,7 @@ import type { InternalSessionEntry as SessionEntry } from "./types.js";
 type MessageCut = {
   editorText?: string;
   editorAttachments?: Array<{ mimeType: string; data: string }>;
-  editorMediaRefs?: Array<{ path: string; contentType: string }>;
+  editorMediaRefs?: SessionEditorMediaRef[];
   parentId: string | null;
   prefix: TranscriptEvent[];
 };
@@ -165,6 +168,40 @@ export function resolveSessionTranscriptActiveLeafEntryId(
   events: readonly TranscriptEvent[],
 ): string | undefined {
   return scanSessionTranscriptTree(events).leafId ?? undefined;
+}
+
+export async function preflightSqliteSessionMessageCut(
+  params: SessionMessageCutMutationParams,
+): Promise<SessionMessageCutPreflightResult> {
+  const sourceKey = normalizeSqliteSessionKey(params.sessionStoreKey ?? params.sessionKey);
+  const resolved = resolveSqliteScope({
+    ...(params.agentId ? { agentId: params.agentId } : {}),
+    ...(params.env ? { env: params.env } : {}),
+    sessionKey: sourceKey,
+    ...(params.storePath ? { storePath: params.storePath } : {}),
+  });
+  try {
+    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const currentEntry = readSessionEntryRow(database, sourceKey)?.entry;
+    if (!currentEntry?.sessionId) {
+      return { status: "missing-session" };
+    }
+    const cut = resolveMessageCut(
+      loadSqliteTranscriptEventsFromDatabase(database, currentEntry.sessionId),
+      params.entryId,
+    );
+    if ("status" in cut) {
+      return cut;
+    }
+    return {
+      status: "ready",
+      ...(cut.editorText ? { editorText: cut.editorText } : {}),
+      ...(cut.editorAttachments ? { editorAttachments: cut.editorAttachments } : {}),
+      ...(cut.editorMediaRefs ? { editorMediaRefs: cut.editorMediaRefs } : {}),
+    };
+  } catch {
+    return { status: "failed" };
+  }
 }
 
 export async function rewindSqliteSessionToMessage(
@@ -564,11 +601,6 @@ function extractEditorText(content: unknown): string | undefined {
   return text || undefined;
 }
 
-// Gateway-written inline images are already size-capped at send time; these bounds
-// only keep a corrupted transcript from ballooning the rewind/fork response.
-const EDITOR_ATTACHMENT_LIMIT = 10;
-const EDITOR_ATTACHMENT_MAX_BASE64_CHARS = Math.ceil((5 * 1024 * 1024) / 3) * 4;
-
 function extractEditorAttachments(
   content: unknown,
 ): Array<{ mimeType: string; data: string }> | undefined {
@@ -577,32 +609,45 @@ function extractEditorAttachments(
   }
   const attachments = content.flatMap((block) => {
     const record = asRecord(block);
-    return record?.type === "image" &&
-      typeof record.data === "string" &&
-      record.data.trim() &&
-      record.data.length <= EDITOR_ATTACHMENT_MAX_BASE64_CHARS &&
-      typeof record.mimeType === "string" &&
-      record.mimeType.startsWith("image/")
-      ? [{ mimeType: record.mimeType, data: record.data }]
-      : [];
+    if (record?.type !== "image") {
+      return [];
+    }
+    // The Gateway owns strict size/MIME/base64 validation before mutation. Keep
+    // malformed stored image blocks visible to that preflight instead of silently dropping them.
+    return [
+      {
+        mimeType: typeof record.mimeType === "string" ? record.mimeType : "",
+        data: typeof record.data === "string" ? record.data : "",
+      },
+    ];
   });
-  return attachments.length > 0 ? attachments.slice(0, EDITOR_ATTACHMENT_LIMIT) : undefined;
+  return attachments.length > 0 ? attachments : undefined;
 }
 
 function extractEditorMediaRefs(
   message: Record<string, unknown>,
-): Array<{ path: string; contentType: string }> | undefined {
-  const media = asRecord(message["__openclaw"])?.media;
-  if (!Array.isArray(media)) {
-    return undefined;
-  }
-  const refs = media.flatMap((entry) => {
-    const record = asRecord(entry);
-    const mediaPath = typeof record?.path === "string" ? record.path.trim() : "";
-    const contentType = record?.contentType;
-    return mediaPath && typeof contentType === "string" && contentType.startsWith("image/")
-      ? [{ path: mediaPath, contentType }]
-      : [];
+): SessionEditorMediaRef[] | undefined {
+  const refs = (readPersistedMediaFacts(message) ?? []).flatMap((fact) => {
+    const contentKind = fact.contentType?.startsWith("image/")
+      ? "image"
+      : fact.contentType?.startsWith("video/")
+        ? "video"
+        : undefined;
+    const kind = fact.kind === "image" || fact.kind === "video" ? fact.kind : contentKind;
+    if (!kind) {
+      return [];
+    }
+    return [
+      {
+        kind,
+        ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
+        ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
+        ...(fact.path ? { path: fact.path } : {}),
+        ...(fact.url ? { url: fact.url } : {}),
+        ...(fact.contentType ? { contentType: fact.contentType } : {}),
+        ...(fact.sizeBytes !== undefined ? { sizeBytes: fact.sizeBytes } : {}),
+      },
+    ];
   });
   return refs.length > 0 ? refs : undefined;
 }

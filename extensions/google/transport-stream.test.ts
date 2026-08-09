@@ -45,6 +45,20 @@ const MODEL_PROVIDER_REQUEST_TRANSPORT_SYMBOL = Symbol.for(
   "openclaw.modelProviderRequestTransport",
 );
 
+const GOOGLE_TEST_VIDEO_CONTRACT = {
+  wireFamily: "google-inline-data",
+  mimeTypes: {
+    "video/mp4": "video/mp4",
+    "video/mov": "video/mov",
+    "video/quicktime": "video/mov",
+  },
+  maxDecodedBytesPerItem: 5,
+  maxItems: 1,
+  maxAggregateDecodedBytes: 8,
+  aggregateScope: "all-inline-media",
+  maxSerializedRequestBytesExclusive: 10_000,
+} as const;
+
 function attachModelProviderRequestTransport<TModel extends object>(
   model: TModel,
   request: unknown,
@@ -2890,6 +2904,139 @@ describe("google transport stream", () => {
     expect(result.content).toEqual([
       { type: "thinking", thinking: "draft", thinkingSignature: "c2lnXzE=" },
       { type: "text", text: "answer" },
+    ]);
+  });
+});
+
+describe("google provider-owned native video request limits", () => {
+  const nativeModel = () =>
+    buildGeminiModel({
+      input: ["text", "image", "video"],
+      nativeVideoInput: GOOGLE_TEST_VIDEO_CONTRACT,
+    });
+
+  it("canonicalizes allowed MIME aliases and bounds count plus all-inline-media bytes", () => {
+    const params = buildGoogleGenerativeAiParams(nativeModel(), {
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "video", mimeType: "application/octet-stream", data: "dmlkZW8=" },
+            { type: "image", mimeType: "image/png", data: "aW1n" },
+            { type: "video", mimeType: "video/quicktime", data: "dmlkZW8=" },
+            { type: "video", mimeType: "video/mp4", data: "dmlkZW8=" },
+          ],
+          timestamp: 0,
+        },
+      ],
+    });
+
+    expect(params.contents).toEqual([
+      {
+        role: "user",
+        parts: [
+          { text: "(video omitted: unsupported or exceeds provider limits)" },
+          { inlineData: { mimeType: "image/png", data: "aW1n" } },
+          { inlineData: { mimeType: "video/mov", data: "dmlkZW8=" } },
+          { text: "(video omitted: unsupported or exceeds provider limits)" },
+        ],
+      },
+    ]);
+  });
+
+  it("does not accept Vertex/model.input claims or tool-result video", () => {
+    const vertex = buildGoogleGenerativeAiParams(
+      buildGeminiModel({
+        provider: "google-vertex",
+        input: ["text", "image", "video"],
+      }),
+      {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "private-user" }],
+            timestamp: 0,
+          },
+        ],
+      },
+    );
+    const tool = buildGoogleGenerativeAiParams(nativeModel(), {
+      messages: [
+        {
+          role: "assistant",
+          api: "google-generative-ai",
+          provider: "google",
+          model: "gemini-2.5-pro",
+          content: [{ type: "toolCall", id: "call_video", name: "video", arguments: {} }],
+          usage: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
+          stopReason: "toolUse",
+          timestamp: 0,
+        },
+        {
+          role: "toolResult",
+          toolCallId: "call_video",
+          toolName: "video",
+          content: [{ type: "video", mimeType: "video/mp4", data: "private-tool" }],
+          isError: false,
+          timestamp: 0,
+        },
+      ],
+    });
+    const serialized = JSON.stringify([vertex, tool]);
+    expect(serialized).toContain("video omitted");
+    expect(serialized).toContain("native tool-result video is unsupported");
+    expect(serialized).not.toContain("private-user");
+    expect(serialized).not.toContain("private-tool");
+  });
+
+  it("replaces video when the final JSON reaches the exclusive request cap", async () => {
+    guardedFetchMock.mockResolvedValueOnce(
+      buildSseResponse([{ candidates: [{ finishReason: "STOP" }] }]),
+    );
+    const model = buildGeminiModel({
+      input: ["text", "video"],
+      nativeVideoInput: {
+        ...GOOGLE_TEST_VIDEO_CONTRACT,
+        maxSerializedRequestBytesExclusive: 1,
+      },
+    });
+    const streamFn = createGoogleGenerativeAiTransportStreamFn();
+    const stream = await Promise.resolve(
+      streamFn(
+        model,
+        {
+          messages: [
+            {
+              role: "user",
+              content: [{ type: "video", mimeType: "video/mp4", data: "dmlkZW8=" }],
+              timestamp: 0,
+            },
+          ],
+        } as Parameters<typeof streamFn>[1],
+        { apiKey: "gemini-api-key" },
+      ),
+    );
+    await stream.result();
+
+    const guardedCall = guardedFetchMock.mock.calls.findLast((call) =>
+      typeof call[1]?.body === "string" ? call[1].body.includes("video omitted") : false,
+    );
+    if (!guardedCall) {
+      throw new Error("Expected guarded fetch request with the video omission");
+    }
+    const params = parseRequestJsonBody(requireRequestInit(guardedCall, "guarded fetch")) as {
+      contents: Array<{ parts?: unknown }>;
+    };
+    expect(JSON.stringify(params)).not.toContain("dmlkZW8=");
+    expect(params.contents[0]?.parts).toEqual([
+      { text: "(video omitted: unsupported or exceeds provider limits)" },
     ]);
   });
 });

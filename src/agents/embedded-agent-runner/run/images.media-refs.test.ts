@@ -129,12 +129,13 @@ describe("fact-carried image references", () => {
     }
   });
 
-  it("retains described-image suppression across fact copy boundaries", async () => {
+  it("retains stable source identity across fact copy boundaries", async () => {
     const normalized = normalizeMediaFacts([
       {
         path: "/tmp/described.png",
         contentType: "image/png",
-        hydrationSuppressed: true,
+        sourceId: "described-image",
+        sourceIndex: 4,
       },
     ]);
     const reprojected = resolveMediaFacts({
@@ -148,17 +149,10 @@ describe("fact-carried image references", () => {
         path: "/tmp/described.png",
         contentType: "image/png",
         kind: "image",
-        hydrationSuppressed: true,
+        sourceId: "described-image",
+        sourceIndex: 4,
       }),
     ]);
-    const result = await detectAndLoadPromptImages({
-      prompt: "already described",
-      media: reprojected,
-      workspaceDir: "/tmp",
-      model: { input: ["text", "image"] },
-    });
-    expect(result.failedMediaCount).toBe(0);
-    expect(result.images).toEqual([]);
   });
 
   it("pairs identity-less facts with existing inline images when order metadata is absent", async () => {

@@ -22,8 +22,8 @@ Moonshot and Kimi Coding are **separate providers**, each shipped as a separate 
 | Model ref                           | Name                     | Reasoning        | Input              | Context   | Max output |
 | ----------------------------------- | ------------------------ | ---------------- | ------------------ | --------- | ---------- |
 | `moonshot/kimi-k3`                  | Kimi K3                  | low / high / max | text, image, video | 1,048,576 | 1,048,576  |
-| `moonshot/kimi-k2.7-code`           | Kimi K2.7 Code           | Always on        | text, image, video | 262,144   | 262,144    |
-| `moonshot/kimi-k2.7-code-highspeed` | Kimi K2.7 Code HighSpeed | Always on        | text, image, video | 262,144   | 262,144    |
+| `moonshot/kimi-k2.7-code`           | Kimi K2.7 Code           | Always on        | text, image        | 262,144   | 262,144    |
+| `moonshot/kimi-k2.7-code-highspeed` | Kimi K2.7 Code HighSpeed | Always on        | text, image        | 262,144   | 262,144    |
 
 [//]: # "moonshot-kimi-k2-ids:end"
 
@@ -41,6 +41,30 @@ always uses native thinking but requires both `thinking` and
 `reasoning_effort` to be omitted; the HighSpeed variant uses the same contract.
 Kimi K3 is the onboarding default.
 See Moonshot's [Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart).
+
+### Native video input
+
+Native video is available only for ordinary `moonshot/kimi-k3` Chat
+Completions on `https://api.moonshot.ai/v1` or
+`https://api.moonshot.cn/v1`. Kimi K2.7 Code, Kimi Coding, custom compatible
+routes, assistant messages, and tool results do not receive native video.
+Tool-result video is replaced with a bounded textual omission instead of raw
+bytes.
+
+The Moonshot chat path accepts `video/mp4`, `video/mpeg`, `video/mov`,
+`video/quicktime`, `video/avi`, `video/x-msvideo`, `video/x-flv`, `video/mpg`,
+`video/webm`, `video/wmv`, `video/x-ms-wmv`, and `video/3gpp`.
+
+| Limit                   |            Moonshot K3 chat |
+| ----------------------- | --------------------------: |
+| Videos per request      |                           4 |
+| Decoded bytes per video |                      16 MiB |
+| Aggregate decoded video |                      48 MiB |
+| Serialized request body | Less than 100,000,000 bytes |
+
+The Control UI uses a stricter common admission budget so the same draft can
+cross the Gateway safely: 4 videos, 8 MiB per video, 12 MiB decoded aggregate,
+and an 18 MiB encoded request-frame budget.
 
 ## Getting started
 
@@ -156,7 +180,7 @@ onboarding.
                 id: "kimi-k2.7-code",
                 name: "Kimi K2.7 Code",
                 reasoning: true,
-                input: ["text", "image", "video"],
+                input: ["text", "image"],
                 cost: { input: 0.95, output: 4, cacheRead: 0.19, cacheWrite: 0 },
                 contextWindow: 262144,
                 maxTokens: 262144,
@@ -165,7 +189,7 @@ onboarding.
                 id: "kimi-k2.7-code-highspeed",
                 name: "Kimi K2.7 Code HighSpeed",
                 reasoning: true,
-                input: ["text", "image", "video"],
+                input: ["text", "image"],
                 cost: { input: 1.9, output: 8, cacheRead: 0.38, cacheWrite: 0 },
                 contextWindow: 262144,
                 maxTokens: 262144,

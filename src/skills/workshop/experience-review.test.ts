@@ -743,6 +743,37 @@ function hasDanglingSurrogate(value: string): boolean {
 }
 
 describe("formatSkillExperienceReviewTranscript", () => {
+  it("uses the shared redacted media projection for image and video sentinels", () => {
+    const imageSentinel = "PRIVATE_IMAGE_BYTES_SENTINEL";
+    const videoSentinel = "PRIVATE_VIDEO_BYTES_SENTINEL";
+    const localPath = "/private/var/openclaw/media/private-clip.mp4";
+    const transcript = formatSkillExperienceReviewTranscript([
+      {
+        role: "user",
+        content: [
+          { type: "image", data: imageSentinel, mimeType: "image/png", path: localPath },
+          {
+            type: "video_url",
+            video_url: `data:video/mp4;base64,${videoSentinel}`,
+          },
+          {
+            type: "text",
+            text: [
+              `do not copy data:video/mp4;base64,${videoSentinel}`,
+              `[media attached: ${localPath} (video/mp4)]`,
+            ].join("\n"),
+          },
+        ],
+      },
+    ]);
+
+    expect(transcript).not.toContain(imageSentinel);
+    expect(transcript).not.toContain(videoSentinel);
+    expect(transcript).not.toContain(localPath);
+    expect(transcript).toContain("<redacted>");
+    expect(transcript).toContain("<redacted-media-reference>");
+  });
+
   it("keeps first-message truncation UTF-16 safe at the 6 000-char boundary", () => {
     const content = `${"a".repeat(5_992)}😀rest`;
     const messages = [

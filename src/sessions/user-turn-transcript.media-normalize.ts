@@ -6,6 +6,7 @@ import {
 } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import type { MediaFactInput } from "../media/media-facts.js";
+import { sanitizeMediaReferenceForProjection } from "../media/media-reference-projection.js";
 import type { PersistedUserTurnMediaInput } from "./user-turn-transcript.types.js";
 
 const URL_LIKE_MEDIA_PATH_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
@@ -33,7 +34,7 @@ export function resolveTranscriptMediaPath(
   // Relative staged media paths are anchored to the media workspace; absolute
   // paths and URL-like refs are already stable transcript references.
   if (!workspaceDir || path.isAbsolute(pathValue) || URL_LIKE_MEDIA_PATH_PATTERN.test(pathValue)) {
-    return pathValue;
+    return sanitizeMediaReferenceForProjection(pathValue);
   }
   return path.join(workspaceDir, pathValue);
 }
@@ -43,21 +44,34 @@ export function normalizeStructuredMediaEntryForTranscript(
 ): MediaFactInput {
   const workspaceDir = normalizeOptionalString(media.workspaceDir);
   const mediaPath = normalizeOptionalString(media.path);
-  const mediaUrl = normalizeOptionalString(media.url);
+  const resolvedMediaPath = mediaPath
+    ? resolveTranscriptMediaPath(mediaPath, workspaceDir)
+    : undefined;
+  const mediaUrlRaw = normalizeOptionalString(media.url);
+  const mediaUrl = mediaUrlRaw ? sanitizeMediaReferenceForProjection(mediaUrlRaw) : undefined;
   const kind = normalizeStructuredMediaKind(media.kind);
   const legacyKind = normalizeOptionalString(media.kind);
   const messageId = normalizeOptionalString(media.messageId);
   const contentType =
     normalizeOptionalString(media.contentType) ??
     (kind || !legacyKind || !MIME_TYPE_PATTERN.test(legacyKind) ? undefined : legacyKind) ??
-    mimeTypeFromFilePath(mediaPath ?? mediaUrl);
+    mimeTypeFromFilePath(resolvedMediaPath ?? mediaUrl);
   const durationMs = asPositiveSafeInteger(media.durationMs);
   const width = asPositiveSafeInteger(media.width);
   const height = asPositiveSafeInteger(media.height);
   const fileName = normalizeOptionalString(media.fileName);
   const sizeBytes = asFiniteNumberInRange(media.sizeBytes, { min: 0 });
+  const sourceId = normalizeOptionalString(media.sourceId);
+  const sourceIndex =
+    typeof media.sourceIndex === "number" &&
+    Number.isSafeInteger(media.sourceIndex) &&
+    media.sourceIndex >= 0
+      ? media.sourceIndex
+      : undefined;
   return {
-    ...(mediaPath ? { path: resolveTranscriptMediaPath(mediaPath, workspaceDir) } : {}),
+    ...(sourceId ? { sourceId } : {}),
+    ...(sourceIndex !== undefined ? { sourceIndex } : {}),
+    ...(resolvedMediaPath ? { path: resolvedMediaPath } : {}),
     ...(mediaUrl ? { url: mediaUrl } : {}),
     ...(contentType ? { contentType } : {}),
     ...(kind ? { kind } : {}),
@@ -69,6 +83,5 @@ export function normalizeStructuredMediaEntryForTranscript(
     ...(media.transcribed === true ? { transcribed: true } : {}),
     ...(messageId ? { messageId } : {}),
     ...(workspaceDir ? { workspaceDir } : {}),
-    ...(media.hydrationSuppressed === true ? { hydrationSuppressed: true } : {}),
   };
 }

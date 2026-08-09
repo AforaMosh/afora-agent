@@ -157,6 +157,39 @@ the Gateway already runs inside a managed Google Cloud environment.
 | Thinking/reasoning     | Yes (Gemini 2.5+ / Gemini 3+) |
 | Gemma 4 models         | Yes                           |
 
+### Native video input
+
+Ordinary Gemini chat models on the official Google AI Studio
+`google-generative-ai` route can receive video inline in a user message. This
+does not enable native video for Vertex AI, Google Live, Computer Use, custom
+compatible routes, assistant messages, or tool results. Tool-result video is
+replaced with a bounded textual omission instead of raw bytes.
+
+The Google inline path accepts these MIME types (including aliases that are
+canonicalized before sending): `video/mp4`, `video/mpeg`, `video/mov`,
+`video/quicktime`, `video/avi`, `video/x-msvideo`, `video/x-flv`, `video/mpg`,
+`video/webm`, `video/wmv`, `video/x-ms-wmv`, and `video/3gpp`.
+
+| Limit                          |         Google inline chat |
+| ------------------------------ | -------------------------: |
+| Videos per request             |                          4 |
+| Decoded bytes per video        |                      8 MiB |
+| Aggregate decoded inline media |                     12 MiB |
+| Serialized request body        | Less than 20,000,000 bytes |
+
+The Control UI additionally caps the encoded `chat.send` request frame at 18
+MiB so it remains below the Gateway's 25 MiB WebSocket ceiling.
+
+OpenClaw does not fall back to the Google Files API for larger clips in v1.
+That API creates a provider-retained upload, and OpenClaw does not yet own the
+matching upload-retention and deletion lifecycle. Oversized clips are rejected
+before upload instead.
+
+Google can also run a separate video-description request when the selected
+reply model does not support native video or when `tools.media.models[]`
+explicitly requests video preprocessing. These understanding paths are
+separate from native chat input and Veo video generation.
+
 ## Web search
 
 The bundled `gemini` web-search provider uses Gemini Google Search grounding.

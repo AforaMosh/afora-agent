@@ -12,5 +12,16 @@ export type HistoryEntry = {
 /** Media metadata attached to a normalized history message. */
 export type HistoryMediaEntry = Pick<
   MediaFact,
-  "contentType" | "durationMs" | "height" | "kind" | "messageId" | "path" | "url" | "width"
+  | "contentType"
+  | "durationMs"
+  | "fileName"
+  | "height"
+  | "kind"
+  | "messageId"
+  | "path"
+  | "sizeBytes"
+  | "sourceId"
+  | "sourceIndex"
+  | "url"
+  | "width"
 >;

@@ -3,6 +3,7 @@ import { html, nothing, type TemplateResult } from "lit";
 import { ref } from "lit/directives/ref.js";
 import { styleMap } from "lit/directives/style-map.js";
 import type {
+  ChatAttachmentLimits,
   SessionSharingRole,
   SessionSuggestion,
   SessionSuggestionResolution,
@@ -197,6 +198,8 @@ export type ChatProps = ChatTaskSuggestionTrayProps & {
   getPendingAttachmentReads?: () => number;
   readSignal?: AbortSignal;
   onPendingReadsChange?: (delta: 1 | -1) => void;
+  attachmentLimits?: Partial<ChatAttachmentLimits>;
+  onAttachmentError?: (message: string) => void;
   onAttachmentsChange?: (attachments: ChatAttachment[]) => void;
   onRemoveAttachment?: (attachment: ChatAttachment) => void;
   onAssistantAttachmentLoaded?: () => void;
@@ -472,6 +475,8 @@ export function renderChat(props: ChatProps) {
     getPendingAttachmentReads: props.getPendingAttachmentReads,
     readSignal: props.readSignal,
     onPendingReadsChange: props.onPendingReadsChange,
+    attachmentLimits: props.attachmentLimits,
+    onAttachmentError: props.onAttachmentError,
     replyTarget: props.replyTarget,
     realtimeTalkActive: props.realtimeTalkActive,
     realtimeTalkStatus: props.realtimeTalkStatus,

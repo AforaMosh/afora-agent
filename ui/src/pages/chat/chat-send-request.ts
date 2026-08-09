@@ -1,3 +1,8 @@
+import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
+import {
+  CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
+  estimateChatAttachmentRequestBytes,
+} from "../../../../packages/gateway-protocol/src/chat-attachment-limits.ts";
 import type { QueueMode } from "../../../../packages/gateway-protocol/src/schema/logs-chat.js";
 import { GatewayRequestError } from "../../api/gateway.ts";
 import type { ChatAttachment } from "../../lib/chat/chat-types.ts";
@@ -10,6 +15,37 @@ import {
 import { buildChatApiAttachments } from "./attachment-api.ts";
 import type { ChatState } from "./chat-history.ts";
 import { normalizeChatSendAck, type ChatSendAck } from "./chat-send-ack.ts";
+
+type ChatSendWireAttachment = {
+  content: string;
+  fileName?: string;
+  mimeType: string;
+};
+
+type ChatSendRequestEstimate = {
+  message: string;
+  attachments?: readonly ChatSendWireAttachment[];
+};
+
+function estimateChatSendRequestFrameBytes(params: ChatSendRequestEstimate): number {
+  return estimateChatAttachmentRequestBytes({
+    message: params.message,
+    attachments: (params.attachments ?? []).map((attachment) => ({
+      decodedBytes: estimateBase64DecodedBytes(attachment.content),
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+    })),
+  });
+}
+
+function assertChatSendRequestFrameWithinLimit(
+  params: ChatSendRequestEstimate,
+  maxBytes: number,
+): void {
+  if (estimateChatSendRequestFrameBytes(params) >= maxBytes) {
+    throw new Error(`Attachments exceed the ${maxBytes} byte encoded Gateway request limit.`);
+  }
+}
 
 export async function requestChatSend(
   state: ChatState,
@@ -29,7 +65,7 @@ export async function requestChatSend(
   const controlUiReconnectResume = Boolean(
     routing.sessionId && state.reconnectResumeSessionId === routing.sessionId,
   );
-  const payload = await state.client!.request("chat.send", {
+  const requestParams = {
     sessionKey: routing.sessionKey,
     ...(isUiGlobalSessionKey(routing.sessionKey) && routing.selectedAgentId
       ? { agentId: routing.selectedAgentId }
@@ -46,7 +82,18 @@ export async function requestChatSend(
     ...(params.expectedRunId ? { expectedRunId: params.expectedRunId } : {}),
     idempotencyKey: params.runId,
     attachments: buildChatApiAttachments(params.attachments),
-  });
+  };
+  const advertisedEncodedRequestBytes = state.hello?.policy?.attachments?.maxEncodedRequestBytes;
+  const maxEncodedRequestBytes =
+    typeof advertisedEncodedRequestBytes === "number" &&
+    Number.isFinite(advertisedEncodedRequestBytes) &&
+    advertisedEncodedRequestBytes > 0
+      ? Math.min(advertisedEncodedRequestBytes, CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES)
+      : CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES;
+  if (requestParams.attachments?.length) {
+    assertChatSendRequestFrameWithinLimit(requestParams, maxEncodedRequestBytes);
+  }
+  const payload = await state.client!.request("chat.send", requestParams);
   if (controlUiReconnectResume) {
     state.reconnectResumeSessionId = null;
   }

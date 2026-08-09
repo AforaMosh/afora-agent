@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { convertMessages } from "./openai-completions-messages.js";
+import { enforceOpenAICompatibleChatVideoRequestLimits } from "./providers/openai-compatible-video-content.js";
 import { resolveOpenAICompletionsCompat } from "./transports/openai-completions-compat.js";
 import type { AssistantMessage, Context, Model } from "./types.js";
 
@@ -96,5 +97,109 @@ describe("convertMessages assistant text replay", () => {
     expect(oversizedId.slice(0, 40).charCodeAt(39)).toBe(0xd83d);
     expect(normalizedAssistantId).toBe(prefix);
     expect(normalizedToolResultId).toBe(prefix);
+  });
+});
+
+describe("convertMessages provider-owned native video", () => {
+  const nativeVideoInput = {
+    wireFamily: "openai-chat-video-url",
+    mimeTypes: {
+      "video/mp4": "video/mp4",
+      "video/quicktime": "video/mov",
+    },
+    maxDecodedBytesPerItem: 5,
+    maxItems: 1,
+    maxAggregateDecodedBytes: 5,
+    aggregateScope: "video",
+    maxSerializedRequestBytesExclusive: 10_000,
+  } as const;
+  const videoModel = {
+    ...model,
+    input: ["text", "image", "video"],
+    nativeVideoInput,
+  } satisfies Model<"openai-completions">;
+
+  it("uses only the prepared contract and enforces MIME aliases, count, and aggregate bytes", () => {
+    const converted = convertMessages(
+      videoModel,
+      {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "video", mimeType: "video/quicktime", data: "dmlkZW8=" },
+              { type: "video", mimeType: "video/mp4", data: "dmlkZW8=" },
+              { type: "video", mimeType: "video/x-m4v", data: "dmlkZW8=" },
+            ],
+            timestamp: 1,
+          },
+        ],
+      },
+      resolveOpenAICompletionsCompat(videoModel),
+    );
+
+    expect(converted).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "video_url", video_url: { url: "data:video/mov;base64,dmlkZW8=" } },
+          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+        ],
+      },
+    ]);
+  });
+
+  it("never treats raw model.input or tool-result video as native support", () => {
+    const unsupportedModel = {
+      ...model,
+      input: ["text", "video"],
+    } satisfies Model<"openai-completions">;
+    const converted = convertMessages(
+      unsupportedModel,
+      {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "private-user" }],
+            timestamp: 1,
+          },
+          {
+            role: "toolResult",
+            toolCallId: "call_video",
+            toolName: "video",
+            content: [{ type: "video", mimeType: "video/mp4", data: "private-tool" }],
+            isError: false,
+            timestamp: 2,
+          },
+        ],
+      },
+      resolveOpenAICompletionsCompat(unsupportedModel),
+    );
+    const serialized = JSON.stringify(converted);
+    expect(serialized).toContain("video omitted");
+    expect(serialized).toContain("native tool-result video is unsupported");
+    expect(serialized).not.toContain("private-user");
+    expect(serialized).not.toContain("private-tool");
+    expect(serialized).not.toContain("video_url");
+  });
+
+  it("removes accepted video when the final serialized request reaches the exclusive cap", () => {
+    const params = {
+      model: "kimi-k3",
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,dmlkZW8=" } }],
+        },
+      ],
+    };
+    enforceOpenAICompatibleChatVideoRequestLimits(params, {
+      nativeVideoInput: { ...nativeVideoInput, maxSerializedRequestBytesExclusive: 1 },
+    });
+    expect(JSON.stringify(params)).not.toContain("dmlkZW8=");
+    expect(params.messages[0]?.content).toEqual([
+      { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
   });
 });

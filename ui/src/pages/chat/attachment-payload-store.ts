@@ -1,4 +1,12 @@
 // Control UI chat module implements attachment payload store behavior.
+import {
+  CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
+  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+  CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
+  CHAT_ATTACHMENT_MAX_ITEMS,
+  estimateChatAttachmentRequestBytes,
+} from "@openclaw/gateway-protocol";
+import { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
 import type { ChatAttachment } from "../../lib/chat/chat-types.ts";
 
 type AttachmentPayload = {
@@ -81,32 +89,45 @@ export function generateAttachmentId(): string {
   return `att-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// Same admission contract as the Swift/Android restore paths: only well-formed,
-// size-bounded inline images come back; a corrupt transcript entry is skipped,
-// never fatal. 5 MiB decoded matches the gateway media cap (MEDIA_MAX_BYTES).
-const RESTORED_IMAGE_MIME = /^image\/[\w.+-]+$/u;
-const BASE64_PAYLOAD = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
-const RESTORED_ATTACHMENT_MAX_BASE64_CHARS = Math.ceil((5 * 1024 * 1024) / 3) * 4;
+// Rewind/fork is all-or-nothing: validate the complete Gateway response before
+// releasing the current composer's payloads or object URLs.
+const RESTORED_MODEL_MEDIA_MIME = /^(?:image|video)\/[\w.+-]+$/u;
 
 export function replaceChatAttachmentsFromEditor(
   current: readonly ChatAttachment[],
   restored: readonly { mimeType: string; data: string }[] = [],
 ): ChatAttachment[] {
+  if (restored.length > CHAT_ATTACHMENT_MAX_ITEMS) {
+    throw new Error("Restored attachments exceed the editor attachment count limit");
+  }
+  const decoded = restored.map(({ mimeType, data }) => {
+    const canonical = canonicalizeBase64(data);
+    const decodedBytes = canonical ? estimateBase64DecodedBytes(canonical) : undefined;
+    if (
+      !RESTORED_MODEL_MEDIA_MIME.test(mimeType) ||
+      canonical !== data ||
+      decodedBytes === undefined ||
+      decodedBytes > CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM
+    ) {
+      throw new Error("Gateway returned an invalid restored attachment");
+    }
+    return { data: canonical, decodedBytes, mimeType };
+  });
+  if (
+    decoded.reduce((total, attachment) => total + attachment.decodedBytes, 0) >
+      CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES ||
+    estimateChatAttachmentRequestBytes({ attachments: decoded, message: "" }) >=
+      CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES
+  ) {
+    throw new Error("Restored attachments exceed the editor size limit");
+  }
+  const next = decoded.map(({ mimeType, data }) => ({
+    id: generateAttachmentId(),
+    mimeType,
+    dataUrl: `data:${mimeType};base64,${data}`,
+  }));
   releaseChatAttachmentPayloads(current);
-  return restored.flatMap(({ mimeType, data }) =>
-    RESTORED_IMAGE_MIME.test(mimeType) &&
-    data.length > 0 &&
-    data.length <= RESTORED_ATTACHMENT_MAX_BASE64_CHARS &&
-    BASE64_PAYLOAD.test(data)
-      ? [
-          {
-            id: generateAttachmentId(),
-            mimeType,
-            dataUrl: `data:${mimeType};base64,${data}`,
-          },
-        ]
-      : [],
-  );
+  return next;
 }
 
 function discardChatAttachmentDataUrl(id: string): void {

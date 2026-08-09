@@ -25,11 +25,14 @@ export type MediaUnderstandingCapabilityRegistry = Map<
 >;
 
 export type MediaAttachment = {
+  sourceId?: string;
+  sourceIndex?: number;
   path?: string;
   url?: string;
   mime?: string;
   kind?: MediaKind;
   workspaceDir?: string;
+  sizeBytes?: number;
   index: number;
   alreadyTranscribed?: boolean;
 };

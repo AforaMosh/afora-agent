@@ -14,13 +14,24 @@ describe("buildPersistedUserTurnMediaInputsFromFields", () => {
       buildPersistedUserTurnMediaInputsFromFields({
         __openclaw: {
           media: [
-            { path: "/tmp/a.png", contentType: "image/png" },
+            {
+              sourceId: "attachment-a",
+              sourceIndex: 3,
+              path: "/tmp/a.png",
+              contentType: "image/png",
+            },
             { url: "https://example.test/b.jpg", contentType: "image/jpeg" },
           ],
         },
       } as never),
     ).toEqual([
-      { path: "/tmp/a.png", contentType: "image/png", kind: "image" },
+      {
+        sourceId: "attachment-a",
+        sourceIndex: 3,
+        path: "/tmp/a.png",
+        contentType: "image/png",
+        kind: "image",
+      },
       { url: "https://example.test/b.jpg", contentType: "image/jpeg", kind: "image" },
     ]);
   });
@@ -253,6 +264,8 @@ describe("buildPersistedUserTurnMessage media projection", () => {
       name: "probed video metadata",
       media: [
         {
+          sourceId: "attachment-7",
+          sourceIndex: 7,
           path: "/tmp/clip.mp4",
           contentType: "video/mp4",
           durationMs: 12_346,
@@ -268,6 +281,8 @@ describe("buildPersistedUserTurnMessage media projection", () => {
       },
       expectedMedia: [
         {
+          sourceId: "attachment-7",
+          sourceIndex: 7,
           path: "/tmp/clip.mp4",
           contentType: "video/mp4",
           durationMs: 12_346,
@@ -313,12 +328,11 @@ describe("buildPersistedUserTurnMessage media projection", () => {
       expectedMedia: [{ path: "media/inbound/unanchored.png", contentType: "image/png" }],
     },
     {
-      name: "hydration-suppressed attachment",
+      name: "immutable described attachment fact",
       media: [
         {
           path: "/tmp/described.png",
           contentType: "image/png",
-          hydrationSuppressed: true,
         },
       ],
       expectedLegacy: {
@@ -331,7 +345,6 @@ describe("buildPersistedUserTurnMessage media projection", () => {
         {
           path: "/tmp/described.png",
           contentType: "image/png",
-          hydrationSuppressed: true,
         },
       ],
     },
@@ -345,6 +358,28 @@ describe("buildPersistedUserTurnMessage media projection", () => {
     expect(
       (message as unknown as { __openclaw?: { media?: unknown } })["__openclaw"]?.media,
     ).toEqual(expectedMedia);
+  });
+
+  it("removes credentials from remote media facts before persistence", () => {
+    const message = buildPersistedUserTurnMessage({
+      text: "inspect",
+      timestamp: 123,
+      media: [
+        {
+          url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+          contentType: "video/mp4",
+        },
+      ],
+    });
+
+    expect(readPersistedMediaFacts(message)).toEqual([
+      expect.objectContaining({
+        url: "https://cdn.example.test/clip.mp4",
+        contentType: "video/mp4",
+      }),
+    ]);
+    expect(JSON.stringify(message)).not.toContain("password");
+    expect(JSON.stringify(message)).not.toContain("signature");
   });
 
   it("reads canonical persisted facts without merging disagreeing legacy fields", () => {

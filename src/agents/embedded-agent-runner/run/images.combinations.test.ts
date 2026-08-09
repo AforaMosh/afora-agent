@@ -33,7 +33,6 @@ describe("hydration combination matrix", () => {
         {
           path: "/tmp/described-missing.png",
           contentType: "image/png",
-          hydrationSuppressed: true,
         },
         { path: "/tmp/inline.png", contentType: "image/png" },
       ],
@@ -41,6 +40,10 @@ describe("hydration combination matrix", () => {
       model: { input: ["text", "image"] },
       existingImages: [{ type: "image", data: "%%%", mimeType: "image/png" }],
       imageOrder: ["inline"],
+      mediaImageLayout: {
+        slots: [{ kind: "inline", factIndex: 1 }],
+        suppressedFactIndexes: [0],
+      },
     });
 
     expect(result.images).toEqual([]);
@@ -68,16 +71,11 @@ describe("hydration combination matrix", () => {
         await fs.writeFile(explicitPath, explicitBuffer);
       }
 
-      const media: Array<{
-        path: string;
-        contentType: string;
-        hydrationSuppressed?: boolean;
-      }> = [];
+      const media: Array<{ path: string; contentType: string }> = [];
       if (has("suppressed")) {
         media.push({
           path: suppressedPath,
           contentType: "image/png",
-          hydrationSuppressed: true,
         });
       }
       const inlineFactIndex = has("inline") ? media.length : undefined;
@@ -111,6 +109,19 @@ describe("hydration combination matrix", () => {
           existingImages,
           existingImageFactIndexes,
           imageOrder: has("legacy") ? undefined : imageOrder,
+          mediaImageLayout: has("suppressed")
+            ? {
+                slots: [
+                  ...(inlineFactIndex === undefined
+                    ? []
+                    : [{ kind: "inline" as const, factIndex: inlineFactIndex }]),
+                  ...(offloadedFactIndex === undefined
+                    ? []
+                    : [{ kind: "offloaded" as const, factIndex: offloadedFactIndex }]),
+                ],
+                suppressedFactIndexes: [0],
+              }
+            : undefined,
           workspaceOnly: true,
         });
 

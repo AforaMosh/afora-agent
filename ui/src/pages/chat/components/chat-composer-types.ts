@@ -1,4 +1,5 @@
 import type { TemplateResult, nothing } from "lit";
+import type { ChatAttachmentLimits } from "../../../../../packages/gateway-protocol/src/index.js";
 import type { GatewayBrowserClient } from "../../../api/gateway.ts";
 import type { SessionsListResult } from "../../../api/types.ts";
 import type { QuestionPrompt } from "../../../app/question-prompt.ts";
@@ -79,6 +80,8 @@ export type ChatComposerProps = {
   getPendingAttachmentReads?: () => number;
   readSignal?: AbortSignal;
   onPendingReadsChange?: (delta: 1 | -1) => void;
+  attachmentLimits?: Partial<ChatAttachmentLimits>;
+  onAttachmentError?: (message: string) => void;
   replyTarget?: {
     messageId: string;
     text: string;

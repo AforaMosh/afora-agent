@@ -1,3 +1,4 @@
+import { NATIVE_TOOL_VIDEO_OMISSION } from "@openclaw/llm-core";
 // Verifies tool-result middleware validation, sanitization, and fail-closed behavior.
 import { describe, expect, it } from "vitest";
 import { createAgentToolResultMiddlewareRunner } from "./tool-result-middleware.js";
@@ -391,6 +392,250 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     expect(result.content).toEqual([
       { type: "image", mimeType: "image/png", data: "base64-image" },
     ]);
+  });
+
+  it("projects canonical video before registered middleware can retain raw bytes", async () => {
+    const video = { type: "video" as const, mimeType: "video/mp4", data: "dmlkZW8=" };
+    let observedContent: unknown;
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      (event) => {
+        observedContent = event.result.content;
+        return undefined;
+      },
+      (event) => ({
+        result: {
+          ...event.result,
+          content: [{ type: "text", text: "captured video" }, ...event.result.content],
+        },
+      }),
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: { content: [video], details: { status: "ok" } },
+    });
+
+    expect(observedContent).toEqual([{ type: "text", text: NATIVE_TOOL_VIDEO_OMISSION }]);
+    expect(result.content).toEqual([
+      { type: "text", text: "captured video" },
+      { type: "text", text: NATIVE_TOOL_VIDEO_OMISSION },
+    ]);
+    expect(JSON.stringify(result)).not.toContain(video.data);
+    expect(result.details).toEqual({ status: "ok" });
+  });
+
+  it("projects canonical video on the no-middleware path", async () => {
+    const video = { type: "video" as const, mimeType: "video/webm", data: "dmlkZW8=" };
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: { content: [video], details: {} },
+    });
+
+    expect(result.content).toEqual([{ type: "text", text: NATIVE_TOOL_VIDEO_OMISSION }]);
+    expect(JSON.stringify(result)).not.toContain(video.data);
+  });
+
+  it("leaves live details intact for durable projection while preserving cyclic identity", async () => {
+    class DetailEnvelope {
+      status = "ok";
+    }
+    const ordinary = new DetailEnvelope() as DetailEnvelope & { self?: unknown };
+    ordinary.self = ordinary;
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
+
+    const ordinaryResult = await runner.applyToolResultMiddleware({
+      toolCallId: "call-ordinary",
+      toolName: "inspect",
+      args: {},
+      result: { content: [{ type: "text", text: "ok" }], details: ordinary },
+    });
+    expect(ordinaryResult.details).toBe(ordinary);
+    expect(Object.getPrototypeOf(ordinaryResult.details)).toBe(DetailEnvelope.prototype);
+    expect((ordinaryResult.details as { self?: unknown }).self).toBe(ordinary);
+
+    const privateData = "cHJpdmF0ZS12aWRlbw==";
+    const mediaResult = await runner.applyToolResultMiddleware({
+      toolCallId: "call-media",
+      toolName: "inspect",
+      args: {},
+      result: {
+        content: [{ type: "text", text: "ok" }],
+        details: {
+          nested: { type: "video", mimeType: "video/mp4", data: privateData },
+          uri: `data:video/mp4;base64,${privateData}`,
+        },
+      },
+    });
+    expect(mediaResult.details).toBeDefined();
+    expect((mediaResult.details as { nested?: unknown }).nested).toEqual({
+      type: "video",
+      mimeType: "video/mp4",
+      data: privateData,
+    });
+  });
+
+  it("preserves images while projecting adjacent video", async () => {
+    const image = { type: "image" as const, mimeType: "image/png", data: "base64-image" };
+    const video = { type: "video" as const, mimeType: "video/mp4", data: "dmlkZW8=" };
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      () => undefined,
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: { content: [image, video], details: {} },
+    });
+
+    expect(result.content).toEqual([image, { type: "text", text: NATIVE_TOOL_VIDEO_OMISSION }]);
+  });
+
+  it("fails closed when aggregate media exceeds the tool-result budget", async () => {
+    const image = {
+      type: "image" as const,
+      mimeType: "image/png",
+      data: "A".repeat(5_000_000),
+    };
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: { content: Array.from({ length: 15 }, () => image), details: {} },
+    });
+
+    expect(result.details).toEqual({ status: "error", middlewareError: true });
+    expect(JSON.stringify(result)).not.toContain(image.data);
+  });
+
+  it.each([
+    { label: "non-video MIME", mimeType: "image/png", data: "dmlkZW8=" },
+    { label: "unsafe MIME", mimeType: "video/mp4\ntext/plain", data: "dmlkZW8=" },
+    { label: "oversized MIME", mimeType: `video/${"a".repeat(100)}`, data: "dmlkZW8=" },
+    { label: "empty payload", mimeType: "video/mp4", data: "" },
+    { label: "invalid base64", mimeType: "video/mp4", data: "not-base64!" },
+    { label: "invalid padding", mimeType: "video/mp4", data: "dmlkZW8==" },
+  ])("fails closed for video with $label", async ({ mimeType, data }) => {
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: { content: [{ type: "video", mimeType, data }], details: {} },
+    });
+
+    expect(result.details).toEqual({ status: "error", middlewareError: true });
+  });
+
+  it("projects nested video tool-result content without stringifying data", async () => {
+    const video = { type: "video" as const, mimeType: "video/mp4", data: "dmlkZW8=" };
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      () => undefined,
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: {
+        content: [
+          {
+            type: "toolResult",
+            content: [{ type: "text", text: "captured clip" }, video],
+          } as never,
+        ],
+        details: {},
+      },
+    });
+
+    expect(result.content).toEqual([
+      { type: "text", text: "captured clip" },
+      { type: "text", text: NATIVE_TOOL_VIDEO_OMISSION },
+    ]);
+    expect(JSON.stringify(result)).not.toContain(video.data);
+  });
+
+  it("fails closed instead of silently dropping malformed video beside valid text", async () => {
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      () => undefined,
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: {
+        content: [
+          { type: "text", text: "captured clip" },
+          { type: "video", mimeType: "video/mp4", data: "private-invalid-payload" },
+        ],
+        details: {},
+      },
+    });
+
+    expect(result.details).toEqual({ status: "error", middlewareError: true });
+    expect(JSON.stringify(result.content)).not.toContain("private-invalid-payload");
+  });
+
+  it("fails closed for malformed nested video without rendering its payload as text", async () => {
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      () => undefined,
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: {
+        content: [
+          {
+            type: "toolResult",
+            content: [
+              { type: "text", text: "captured clip" },
+              { type: "video", mimeType: "video/mp4", data: "private-invalid-payload" },
+            ],
+          } as never,
+        ],
+        details: {},
+      },
+    });
+
+    expect(result.details).toEqual({ status: "error", middlewareError: true });
+    expect(JSON.stringify(result.content)).not.toContain("private-invalid-payload");
+  });
+
+  it("fails closed when valid top-level text precedes malformed nested video", async () => {
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+      () => undefined,
+    ]);
+
+    const result = await runner.applyToolResultMiddleware({
+      toolCallId: "call-1",
+      toolName: "camera",
+      args: {},
+      result: {
+        content: [
+          { type: "text", text: "captured clip" },
+          {
+            type: "toolResult",
+            content: [{ type: "video", mimeType: "video/mp4", data: "private-invalid-payload" }],
+          } as never,
+        ],
+        details: {},
+      },
+    });
+
+    expect(result.details).toEqual({ status: "error", middlewareError: true });
+    expect(JSON.stringify(result.content)).not.toContain("private-invalid-payload");
   });
 
   it("preserves mixed nested text and image toolResult content", async () => {

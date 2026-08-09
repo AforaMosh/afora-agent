@@ -7,7 +7,14 @@ title: "Media understanding"
 sidebarTitle: "Media understanding"
 ---
 
-OpenClaw can summarize inbound media (image/audio/video) before the reply pipeline runs, so command parsing and routing work off short text instead of raw bytes. Understanding auto-detects local tools or provider keys, or you can configure explicit models. Original media is always delivered to the model as usual; when understanding fails or is disabled, the reply flow continues unchanged.
+OpenClaw can summarize inbound media (image/audio/video) before the reply pipeline runs, so command parsing and routing work off short text instead of raw bytes. Understanding auto-detects local tools or provider keys, or you can configure explicit models.
+
+Original media is delivered natively only when the final prepared reply route
+supports it. For video, v1 native delivery is limited to user messages on
+ordinary Google AI Studio Gemini chat and ordinary Moonshot K3 Chat
+Completions. Other reply routes use an available description or receive one
+bounded visible omission; raw video bytes are not silently dropped or forwarded
+through tool results.
 
 Vendor plugins register capability metadata (which provider supports which media type, default model, priority). OpenClaw core owns the shared `tools.media` config, fallback order, and reply-pipeline integration.
 
@@ -135,6 +142,8 @@ See [Tools and custom providers](/gateway/config-tools) for profiles, env vars, 
 ## Rules and behavior
 
 - Media exceeding `maxBytes` skips that model and tries the next one.
+- Google, Qwen, and Moonshot video-understanding providers produce preprocessing text. Only the prepared Google Gemini and Moonshot K3 chat routes described above can also receive the original video natively.
+- Video in a tool result is omitted with bounded visible text. Native video placement is user-message-only in v1.
 - Audio files under 1024 bytes are treated as empty/corrupt and skipped before transcription; the agent gets a deterministic placeholder transcript instead.
 - If the active primary image model already supports vision natively, OpenClaw skips the `[Image]` summary block and passes the original image into the model directly. MiniMax is an exception: `minimax`, `minimax-cn`, `minimax-portal`, and `minimax-portal-cn` always route image understanding through the plugin-owned `MiniMax-VL-01` media provider, even if legacy MiniMax M2.x chat metadata claims image input (only `MiniMax-M3` and later are treated as natively vision-capable).
 - If a Gateway/WebChat primary model is text-only, image attachments are preserved as offloaded `media://inbound/*` refs so image/PDF tools or a configured image model can still inspect them instead of losing the attachment.

@@ -23,7 +23,10 @@ export { listAgentsForGateway } from "./session-utils-store.js";
 export { resolveGatewaySessionStoreTargetWithStore } from "./session-utils-store-lookup.js";
 export { resolveGatewaySessionStoreTarget } from "./session-utils-store-lookup.js";
 export { getSessionDefaults } from "./session-utils-model.js";
-export { resolveGatewayModelSupportsImages } from "./session-utils-model.js";
+export {
+  resolveGatewayModelInputCapabilities,
+  resolveGatewayModelSupportsImages,
+} from "./session-utils-model.js";
 export { buildGatewaySessionRow } from "./session-utils-row.js";
 export { loadGatewaySessionRow } from "./session-utils-search.js";
 export { loadGatewaySessionLifecycleSnapshot } from "./session-utils-search.js";

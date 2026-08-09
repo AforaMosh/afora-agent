@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
+import { SESSION_TOTAL_TOKENS_VERSION, type SessionEntry } from "../../config/sessions.js";
 import { persistSessionTranscriptTurn } from "../../config/sessions/session-accessor.js";
 import { resolveSessionStorePathForScope } from "../../config/sessions/session-store-path.js";
 import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
@@ -52,7 +52,7 @@ function makeParams(
       ...(options?.sessionId ? { sessionId: options.sessionId } : {}),
       totalTokens: options?.totalTokens ?? 123,
       totalTokensFresh,
-      ...(totalTokensFresh ? { totalTokensVersion: 1 as const } : {}),
+      ...(totalTokensFresh ? { totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION } : {}),
       inputTokens: 100,
       outputTokens: 23,
       systemPromptReport: {

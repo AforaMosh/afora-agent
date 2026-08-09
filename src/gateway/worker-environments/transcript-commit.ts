@@ -14,6 +14,7 @@ import {
   withTranscriptWriteTransaction,
 } from "../../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { sanitizeDurableMediaPayload } from "../../media/media-reference-projection.js";
 import { KeyedAsyncQueue } from "../../plugin-sdk/keyed-async-queue.js";
 import type { WorkerConnectionIdentity } from "./connection-identity.js";
 import { resolveWorkerSessionTarget, type ResolvedWorkerSessionTarget } from "./session-target.js";
@@ -99,7 +100,9 @@ function buildCommittedMessage(
       toolCallId: message.toolCallId,
       toolName: message.toolName,
       content,
-      ...(message.details === undefined ? {} : { details: structuredClone(message.details) }),
+      ...(message.details === undefined
+        ? {}
+        : { details: sanitizeDurableMediaPayload(message.details) }),
       isError: message.isError,
       timestamp: message.timestamp,
       idempotencyKey,
@@ -131,7 +134,9 @@ function buildCommittedMessage(
                   },
                 }
               : {}),
-            ...(diagnostic.details ? { details: structuredClone(diagnostic.details) } : {}),
+            ...(diagnostic.details
+              ? { details: sanitizeDurableMediaPayload(diagnostic.details) }
+              : {}),
           })),
         }
       : {}),

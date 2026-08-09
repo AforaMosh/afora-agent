@@ -71,7 +71,8 @@
             },
             "input": [
               "text",
-              "image"
+              "image",
+              "video"
             ],
             "contextWindow": 1048576,
             "maxTokens": 1048576,
@@ -203,8 +204,8 @@
         "video"
       ],
       "defaultModels": {
-        "image": "kimi-k2.6",
-        "video": "kimi-k2.6"
+        "image": "kimi-k3",
+        "video": "kimi-k3"
       },
       "autoPriority": {
         "video": 20

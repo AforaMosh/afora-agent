@@ -423,9 +423,6 @@ function resolveCodexModelInput(
   if (modalities.has("audio")) {
     input.add("audio");
   }
-  if (modalities.has("video")) {
-    input.add("video");
-  }
   return input.size > 0 ? [...input] : (fallback?.input ?? ["text", "image"]);
 }
 

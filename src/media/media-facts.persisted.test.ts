@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   canonicalizePersistedUserMessageMedia,
   isImageMediaFact,
+  isVideoMediaFact,
   normalizeMediaFacts,
   PERSISTED_LEGACY_MEDIA_KEYS,
   readPersistedMediaFacts,
+  readPersistedMediaBlockFactIndexes,
 } from "./media-facts.js";
 
 const canonicalFact = { path: "/media/canonical.png", contentType: "image/png" };
@@ -186,7 +188,7 @@ describe("canonical persisted media", () => {
     });
 
     expect((result.message["__openclaw"] as { media: unknown[] }).media).toEqual([
-      {},
+      { sourceIndex: 0 },
       expect.objectContaining({ path: "/media/b.png", contentType: "image/png" }),
     ]);
   });
@@ -289,5 +291,28 @@ describe("canonical image media facts", () => {
 
     expect(media?.map(isImageMediaFact)).toEqual([false, true, true]);
     expect(media?.[1]?.kind).toBeUndefined();
+  });
+
+  it.each([
+    { fact: { kind: "video" as const }, expected: true },
+    { fact: { contentType: "video" }, expected: true },
+    { fact: { path: "/tmp/clip.mp4", contentType: "application/octet-stream" }, expected: true },
+    { fact: { path: "/tmp/clip.mp4", contentType: "text/plain" }, expected: false },
+    { fact: { path: "/tmp/clip.mp4", kind: "document" as const }, expected: false },
+  ])("classifies video facts at the shared media owner", ({ fact, expected }) => {
+    expect(isVideoMediaFact(fact)).toBe(expected);
+  });
+
+  it("strictly reads persisted media-block provenance without owning cardinality", () => {
+    expect(
+      readPersistedMediaBlockFactIndexes({
+        __openclaw: { mediaBlockFactIndexes: [0, null, 2] },
+      }),
+    ).toEqual([0, null, 2]);
+    expect(
+      readPersistedMediaBlockFactIndexes({
+        __openclaw: { mediaBlockFactIndexes: [0, -1] },
+      }),
+    ).toBeUndefined();
   });
 });

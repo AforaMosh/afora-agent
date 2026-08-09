@@ -7,6 +7,7 @@ import { createToolCallOccurrenceQueue } from "../../packages/agent-core/src/har
 import {
   projectCompactionPlanningMessages,
   readCompactionPlanningOmittedChars,
+  readCompactionPlanningOmittedVideoTokens,
 } from "./compaction-planning-projection.js";
 import { stripRuntimeContextCustomMessages } from "./internal-runtime-context.js";
 import type { AgentMessage } from "./runtime/index.js";
@@ -81,13 +82,25 @@ export function sanitizeCompactionMessages(messages: AgentMessage[]): AgentMessa
 }
 
 function estimateCompactionPlanningTokens(message: AgentMessage): number {
-  return estimateTokens(message) + Math.ceil(readCompactionPlanningOmittedChars(message) / 4);
+  return (
+    estimateTokens(message) +
+    readCompactionPlanningOmittedVideoTokens(message) +
+    Math.ceil(readCompactionPlanningOmittedChars(message) / 4)
+  );
+}
+
+function estimateCompactionVideoBlockTokens(block: Record<string, unknown>): number {
+  return estimateTokens({
+    role: "user",
+    content: [block],
+    timestamp: 0,
+  } as unknown as AgentMessage);
 }
 
 /** Builds a bounded planning projection that preserves token pressure accounting. */
 export function projectCompactionMessagesForPlanning(messages: AgentMessage[]): AgentMessage[] {
   const safe = sanitizeCompactionMessages(messages);
-  return projectCompactionPlanningMessages(safe);
+  return projectCompactionPlanningMessages(safe, estimateCompactionVideoBlockTokens);
 }
 
 /** Clamps requested split parts to a usable count for the available messages. */

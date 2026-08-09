@@ -3,6 +3,58 @@ import { describe, expect, it } from "vitest";
 import { serializeConversation } from "./utils.js";
 
 describe("serializeConversation", () => {
+  it("preserves video-only user and tool-result turns with bounded role-aware markers", () => {
+    const privateVideo = Buffer.from("private video payload").toString("base64");
+    const messages = [
+      {
+        role: "user",
+        content: [{ type: "video", data: privateVideo, mimeType: "video/mp4" }],
+        timestamp: 1,
+      },
+      {
+        role: "toolResult",
+        toolCallId: "call-video",
+        toolName: "record",
+        content: [{ type: "video", data: privateVideo, mimeType: "video/webm" }],
+        isError: false,
+        timestamp: 2,
+      },
+    ] as Message[];
+
+    const serialized = serializeConversation(messages);
+
+    expect(serialized).toBe(
+      "[User media]: 1 video attachment\n\n[Tool result media]: 1 video attachment",
+    );
+    expect(serialized).not.toContain(privateVideo);
+  });
+
+  it("aggregates mixed media into one bounded marker per role", () => {
+    const content = [
+      { type: "text" as const, text: "compare these" },
+      ...Array.from({ length: 1000 }, () => ({
+        type: "image" as const,
+        data: "private-image",
+        mimeType: "image/png",
+      })),
+      ...Array.from({ length: 1000 }, () => ({
+        type: "video" as const,
+        data: "private-video",
+        mimeType: "video/mp4",
+      })),
+    ];
+    const messages = [{ role: "user", content, timestamp: 1 }] as Message[];
+
+    const serialized = serializeConversation(messages);
+
+    expect(serialized).toBe(
+      "[User]: compare these\n\n[User media]: 1000 image attachments, 1000 video attachments",
+    );
+    expect(serialized.length).toBeLessThan(100);
+    expect(serialized).not.toContain("private-image");
+    expect(serialized).not.toContain("private-video");
+  });
+
   it.each([
     {
       name: "Codex nested toolResult text",

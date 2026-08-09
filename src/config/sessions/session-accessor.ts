@@ -38,8 +38,10 @@ export type {
   SessionCompactionCheckpointEntryBuilder,
   SessionCompactionCheckpointForkedTranscript,
   SessionCompactionCheckpointMutationResult,
+  SessionEditorMediaRef,
   SessionMessageCutMutationParams,
   SessionMessageCutMutationResult,
+  SessionMessageCutPreflightResult,
   SessionBranchListParams,
   SessionBranchListResult,
   SessionBranchSummary,
@@ -186,6 +188,7 @@ export {
 export {
   forkSessionAtMessage,
   listSessionBranches,
+  preflightSessionMessageCut,
   resolveSessionTranscriptActiveLeafEntryId,
   rewindSessionToMessage,
   switchSessionBranch,

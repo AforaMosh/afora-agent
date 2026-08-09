@@ -57,6 +57,7 @@ type OpenRouterModelMeta = {
   supportedParameters: string[];
   supportedParametersCount: number;
   supportsToolsMeta: boolean;
+  input: OpenAIModel["input"];
   modality: string | null;
   inferredParamB: number | null;
   createdAtMs: number | null;
@@ -88,6 +89,7 @@ export type ModelScanResult = {
   maxCompletionTokens: number | null;
   supportedParametersCount: number;
   supportsToolsMeta: boolean;
+  input: OpenAIModel["input"];
   modality: string | null;
   inferredParamB: number | null;
   createdAtMs: number | null;
@@ -122,14 +124,17 @@ function normalizeCreatedAtMs(value: unknown): number | null {
   return asDateTimestampMs(timestampMs) ?? null;
 }
 
-function parseModality(modality: string | null): Array<"text" | "image"> {
-  if (!modality) {
-    return ["text"];
+function parseModality(modality: string | null): OpenAIModel["input"] {
+  const normalized = normalizeLowercaseStringOrEmpty(modality?.split("->", 1)[0]);
+  const parts = new Set(normalized.split(/[^a-z]+/).filter(Boolean));
+  const input: OpenAIModel["input"] = ["text"];
+  if (parts.has("image")) {
+    input.push("image");
   }
-  const normalized = normalizeLowercaseStringOrEmpty(modality);
-  const parts = normalized.split(/[^a-z]+/).filter(Boolean);
-  const hasImage = parts.includes("image");
-  return hasImage ? ["text", "image"] : ["text"];
+  if (parts.has("video")) {
+    input.push("video");
+  }
+  return input;
 }
 
 function parseNumberString(value: unknown): number | null {
@@ -258,8 +263,25 @@ async function fetchOpenRouterModels(
             const supportedParametersCount = supportedParameters.length;
             const supportsToolsMeta = supportedParameters.includes("tools");
 
+            const architecture = asOptionalRecord(obj.architecture);
+            const advertisedInput = architecture?.input_modalities ?? obj.input_modalities;
+            const inputModalities = Array.isArray(advertisedInput)
+              ? normalizeStringEntries(advertisedInput.filter((value) => typeof value === "string"))
+              : [];
+            const legacyModality =
+              normalizeOptionalString(architecture?.modality) ??
+              normalizeOptionalString(obj.modality);
             const modality =
-              typeof obj.modality === "string" && obj.modality.trim() ? obj.modality.trim() : null;
+              inputModalities.length > 0
+                ? `${inputModalities.join("+")}${
+                    legacyModality?.includes("->")
+                      ? `->${legacyModality.split("->", 2)[1] ?? ""}`
+                      : ""
+                  }`
+                : (legacyModality ?? null);
+            const input = parseModality(
+              inputModalities.length > 0 ? inputModalities.join("+") : modality,
+            );
 
             const inferredParamB = inferParamBFromIdOrName(`${id} ${name}`);
             const createdAtMs = normalizeCreatedAtMs(obj.created_at);
@@ -273,6 +295,7 @@ async function fetchOpenRouterModels(
               supportedParameters,
               supportedParametersCount,
               supportsToolsMeta,
+              input,
               modality,
               inferredParamB,
               createdAtMs,
@@ -406,6 +429,7 @@ function buildOpenRouterScanResult(params: {
     maxCompletionTokens: entry.maxCompletionTokens,
     supportedParametersCount: entry.supportedParametersCount,
     supportsToolsMeta: entry.supportsToolsMeta,
+    input: entry.input,
     modality: entry.modality,
     inferredParamB: entry.inferredParamB,
     createdAtMs: entry.createdAtMs,
@@ -504,7 +528,7 @@ export async function scanOpenRouterModels(
           name: entry.name || entry.id,
           contextWindow: entry.contextLength ?? baseModel.contextWindow,
           maxTokens: entry.maxCompletionTokens ?? baseModel.maxTokens,
-          input: parseModality(entry.modality),
+          input: entry.input,
           reasoning: baseModel.reasoning,
         };
 

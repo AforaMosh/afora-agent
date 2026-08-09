@@ -26,8 +26,11 @@ export type {
   CacheRetention,
   Context,
   ImageContent,
+  MediaContent,
   Message,
   Model,
+  ModelInputContent,
+  NativeVideoInputContract,
   ModelThinkingLevel,
   ProviderResponse,
   ProviderStreamOptions,
@@ -44,6 +47,7 @@ export type {
   ToolResultMessage,
   Usage,
   UserMessage,
+  VideoContent,
 } from "../llm/types.js";
 export {
   AssistantMessageEventStream,
@@ -51,3 +55,14 @@ export {
 } from "../../packages/llm-core/src/utils/event-stream.js";
 export { createHttpProxyAgentsForTarget } from "../llm/utils/node-http-proxy.js";
 export { validateToolArguments, validateToolCall } from "../../packages/llm-core/src/validation.js";
+export {
+  createNativeVideoAdmissionAccumulator,
+  decodedBase64Bytes,
+  formatNativeVideoOmission,
+  NATIVE_TOOL_VIDEO_OMISSION,
+  NATIVE_VIDEO_OMISSION,
+  resolveNativeVideoInputContract,
+  supportsNativeVideoInput,
+  validateNativeVideoContent,
+} from "../../packages/llm-core/src/native-video.js";
+export type { NativeVideoOmissionReason } from "../../packages/llm-core/src/native-video.js";

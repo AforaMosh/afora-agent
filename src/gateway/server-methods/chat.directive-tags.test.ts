@@ -6622,11 +6622,11 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     // Reaches dispatch with the managed media path; not staged into the sandbox,
     // so no workspace dir, and the media-store entry is kept (not cleaned up).
     expect(mockState.lastDispatchCtx?.media).toEqual([
-      {
+      expect.objectContaining({
         path: "/home/user/.openclaw/media/inbound/huge.pdf",
         contentType: "application/pdf",
         workspaceDir: "/home/user/.openclaw/media/inbound",
-      },
+      }),
     ]);
     expect(mockState.deleteMediaBufferCalls).toEqual([]);
   });
@@ -6665,11 +6665,11 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     // Falls back to the absolute managed path; nothing staged (so no workspace
     // dir) and the media-store entry is preserved for host-side extraction.
     expect(mockState.lastDispatchCtx?.media).toEqual([
-      {
+      expect.objectContaining({
         path: "/home/user/.openclaw/media/inbound/report.pdf",
         contentType: "application/pdf",
         workspaceDir: "/home/user/.openclaw/media/inbound",
-      },
+      }),
     ]);
     expect(mockState.deleteMediaBufferCalls).toEqual([]);
   });
@@ -6702,11 +6702,11 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     });
 
     expect(mockState.lastDispatchCtx?.media).toEqual([
-      {
+      expect.objectContaining({
         path: "/home/user/.openclaw/media/inbound/report.pdf",
         contentType: "application/pdf",
         workspaceDir: "/sandbox/workspace",
-      },
+      }),
     ]);
     expect(mockState.deleteMediaBufferCalls).toEqual([]);
   });

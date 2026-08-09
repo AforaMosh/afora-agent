@@ -30,6 +30,7 @@ function renderComposer(
     onVisibilityChange?: (visibility: NewSessionVisibility) => void;
     message?: string;
     onInput?: (message: string) => void;
+    onAttachmentError?: (message: string) => void;
     onSubmit?: () => void;
     textareaController?: NewSessionComposerTextareaController;
   } = {},
@@ -61,6 +62,7 @@ function renderComposer(
       messageLocked: overrides.messageLocked,
       incognitoDisabledReason: overrides.incognitoDisabledReason,
       onInput: overrides.onInput ?? (() => undefined),
+      onAttachmentError: overrides.onAttachmentError,
       onVisibilityChange: overrides.onVisibilityChange,
       onSubmit: overrides.onSubmit ?? (() => undefined),
     }),
@@ -303,6 +305,28 @@ describe("new-session composer sizing lifecycle", () => {
 });
 
 describe("new-session composer attachment drops", () => {
+  it("surfaces the shared count limit before reading another dropped file", () => {
+    const onAttachmentError = vi.fn();
+    const { attachmentDraft, composer } = renderComposer({ onAttachmentError });
+    attachmentDraft.replace(
+      Array.from({ length: 4 }, (_, index) => ({
+        id: `existing-${index}`,
+        mimeType: "video/mp4",
+        fileName: `existing-${index}.mp4`,
+        sizeBytes: 1,
+      })),
+    );
+    const readAsDataUrl = vi.spyOn(FileReader.prototype, "readAsDataURL");
+
+    composer.dispatchEvent(
+      createDragEvent("drop", [new File(["next"], "next.mp4", { type: "video/mp4" })]),
+    );
+
+    expect(readAsDataUrl).not.toHaveBeenCalled();
+    expect(onAttachmentError).toHaveBeenCalledWith(expect.stringContaining("at most 4"));
+    expect(attachmentDraft.attachments).toHaveLength(4);
+  });
+
   it("surfaces authorization reasons on disabled session controls", () => {
     const { composer } = renderComposer({
       canSubmit: false,

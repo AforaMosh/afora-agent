@@ -291,25 +291,57 @@ function renderCollectItemPrompt(item: FollowupRun, idx: number, prompt: string)
 
 function collectQueuedPromptMedia(
   items: FollowupRun[],
-): Pick<FollowupRun, "images" | "imageOrder" | "media"> {
+): Pick<
+  FollowupRun,
+  | "handledVideoSourceIds"
+  | "handledVideoSourceIndexes"
+  | "images"
+  | "inputMedia"
+  | "imageOrder"
+  | "media"
+> {
   const images: NonNullable<FollowupRun["images"]> = [];
+  const inputMedia: NonNullable<FollowupRun["inputMedia"]> = [];
   const imageOrder: NonNullable<FollowupRun["imageOrder"]> = [];
   const media: NonNullable<FollowupRun["media"]> = [];
+  const handledVideoSourceIds: string[] = [];
+  const handledVideoSourceIndexes: number[] = [];
   for (const item of items) {
+    const mediaOffset = media.length;
     if (item.images) {
       images.push(...item.images);
+    }
+    const itemInputMedia = item.inputMedia ?? item.images;
+    if (itemInputMedia) {
+      inputMedia.push(...itemInputMedia);
     }
     if (item.imageOrder) {
       imageOrder.push(...item.imageOrder);
     }
     if (item.media) {
-      media.push(...item.media);
+      media.push(
+        ...item.media.map((fact, factIndex) => ({
+          ...fact,
+          sourceIndex: mediaOffset + (fact.sourceIndex ?? factIndex),
+        })),
+      );
+    }
+    if (item.handledVideoSourceIds) {
+      handledVideoSourceIds.push(...item.handledVideoSourceIds);
+    }
+    if (item.handledVideoSourceIndexes) {
+      handledVideoSourceIndexes.push(
+        ...item.handledVideoSourceIndexes.map((sourceIndex) => mediaOffset + sourceIndex),
+      );
     }
   }
   return {
     ...(images.length > 0 ? { images } : {}),
+    ...(inputMedia.length > 0 ? { inputMedia } : {}),
     ...(imageOrder.length > 0 ? { imageOrder } : {}),
     ...(media.length > 0 ? { media } : {}),
+    ...(handledVideoSourceIds.length > 0 ? { handledVideoSourceIds } : {}),
+    ...(handledVideoSourceIndexes.length > 0 ? { handledVideoSourceIndexes } : {}),
   };
 }
 
@@ -914,6 +946,11 @@ export function createOverflowSummaryRetrySource(source: FollowupRun): FollowupR
     prompt: source.prompt,
     queueAbortSignal: source.queueAbortSignal,
     transcriptPrompt: source.transcriptPrompt,
+    images: source.images,
+    inputMedia: source.inputMedia,
+    handledVideoSourceIds: source.handledVideoSourceIds,
+    handledVideoSourceIndexes: source.handledVideoSourceIndexes,
+    imageOrder: source.imageOrder,
     media: source.media,
     messageId: source.messageId,
     summaryLine: source.summaryLine,

@@ -1,13 +1,28 @@
 /**
  * Redacts diagnostic payloads before persistence. It removes credential-like
- * fields, masks embedded auth strings, and replaces image/base64 data with
+ * fields, masks embedded auth strings, and replaces inline media/base64 data with
  * size and digest metadata.
  */
 import crypto from "node:crypto";
 import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 
-const REDACTED_IMAGE_DATA = "<redacted>";
+const REDACTED_MEDIA_DATA = "<redacted>";
+const REDACTED_MEDIA_REFERENCE = "<redacted-media-reference>";
+const INLINE_MEDIA_DATA_URL_RE = /^data:((image|video)\/[^;,]+);base64,([\s\S]*)$/iu;
+const EMBEDDED_MEDIA_DATA_URL_RE =
+  /data:(?:image|video)\/[^;,\s]+(?:;[^,\s]+)*;base64,[A-Za-z0-9+/_=-]+/giu;
+const MEDIA_ATTACHED_NOTE_RE = /\[media attached(?: [^:\]]+)?:[^\]]*\]/giu;
+const MEDIA_DIRECTIVE_RE = /\bMEDIA:(?:file:\/\/)?[^\s]+/giu;
+const MEDIA_REFERENCE_FIELDS = new Set([
+  "file_path",
+  "filePath",
+  "image_url",
+  "localPath",
+  "path",
+  "url",
+  "video_url",
+]);
 
 const NON_CREDENTIAL_FIELD_NAMES = new Set([
   "passwordfile",
@@ -52,44 +67,125 @@ function redactSensitivePayloadString(value: string): string {
     .replace(COOKIE_PAIR_RE, "$1=<redacted>");
 }
 
+function redactModelVisibleMediaString(value: string): string {
+  return value
+    .replace(EMBEDDED_MEDIA_DATA_URL_RE, REDACTED_MEDIA_DATA)
+    .replace(MEDIA_ATTACHED_NOTE_RE, `[media attached: ${REDACTED_MEDIA_REFERENCE}]`)
+    .replace(MEDIA_DIRECTIVE_RE, `MEDIA:${REDACTED_MEDIA_REFERENCE}`);
+}
+
 function hasSensitiveNameValuePair(record: Record<string, unknown>): boolean {
   const rawName = typeof record.name === "string" ? record.name : record.key;
   return typeof rawName === "string" && isCredentialFieldName(rawName);
 }
 
-function hasImageMime(record: Record<string, unknown>): boolean {
+function hasInlineMediaMime(record: Record<string, unknown>): boolean {
   const candidates = [
     normalizeLowercaseStringOrEmpty(record.mimeType),
     normalizeLowercaseStringOrEmpty(record.media_type),
     normalizeLowercaseStringOrEmpty(record.mime_type),
   ];
-  return candidates.some((value) => value.startsWith("image/"));
+  return candidates.some((value) => value.startsWith("image/") || value.startsWith("video/"));
 }
 
-function shouldRedactImageData(record: Record<string, unknown>): record is Record<string, string> {
+function shouldRedactInlineMediaData(
+  record: Record<string, unknown>,
+): record is Record<string, string> {
   if (typeof record.data !== "string") {
     return false;
   }
   const type = normalizeLowercaseStringOrEmpty(record.type);
-  return type === "image" || hasImageMime(record);
+  return type === "image" || type === "video" || hasInlineMediaMime(record);
+}
+
+function isMediaProjectionRecord(record: Record<string, unknown>): boolean {
+  const type = normalizeLowercaseStringOrEmpty(record.type);
+  return (
+    type === "image" ||
+    type === "video" ||
+    type === "image_url" ||
+    type === "video_url" ||
+    type === "input_image" ||
+    type === "input_video" ||
+    hasInlineMediaMime(record)
+  );
 }
 
 function digestBase64Payload(data: string): string {
   return crypto.createHash("sha256").update(data).digest("hex");
 }
 
+function redactInlineMediaData(
+  record: Record<string, unknown>,
+  field: string,
+  data: string,
+  mimeType?: string,
+): void {
+  record[field] = REDACTED_MEDIA_DATA;
+  if (mimeType && typeof record.mimeType !== "string") {
+    record.mimeType = mimeType;
+  }
+  record.bytes = estimateBase64DecodedBytes(data);
+  record.sha256 = digestBase64Payload(data);
+}
+
+function redactInlineMediaDataUrl(
+  record: Record<string, unknown>,
+  out: Record<string, unknown>,
+): void {
+  const type = normalizeLowercaseStringOrEmpty(record.type);
+  const mediaKind =
+    type === "image_url" || type === "input_image"
+      ? "image"
+      : type === "video_url" || type === "input_video"
+        ? "video"
+        : undefined;
+  if (!mediaKind) {
+    return;
+  }
+
+  const field = `${mediaKind}_url`;
+  const value = record[field];
+  const nested = value && typeof value === "object" && !Array.isArray(value);
+  const url = nested ? (value as Record<string, unknown>).url : value;
+  if (typeof url !== "string") {
+    return;
+  }
+  const match = INLINE_MEDIA_DATA_URL_RE.exec(url);
+  const mimeType = match?.[1];
+  const data = match?.[3];
+  if (
+    !mimeType ||
+    data === undefined ||
+    normalizeLowercaseStringOrEmpty(match?.[2]) !== mediaKind
+  ) {
+    return;
+  }
+
+  const target = nested ? out[field] : out;
+  if (!target || typeof target !== "object" || Array.isArray(target)) {
+    return;
+  }
+  redactInlineMediaData(target as Record<string, unknown>, nested ? "url" : field, data, mimeType);
+}
+
 function visitDiagnosticPayload(
   value: unknown,
-  opts?: { omitField?: (key: string) => boolean },
+  opts?: {
+    omitField?: (key: string) => boolean;
+    redactMediaLocations?: boolean;
+    redactMediaDataUrlsInText?: boolean;
+  },
 ): unknown {
   const seen = new WeakSet<object>();
 
-  const visit = (input: unknown): unknown => {
+  const visit = (input: unknown, insideMedia = false): unknown => {
     if (Array.isArray(input)) {
-      return input.map((entry) => visit(entry));
+      return input.map((entry) => visit(entry, insideMedia));
     }
     if (typeof input === "string") {
-      return redactSensitivePayloadString(input);
+      const redacted = redactSensitivePayloadString(input);
+      return opts?.redactMediaDataUrlsInText ? redactModelVisibleMediaString(redacted) : redacted;
     }
     if (!input || typeof input !== "object") {
       return input;
@@ -102,22 +198,31 @@ function visitDiagnosticPayload(
     const record = input as Record<string, unknown>;
     const out: Record<string, unknown> = {};
     const redactValueField = hasSensitiveNameValuePair(record);
+    const mediaContext = insideMedia || isMediaProjectionRecord(record);
     for (const [key, val] of Object.entries(record)) {
       if (opts?.omitField?.(key)) {
         continue;
       }
-      out[key] = redactValueField && key === "value" ? "<redacted>" : visit(val);
+      if (
+        opts?.redactMediaLocations &&
+        mediaContext &&
+        MEDIA_REFERENCE_FIELDS.has(key) &&
+        typeof val === "string"
+      ) {
+        out[key] = REDACTED_MEDIA_REFERENCE;
+        continue;
+      }
+      out[key] = redactValueField && key === "value" ? "<redacted>" : visit(val, mediaContext);
     }
 
-    if (shouldRedactImageData(record)) {
-      const imageData = record.data;
-      if (typeof imageData !== "string") {
+    if (shouldRedactInlineMediaData(record)) {
+      const mediaData = record.data;
+      if (typeof mediaData !== "string") {
         return out;
       }
-      out.data = REDACTED_IMAGE_DATA;
-      out.bytes = estimateBase64DecodedBytes(imageData);
-      out.sha256 = digestBase64Payload(imageData);
+      redactInlineMediaData(out, "data", mediaData);
     }
+    redactInlineMediaDataUrl(record, out);
     return out;
   };
 
@@ -125,11 +230,20 @@ function visitDiagnosticPayload(
 }
 
 /**
- * Removes credential-like fields and image/base64 payload data from diagnostic
+ * Removes credential-like fields and inline media/base64 payload data from diagnostic
  * objects before persistence.
  */
 export function sanitizeDiagnosticPayload(value: unknown): unknown {
   return visitDiagnosticPayload(value, {
     omitField: (key) => key === "providerReplay" || isCredentialFieldName(key),
+  });
+}
+
+/** Projects untrusted media into model-visible metadata without bytes, data URLs, or local refs. */
+export function sanitizeModelVisibleMediaPayload(value: unknown): unknown {
+  return visitDiagnosticPayload(value, {
+    omitField: isCredentialFieldName,
+    redactMediaDataUrlsInText: true,
+    redactMediaLocations: true,
   });
 }

@@ -38,10 +38,13 @@ export function normalizeAttachments(ctx: MsgContext): MediaAttachment[] {
   return normalizeMediaFacts(ctx.media)
     .map((fact, index) => {
       const attachment: MediaAttachment = {
+        sourceId: normalizeOptionalString(fact.sourceId),
+        sourceIndex: fact.sourceIndex,
         path: normalizeOptionalString(fact.path),
         url: normalizeOptionalString(fact.url),
         mime: normalizeOptionalString(fact.contentType),
         index,
+        sizeBytes: fact.sizeBytes,
         alreadyTranscribed: fact.transcribed === true,
       };
       if (fact.kind) {

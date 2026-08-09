@@ -8,15 +8,15 @@ import { runAgentHarnessBeforeMessageWriteHook } from "../../agents/harness/hook
 import { resolveOwnerPromptNumbers } from "../../agents/owner-display.js";
 import { conversationIdentityFromMsgContext } from "../../config/sessions/conversation-identity.js";
 import { resolveGroupSessionKey } from "../../config/sessions/group.js";
-import { normalizeMediaFacts } from "../../media/media-facts.js";
 import { MEDIA_ONLY_USER_TEXT } from "../../sessions/user-turn-media.js";
 import {
   createUserTurnTranscriptRecorder,
   resolvePersistedUserTurnText,
 } from "../../sessions/user-turn-transcript.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
+import { resolveInboundMediaHydrationFacts } from "../media-note.js";
 import type { OriginatingChannelType } from "../templating.js";
-import { resolveCurrentTurnImages } from "./current-turn-images.js";
+import { resolveCurrentTurnInputMedia } from "./current-turn-images.js";
 import { resolveEffectiveReplyRoute } from "./effective-reply-route.js";
 import type { PreparedReplyRunAdmission } from "./get-reply-run-admission.js";
 import {
@@ -134,10 +134,11 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
     runHasSessionModelOverride &&
     hasSessionAutoModelFallbackProvenance(preparedSessionState.sessionEntry);
   const originatingThreadId = resolveRoutedDeliveryThreadId({ ctx, sessionKey });
-  const currentTurnImages = await traceRunPhase("reply.resolve_current_turn_images", () =>
-    resolveCurrentTurnImages({
+  const currentTurnMedia = await traceRunPhase("reply.resolve_current_turn_media", () =>
+    resolveCurrentTurnInputMedia({
       ctx,
       cfg,
+      inputMedia: opts?.inputMedia,
       images: opts?.images,
       imageOrder: opts?.imageOrder,
       extractedFileImages: opts?.extractedFileImages,
@@ -190,14 +191,23 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
       : undefined);
   setChannelSourceTurnId(sessionCtx, sourceTurnId);
   const persistGroupSender = replyRoute.chatType === "group" || replyRoute.chatType === "channel";
-  const ctxMediaForPersistence = normalizeMediaFacts(ctx.media);
+  const ctxMediaForPersistence = resolveInboundMediaHydrationFacts(ctx);
   const userTurnMediaForPersistence = [...ctxMediaForPersistence, ...(opts?.media ?? [])];
+  const mediaVideoDescriptions = currentTurnMedia.handledVideoSourceIndexes?.map((sourceIndex) => {
+    const sourceFact = userTurnMediaForPersistence.find(
+      (fact, factIndex) => (fact.sourceIndex ?? factIndex) === sourceIndex,
+    );
+    return {
+      sourceIndex,
+      ...(sourceFact?.sourceId ? { sourceId: sourceFact.sourceId } : {}),
+    };
+  });
   const mediaImageLayout = buildPersistedMediaImageLayout({
     ctx,
     media: userTurnMediaForPersistence,
     ctxMediaCount: ctxMediaForPersistence.length,
-    imageOrder: currentTurnImages.imageOrder,
-    imageSourceIndexes: currentTurnImages.imageSourceIndexes,
+    imageOrder: currentTurnMedia.imageOrder,
+    imageSourceIndexes: currentTurnMedia.imageSourceIndexes,
   });
   const inputProvenance = ctx.InputProvenance ?? sessionCtx.InputProvenance;
   const userTurnTimestamp = normalizeMessageTimestampMs(ctx.Timestamp);
@@ -251,6 +261,7 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
           ...(transport ? { transport } : {}),
           ...(userTurnMediaForPersistence.length > 0 ? { media: userTurnMediaForPersistence } : {}),
           ...(mediaImageLayout ? { mediaImageLayout } : {}),
+          ...(mediaVideoDescriptions?.length ? { mediaVideoDescriptions } : {}),
           // Persist the message's own arrival timestamp so the single
           // LLM-boundary stamping site (normalizeMessagesForLlmBoundary) can
           // derive a stable per-message `[DOW YYYY-MM-DD HH:MM TZ]` prefix that
@@ -315,8 +326,11 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
     messageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
     summaryLine: baseBodyTrimmedRaw,
     enqueuedAt: Date.now(),
-    images: currentTurnImages.images,
-    imageOrder: currentTurnImages.imageOrder,
+    images: currentTurnMedia.images,
+    inputMedia: currentTurnMedia.inputMedia,
+    handledVideoSourceIndexes: currentTurnMedia.handledVideoSourceIndexes,
+    handledVideoSourceIds: currentTurnMedia.handledVideoSourceIds,
+    imageOrder: currentTurnMedia.imageOrder,
     media: promptMedia,
     // Originating channel for reply routing.
     originatingChannel: replyRoute.channel,

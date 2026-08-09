@@ -4,6 +4,7 @@ import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { ApplicationContext } from "../../app/context.ts";
 import type { SessionCapability } from "../../lib/sessions/index.ts";
 import "./chat-pane.ts";
+import { replaceChatAttachmentsFromEditor } from "./attachment-payload-store.ts";
 import type { ChatPageHost } from "./chat-state-host.ts";
 
 type TestChatPane = HTMLElement & {
@@ -85,7 +86,10 @@ describe("chat pane message cuts", () => {
       forkAtMessage: vi.fn().mockResolvedValue({
         sessionKey: "agent:main:forked",
         editorText: "edit me",
-        editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
+        editorAttachments: [
+          { mimeType: "image/png", data: "aW1hZ2U=" },
+          { mimeType: "video/mp4", data: "dmlkZW8=" },
+        ],
       }),
     } as unknown as SessionCapability;
     const client = {} as GatewayBrowserClient;
@@ -104,6 +108,11 @@ describe("chat pane message cuts", () => {
         id: expect.stringMatching(/^att-/),
         mimeType: "image/png",
         dataUrl: "data:image/png;base64,aW1hZ2U=",
+      },
+      {
+        id: expect.stringMatching(/^att-/),
+        mimeType: "video/mp4",
+        dataUrl: "data:video/mp4;base64,dmlkZW8=",
       },
     ]);
   });
@@ -128,5 +137,64 @@ describe("chat pane message cuts", () => {
     expect(navigate).not.toHaveBeenCalled();
     expect(state.sessionKey).toBe("global");
     expect(state.assistantAgentId).toBe("work");
+  });
+
+  it("preserves the source pane when fork attachment preflight is rejected", async () => {
+    const sessions = {
+      forkAtMessage: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "Fork cannot restore this message because an attachment is missing or expired. The session was not changed.",
+          ),
+        ),
+    } as unknown as SessionCapability;
+    const client = {} as GatewayBrowserClient;
+    const { pane, state } = createTestChatPane({ client, sessions });
+    const attachments = [{ id: "keep", mimeType: "video/mp4", dataUrl: "data:keep" }];
+    state.chatMessage = "keep draft";
+    state.chatMessages = [{ role: "assistant", content: "keep history" }];
+    state.chatAttachments = attachments;
+    pane.onPaneSessionChange = vi.fn();
+    pane.switchPaneSession = vi.fn();
+
+    await pane.forkFromMessage("user-entry");
+
+    expect(state.sessionKey).toBe("agent:main:current");
+    expect(state.chatMessage).toBe("keep draft");
+    expect(state.chatAttachments).toBe(attachments);
+    expect(pane.onPaneSessionChange).not.toHaveBeenCalled();
+    expect(pane.switchPaneSession).not.toHaveBeenCalled();
+    expect(state.chatError).toContain("missing or expired");
+  });
+
+  it("validates restored media all-or-nothing before replacing the composer", () => {
+    const current = [{ id: "keep", mimeType: "image/png", dataUrl: "data:keep" }];
+
+    expect(() =>
+      replaceChatAttachmentsFromEditor(current, [
+        { mimeType: "image/png", data: "aW1hZ2U=" },
+        { mimeType: "video/mp4", data: "not base64" },
+      ]),
+    ).toThrow("invalid restored attachment");
+    expect(current).toEqual([{ id: "keep", mimeType: "image/png", dataUrl: "data:keep" }]);
+  });
+
+  it("accepts a 6 MiB restored video above the retired 5 MiB editor cap", () => {
+    const sixMiBBase64 = "AAAA".repeat((6 * 1024 * 1024) / 3);
+
+    const restored = replaceChatAttachmentsFromEditor(
+      [],
+      [{ mimeType: "video/mp4", data: sixMiBBase64 }],
+    );
+
+    expect(restored).toHaveLength(1);
+    expect(restored[0]).toMatchObject({
+      id: expect.stringMatching(/^att-/),
+      mimeType: "video/mp4",
+    });
+    expect(restored[0]?.dataUrl?.length).toBe(
+      "data:video/mp4;base64,".length + sixMiBBase64.length,
+    );
   });
 });

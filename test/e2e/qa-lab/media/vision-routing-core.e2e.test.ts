@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildInboundMediaNoteProjection } from "../../../../src/auto-reply/media-note.js";
-import { resolveCurrentTurnImages } from "../../../../src/auto-reply/reply/current-turn-images.js";
+import { resolveCurrentTurnInputMedia } from "../../../../src/auto-reply/reply/current-turn-images.js";
 import type { MsgContext } from "../../../../src/auto-reply/templating.js";
 import type { OpenClawConfig } from "../../../../src/config/types.js";
 import { applyMediaUnderstanding } from "../../../../src/media-understanding/apply.js";
@@ -161,8 +161,15 @@ describe("core vision routing product proof", () => {
     const projection = buildInboundMediaNoteProjection(ctx);
     expect(projection.media[0]).not.toHaveProperty("hydrationSuppressed");
 
-    const currentTurnImages = await resolveCurrentTurnImages({ ctx, cfg });
-    expect(currentTurnImages).toEqual({
+    const currentTurnMedia = await resolveCurrentTurnInputMedia({ ctx, cfg });
+    expect(currentTurnMedia).toEqual({
+      inputMedia: [
+        {
+          type: "image",
+          data: imageBytes.toString("base64"),
+          mimeType: "image/png",
+        },
+      ],
       images: [
         {
           type: "image",
@@ -274,9 +281,9 @@ describe("core vision routing product proof", () => {
       expect.objectContaining({
         path: imagePath,
         contentType: "image/png",
-        hydrationSuppressed: true,
       }),
     ]);
-    await expect(resolveCurrentTurnImages({ ctx, cfg })).resolves.toEqual({});
+    expect(projection.media[0]).not.toHaveProperty("hydrationSuppressed");
+    await expect(resolveCurrentTurnInputMedia({ ctx, cfg })).resolves.toEqual({});
   });
 });

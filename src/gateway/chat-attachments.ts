@@ -5,6 +5,14 @@ import { MAX_IMAGE_BYTES, type MediaKind } from "@openclaw/media-core/constants"
 import { extensionForMime, kindFromMime, mimeTypeFromFilePath } from "@openclaw/media-core/mime";
 import { expectDefined } from "@openclaw/normalization-core";
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import {
+  CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
+  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+  CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
+  CHAT_ATTACHMENT_MAX_ITEMS,
+  estimateChatAttachmentRequestBytes,
+  type ChatAttachmentLimits,
+} from "../../packages/gateway-protocol/src/chat-attachment-limits.js";
 import { formatErrorMessage, formatUncaughtError } from "../infra/errors.js";
 import type { SubsystemLogger } from "../logging/subsystem.js";
 import type { MediaFact } from "../media/media-facts.js";
@@ -12,7 +20,6 @@ import { probeMediaFilesWithinBudget } from "../media/media-probe.js";
 import type { PromptImageOrderEntry } from "../media/prompt-image-order.js";
 import { sniffMimeFromBase64 } from "../media/sniff-mime-from-base64.js";
 import { deleteMediaBuffer, saveMediaBuffer, type SavedMedia } from "../media/store.js";
-import { DEFAULT_CHAT_ATTACHMENT_MAX_BYTES } from "./chat-attachment-policy.js";
 import { formatForLog } from "./ws-log.js";
 
 export type ChatAttachment = {
@@ -30,6 +37,8 @@ export type ChatImageContent = {
   type: "image";
   data: string;
   mimeType: string;
+  sourceIndex?: number;
+  sizeBytes?: number;
 };
 
 export type OffloadedRef = {
@@ -40,6 +49,7 @@ export type OffloadedRef = {
   mimeType: string;
   label: string;
   sizeBytes: number;
+  sourceIndex?: number;
   durationMs?: number;
   width?: number;
   height?: number;
@@ -72,11 +82,19 @@ type SavedMediaRef = {
   height?: number;
 };
 
+export type PersistedInboundMedia = SavedMedia & { sourceIndex: number };
+
 const OFFLOAD_THRESHOLD_BYTES = 2_000_000;
-const TEXT_ONLY_OFFLOAD_LIMIT = 10;
 const MAX_CHAT_ATTACHMENT_MEDIA_PROBES = 8;
 const CHAT_ATTACHMENT_MEDIA_PROBE_CONCURRENCY = 2;
 const CHAT_ATTACHMENT_MEDIA_PROBE_BUDGET_MS = 3000;
+const DEFAULT_CHAT_ATTACHMENT_LIMITS: ChatAttachmentLimits = {
+  maxBytes: CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+  maxImageBytes: MAX_IMAGE_BYTES,
+  maxItems: CHAT_ATTACHMENT_MAX_ITEMS,
+  maxAggregateDecodedBytes: CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
+  maxEncodedRequestBytes: CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
+};
 
 async function enrichOffloadedMediaMetadata(refs: OffloadedRef[]): Promise<void> {
   const candidates = refs.flatMap((ref) => {
@@ -122,17 +140,17 @@ export function stripImageMediaMarkers(message: string, refs: readonly Offloaded
 
 export async function persistInboundImagesForTranscript(params: {
   images: ChatImageContent[];
-  imageOrder: PromptImageOrderEntry[];
   offloadedRefs: OffloadedRef[];
   log: Pick<AttachmentLog, "warn">;
   logContext: string;
-}): Promise<SavedMedia[]> {
-  const inline: SavedMedia[] = [];
-  for (const image of params.images) {
+}): Promise<PersistedInboundMedia[]> {
+  const ordered: PersistedInboundMedia[] = [];
+  for (const [imageIndex, image] of params.images.entries()) {
     try {
-      inline.push(
-        await saveMediaBuffer(Buffer.from(image.data, "base64"), image.mimeType, "inbound"),
-      );
+      ordered.push({
+        ...(await saveMediaBuffer(Buffer.from(image.data, "base64"), image.mimeType, "inbound")),
+        sourceIndex: image.sourceIndex ?? imageIndex,
+      });
     } catch (err) {
       params.log.warn(
         `${params.logContext}: failed to persist inbound image (${image.mimeType}): ${formatErrorMessage(err)}`,
@@ -140,36 +158,16 @@ export async function persistInboundImagesForTranscript(params: {
     }
   }
 
-  const imageOffloaded: SavedMedia[] = [];
-  const nonImageOffloaded: SavedMedia[] = [];
-  for (const ref of params.offloadedRefs) {
-    const saved = {
+  for (const [refIndex, ref] of params.offloadedRefs.entries()) {
+    ordered.push({
       id: ref.id,
       path: ref.path,
       size: ref.sizeBytes,
       contentType: ref.mimeType,
-    };
-    (ref.mimeType.startsWith("image/") ? imageOffloaded : nonImageOffloaded).push(saved);
+      sourceIndex: ref.sourceIndex ?? params.images.length + refIndex,
+    });
   }
-  if (params.imageOrder.length === 0) {
-    return [...inline, ...imageOffloaded, ...nonImageOffloaded];
-  }
-
-  const ordered: SavedMedia[] = [];
-  let inlineIndex = 0;
-  let offloadedIndex = 0;
-  for (const entry of params.imageOrder) {
-    const media = entry === "inline" ? inline[inlineIndex++] : imageOffloaded[offloadedIndex++];
-    if (media) {
-      ordered.push(media);
-    }
-  }
-  ordered.push(
-    ...inline.slice(inlineIndex),
-    ...imageOffloaded.slice(offloadedIndex),
-    ...nonImageOffloaded,
-  );
-  return ordered;
+  return ordered.toSorted((left, right) => left.sourceIndex - right.sourceIndex);
 }
 
 type UnsupportedAttachmentReason =
@@ -355,14 +353,14 @@ export async function parseMessageWithAttachments(
   message: string,
   attachments: ChatAttachment[] | undefined,
   opts?: {
-    maxBytes?: number;
+    limits?: ChatAttachmentLimits;
     log?: AttachmentLog;
     supportsImages?: boolean;
     supportsInlineImages?: boolean;
     acceptNonImage?: boolean;
   },
 ): Promise<ParsedMessageWithImages> {
-  const maxBytes = opts?.maxBytes ?? DEFAULT_CHAT_ATTACHMENT_MAX_BYTES;
+  const limits = opts?.limits ?? DEFAULT_CHAT_ATTACHMENT_LIMITS;
   const log = opts?.log;
   const shouldForceImageOffload = opts?.supportsImages === false;
   const supportsInlineImages = opts?.supportsInlineImages !== false;
@@ -378,39 +376,65 @@ export async function parseMessageWithAttachments(
     };
   }
 
+  const normalizedAttachments = attachments.flatMap((att, idx) => {
+    if (!att) {
+      return [];
+    }
+    const normalized = normalizeAttachment(att, idx, {
+      stripDataUrlPrefix: true,
+      requireImageMime: false,
+    });
+    const { base64, label } = normalized;
+    if (base64.length === 0) {
+      throw new UnsupportedAttachmentError("empty-payload", `attachment ${label}: empty payload`);
+    }
+    if (!isValidBase64(base64)) {
+      throw new Error(`attachment ${label}: invalid base64 content`);
+    }
+    const sizeBytes = estimateBase64DecodedBytes(base64);
+    if (sizeBytes > limits.maxBytes) {
+      throw new Error(
+        `attachment ${label}: exceeds size limit; ${sizeBytes} bytes is above the ` +
+          `${limits.maxBytes} byte per-file limit`,
+      );
+    }
+    return [{ att, idx, normalized, sizeBytes }];
+  });
+  if (normalizedAttachments.length > limits.maxItems) {
+    throw new Error(
+      `too many attachments (${normalizedAttachments.length}); maximum is ${limits.maxItems}`,
+    );
+  }
+  const aggregateBytes = normalizedAttachments.reduce((total, entry) => total + entry.sizeBytes, 0);
+  if (aggregateBytes > limits.maxAggregateDecodedBytes) {
+    throw new Error(
+      `attachments exceed the ${limits.maxAggregateDecodedBytes} byte aggregate limit (${aggregateBytes} bytes)`,
+    );
+  }
+  const encodedRequestBytes = estimateChatAttachmentRequestBytes({
+    message,
+    attachments: normalizedAttachments.map(({ att, normalized, sizeBytes }) => ({
+      decodedBytes: sizeBytes,
+      fileName: att.fileName,
+      mimeType: normalized.mime,
+    })),
+  });
+  if (encodedRequestBytes >= limits.maxEncodedRequestBytes) {
+    throw new Error(
+      `attachments exceed the ${limits.maxEncodedRequestBytes} byte encoded request limit`,
+    );
+  }
+
   const images: ChatImageContent[] = [];
   const imageOrder: PromptImageOrderEntry[] = [];
+  const media: MediaFact[] = [];
   const offloadedRefs: OffloadedRef[] = [];
   let updatedMessage = message;
-  let textOnlyImageOffloadCount = 0;
   const savedMediaIds: string[] = [];
 
   try {
-    for (const [idx, att] of attachments.entries()) {
-      if (!att) {
-        continue;
-      }
-
-      const normalized = normalizeAttachment(att, idx, {
-        stripDataUrlPrefix: true,
-        requireImageMime: false,
-      });
-
+    for (const { att, idx, normalized, sizeBytes } of normalizedAttachments) {
       const { base64: b64, label, mime } = normalized;
-
-      if (b64.length === 0) {
-        throw new UnsupportedAttachmentError("empty-payload", `attachment ${label}: empty payload`);
-      }
-      if (!isValidBase64(b64)) {
-        throw new Error(`attachment ${label}: invalid base64 content`);
-      }
-
-      const sizeBytes = estimateBase64DecodedBytes(b64);
-      if (sizeBytes > maxBytes) {
-        throw new Error(
-          `attachment ${label}: exceeds size limit (${sizeBytes} > ${maxBytes} bytes)`,
-        );
-      }
 
       const providedMime = normalizeMime(mime);
       const sniffedMime = normalizeMime(await sniffMimeFromBase64(b64));
@@ -459,30 +483,24 @@ export async function parseMessageWithAttachments(
       // sees an explicit 4xx. Non-image attachments keep the full maxBytes
       // ceiling because their host path (media facts → Read/Bash) doesn't
       // load into the model.
-      if (isImage && sizeBytes > MAX_IMAGE_BYTES) {
+      if (isImage && sizeBytes > limits.maxImageBytes) {
         throw new Error(
-          `attachment ${label}: image exceeds size limit (${sizeBytes} > ${MAX_IMAGE_BYTES} bytes)`,
+          `attachment ${label}: image exceeds size limit (${sizeBytes} > ${limits.maxImageBytes} bytes)`,
         );
-      }
-
-      if (
-        shouldForceImageOffload &&
-        isImage &&
-        textOnlyImageOffloadCount >= TEXT_ONLY_OFFLOAD_LIMIT
-      ) {
-        log?.warn(
-          `attachment ${label}: dropping image because text-only offload limit ` +
-            `${TEXT_ONLY_OFFLOAD_LIMIT} was reached`,
-        );
-        updatedMessage += "\n[image attachment omitted: text-only attachment limit reached]";
-        continue;
       }
 
       const shouldOffload =
         shouldForceImageOffload || !isImage || sizeBytes > OFFLOAD_THRESHOLD_BYTES;
 
       if (!shouldOffload) {
-        images.push({ type: "image", data: b64, mimeType: finalMime });
+        images.push({ type: "image", data: b64, mimeType: finalMime, sourceIndex: idx, sizeBytes });
+        media.push({
+          sourceIndex: idx,
+          contentType: finalMime,
+          kind: "image",
+          fileName: label,
+          sizeBytes,
+        });
         imageOrder.push("inline");
         continue;
       }
@@ -497,7 +515,7 @@ export async function parseMessageWithAttachments(
           buffer,
           finalMime,
           "inbound",
-          maxBytes,
+          limits.maxBytes,
           labelWithExt,
         );
         savedMedia = assertSavedMedia(rawResult, label);
@@ -526,6 +544,28 @@ export async function parseMessageWithAttachments(
         mimeType: finalMime,
         label,
         sizeBytes,
+        sourceIndex: idx,
+        ...(typeof att.durationMs === "number" &&
+        Number.isFinite(att.durationMs) &&
+        att.durationMs >= 0
+          ? { durationMs: att.durationMs }
+          : {}),
+        ...(typeof att.width === "number" && Number.isFinite(att.width) && att.width >= 0
+          ? { width: att.width }
+          : {}),
+        ...(typeof att.height === "number" && Number.isFinite(att.height) && att.height >= 0
+          ? { height: att.height }
+          : {}),
+      });
+      media.push({
+        sourceId: savedMedia.id,
+        sourceIndex: idx,
+        path: savedMedia.path,
+        url: mediaRef,
+        contentType: finalMime,
+        kind: kindFromMime(finalMime) ?? "unknown",
+        fileName: label,
+        sizeBytes,
         ...(typeof att.durationMs === "number" &&
         Number.isFinite(att.durationMs) &&
         att.durationMs >= 0
@@ -540,9 +580,6 @@ export async function parseMessageWithAttachments(
       });
       if (isImage) {
         imageOrder.push("offloaded");
-        if (shouldForceImageOffload) {
-          textOnlyImageOffloadCount++;
-        }
       }
     }
   } catch (err) {
@@ -558,17 +595,19 @@ export async function parseMessageWithAttachments(
     message: updatedMessage !== message ? updatedMessage.trimEnd() : message,
     images,
     imageOrder,
-    media: offloadedRefs.map((ref) => ({
-      path: ref.path,
-      url: ref.mediaRef,
-      contentType: ref.mimeType,
-      kind: ref.kind,
-      fileName: ref.label,
-      sizeBytes: ref.sizeBytes,
-      ...(ref.durationMs ? { durationMs: ref.durationMs } : {}),
-      ...(ref.width ? { width: ref.width } : {}),
-      ...(ref.height ? { height: ref.height } : {}),
-    })),
+    media: media
+      .map((fact) => {
+        const ref = offloadedRefs.find((candidate) => candidate.sourceIndex === fact.sourceIndex);
+        return ref
+          ? {
+              ...fact,
+              ...(ref.durationMs ? { durationMs: ref.durationMs } : {}),
+              ...(ref.width ? { width: ref.width } : {}),
+              ...(ref.height ? { height: ref.height } : {}),
+            }
+          : fact;
+      })
+      .toSorted((left, right) => (left.sourceIndex ?? 0) - (right.sourceIndex ?? 0)),
     offloadedRefs,
   };
 }

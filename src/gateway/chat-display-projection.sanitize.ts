@@ -1,6 +1,11 @@
+import path from "node:path";
 import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
 import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
 import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+import {
+  normalizeCanonicalInboundMediaUri,
+  sanitizeMediaReferenceForProjection,
+} from "../media/media-reference-projection.js";
 import {
   parseAssistantTextSignature,
   resolveAssistantMessagePhase,
@@ -80,6 +85,46 @@ function omitAudioHistoryContent(
   return removed;
 }
 
+function isAbsoluteStoragePath(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (path.isAbsolute(value) || path.win32.isAbsolute(value) || /^file:/iu.test(value))
+  );
+}
+
+function projectChatHistoryMediaFacts(value: unknown): unknown[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  return value.flatMap((fact) => {
+    const source = readRecord(fact);
+    if (!source) {
+      return [];
+    }
+    const projected = { ...source };
+    const managedUri =
+      normalizeCanonicalInboundMediaUri(source.url) ??
+      normalizeCanonicalInboundMediaUri(source.path);
+    if (managedUri) {
+      projected.url = managedUri;
+      delete projected.path;
+    } else if (isAbsoluteStoragePath(projected.path)) {
+      delete projected.path;
+    }
+    if (typeof projected.path === "string") {
+      projected.path = sanitizeMediaReferenceForProjection(projected.path);
+    }
+    if (typeof projected.url === "string") {
+      projected.url = sanitizeMediaReferenceForProjection(projected.url);
+    }
+    if (isAbsoluteStoragePath(projected.url)) {
+      delete projected.url;
+    }
+    delete projected.workspaceDir;
+    return [projected];
+  });
+}
+
 export function sanitizeChatHistoryContentBlock(
   block: unknown,
   opts?: { preserveExactToolPayload?: boolean; maxChars?: number },
@@ -147,19 +192,69 @@ export function sanitizeChatHistoryContentBlock(
     changed = true;
   }
   const type = typeof entry.type === "string" ? entry.type : "";
-  if (type === "image") {
-    let imageData = typeof entry.data === "string" ? entry.data : undefined;
+  if (type === "image" || type === "video") {
+    let mediaData = typeof entry.data === "string" ? entry.data : undefined;
     const source = readRecord(entry.source);
     if (source?.type === "base64" && typeof source.data === "string") {
-      imageData ??= source.data;
+      mediaData ??= source.data;
       const projectedSource = { ...source };
       delete projectedSource.data;
       entry.source = projectedSource;
     }
-    if (imageData !== undefined) {
+    if (mediaData !== undefined) {
       delete entry.data;
       entry.omitted = true;
-      entry.bytes = estimateBase64DecodedBytes(imageData);
+      entry.bytes = estimateBase64DecodedBytes(mediaData);
+      changed = true;
+    }
+    const managedUri =
+      normalizeCanonicalInboundMediaUri(entry.url) ?? normalizeCanonicalInboundMediaUri(entry.path);
+    if (managedUri) {
+      entry.url = managedUri;
+    }
+    for (const key of ["path", "filePath", "localPath"] as const) {
+      if (key in entry) {
+        delete entry[key];
+        changed = true;
+      }
+    }
+    if (typeof entry.url === "string") {
+      if (/^data:/iu.test(entry.url) || isAbsoluteStoragePath(entry.url)) {
+        delete entry.url;
+      } else {
+        entry.url = sanitizeMediaReferenceForProjection(entry.url);
+      }
+      changed = true;
+    }
+    if (typeof entry.source === "string") {
+      const sourceUri = normalizeCanonicalInboundMediaUri(entry.source);
+      if (sourceUri) {
+        entry.source = sourceUri;
+      } else if (/^data:/iu.test(entry.source) || isAbsoluteStoragePath(entry.source)) {
+        delete entry.source;
+      } else {
+        entry.source = sanitizeMediaReferenceForProjection(entry.source);
+      }
+      changed = true;
+    } else if (source) {
+      const projectedSource = { ...(readRecord(entry.source) ?? source) };
+      const sourceManagedUri =
+        normalizeCanonicalInboundMediaUri(projectedSource.url) ??
+        normalizeCanonicalInboundMediaUri(projectedSource.path);
+      if (sourceManagedUri) {
+        projectedSource.url = sourceManagedUri;
+      }
+      for (const key of ["path", "filePath", "localPath"] as const) {
+        delete projectedSource[key];
+      }
+      if (typeof projectedSource.url === "string") {
+        if (/^data:/iu.test(projectedSource.url) || isAbsoluteStoragePath(projectedSource.url)) {
+          delete projectedSource.url;
+        } else {
+          projectedSource.url = sanitizeMediaReferenceForProjection(projectedSource.url);
+        }
+      }
+      entry.source = projectedSource;
       changed = true;
     }
   }
@@ -360,11 +455,21 @@ export function sanitizeChatHistoryMessage(
     changed = true;
   }
   const openClawMeta = readRecord(entry["__openclaw"]);
-  if (openClawMeta && "upstreamUserText" in openClawMeta) {
+  if (openClawMeta && ("upstreamUserText" in openClawMeta || "media" in openClawMeta)) {
     // Codex retains the decorated upstream prompt for transcript reconstruction.
     // It is not display data and can otherwise evict the visible row from history.
     const projectedMeta = { ...openClawMeta };
-    delete projectedMeta.upstreamUserText;
+    if ("upstreamUserText" in projectedMeta) {
+      delete projectedMeta.upstreamUserText;
+    }
+    if ("media" in projectedMeta) {
+      const projectedMedia = projectChatHistoryMediaFacts(projectedMeta.media);
+      if (projectedMedia) {
+        projectedMeta.media = projectedMedia;
+      } else {
+        delete projectedMeta.media;
+      }
+    }
     if (Object.keys(projectedMeta).length > 0) {
       entry["__openclaw"] = projectedMeta;
     } else {

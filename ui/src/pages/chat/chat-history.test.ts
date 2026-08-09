@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { reduceSessionProjection } from "@openclaw/gateway-client/browser";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import {
   loadChatHistory,
@@ -26,6 +26,8 @@ type TestState = ChatState &
   };
 type TestSessions = NonNullable<ChatState["sessions"]> &
   Parameters<typeof handleAgentEvent>[0]["sessions"];
+
+afterEach(() => vi.unstubAllGlobals());
 
 function createState(result: ChatHistoryResult): TestState {
   const host = makeChatHost({
@@ -256,9 +258,7 @@ describe("rewindChatHistory", () => {
         editorText: "edit this",
         editorAttachments: [
           { mimeType: "image/png", data: "aW1hZ2U=" },
-          { mimeType: "application/pdf", data: "aW1hZ2U=" },
-          { mimeType: "image/png", data: "not base64!!" },
-          { mimeType: "image/png", data: "A" },
+          { mimeType: "video/mp4", data: "dmlkZW8=" },
         ],
       }),
       setModelOverride: vi.fn(),
@@ -285,9 +285,7 @@ describe("rewindChatHistory", () => {
       editorText: "edit this",
       editorAttachments: [
         { mimeType: "image/png", data: "aW1hZ2U=" },
-        { mimeType: "application/pdf", data: "aW1hZ2U=" },
-        { mimeType: "image/png", data: "not base64!!" },
-        { mimeType: "image/png", data: "A" },
+        { mimeType: "video/mp4", data: "dmlkZW8=" },
       ],
     });
     expect(state.chatMessage).toBe("edit this");
@@ -297,6 +295,11 @@ describe("rewindChatHistory", () => {
         mimeType: "image/png",
         dataUrl: "data:image/png;base64,aW1hZ2U=",
       },
+      {
+        id: expect.stringMatching(/^att-/),
+        mimeType: "video/mp4",
+        dataUrl: "data:video/mp4;base64,dmlkZW8=",
+      },
     ]);
     expect(state.chatAttachments[0]?.id).not.toBe("old");
     expect(state.chatMessages).toEqual([{ role: "assistant", content: "kept prefix" }]);
@@ -305,6 +308,43 @@ describe("rewindChatHistory", () => {
         sessionKey: state.sessionKey,
       }),
     ).toEqual([{ role: "assistant", content: "kept prefix" }]);
+  });
+
+  it("preserves history, draft, and attachments when rewind preflight is rejected", async () => {
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn(() => 1),
+    );
+    const state = createState({
+      messages: [{ role: "assistant", content: "unchanged answer" }],
+    }) as TestState & {
+      handleChatDraftChange: ReturnType<typeof vi.fn>;
+      sessions: { rewind: ReturnType<typeof vi.fn> };
+    };
+    const messages = [{ role: "assistant", content: "unchanged answer" }];
+    const attachments = [{ id: "keep", mimeType: "video/mp4", dataUrl: "data:keep" }];
+    state.chatMessages = messages;
+    state.chatMessage = "keep draft";
+    state.chatAttachments = attachments;
+    state.handleChatDraftChange = vi.fn();
+    state.sessions = {
+      rewind: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "Rewind cannot restore this message because an attachment is missing or expired. The session was not changed.",
+          ),
+        ),
+      setModelOverride: vi.fn(),
+    };
+
+    await expect(rewindChatHistory(state as never, "user-entry")).resolves.toBeNull();
+
+    expect(state.chatMessages).toBe(messages);
+    expect(state.chatMessage).toBe("keep draft");
+    expect(state.chatAttachments).toBe(attachments);
+    expect(state.handleChatDraftChange).not.toHaveBeenCalled();
+    expect(state.chatError).toContain("missing or expired");
   });
 
   it("invalidates the source cache without overwriting a newly selected draft", async () => {

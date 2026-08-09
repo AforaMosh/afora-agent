@@ -353,7 +353,6 @@ describe("finalizeInboundContext media cleanup", () => {
           contentType: "application/pdf",
           kind: "document",
           messageId: "document",
-          hydrationSuppressed: true,
         },
       ],
       MediaPath: "/tmp/staged/photo.jpg",
@@ -374,7 +373,6 @@ describe("finalizeInboundContext media cleanup", () => {
       contentType: "application/pdf",
       kind: "document",
       messageId: "document",
-      hydrationSuppressed: true,
     });
     expect(Object.hasOwn(ctx, "MediaPath")).toBe(false);
     expect(Object.hasOwn(ctx, "MediaStaged")).toBe(false);

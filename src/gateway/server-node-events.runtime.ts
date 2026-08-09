@@ -20,7 +20,7 @@ export { enqueueSystemEvent } from "../infra/system-events.js";
 export { deleteMediaBuffer } from "../media/store.js";
 export { normalizeMainKey } from "../routing/session-key.js";
 export { defaultRuntime } from "../runtime.js";
-export { resolveChatAttachmentMaxBytes } from "./chat-attachment-policy.js";
+export { resolveChatAttachmentPolicy } from "./chat-attachment-policy.js";
 export {
   parseMessageWithAttachments,
   persistInboundImagesForTranscript,

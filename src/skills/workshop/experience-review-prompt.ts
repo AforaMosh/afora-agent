@@ -1,5 +1,6 @@
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { sliceUtf16Safe, truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { sanitizeModelVisibleMediaPayload } from "../../agents/payload-redaction.js";
 import { SKILL_AUTHORING_STANDARDS_PROMPT } from "./skill-authoring-standards.js";
 
 const EXPERIENCE_REVIEW_MAX_TRANSCRIPT_CHARS = 60_000;
@@ -16,9 +17,10 @@ type ExperienceReviewPromptCandidate = {
 
 function safeJson(value: unknown): string {
   try {
-    return JSON.stringify(value) ?? String(value);
+    const projected = sanitizeModelVisibleMediaPayload(value);
+    return JSON.stringify(projected) ?? String(projected);
   } catch {
-    return String(value);
+    return String(sanitizeModelVisibleMediaPayload(value));
   }
 }
 
@@ -41,7 +43,7 @@ export function countSkillModelIterations(messages: readonly unknown[]): number 
 
 function renderContent(content: unknown): string {
   if (typeof content === "string") {
-    return content;
+    return String(sanitizeModelVisibleMediaPayload(content));
   }
   if (!Array.isArray(content)) {
     return safeJson(content);
@@ -49,13 +51,13 @@ function renderContent(content: unknown): string {
   return content
     .map((block) => {
       if (typeof block === "string") {
-        return block;
+        return String(sanitizeModelVisibleMediaPayload(block));
       }
       if (!isRecord(block)) {
         return safeJson(block);
       }
       if (block.type === "text" && typeof block.text === "string") {
-        return block.text;
+        return String(sanitizeModelVisibleMediaPayload(block.text));
       }
       if (["toolCall", "tool_use", "function_call"].includes(String(block.type))) {
         const toolName = typeof block.name === "string" ? block.name : "unknown";

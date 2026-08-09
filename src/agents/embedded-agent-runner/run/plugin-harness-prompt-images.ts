@@ -2,27 +2,12 @@ import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import { isImageMediaFact, readPersistedMediaFacts } from "../../../media/media-facts.js";
 import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
 import { resolveAttemptWorkspaceSandbox } from "./attempt-setup.js";
-import { detectAndLoadPromptImages } from "./images.js";
+import { detectAndLoadPromptMedia } from "./images.js";
 import type { RunEmbeddedAgentParams } from "./params.js";
 import { readPersistedMediaImageLayout } from "./prompt-image-metadata.js";
 import type { EmbeddedRunAttemptParams } from "./types.js";
 
-function toTypeOnlyImageFact(
-  fact: NonNullable<RunEmbeddedAgentParams["media"]>[number],
-  hydrationSuppressed: boolean,
-): NonNullable<RunEmbeddedAgentParams["media"]>[number] {
-  return {
-    contentType: fact.contentType,
-    kind: fact.kind === "sticker" ? "sticker" : "image",
-    messageId: fact.messageId,
-    transcribed: fact.transcribed,
-    ...(fact.hydrationSuppressed === true || hydrationSuppressed
-      ? { hydrationSuppressed: true }
-      : {}),
-  };
-}
-
-/** Materializes fact-carried images before a plugin harness owns transport. */
+/** Materializes fact-carried native media before a plugin harness owns transport. */
 export async function preparePluginHarnessPromptImages(params: {
   runParams: RunEmbeddedAgentParams;
   runtime: {
@@ -33,29 +18,41 @@ export async function preparePluginHarnessPromptImages(params: {
   };
   pluginHarnessOwnsTransport: boolean;
 }): Promise<{
+  inputMedia?: RunEmbeddedAgentParams["inputMedia"];
   images: RunEmbeddedAgentParams["images"];
   imageOrder: RunEmbeddedAgentParams["imageOrder"];
   media: RunEmbeddedAgentParams["media"];
+  videoOmissions: string[];
 }> {
   const { runParams, runtime } = params;
   if (!params.pluginHarnessOwnsTransport) {
     return {
+      ...(runParams.inputMedia ? { inputMedia: runParams.inputMedia } : {}),
       images: runParams.images,
       imageOrder: runParams.imageOrder,
       media: runParams.media,
+      videoOmissions: [],
     };
   }
+  const existingMedia = runParams.inputMedia ?? runParams.images;
+  const passthrough = () => ({
+    ...(runParams.inputMedia ? { inputMedia: runParams.inputMedia } : {}),
+    images: runParams.images,
+    imageOrder: runParams.imageOrder,
+    media: runParams.media,
+    videoOmissions: [],
+  });
   const persistedMessage =
     runParams.userTurnTranscriptRecorder?.message ??
     (await runParams.userTurnTranscriptRecorder?.resolveMessage());
   const persistedMedia = persistedMessage ? (readPersistedMediaFacts(persistedMessage) ?? []) : [];
   const hydrationMedia = persistedMedia.length > 0 ? persistedMedia : runParams.media;
-  if (!hydrationMedia?.some(isImageMediaFact)) {
-    return {
-      images: runParams.images,
-      imageOrder: runParams.imageOrder,
-      media: runParams.media,
-    };
+  if (
+    !existingMedia?.length &&
+    !hydrationMedia?.some(isImageMediaFact) &&
+    !hydrationMedia?.length
+  ) {
+    return passthrough();
   }
 
   const workspace = await resolveAttemptWorkspaceSandbox({
@@ -65,15 +62,21 @@ export async function preparePluginHarnessPromptImages(params: {
     sessionKey: runtime.sessionKey,
     workspaceDir: runtime.workspaceDir,
   });
-  const result = await detectAndLoadPromptImages({
+  const pluginHarnessModel = { ...runtime.model };
+  delete pluginHarnessModel.nativeVideoInput;
+  const result = await detectAndLoadPromptMedia({
     prompt: "",
     media: hydrationMedia,
     mediaImageLayout: persistedMessage
       ? readPersistedMediaImageLayout(persistedMessage)
       : undefined,
     workspaceDir: workspace.effectiveWorkspace,
-    model: runtime.model,
-    existingImages: runParams.images,
+    // Plugin harnesses have no v1 video input contract even when their catalog
+    // model originated from a provider that supports the OpenClaw harness.
+    model: pluginHarnessModel,
+    existingMedia,
+    handledVideoSourceIndexes: runParams.handledVideoSourceIndexes,
+    handledVideoSourceIds: runParams.handledVideoSourceIds,
     imageOrder: runParams.imageOrder,
     maxBytes: MAX_IMAGE_BYTES,
     maxDimensionPx: resolveImageSanitizationLimits(runParams.config).maxDimensionPx,
@@ -86,22 +89,19 @@ export async function preparePluginHarnessPromptImages(params: {
         ? { root: workspace.sandbox.workspaceDir, bridge: workspace.sandbox.fsBridge }
         : undefined,
   });
-  if (result.failedMediaCount > 0) {
+  const failedImageCount = result.failedMediaCount - result.videoOmissions.length;
+  if (failedImageCount > 0) {
     throw new Error(
-      `failed to hydrate ${result.failedMediaCount} structured image attachment(s) for plugin harness input`,
+      `failed to hydrate ${failedImageCount} structured image attachment(s) for plugin harness input`,
     );
   }
-  const materializedFactIndexes = new Set(
-    result.imageFactIndexes.filter((index): index is number => index !== null),
-  );
-  const retainedMedia = hydrationMedia?.map((fact, factIndex) =>
-    isImageMediaFact(fact)
-      ? toTypeOnlyImageFact(fact, !materializedFactIndexes.has(factIndex))
-      : fact,
-  );
   return {
+    ...(runParams.inputMedia || result.media.some((part) => part.type === "video")
+      ? { inputMedia: result.media }
+      : {}),
     images: result.images,
     imageOrder: result.images.length > 0 ? result.images.map(() => "inline" as const) : undefined,
-    media: retainedMedia?.length ? retainedMedia : undefined,
+    media: hydrationMedia?.length ? hydrationMedia : undefined,
+    videoOmissions: result.videoOmissions.map((omission) => omission.text),
   };
 }

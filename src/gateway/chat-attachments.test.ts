@@ -32,11 +32,7 @@ vi.mock("../media/media-probe.js", () => ({
 }));
 
 import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import {
-  resolveChatAttachmentMaxBytes,
-  resolveChatAttachmentPolicy,
-} from "./chat-attachment-policy.js";
+import { resolveChatAttachmentPolicy } from "./chat-attachment-policy.js";
 import {
   type ChatAttachment,
   parseMessageWithAttachments,
@@ -48,6 +44,10 @@ import { normalizeRpcAttachmentsToChatAttachments } from "./server-methods/attac
 
 const PNG_1x1 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/woAAn8B9FD5fHAAAAAASUVORK5CYII=";
+const MP4_BASE64 = Buffer.from(
+  "0000001c6674797069736f6d0000000069736f6d0000000000000000",
+  "hex",
+).toString("base64");
 
 type ParsedAttachments = Awaited<ReturnType<typeof parseMessageWithAttachments>>;
 
@@ -165,8 +165,14 @@ describe("persistInboundImagesForTranscript", () => {
     });
 
     const saved = await persistInboundImagesForTranscript({
-      images: [{ type: "image", data: "aGVsbG8=", mimeType: "image/jpeg" }],
-      imageOrder: ["offloaded", "inline"],
+      images: [
+        {
+          type: "image",
+          data: "aGVsbG8=",
+          mimeType: "image/jpeg",
+          sourceIndex: 1,
+        },
+      ],
       offloadedRefs: [
         {
           mediaRef: "media://inbound/offloaded",
@@ -176,6 +182,7 @@ describe("persistInboundImagesForTranscript", () => {
           mimeType: "image/png",
           label: "offloaded.png",
           sizeBytes: 2_100_000,
+          sourceIndex: 0,
         },
         {
           mediaRef: "media://inbound/report",
@@ -185,6 +192,7 @@ describe("persistInboundImagesForTranscript", () => {
           mimeType: "application/pdf",
           label: "report.pdf",
           sizeBytes: 100,
+          sourceIndex: 2,
         },
       ],
       log: { warn: vi.fn() },
@@ -200,6 +208,31 @@ describe("persistInboundImagesForTranscript", () => {
 });
 
 describe("parseMessageWithAttachments", () => {
+  it("carries sniffed canonical MIME and source order for same-MIME video around an image", async () => {
+    const parsed = await parseMessageWithAttachments("compare", [
+      { type: "video", fileName: "first.bin", content: MP4_BASE64 },
+      pngAttachment(),
+      {
+        type: "video",
+        mimeType: "application/octet-stream",
+        fileName: "last.data",
+        content: MP4_BASE64,
+      },
+    ]);
+
+    expect(
+      parsed.media.map(({ sourceIndex, contentType, kind }) => ({
+        sourceIndex,
+        contentType,
+        kind,
+      })),
+    ).toEqual([
+      { sourceIndex: 0, contentType: "video/mp4", kind: "video" },
+      { sourceIndex: 1, contentType: "image/png", kind: "image" },
+      { sourceIndex: 2, contentType: "video/mp4", kind: "video" },
+    ]);
+  });
+
   it("strips data URL prefix", async () => {
     const parsed = await parseMessageWithAttachments(
       "see this",
@@ -335,7 +368,7 @@ describe("parseMessageWithAttachments", () => {
       parseMessageWithAttachments(
         "x",
         [{ type: "image", mimeType: "image/png", fileName: "huge.png", content: big }],
-        { maxBytes: resolveChatAttachmentMaxBytes({} as OpenClawConfig), log: { warn: () => {} } },
+        { limits: resolveChatAttachmentPolicy({}), log: { warn: () => {} } },
       ),
     ).rejects.toThrow(/image exceeds size limit/i);
     expect(saveMediaBufferMock).not.toHaveBeenCalled();
@@ -616,6 +649,8 @@ describe("parseMessageWithAttachments validation errors", () => {
       expect(stripImageMediaMarkers(parsed.message, parsed.offloadedRefs)).toBe("see this");
       expect(parsed.media).toEqual([
         {
+          sourceId: offloaded.id,
+          sourceIndex: 0,
           path: offloaded.path,
           url: offloaded.mediaRef,
           contentType: "image/png",
@@ -626,38 +661,6 @@ describe("parseMessageWithAttachments validation errors", () => {
       ]);
       expect(infos[0]).toMatch(/Offloaded image for text-only model/i);
       expect(logs).toHaveLength(0);
-    } finally {
-      await cleanupOffloadedRefs(parsed.offloadedRefs);
-    }
-  });
-
-  it("caps text-only image offloads", async () => {
-    const logs: string[] = [];
-    const attachments = Array.from(
-      { length: 11 },
-      (_, index): ChatAttachment => ({
-        type: "image",
-        mimeType: "image/png",
-        fileName: `dot-${index}.png`,
-        content: PNG_1x1,
-      }),
-    );
-    const parsed = await parseTextOnlyAttachments("see these", attachments, logs);
-
-    try {
-      expect(parsed.images).toHaveLength(0);
-      expect(parsed.offloadedRefs).toHaveLength(10);
-      expect(parsed.imageOrder).toHaveLength(10);
-      expect(parsed.message.match(/\[media attached: media:\/\/inbound\//g)).toHaveLength(10);
-      expect(parsed.message).toContain(
-        "[image attachment omitted: text-only attachment limit reached]",
-      );
-      expect(stripImageMediaMarkers(parsed.message, parsed.offloadedRefs)).toBe(
-        "see these\n[image attachment omitted: text-only attachment limit reached]",
-      );
-      expect(logs).toEqual([
-        "attachment dot-10.png: dropping image because text-only offload limit 10 was reached",
-      ]);
     } finally {
       await cleanupOffloadedRefs(parsed.offloadedRefs);
     }
@@ -675,7 +678,7 @@ describe("advertised attachment policy matches enforcement", () => {
     const parse = parseMessageWithAttachments(
       "x",
       [pngAttachment({ fileName: "big.png", content: pngBase64OfBytes(imageBytes) })],
-      { maxBytes: policy.maxBytes, log: { warn: () => {} } },
+      { limits: policy, log: { warn: () => {} } },
     );
     return { policy, parse };
   }
@@ -708,6 +711,74 @@ describe("advertised attachment policy matches enforcement", () => {
 });
 
 describe("attachment validation", () => {
+  it.each([
+    {
+      name: "count",
+      attachments: [pdfAttachment({ content: "AAAA" }), pdfAttachment({ content: "AAAA" })],
+      limits: {
+        maxItems: 1,
+        maxBytes: 10,
+        maxImageBytes: 10,
+        maxAggregateDecodedBytes: 20,
+        maxEncodedRequestBytes: 1_000_000,
+      },
+      error: /too many attachments/u,
+    },
+    {
+      name: "per-file decoded size",
+      attachments: [pdfAttachment({ content: "AAAA" })],
+      limits: {
+        maxItems: 4,
+        maxBytes: 2,
+        maxImageBytes: 2,
+        maxAggregateDecodedBytes: 20,
+        maxEncodedRequestBytes: 1_000_000,
+      },
+      error: /per-file limit/u,
+    },
+    {
+      name: "aggregate decoded size",
+      attachments: [pdfAttachment({ content: "AAAA" }), pdfAttachment({ content: "AAAA" })],
+      limits: {
+        maxItems: 4,
+        maxBytes: 10,
+        maxImageBytes: 10,
+        maxAggregateDecodedBytes: 5,
+        maxEncodedRequestBytes: 1_000_000,
+      },
+      error: /aggregate limit/u,
+    },
+    {
+      name: "encoded request size",
+      attachments: [pdfAttachment({ content: "AAAA" })],
+      limits: {
+        maxItems: 4,
+        maxBytes: 10,
+        maxImageBytes: 10,
+        maxAggregateDecodedBytes: 20,
+        maxEncodedRequestBytes: 100,
+      },
+      error: /encoded request limit/u,
+    },
+  ])("rejects the $name budget before decode, save, or probe", async (testCase) => {
+    const fromSpy = vi.spyOn(Buffer, "from");
+    try {
+      await expect(
+        parseMessageWithAttachments("x", testCase.attachments, {
+          limits: testCase.limits,
+          log: { warn: () => {} },
+        }),
+      ).rejects.toThrow(testCase.error);
+      expect(fromSpy.mock.calls.filter((args) => (args as unknown[])[1] === "base64")).toHaveLength(
+        0,
+      );
+      expect(saveMediaBufferMock).not.toHaveBeenCalled();
+      expect(probeMediaFilesWithinBudgetMock).not.toHaveBeenCalled();
+    } finally {
+      fromSpy.mockRestore();
+    }
+  });
+
   it("rejects invalid base64 content", async () => {
     const bad: ChatAttachment = {
       type: "image",
@@ -733,7 +804,14 @@ describe("attachment validation", () => {
     const fromSpy = vi.spyOn(Buffer, "from");
     try {
       await expect(
-        parseMessageWithAttachments("x", [att], { maxBytes: 16, log: { warn: () => {} } }),
+        parseMessageWithAttachments("x", [att], {
+          limits: {
+            ...resolveChatAttachmentPolicy({}),
+            maxBytes: 16,
+            maxImageBytes: 16,
+          },
+          log: { warn: () => {} },
+        }),
       ).rejects.toThrow(/exceeds size limit/i);
       const base64Calls = fromSpy.mock.calls.filter((args) => (args as unknown[])[1] === "base64");
       expect(base64Calls).toHaveLength(0);

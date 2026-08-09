@@ -272,6 +272,10 @@ Media understanding is auto-resolved from the configured Qwen auth; no extra
 config is needed. Make sure you are on a Standard (pay-as-you-go) endpoint for
 media understanding to work.
 
+Qwen video understanding is a preprocessing path: it produces a bounded text
+description for the reply pipeline. Qwen chat routes do not receive native
+video attachments. Wan video generation below is a separate capability.
+
 To make Qwen the default video provider:
 
 ```json5

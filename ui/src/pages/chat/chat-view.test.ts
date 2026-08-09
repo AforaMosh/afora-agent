@@ -4076,6 +4076,119 @@ describe("chat attachment picker", () => {
       ?.dispatchEvent(new CustomEvent("wa-select", { detail: { item: button }, bubbles: true }));
   }
 
+  it.each([
+    {
+      name: "count",
+      files: [
+        new File(["one"], "one.mp4", { type: "video/mp4" }),
+        new File(["two"], "two.mp4", { type: "video/mp4" }),
+      ],
+      limits: {
+        maxItems: 1,
+        maxBytes: 10,
+        maxImageBytes: 10,
+        maxAggregateDecodedBytes: 20,
+        maxEncodedRequestBytes: 1_000_000,
+      },
+      error: "at most 1",
+    },
+    {
+      name: "per-file",
+      files: [new File(["video"], "large.mp4", { type: "video/mp4" })],
+      limits: {
+        maxItems: 4,
+        maxBytes: 4,
+        maxImageBytes: 4,
+        maxAggregateDecodedBytes: 20,
+        maxEncodedRequestBytes: 1_000_000,
+      },
+      error: "per-file",
+    },
+    {
+      name: "aggregate",
+      files: [
+        new File(["one"], "one.mp4", { type: "video/mp4" }),
+        new File(["two"], "two.mp4", { type: "video/mp4" }),
+      ],
+      limits: {
+        maxItems: 4,
+        maxBytes: 10,
+        maxImageBytes: 10,
+        maxAggregateDecodedBytes: 5,
+        maxEncodedRequestBytes: 1_000_000,
+      },
+      error: "total decoded-size",
+    },
+    {
+      name: "encoded request",
+      files: [new File(["one"], "one.mp4", { type: "video/mp4" })],
+      limits: {
+        maxItems: 4,
+        maxBytes: 10,
+        maxImageBytes: 10,
+        maxAggregateDecodedBytes: 20,
+        maxEncodedRequestBytes: 100,
+      },
+      error: "encoded Gateway request",
+    },
+  ])("rejects the $name budget before reading or creating an object URL", (testCase) => {
+    const onAttachmentError = vi.fn();
+    const readAsDataUrl = vi.spyOn(FileReader.prototype, "readAsDataURL");
+    const createObjectUrl = vi.spyOn(URL, "createObjectURL");
+    const container = renderChatView({
+      attachmentLimits: testCase.limits,
+      onAttachmentError,
+      onAttachmentsChange: vi.fn(),
+    });
+    const input = requireAttachmentInput(
+      container,
+      ".agent-chat__file-input",
+      "attachment file input",
+    );
+    Object.defineProperty(input, "files", { configurable: true, value: testCase.files });
+
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(readAsDataUrl).not.toHaveBeenCalled();
+    expect(createObjectUrl).not.toHaveBeenCalled();
+    expect(onAttachmentError).toHaveBeenCalledWith(expect.stringContaining(testCase.error));
+  });
+
+  it("reserves an in-flight batch so overlapping reads cannot exceed the count", () => {
+    const readers: FileReader[] = [];
+    vi.spyOn(FileReader.prototype, "readAsDataURL").mockImplementation(function (this: FileReader) {
+      readers.push(this);
+    });
+    const onAttachmentError = vi.fn();
+    const reads = new ChatAttachmentReadLifecycle(() => undefined);
+    const readSignal = reads.readSignal;
+    const container = renderChatView({
+      attachmentLimits: {
+        maxItems: 1,
+        maxBytes: 10,
+        maxImageBytes: 10,
+        maxAggregateDecodedBytes: 10,
+        maxEncodedRequestBytes: 1_000_000,
+      },
+      onAttachmentError,
+      onAttachmentsChange: vi.fn(),
+      onPendingReadsChange: (delta) => reads.updatePending(readSignal, delta),
+      readSignal,
+    });
+    const input = requireAttachmentInput(
+      container,
+      ".agent-chat__file-input",
+      "attachment file input",
+    );
+
+    selectFile(input, new File(["one"], "one.mp4", { type: "video/mp4" }));
+    selectFile(input, new File(["two"], "two.mp4", { type: "video/mp4" }));
+
+    expect(readers).toHaveLength(1);
+    expect(onAttachmentError).toHaveBeenCalledWith(expect.stringContaining("at most 1"));
+    reads.abortReads();
+  });
+
   it.each(["clipboard", "file picker", "drop"] as const)(
     "waits for an in-flight %s attachment before accepting an immediate send",
     async (entry) => {
@@ -5428,6 +5541,42 @@ describe("chat model controls", () => {
     // Implicitly resolved runtimes stay unlabeled; only operator-pinned
     // (source model/provider) rows carry the runtime meta.
     expect(metaFor("openai/gpt-5.6-terra")).toBe("1M");
+  });
+
+  it("shows native video capability in the active control and model picker", () => {
+    const { state } = createChatHeaderState({
+      model: "kimi-k3",
+      modelProvider: "moonshot",
+      models: [
+        {
+          id: "kimi-k3",
+          name: "Kimi K3",
+          provider: "moonshot",
+          contextWindow: 1_050_000,
+          input: ["text", "image", "video"],
+        },
+        {
+          id: "gpt-5.5",
+          name: "GPT-5.5",
+          provider: "openai",
+          input: ["text", "image", "audio", "document"],
+        },
+      ],
+    });
+    const container = renderModelControls(state);
+    const trigger = getChatModelSelect(container);
+
+    expect(trigger.dataset.chatModelVideo).toBe("supported");
+    expect(trigger.getAttribute("aria-label")).toContain("Native video");
+    expect(
+      container
+        .querySelector('[data-chat-model-option="moonshot/kimi-k3"]')
+        ?.querySelector(".chat-controls__model-option-meta")
+        ?.textContent?.trim(),
+    ).toBe("1M context · Native video");
+    expect(
+      container.querySelector('[data-chat-model-option="openai/gpt-5.5"]')?.textContent,
+    ).not.toContain("Native video");
   });
 
   it("marks chat-only models in the active control and picker", () => {

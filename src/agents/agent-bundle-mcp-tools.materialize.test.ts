@@ -348,7 +348,7 @@ describe("createBundleMcpToolRuntime", () => {
       { type: "image", data: "aW1hZ2U=", mimeType: "image/png" },
       { type: "text", text: "[Report] https://example.com/report" },
       { type: "text", text: "memo body" },
-      { type: "text", text: "[audio audio/mpeg]" },
+      { type: "text", text: "[audio omitted: audio/mpeg]" },
     ]);
   });
 
@@ -400,8 +400,11 @@ describe("createBundleMcpToolRuntime", () => {
       { type: "text", text: "[Quarterly report] https://example.com/a.docx" },
       { type: "text", text: "https://example.com/bare" },
       { type: "text", text: "memo body" },
-      { type: "text", text: "blob://two" },
-      { type: "text", text: "[audio audio/mpeg]" },
+      {
+        type: "text",
+        text: "[binary resource omitted] (application/pdf) blob://two",
+      },
+      { type: "text", text: "[audio omitted: audio/mpeg]" },
       { type: "image", data: "iVBOR", mimeType: "image/png" },
     ]);
   });
@@ -425,7 +428,50 @@ describe("createBundleMcpToolRuntime", () => {
     );
 
     expect(result.content).toHaveLength(1);
-    expect(result.content[0]).toEqual({ type: "text", text: JSON.stringify({ type: "image" }) });
+    expect(result.content[0]).toEqual({
+      type: "text",
+      text: "[image omitted: invalid MCP image]",
+    });
+  });
+
+  it("deep-redacts legal MCP resource and structured video envelopes", async () => {
+    const sentinel = Buffer.from("PRIVATE_MCP_VIDEO_SENTINEL").toString("base64");
+    const runtime = await materializeBundleMcpToolsForRun({
+      runtime: makeToolRuntime({
+        result: {
+          content: [
+            {
+              type: "resource",
+              resource: {
+                uri: `data:video/mp4;base64,${sentinel}`,
+                mimeType: "video/mp4",
+                blob: sentinel,
+              },
+            },
+          ],
+          structuredContent: {
+            clip: { mimeType: "video/mp4", blob: sentinel },
+            replay: `data:video/mp4;base64,${sentinel}`,
+          },
+        },
+      }),
+    });
+
+    const result = await expectDefined(runtime.tools[0], "runtime.tools[0] test invariant").execute(
+      "call-bundle-probe",
+      {},
+      undefined,
+      undefined,
+    );
+    const serialized = JSON.stringify(result);
+
+    expect(serialized).not.toContain(sentinel);
+    expect(serialized).not.toContain("data:video");
+    expect(serialized).toContain("[binary omitted]");
+    expect(result.content).toContainEqual({
+      type: "text",
+      text: "[video resource omitted] (video/mp4) [data URL omitted]",
+    });
   });
 
   it("disambiguates bundle MCP tools that collide with existing tool names", async () => {
@@ -535,6 +581,42 @@ describe("createBundleMcpToolRuntime", () => {
         .find((tool) => tool.name === "knowledge__prompts_get")!
         .execute("call-prompt", { name: "brief", arguments: { count: 1 } }, undefined, undefined),
     ).rejects.toThrow("arguments.count must be a string");
+  });
+
+  it("redacts legal binary resources before resources_read JSON materialization", async () => {
+    const sentinel = Buffer.from("PRIVATE_RESOURCE_READ_VIDEO").toString("base64");
+    const base = makeToolRuntime({ tools: [], serverName: "knowledge" });
+    const runtime = await materializeBundleMcpToolsForRun({
+      runtime: {
+        ...base,
+        getCatalog: async () => ({
+          version: 1,
+          generatedAt: 0,
+          servers: {
+            knowledge: {
+              serverName: "knowledge",
+              safeServerName: "knowledge",
+              launchSummary: "knowledge",
+              toolCount: 0,
+              resources: { listChanged: true },
+            },
+          },
+          tools: [],
+        }),
+        readResource: async (_serverName, uri) => ({
+          contents: [{ uri, mimeType: "video/mp4", blob: sentinel }],
+        }),
+      },
+    });
+
+    const result = await runtime.tools
+      .find((tool) => tool.name === "knowledge__resources_read")!
+      .execute("call-read", { uri: "file:///private/clip.mp4" }, undefined, undefined);
+    const serialized = JSON.stringify(result);
+
+    expect(serialized).not.toContain(sentinel);
+    expect(serialized).not.toContain("file:///private/clip.mp4");
+    expect(serialized).toContain("[binary omitted]");
   });
 
   it("applies per-server MCP tool filters to resource and prompt utility tools", async () => {

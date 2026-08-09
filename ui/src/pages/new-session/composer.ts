@@ -1,5 +1,6 @@
 import { html, nothing, type TemplateResult } from "lit";
 import { ref } from "lit/directives/ref.js";
+import type { ChatAttachmentLimits } from "../../../../packages/gateway-protocol/src/index.js";
 import { icons } from "../../components/icons.ts";
 import "../../components/tooltip.ts";
 import { t } from "../../i18n/index.ts";
@@ -22,6 +23,7 @@ import type { NewSessionVisibility } from "./create-params.ts";
 import type { NewSessionModelControl } from "./model-control.ts";
 
 type NewSessionComposerOptions = {
+  attachmentLimits?: Partial<ChatAttachmentLimits>;
   attachments: ChatAttachment[];
   canSubmit: boolean;
   getAttachments: () => ChatAttachment[];
@@ -43,6 +45,7 @@ type NewSessionComposerOptions = {
   draftAvailable?: boolean;
   incognitoDisabledReason?: string;
   onAttachmentsChange: (attachments: ChatAttachment[]) => void;
+  onAttachmentError?: (message: string) => void;
   onPendingReadsChange: (delta: 1 | -1) => void;
   onInput: (message: string) => void;
   onVisibilityChange?: (visibility: NewSessionVisibility) => void;
@@ -195,12 +198,14 @@ function handleComposerKeydown(event: KeyboardEvent, options: NewSessionComposer
 /** Draft message box styled as the chat composer shell so both pickers match. */
 function renderNewSessionComposer(options: NewSessionComposerOptions) {
   const attachmentProps = {
+    attachmentLimits: options.attachmentLimits,
     attachments: options.attachments,
     disabled: options.submitting || options.messageLocked,
     getAttachments: options.getAttachments,
     draft: options.message,
     getDraft: () => options.message,
     onAttachmentsChange: options.onAttachmentsChange,
+    onAttachmentError: options.onAttachmentError,
     onDraftChange: options.onInput,
     onPendingReadsChange: options.onPendingReadsChange,
     readSignal: options.readSignal,
@@ -302,6 +307,7 @@ export function renderNewSessionDraftComposer(options: {
   messageLocked?: boolean;
   incognitoDisabledReason?: string;
   onInput: (message: string) => void;
+  onAttachmentError?: (message: string) => void;
   onVisibilityChange?: (visibility: NewSessionVisibility) => void;
   onSubmit: () => void;
 }) {
@@ -323,6 +329,7 @@ export function renderNewSessionDraftComposer(options: {
         }),
     pendingAttachmentReads: options.attachmentDraft.pendingReads,
     readSignal,
+    attachmentLimits: options.context?.gateway.snapshot.hello?.policy?.attachments,
     requiresModifier: options.requiresModifier,
     submitDisabledReason: options.submitDisabledReason,
     terminalAction: options.terminalAction,
@@ -335,6 +342,7 @@ export function renderNewSessionDraftComposer(options: {
         options.attachmentDraft.replace(attachments);
       }
     },
+    onAttachmentError: options.onAttachmentError,
     onPendingReadsChange: (delta) => options.attachmentDraft.updatePending(readSignal, delta),
     onInput: options.onInput,
     onVisibilityChange: options.onVisibilityChange,

@@ -1,6 +1,7 @@
 /**
  * Estimates message and tool-result character costs for context guards.
  */
+import { estimateNativeVideoTokens } from "@openclaw/llm-core";
 import type { AgentMessage } from "../runtime/index.js";
 import {
   BRANCH_SUMMARY_PREFIX,
@@ -13,6 +14,7 @@ import { estimateToolResultTextChars } from "./tool-result-text-budget.js";
 
 export const TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE = 2;
 const IMAGE_CHAR_ESTIMATE = 8_000;
+const VISUAL_CHARS_PER_TOKEN_ESTIMATE = 4;
 
 export type MessageCharEstimateCache = WeakMap<AgentMessage, number>;
 
@@ -25,9 +27,22 @@ function isTextBlock(block: unknown): block is { type: "text"; text: string } {
   );
 }
 
-function isImageBlock(block: unknown): boolean {
+function estimateVisualBlockChars(block: unknown): number | undefined {
+  if (!block || typeof block !== "object") {
+    return undefined;
+  }
+  const visual = block as { type?: unknown; data?: unknown };
+  if (visual.type === "image") {
+    return IMAGE_CHAR_ESTIMATE;
+  }
+  if (visual.type !== "video") {
+    return undefined;
+  }
   return (
-    Boolean(block) && typeof block === "object" && (block as { type?: unknown }).type === "image"
+    estimateNativeVideoTokens({
+      base64: typeof visual.data === "string" ? visual.data : "",
+      minimumTokens: Math.ceil(IMAGE_CHAR_ESTIMATE / VISUAL_CHARS_PER_TOKEN_ESTIMATE),
+    }) * VISUAL_CHARS_PER_TOKEN_ESTIMATE
   );
 }
 
@@ -68,10 +83,8 @@ function estimateContentBlockChars(content: unknown[]): number {
   for (const block of content) {
     if (isTextBlock(block)) {
       chars += block.text.length;
-    } else if (isImageBlock(block)) {
-      chars += IMAGE_CHAR_ESTIMATE;
     } else {
-      chars += estimateUnknownChars(block);
+      chars += estimateVisualBlockChars(block) ?? estimateUnknownChars(block);
     }
   }
   return chars;
@@ -84,10 +97,22 @@ function estimateToolResultContentChars(content: unknown[]): number {
       chars += estimateToolResultTextChars(block.text, {
         minimumRawWeight: TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE,
       });
-    } else if (isImageBlock(block)) {
-      chars += IMAGE_CHAR_ESTIMATE * TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE;
     } else {
-      chars += estimateUnknownChars(block) * TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE;
+      const visualChars = estimateVisualBlockChars(block);
+      if (visualChars === undefined) {
+        chars += estimateUnknownChars(block) * TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE;
+      } else if ((block as { type: string }).type === "video") {
+        // Convert visual-frame tokens into this guard's budget instead of multiplying
+        // transport bytes or dropping a valid large video from a 128K-token context.
+        chars += Math.max(
+          IMAGE_CHAR_ESTIMATE * TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE,
+          Math.ceil(
+            (visualChars * TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE) / VISUAL_CHARS_PER_TOKEN_ESTIMATE,
+          ),
+        );
+      } else {
+        chars += visualChars * TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE;
+      }
     }
   }
   return chars;

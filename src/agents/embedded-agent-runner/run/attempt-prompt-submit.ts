@@ -4,7 +4,7 @@
  */
 import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { ImageContent } from "../../../llm/types.js";
+import type { MediaContent, ModelInputContent } from "../../../llm/types.js";
 import { readPersistedMediaFacts } from "../../../media/media-facts.js";
 import type { createTrajectoryRuntimeRecorder } from "../../../trajectory/runtime.js";
 import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
@@ -32,7 +32,7 @@ import {
   stripSessionsYieldArtifacts,
   waitForSessionsYieldAbortSettle,
 } from "./attempt.sessions-yield.js";
-import { detectAndLoadPromptImages } from "./images.js";
+import { detectAndLoadPromptMedia } from "./images.js";
 import { wrapStreamFnWithMessageTransform } from "./message-transform-stream-wrapper.js";
 import { isMidTurnPrecheckSignal, type MidTurnPrecheckRequest } from "./midturn-precheck.js";
 import { readPersistedMediaImageLayout } from "./prompt-image-metadata.js";
@@ -55,7 +55,8 @@ type PromptSubmissionSession = {
 type PromptActiveSession = (
   prompt: string,
   options?: {
-    images?: ImageContent[];
+    media?: MediaContent[];
+    preparedContent?: ModelInputContent[];
     preflightResult?: (submitted: boolean) => void;
   },
 ) => Promise<void>;
@@ -72,7 +73,8 @@ export async function submitEmbeddedAttemptPrompt(input: {
   activeSession: PromptSubmissionSession;
   appendContext?: string;
   contextTokenBudget: number;
-  images: ImageContent[];
+  inputMedia: MediaContent[];
+  inputContent: ModelInputContent[];
   leasedSteering?: SteeringLease;
   modelPrompt: string;
   onFinalPromptText: (prompt: string) => void;
@@ -135,7 +137,8 @@ export async function submitEmbeddedAttemptPrompt(input: {
     prompt: input.modelPrompt,
     systemPrompt: input.systemPrompt,
     messages: activeSession.messages,
-    imagesCount: input.images.length,
+    imagesCount: input.inputMedia.filter((part) => part.type === "image").length,
+    videosCount: input.inputMedia.filter((part) => part.type === "video").length,
   });
   updateActiveEmbeddedRunSnapshot(attempt.sessionId, {
     transcriptLeafId: input.transcriptLeafId,
@@ -170,7 +173,8 @@ export async function submitEmbeddedAttemptPrompt(input: {
       });
       try {
         await input.promptActiveSession(input.transcriptPrompt, {
-          ...(input.images.length > 0 ? { images: input.images } : {}),
+          ...(input.inputMedia.length > 0 ? { media: input.inputMedia } : {}),
+          ...(input.inputContent.length > 0 ? { preparedContent: input.inputContent } : {}),
           preflightResult: armModelPromptTransform,
         });
       } finally {
@@ -194,9 +198,10 @@ export function resolvePromptSubmissionSkipReason(params: {
   prompt: string;
   messages: readonly unknown[];
   imageCount: number;
+  videoCount?: number;
   runtimeOnly?: boolean;
 }): PromptSubmissionSkipReason | null {
-  if (params.prompt.trim().length > 0 || params.imageCount > 0) {
+  if (params.prompt.trim().length > 0 || params.imageCount > 0 || (params.videoCount ?? 0) > 0) {
     return null;
   }
   return params.messages.some(hasVisiblePromptHistory)
@@ -225,7 +230,10 @@ function hasNonEmptyContent(content: unknown): boolean {
   if (!content || typeof content !== "object") {
     return false;
   }
-  const record = content as { text?: unknown; content?: unknown };
+  const record = content as { type?: unknown; text?: unknown; content?: unknown; data?: unknown };
+  if ((record.type === "image" || record.type === "video") && typeof record.data === "string") {
+    return record.data.length > 0;
+  }
   return hasNonEmptyContent(record.text) || hasNonEmptyContent(record.content);
 }
 
@@ -287,12 +295,15 @@ export async function handleEmbeddedAttemptPromptError(input: {
   };
 }
 
-/** Prepares prompt-lock ownership and prompt-local images for submission. */
+/** Prepares prompt-local media for submission. */
 type PromptExecutionAttempt = Pick<
   EmbeddedRunAttemptParams,
   | "config"
   | "imageOrder"
   | "images"
+  | "inputMedia"
+  | "handledVideoSourceIndexes"
+  | "handledVideoSourceIds"
   | "media"
   | "model"
   | "sessionFile"
@@ -300,10 +311,13 @@ type PromptExecutionAttempt = Pick<
   | "sessionTarget"
   | "userTurnTranscriptRecorder"
 >;
-type PromptImageResult = Awaited<ReturnType<typeof detectAndLoadPromptImages>>;
+type PromptMediaResult = Awaited<ReturnType<typeof detectAndLoadPromptMedia>>;
 
-function emptyPromptImages(): PromptImageResult {
+function emptyPromptMedia(): PromptMediaResult {
   return {
+    media: [],
+    orderedBlocks: [],
+    videoOmissions: [],
     images: [],
     imageFactIndexes: [],
     detectedRefs: [],
@@ -320,9 +334,9 @@ export async function prepareEmbeddedAttemptPromptExecution(input: {
   prompt: string;
   sandbox?: SandboxContext | null;
   skipPromptSubmission: boolean;
-}): Promise<PromptImageResult> {
+}): Promise<PromptMediaResult> {
   if (input.skipPromptSubmission) {
-    return emptyPromptImages();
+    return emptyPromptMedia();
   }
 
   const { attempt } = input;
@@ -331,11 +345,13 @@ export async function prepareEmbeddedAttemptPromptExecution(input: {
     (await attempt.userTurnTranscriptRecorder?.resolveMessage());
   const persistedMedia = persistedMessage ? (readPersistedMediaFacts(persistedMessage) ?? []) : [];
 
-  return await detectAndLoadPromptImages({
+  return await detectAndLoadPromptMedia({
     prompt: input.prompt,
     workspaceDir: input.effectiveWorkspace,
     model: attempt.model,
-    existingImages: attempt.images,
+    existingMedia: attempt.inputMedia ?? attempt.images,
+    handledVideoSourceIndexes: attempt.handledVideoSourceIndexes,
+    handledVideoSourceIds: attempt.handledVideoSourceIds,
     imageOrder: attempt.imageOrder,
     media: persistedMedia.length > 0 ? persistedMedia : attempt.media,
     mediaImageLayout: persistedMessage

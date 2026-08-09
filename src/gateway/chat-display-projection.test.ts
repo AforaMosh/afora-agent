@@ -33,14 +33,26 @@ describe("oversized multimodal chat history", () => {
         source: { type: "base64", media_type: "image/png", data },
       }),
     },
+    {
+      name: "native video data",
+      image: (data: string) => ({ type: "video", mimeType: "video/mp4", data }),
+    },
+    {
+      name: "nested base64 video source",
+      image: (data: string) => ({
+        type: "video",
+        source: { type: "base64", media_type: "video/mp4", data },
+      }),
+    },
   ])("keeps text while omitting $name from WebSocket and SSE history", ({ image }) => {
-    const png = createNoisyPngBuffer(320, 320);
-    const encoded = png.toString("base64");
+    const payload = createNoisyPngBuffer(320, 320);
+    const encoded = payload.toString("base64");
+    const media = image(encoded);
     const message = {
       role: "user",
       content: [
         { type: "text", text: "keep prefix text" },
-        image(encoded),
+        media,
         { type: "text", text: "keep suffix text" },
       ],
     };
@@ -50,7 +62,7 @@ describe("oversized multimodal chat history", () => {
           role: "user",
           content: [
             { type: "text", text: "keep prefix text" },
-            { type: "image", omitted: true, bytes: png.length },
+            { type: media.type, omitted: true, bytes: payload.length },
             { type: "text", text: "keep suffix text" },
           ],
         },
@@ -62,11 +74,11 @@ describe("oversized multimodal chat history", () => {
     }
   });
 
-  it("preserves URL-backed images without changing their sources", () => {
-    const source = { type: "url", url: "https://example.invalid/picture.png" };
-    expect(
-      projectChatDisplayMessages([{ role: "user", content: [{ type: "image", source }] }]),
-    ).toEqual([{ role: "user", content: [{ type: "image", source }] }]);
+  it.each(["image", "video"])("preserves URL-backed %ss without changing their sources", (type) => {
+    const source = { type: "url", url: `https://example.invalid/media.${type}` };
+    expect(projectChatDisplayMessages([{ role: "user", content: [{ type, source }] }])).toEqual([
+      { role: "user", content: [{ type, source }] },
+    ]);
   });
 
   it("omits persisted top-level audio data from WebSocket and SSE history", () => {
@@ -194,6 +206,81 @@ describe("oversized multimodal chat history", () => {
 });
 
 describe("private transcript metadata projection", () => {
+  it("hides inline media data URLs and absolute storage paths", () => {
+    const message = {
+      role: "user",
+      content: [
+        {
+          type: "video",
+          path: "/Users/operator/.openclaw/media/inbound/clip.mp4",
+          url: "file:///Users/operator/.openclaw/media/inbound/clip.mp4",
+          source: "/Users/operator/.openclaw/media/inbound/clip.mp4",
+        },
+        {
+          type: "image",
+          source: {
+            type: "url",
+            url: "https://user" + ":password@cdn.example.test/image.png?signature=private",
+          },
+        },
+      ],
+    };
+
+    const projected = projectChatDisplayMessages([message]);
+    const serialized = JSON.stringify(projected);
+    expect(serialized).not.toContain("/Users/operator");
+    expect(serialized).not.toContain("file:");
+    expect(serialized).not.toContain("password");
+    expect(serialized).not.toContain("signature");
+    expect(serialized).toContain("https://cdn.example.test/image.png");
+  });
+
+  it("hides absolute media storage paths while preserving opaque managed references", () => {
+    const message = {
+      role: "user",
+      content: "Inspect this clip.",
+      __openclaw: {
+        media: [
+          {
+            path: "/Users/operator/.openclaw/media/inbound/clip.mp4",
+            url: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+            contentType: "video/mp4",
+            workspaceDir: "/Users/operator/.openclaw/workspace",
+          },
+          { path: "C:\\Users\\operator\\clip.mp4", contentType: "video/mp4" },
+          {
+            url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+            contentType: "video/mp4",
+          },
+        ],
+      },
+    };
+
+    const projected = projectChatDisplayMessages([message]);
+    const serialized = JSON.stringify(projected);
+
+    expect(projected).toEqual([
+      {
+        role: "user",
+        content: "Inspect this clip.",
+        __openclaw: {
+          media: [
+            {
+              url: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+              contentType: "video/mp4",
+            },
+            { contentType: "video/mp4" },
+            { url: "https://cdn.example.test/clip.mp4", contentType: "video/mp4" },
+          ],
+        },
+      },
+    ]);
+    expect(serialized).not.toContain("/Users/operator");
+    expect(serialized).not.toContain("C:\\\\Users");
+    expect(serialized).not.toContain("password");
+    expect(serialized).not.toContain("signature");
+  });
+
   it("keeps visible text while omitting oversized upstream prompt metadata", () => {
     const message = {
       role: "user",

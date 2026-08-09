@@ -1,4 +1,5 @@
 // Google provider module implements model/runtime integration.
+import type { NativeVideoInputContract } from "openclaw/plugin-sdk/llm";
 import type {
   OpenClawPluginApi,
   ProviderReasoningOutputModeContext,
@@ -13,8 +14,13 @@ import {
   buildGoogleVertexStaticCatalogProvider,
 } from "./provider-catalog.js";
 import { GOOGLE_GEMINI_PROVIDER_HOOKS } from "./provider-hooks.js";
-import { isModernGoogleModel, resolveGoogleGeminiForwardCompatModel } from "./provider-models.js";
 import {
+  isGoogleTextGenerationModelId,
+  isModernGoogleModel,
+  resolveGoogleGeminiForwardCompatModel,
+} from "./provider-models.js";
+import {
+  isOfficialGoogleAiStudioBaseUrl,
   isGoogleVertexBaseUrl,
   normalizeGoogleProviderConfig,
   resolveGoogleGenerativeAiTransport,
@@ -35,6 +41,45 @@ function resolveGoogleReasoningOutputMode(
     }
   }
   return "tagged";
+}
+
+const GOOGLE_NATIVE_VIDEO_INPUT = {
+  wireFamily: "google-inline-data",
+  mimeTypes: {
+    "video/mp4": "video/mp4",
+    "video/mpeg": "video/mpeg",
+    "video/mov": "video/mov",
+    "video/quicktime": "video/mov",
+    "video/avi": "video/avi",
+    "video/x-msvideo": "video/avi",
+    "video/x-flv": "video/x-flv",
+    "video/mpg": "video/mpg",
+    "video/webm": "video/webm",
+    "video/wmv": "video/wmv",
+    "video/x-ms-wmv": "video/wmv",
+    "video/3gpp": "video/3gpp",
+  },
+  maxDecodedBytesPerItem: 8 * 1024 * 1024,
+  maxItems: 4,
+  maxAggregateDecodedBytes: 12 * 1024 * 1024,
+  aggregateScope: "all-inline-media",
+  maxSerializedRequestBytesExclusive: 20_000_000,
+} as const satisfies NativeVideoInputContract;
+
+function normalizeGoogleNativeVideoModel(ctx: {
+  provider: string;
+  modelId: string;
+  model: Parameters<NonNullable<ProviderPlugin["normalizeResolvedModel"]>>[0]["model"];
+}) {
+  const normalizedModelId = normalizeGoogleModelId(ctx.modelId);
+  const supportsNativeVideo =
+    ctx.provider === "google" &&
+    ctx.model.api === "google-generative-ai" &&
+    isOfficialGoogleAiStudioBaseUrl(ctx.model.baseUrl) &&
+    normalizedModelId.startsWith("gemini-") &&
+    isGoogleTextGenerationModelId(normalizedModelId);
+  const { nativeVideoInput: _ignored, ...model } = ctx.model;
+  return supportsNativeVideo ? { ...model, nativeVideoInput: GOOGLE_NATIVE_VIDEO_INPUT } : model;
 }
 
 export function buildGoogleProvider(): ProviderPlugin {
@@ -100,6 +145,7 @@ export function buildGoogleProvider(): ProviderPlugin {
       },
     },
     normalizeModelId: ({ modelId }) => normalizeGoogleModelId(modelId),
+    normalizeResolvedModel: normalizeGoogleNativeVideoModel,
     resolveDynamicModel: (ctx) =>
       resolveGoogleGeminiForwardCompatModel({
         providerId: ctx.provider,

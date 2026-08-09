@@ -12,9 +12,11 @@ import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { clearAgentRunContext } from "../../infra/agent-run-registry.js";
 import { measureDiagnosticsTimelineSpan } from "../../infra/diagnostics-timeline.js";
 import { formatErrorMessage } from "../../infra/errors.js";
+import { DEFAULT_MAX_BYTES } from "../../media-understanding/defaults.constants.js";
+import type { MediaFact } from "../../media/media-facts.js";
 import { parseInboundMediaUri } from "../../media/media-reference.js";
 import { deleteMediaBuffer, MEDIA_MAX_BYTES } from "../../media/store.js";
-import { resolveChatAttachmentMaxBytes } from "../chat-attachment-policy.js";
+import { resolveChatAttachmentPolicy } from "../chat-attachment-policy.js";
 import {
   MediaOffloadError,
   type OffloadedRef,
@@ -23,7 +25,7 @@ import {
   stripImageMediaMarkers,
   UnsupportedAttachmentError,
 } from "../chat-attachments.js";
-import { resolveGatewayModelSupportsImages } from "../session-utils.js";
+import { resolveGatewayModelInputCapabilities } from "../session-utils.js";
 import {
   explicitOriginTargetsAcpSession,
   explicitOriginTargetsPluginBinding,
@@ -61,32 +63,56 @@ function shouldPassThroughManagedInboundPdfOffloadRef(ref: OffloadedRef): boolea
   return ref.sizeBytes > MEDIA_MAX_BYTES && isManagedInboundPdfOffloadRef(ref);
 }
 
+function canHydrateChatSendVideo(
+  ref: Pick<OffloadedRef, "mimeType" | "sizeBytes">,
+  supportsNativeVideo: boolean,
+): boolean {
+  return (
+    supportsNativeVideo &&
+    ref.mimeType.startsWith("video/") &&
+    ref.sizeBytes <= DEFAULT_MAX_BYTES.video
+  );
+}
+
 // Stage media before ACK so permanent client errors stay 4xx and retryable
 // staging failures stay 5xx. Managed PDFs retain their host-readable fallback.
 async function prestageMediaPathOffloads(params: {
   offloadedRefs: OffloadedRef[];
+  parsedMedia: readonly MediaFact[];
   includeImageRefs?: boolean;
+  supportsNativeVideo: boolean;
   cfg: OpenClawConfig;
   sessionKey: string;
   agentId: string;
-}): Promise<{ paths: string[]; types: string[]; workspaceDir?: string }> {
-  const mediaPathRefs = params.offloadedRefs.filter(
-    (ref) => params.includeImageRefs || !ref.mimeType.startsWith("image/"),
-  );
-  if (mediaPathRefs.length === 0) {
-    return { paths: [], types: [] };
-  }
-  const refsByManagedPath = (refs: OffloadedRef[]) => ({
-    paths: refs.map((ref) => ref.path),
-    types: refs.map((ref) => ref.mimeType),
+}): Promise<{ media: MediaFact[]; paths: string[]; types: string[]; workspaceDir?: string }> {
+  const mediaPathRefs = params.offloadedRefs.filter((ref) => {
+    // Native model inputs hydrate directly from their managed claim checks;
+    // staging video would apply the unrelated 5 MB sandbox tool-file ceiling.
+    if (canHydrateChatSendVideo(ref, params.supportsNativeVideo)) {
+      return false;
+    }
+    return params.includeImageRefs || !ref.mimeType.startsWith("image/");
   });
-  const passThroughRefs: OffloadedRef[] = [];
-  const refsToStage: OffloadedRef[] = [];
-  for (const ref of mediaPathRefs) {
-    (shouldPassThroughManagedInboundPdfOffloadRef(ref) ? passThroughRefs : refsToStage).push(ref);
+  if (mediaPathRefs.length === 0) {
+    return { media: [], paths: [], types: [] };
   }
+  const selectedSourceIds = new Set(mediaPathRefs.map((ref) => ref.id));
+  const parsedMedia = params.parsedMedia.filter(
+    (fact) => fact.sourceId !== undefined && selectedSourceIds.has(fact.sourceId),
+  );
+  const projectRefs = (stagedPaths: ReadonlyMap<string, string> = new Map()) => ({
+    media: parsedMedia.map((fact) => {
+      const stagedPath = fact.sourceId ? stagedPaths.get(fact.sourceId) : undefined;
+      return stagedPath && stagedPath !== fact.path ? { ...fact, path: stagedPath } : fact;
+    }),
+    paths: mediaPathRefs.map((ref) => stagedPaths.get(ref.id) ?? ref.path),
+    types: mediaPathRefs.map((ref) => ref.mimeType),
+  });
+  const refsToStage = mediaPathRefs.filter(
+    (ref) => !shouldPassThroughManagedInboundPdfOffloadRef(ref),
+  );
   if (refsToStage.length === 0) {
-    return refsByManagedPath(mediaPathRefs);
+    return projectRefs();
   }
 
   try {
@@ -97,7 +123,7 @@ async function prestageMediaPathOffloads(params: {
       workspaceDir,
     });
     if (!sandbox) {
-      return refsByManagedPath(mediaPathRefs);
+      return projectRefs();
     }
 
     // The parser admits more than the sandbox can stage. Reject non-PDF files
@@ -131,7 +157,7 @@ async function prestageMediaPathOffloads(params: {
       if (refsToStage.some((ref) => !isManagedInboundPdfOffloadRef(ref))) {
         throw stageErr;
       }
-      return refsByManagedPath(mediaPathRefs);
+      return projectRefs();
     }
 
     // stageSandboxMedia preserves an absolute source path when no copy lands;
@@ -147,22 +173,14 @@ async function prestageMediaPathOffloads(params: {
     const stagedMedia = stagingCtx.media ?? [];
     // Preserve request order while mixing sandbox-relative paths with managed
     // host paths used by pass-through or fallback PDFs.
-    const resolvedByRef = new Map<OffloadedRef, { path: string; mimeType: string }>();
+    const stagedPaths = new Map<string, string>();
     refsToStage.forEach((ref, index) => {
-      resolvedByRef.set(ref, {
-        path: stagedMedia[index]?.path ?? ref.path,
-        mimeType: stagedMedia[index]?.contentType ?? ref.mimeType,
-      });
+      if (stagedSources.has(index) && stagedMedia[index]?.path) {
+        stagedPaths.set(ref.id, stagedMedia[index].path);
+      }
     });
-    for (const ref of passThroughRefs) {
-      resolvedByRef.set(ref, { path: ref.path, mimeType: ref.mimeType });
-    }
-    const ordered = mediaPathRefs.map(
-      (ref) => resolvedByRef.get(ref) ?? { path: ref.path, mimeType: ref.mimeType },
-    );
     return {
-      paths: ordered.map((entry) => entry.path),
-      types: ordered.map((entry) => entry.mimeType),
+      ...projectRefs(stagedPaths),
       workspaceDir: sandbox.workspaceDir,
     };
   } catch (err) {
@@ -200,10 +218,13 @@ export async function prepareChatSendAttachments(params: {
   let parsedMessage = inboundMessage;
   let parsedImages: Awaited<ReturnType<typeof parseMessageWithAttachments>>["images"] = [];
   let imageOrder: Awaited<ReturnType<typeof parseMessageWithAttachments>>["imageOrder"] = [];
+  let parsedMedia: MediaFact[] = [];
   let offloadedRefs: OffloadedRef[] = [];
   let mediaPathOffloadPaths: string[] = [];
   let mediaPathOffloadTypes: string[] = [];
+  let mediaPathOffloads: MediaFact[] = [];
   let mediaPathOffloadWorkspaceDir: string | undefined;
+  let supportsNativeVideo = false;
   const explicitOriginTargetsPlugin = explicitOriginTargetsPluginBinding(explicitOrigin);
   let prepareAttachmentsMs: number | undefined;
 
@@ -213,7 +234,7 @@ export async function prepareChatSendAttachments(params: {
       await measureDiagnosticsTimelineSpan(
         "gateway.chat_send.prepare_attachments",
         async () => {
-          const supportsSessionModelImages = await resolveGatewayModelSupportsImages({
+          const modelInputCapabilities = await resolveGatewayModelInputCapabilities({
             loadGatewayModelCatalog: context.loadGatewayModelCatalog,
             loadGatewayModelCatalogSnapshot: context.loadGatewayModelCatalogSnapshot,
             agentId,
@@ -221,11 +242,12 @@ export async function prepareChatSendAttachments(params: {
             model: resolvedSessionModel.model,
           });
           const supportsImages =
-            supportsSessionModelImages ||
+            modelInputCapabilities.supportsImages ||
             explicitOriginTargetsAcpSession(explicitOrigin) ||
             explicitOriginTargetsPlugin;
+          supportsNativeVideo = modelInputCapabilities.supportsVideo;
           const parsed = await parseMessageWithAttachments(inboundMessage, normalizedAttachments, {
-            maxBytes: resolveChatAttachmentMaxBytes(cfg),
+            limits: resolveChatAttachmentPolicy(cfg),
             log: context.logGateway,
             supportsImages,
             acceptNonImage: true,
@@ -235,14 +257,18 @@ export async function prepareChatSendAttachments(params: {
             : stripImageMediaMarkers(parsed.message, parsed.offloadedRefs);
           parsedImages = parsed.images;
           imageOrder = parsed.imageOrder;
+          parsedMedia = parsed.media;
           offloadedRefs = parsed.offloadedRefs;
           ({
+            media: mediaPathOffloads,
             paths: mediaPathOffloadPaths,
             types: mediaPathOffloadTypes,
             workspaceDir: mediaPathOffloadWorkspaceDir,
           } = await prestageMediaPathOffloads({
             offloadedRefs,
+            parsedMedia,
             includeImageRefs: !supportsImages,
+            supportsNativeVideo,
             cfg,
             sessionKey,
             agentId,
@@ -289,11 +315,14 @@ export async function prepareChatSendAttachments(params: {
       imageOrder,
       mediaPathOffloadPaths,
       mediaPathOffloadTypes,
+      mediaPathOffloads,
       mediaPathOffloadWorkspaceDir,
       offloadedRefs,
       parsedImages,
+      parsedMedia,
       parsedMessage,
       prepareAttachmentsMs,
+      supportsNativeVideo,
     },
   };
 }

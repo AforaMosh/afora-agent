@@ -34,6 +34,16 @@ beforeEach(() => {
   probeMediaFilesWithinBudget.mockReset();
 });
 
+it("assigns stable parser indexes when plugins leave sourceIndex nullish", () => {
+  expect(
+    toInboundMediaFacts([
+      { path: "/tmp/first.mp4", kind: "video", sourceIndex: null },
+      { path: "/tmp/second.png", kind: "image", sourceIndex: undefined },
+      { path: "/tmp/explicit.png", kind: "image", sourceIndex: 7 },
+    ]),
+  ).toMatchObject([{ sourceIndex: 0 }, { sourceIndex: 1 }, { sourceIndex: 7 }]);
+});
+
 type MergeMatrixSource = MediaFactLegacyProjection & {
   media?: readonly MediaFactInput[];
   MediaStaged?: boolean;
@@ -161,7 +171,6 @@ const stagedMediaMergeMatrix: Array<{
           contentType: "audio/ogg",
           kind: "audio",
           messageId: "voice",
-          hydrationSuppressed: true,
         },
       ],
       MediaPath: "/staged/photo.jpg",
@@ -182,7 +191,6 @@ const stagedMediaMergeMatrix: Array<{
         contentType: "audio/ogg",
         kind: "audio",
         messageId: "voice",
-        hydrationSuppressed: true,
       },
     ],
     expectedStaged: false,
@@ -203,7 +211,6 @@ const stagedMediaMergeMatrix: Array<{
           contentType: "application/octet-stream",
           kind: "audio",
           messageId: "two",
-          hydrationSuppressed: true,
         },
       ],
       MediaPaths: ["/staged/one.jpg", "/staged/two.ogg"],
@@ -228,7 +235,6 @@ const stagedMediaMergeMatrix: Array<{
         kind: "audio",
         messageId: "two",
         workspaceDir: "/staged",
-        hydrationSuppressed: true,
       },
     ],
     expectedStaged: true,
@@ -269,7 +275,6 @@ const stagedMediaMergeMatrix: Array<{
           contentType: "image/jpeg",
           kind: "image",
           messageId: "photo",
-          hydrationSuppressed: true,
         },
       ],
       MediaStaged: true,
@@ -280,7 +285,6 @@ const stagedMediaMergeMatrix: Array<{
         contentType: "image/jpeg",
         kind: "image",
         messageId: "photo",
-        hydrationSuppressed: true,
         staged: true,
       },
     ],
@@ -315,6 +319,13 @@ const stagedMediaMergeMatrix: Array<{
 ];
 
 describe("channel inbound media facts", () => {
+  it("captures local channel media size before native or description routing", async () => {
+    probeMediaFilesWithinBudget.mockResolvedValueOnce([{ sizeBytes: 321 }]);
+    await expect(
+      toInboundMediaFactsWithMetadata([{ path: "/tmp/clip.mp4", contentType: "video/mp4" }]),
+    ).resolves.toEqual([expect.objectContaining({ sourceIndex: 0, sizeBytes: 321 })]);
+  });
+
   it("probes local audio and video facts without probing images or URL-only media", async () => {
     probeMediaFilesWithinBudget.mockResolvedValueOnce([
       { durationMs: 1500 },
@@ -430,23 +441,34 @@ describe("channel inbound media facts", () => {
     };
     const expected = [
       {
+        sourceId: undefined,
+        sourceIndex: 0,
         path: "/tmp/image.png",
         url: undefined,
         contentType: "image/png",
         kind: "image",
         transcribed: false,
         messageId: "msg-1",
+        fileName: undefined,
+        sizeBytes: undefined,
       },
       {
+        sourceId: undefined,
+        sourceIndex: 1,
         path: undefined,
         url: "https://example.test/audio.mp3",
         contentType: "audio/mpeg",
         kind: "audio",
         transcribed: true,
         messageId: "msg-1",
+        fileName: undefined,
+        sizeBytes: undefined,
       },
     ];
-    expect(normalizeMediaFacts(input, defaults)).toEqual(expected);
+    expect(normalizeMediaFacts(input, defaults)).toMatchObject([
+      { path: "/tmp/image.png", contentType: "image/png", kind: "image" },
+      { url: "https://example.test/audio.mp3", contentType: "audio/mpeg", kind: "audio" },
+    ]);
     expect(toInboundMediaFacts(input, defaults)).toEqual(expected);
     expect(
       normalizeMediaFacts([{ path: " image.png ", workspaceDir: " /tmp/workspace " }]),
@@ -472,12 +494,16 @@ describe("channel inbound media facts", () => {
       }),
     ).toEqual([
       {
+        sourceId: undefined,
+        sourceIndex: 0,
         path: "/tmp/voice.ogg",
         url: undefined,
         contentType: "audio/ogg",
         kind: "audio",
         transcribed: true,
         messageId: undefined,
+        fileName: undefined,
+        sizeBytes: undefined,
       },
     ]);
     expect(
@@ -695,6 +721,8 @@ describe("channel inbound media facts", () => {
       }),
     ).toEqual([
       {
+        sourceId: undefined,
+        sourceIndex: 0,
         path: "/tmp/image.png",
         url: undefined,
         contentType: "image/png",

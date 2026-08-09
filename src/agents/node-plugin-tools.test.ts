@@ -294,6 +294,39 @@ describe("createNodePluginTools", () => {
     ]);
   });
 
+  it("defensively redacts node MCP structured video data from model details", async () => {
+    const sentinel = Buffer.from("PRIVATE_NODE_MCP_VIDEO").toString("base64");
+    replaceNodePluginTools({
+      nodeId: "node-1",
+      tools: [
+        {
+          pluginId: "node-mcp",
+          name: "docs_search",
+          description: "Search node-local docs",
+          command: "mcp.tools.call.v1",
+          mcp: { server: "docs", tool: "search" },
+        },
+      ],
+    });
+    vi.mocked(callGatewayTool).mockResolvedValueOnce({
+      payload: {
+        content: [{ type: "text", text: "found" }],
+        structuredContent: {
+          clip: { mimeType: "video/mp4", blob: sentinel },
+          replay: `data:video/mp4;base64,${sentinel}`,
+        },
+      },
+    });
+
+    const tool = expectDefined(createNodePluginTools({})[0], "node MCP tool test invariant");
+    const result = await tool.execute("call-mcp", { query: "needle" });
+    const serialized = JSON.stringify(result);
+
+    expect(serialized).not.toContain(sentinel);
+    expect(serialized).not.toContain("data:video");
+    expect(serialized).toContain("[binary omitted]");
+  });
+
   it("projects node MCP schemas and calls through the exact namespace catalog entry", async () => {
     replaceNodePluginTools({
       nodeId: "node-1",

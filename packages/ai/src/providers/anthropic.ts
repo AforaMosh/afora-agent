@@ -9,6 +9,7 @@ import type {
   RawMessageStreamEvent,
   TextBlockParam,
 } from "@anthropic-ai/sdk/resources/messages.js";
+import { NATIVE_VIDEO_OMISSION } from "@openclaw/llm-core";
 import { getEnvApiKey } from "../env-api-keys.js";
 import { getAiTransportHost, resolveAiTransportHeaderSentinels } from "../host.js";
 import {
@@ -1135,7 +1136,13 @@ async function convertMessages(
           });
         }
       } else {
-        const normalizedContent = await normalizeAnthropicInlineContent(msg.content, imageBudget);
+        const anthropicContent = msg.content.map((item) =>
+          item.type === "video" ? { type: "text" as const, text: NATIVE_VIDEO_OMISSION } : item,
+        );
+        const normalizedContent = await normalizeAnthropicInlineContent(
+          anthropicContent,
+          imageBudget,
+        );
         const blocks: ContentBlockParam[] = normalizedContent.map((item) => {
           if (item.type === "text") {
             return {

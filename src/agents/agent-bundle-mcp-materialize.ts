@@ -18,7 +18,11 @@ import type {
   McpToolCatalog,
   SessionMcpRuntime,
 } from "./agent-bundle-mcp-types.js";
-import { mcpContentBlockToAgentContent } from "./mcp-content.js";
+import {
+  projectMcpContentBlocks,
+  projectMcpJsonValue,
+  stringifyMcpJsonValue,
+} from "./mcp-content.js";
 import { buildMcpAppCanvasPayload, fetchMcpAppView } from "./mcp-ui-resource.js";
 import type { AgentToolResult } from "./runtime/index.js";
 import type { AnyAgentTool } from "./tools/common.js";
@@ -98,25 +102,25 @@ function toAgentToolResult(params: {
   result: CallToolResult;
 }): AgentToolResult<unknown> {
   const sourceContent = Array.isArray(params.result.content) ? params.result.content : [];
-  const content: AgentToolResult<unknown>["content"] = sourceContent.map(
-    mcpContentBlockToAgentContent,
-  );
-  const structuredContentBlock =
+  const content = projectMcpContentBlocks(sourceContent);
+  const projectedStructuredContent =
     params.result.structuredContent !== undefined
+      ? projectMcpJsonValue(params.result.structuredContent)
+      : undefined;
+  const structuredContentBlock =
+    projectedStructuredContent !== undefined
       ? ({
           type: "text",
-          text: `structuredContent:\n${JSON.stringify(params.result.structuredContent, null, 2)}`,
+          text: `structuredContent:\n${JSON.stringify(projectedStructuredContent, null, 2)}`,
         } as const)
       : null;
   // Structured results replace mirrored text, but original non-text blocks
   // still carry images, linked resources, and audio that the JSON cannot mirror.
   const normalizedContent: AgentToolResult<unknown>["content"] = structuredContentBlock
-    ? [
+    ? projectMcpContentBlocks([
         structuredContentBlock,
-        ...sourceContent
-          .filter((block) => block.type !== "text")
-          .map(mcpContentBlockToAgentContent),
-      ]
+        ...sourceContent.filter((block) => block.type !== "text"),
+      ])
     : content.length > 0
       ? content
       : ([
@@ -137,8 +141,8 @@ function toAgentToolResult(params: {
     mcpServer: params.serverName,
     mcpTool: params.toolName,
   };
-  if (params.result.structuredContent !== undefined) {
-    details.structuredContent = params.result.structuredContent;
+  if (projectedStructuredContent !== undefined) {
+    details.structuredContent = projectedStructuredContent;
   }
   if (params.result.isError === true) {
     details.status = "error";
@@ -158,7 +162,7 @@ function toJsonAgentToolResult(params: {
     content: [
       {
         type: "text",
-        text: JSON.stringify(params.value, null, 2),
+        text: stringifyMcpJsonValue(params.value),
       },
     ],
     details: {

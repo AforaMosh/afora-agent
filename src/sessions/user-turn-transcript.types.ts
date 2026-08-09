@@ -18,10 +18,11 @@ export type PersistedUserTurnMediaInput = Pick<
   | "durationMs"
   | "fileName"
   | "height"
-  | "hydrationSuppressed"
   | "messageId"
   | "path"
   | "sizeBytes"
+  | "sourceId"
+  | "sourceIndex"
   | "transcribed"
   | "url"
   | "width"
@@ -43,6 +44,8 @@ export type UserTurnInput = {
     }[];
     suppressedFactIndexes?: readonly number[];
   } | null;
+  /** Safe durable record that description text already represents these video sources. */
+  mediaVideoDescriptions?: readonly { sourceId?: string; sourceIndex: number }[] | null;
   timestamp?: number;
   idempotencyKey?: string;
   senderIsOwner?: boolean;

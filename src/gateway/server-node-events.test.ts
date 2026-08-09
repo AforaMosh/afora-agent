@@ -107,7 +107,13 @@ const runtimeMocks = vi.hoisted(() => ({
   parseMessageWithAttachments: parseMessageWithAttachmentsMock,
   registerApnsRegistration: registerApnsRegistrationMock,
   requestHeartbeat: vi.fn(),
-  resolveChatAttachmentMaxBytes: vi.fn(() => 20 * 1024 * 1024),
+  resolveChatAttachmentPolicy: vi.fn(() => ({
+    maxBytes: 8 * 1024 * 1024,
+    maxImageBytes: 8 * 1024 * 1024,
+    maxItems: 4,
+    maxAggregateDecodedBytes: 12 * 1024 * 1024,
+    maxEncodedRequestBytes: 18 * 1024 * 1024,
+  })),
   resolveGatewayModelSupportsImages: vi.fn(
     async ({
       loadGatewayModelCatalog,
@@ -1999,7 +2005,7 @@ describe("agent request events", () => {
     });
 
     expect(persistInboundImagesForTranscriptMock).toHaveBeenCalledWith(
-      expect.objectContaining({ imageOrder: ["offloaded", "inline"] }),
+      expect.not.objectContaining({ imageOrder: expect.anything() }),
     );
     expect(agentCommandMock).toHaveBeenCalledTimes(1);
     expectFields(mockCallArg(agentCommandMock), {

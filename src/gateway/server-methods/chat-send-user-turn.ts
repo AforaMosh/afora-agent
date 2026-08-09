@@ -2,14 +2,13 @@ import path from "node:path";
 import type { GatewayClientInfo } from "../../../packages/gateway-protocol/src/client-info.js";
 import type { RuntimeMsgContext as MsgContext } from "../../auto-reply/templating.js";
 import type { MediaFact } from "../../media/media-facts.js";
-import type { PromptImageOrderEntry } from "../../media/prompt-image-order.js";
-import type { SavedMedia } from "../../media/store.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 import type { UserTurnInput } from "../../sessions/user-turn-transcript.js";
 import { INTERNAL_MESSAGE_CHANNEL, isOperatorUiClient } from "../../utils/message-channel.js";
 import {
   type ChatImageContent,
   type OffloadedRef,
+  type PersistedInboundMedia,
   persistInboundImagesForTranscript,
 } from "../chat-attachments.js";
 import { isAcpBridgeClient } from "./chat-origin-routing.js";
@@ -33,11 +32,10 @@ type ChatSendUserTurnInputController = {
 
 async function persistChatSendImages(params: {
   images: ChatImageContent[];
-  imageOrder: PromptImageOrderEntry[];
   offloadedRefs: OffloadedRef[];
   client: GatewayRequestHandlerOptions["client"];
   logGateway: GatewayRequestContext["logGateway"];
-}): Promise<SavedMedia[]> {
+}): Promise<PersistedInboundMedia[]> {
   if (
     (params.images.length === 0 && params.offloadedRefs.length === 0) ||
     isAcpBridgeClient(params.client)
@@ -46,18 +44,10 @@ async function persistChatSendImages(params: {
   }
   return await persistInboundImagesForTranscript({
     images: params.images,
-    imageOrder: params.imageOrder,
     offloadedRefs: params.offloadedRefs,
     log: params.logGateway,
     logContext: "chat.send",
   });
-}
-
-function resolveChatSendManagedMedia(savedImages: SavedMedia[]): MediaFact[] {
-  return savedImages.map((entry) => ({
-    path: entry.path,
-    contentType: entry.contentType ?? "application/octet-stream",
-  }));
 }
 
 export function applyChatSendManagedMedia(ctx: MsgContext, media: MediaFact[]): void {
@@ -67,47 +57,39 @@ export function applyChatSendManagedMedia(ctx: MsgContext, media: MediaFact[]): 
 }
 
 function buildChatSendUserTurnMedia(
-  savedMedia: SavedMedia[],
-  offloadedRefs: OffloadedRef[],
+  savedMedia: PersistedInboundMedia[],
+  parsedMedia: readonly MediaFact[],
 ): MediaFact[] {
-  const offloadedRefsById = new Map(offloadedRefs.map((ref) => [ref.id, ref] as const));
-  return savedMedia.map((entry) => {
-    const offloadedRef = offloadedRefsById.get(entry.id);
-    return {
-      path: entry.path,
-      ...(offloadedRef
-        ? {
-            // Every offload keeps its claim-check alias so persisted marker
-            // ownership survives; only non-images skip native image hydration.
-            url: offloadedRef.mediaRef,
-            kind: offloadedRef.kind,
-            fileName: offloadedRef.label,
-            sizeBytes: offloadedRef.sizeBytes,
-            ...(offloadedRef.durationMs !== undefined
-              ? { durationMs: offloadedRef.durationMs }
-              : {}),
-            ...(offloadedRef.width !== undefined ? { width: offloadedRef.width } : {}),
-            ...(offloadedRef.height !== undefined ? { height: offloadedRef.height } : {}),
-            ...(offloadedRef.mimeType.startsWith("image/") ? {} : { hydrationSuppressed: true }),
-          }
-        : {}),
-      contentType: entry.contentType,
-      ...(offloadedRef?.durationMs ? { durationMs: offloadedRef.durationMs } : {}),
-      ...(offloadedRef?.width ? { width: offloadedRef.width } : {}),
-      ...(offloadedRef?.height ? { height: offloadedRef.height } : {}),
-    };
+  const savedBySourceIndex = new Map(
+    savedMedia.map((entry) => [entry.sourceIndex, entry] as const),
+  );
+  return parsedMedia.flatMap((fact) => {
+    const sourceIndex = fact.sourceIndex;
+    const saved = sourceIndex === undefined ? undefined : savedBySourceIndex.get(sourceIndex);
+    if (fact.path || fact.url) {
+      return [fact];
+    }
+    return saved
+      ? [
+          {
+            ...fact,
+            sourceId: saved.id,
+            path: saved.path,
+            contentType: fact.contentType ?? saved.contentType,
+          },
+        ]
+      : [];
   });
 }
 
 function buildChatSendPromptMedia(
   attachments: PreparedChatSendAttachments,
 ): MediaFact[] | undefined {
-  if (!attachments.imageOrder.includes("offloaded")) {
-    return undefined;
-  }
-  const media = attachments.offloadedRefs
-    .filter((ref) => ref.mimeType.startsWith("image/"))
-    .map((ref) => ({ path: ref.path, url: ref.mediaRef, contentType: ref.mimeType }));
+  const media = attachments.parsedMedia.filter(
+    (fact) =>
+      Boolean(fact.path ?? fact.url) &&
+      (fact.kind === "image" || fact.kind === "sticker" || fact.kind === "video"),
+  );
   return media.length > 0 ? media : undefined;
 }
 
@@ -116,8 +98,7 @@ function buildChatSendMessageContext(params: {
   client: GatewayRequestHandlerOptions["client"];
   clientInfo?: GatewayClientInfo;
   clientRunId: string;
-  mediaPathOffloadPaths: string[];
-  mediaPathOffloadTypes: string[];
+  mediaPathOffloads: MediaFact[];
   mediaPathOffloadWorkspaceDir?: string;
   originatingRoute: AdmittedChatSend["originatingRoute"];
   parsedMessage: string;
@@ -193,13 +174,12 @@ function buildChatSendMessageContext(params: {
     GatewayClientCaps: params.client?.connect?.caps ?? [],
     GatewayRunToolBindings: params.toolBindings,
   };
-  if (params.mediaPathOffloadPaths.length > 0) {
+  if (params.mediaPathOffloads.length > 0) {
     // Pre-staged offloads must use structured facts and marker text so the
     // dispatch path renders their prompt note without staging them a second time.
-    ctx.media = params.mediaPathOffloadPaths.map((pathValue, index) => ({
-      path: pathValue,
-      contentType: params.mediaPathOffloadTypes[index],
-      workspaceDir: params.mediaPathOffloadWorkspaceDir ?? path.dirname(pathValue),
+    ctx.media = params.mediaPathOffloads.map((fact) => ({
+      ...fact,
+      workspaceDir: params.mediaPathOffloadWorkspaceDir ?? path.dirname(fact.path ?? ""),
     }));
   }
   return {
@@ -231,7 +211,6 @@ export function prepareChatSendUserTurn(params: {
   const { request, session, admission, attachments, client, logGateway, userTurn } = params;
   const persistedMediaForTranscriptPromise = persistChatSendImages({
     images: attachments.parsedImages,
-    imageOrder: attachments.imageOrder,
     offloadedRefs: attachments.offloadedRefs,
     client,
     logGateway,
@@ -239,27 +218,35 @@ export function prepareChatSendUserTurn(params: {
   const preparedUserTurnMediaPromise: Promise<MediaFact[]> =
     request.normalizedAttachments.length > 0
       ? persistedMediaForTranscriptPromise.then((media) =>
-          buildChatSendUserTurnMedia(media, attachments.offloadedRefs),
+          buildChatSendUserTurnMedia(media, attachments.parsedMedia),
         )
       : Promise.resolve([]);
   userTurn.setInputPromise(
-    preparedUserTurnMediaPromise.then((media) => ({
-      ...userTurn.baseInput,
-      ...(media.length > 0 ? { media } : {}),
-      ...(media.length > 0 && attachments.imageOrder.length > 0
-        ? {
-            mediaImageLayout: {
-              // persistInboundImagesForTranscript emits image facts in this exact order,
-              // then appends non-images, so image slot ordinals are fact ordinals.
-              slots: attachments.imageOrder.map((kind, factIndex) => ({ kind, factIndex })),
-            },
-          }
-        : {}),
-    })),
+    preparedUserTurnMediaPromise.then((media) => {
+      const imageFactIndexes = media.flatMap((fact, index) =>
+        fact.contentType?.startsWith("image/") ? [index] : [],
+      );
+      return {
+        ...userTurn.baseInput,
+        ...(media.length > 0 ? { media } : {}),
+        ...(media.length > 0 && attachments.imageOrder.length > 0
+          ? {
+              mediaImageLayout: {
+                // Native video may precede images, so image slots follow actual
+                // persisted fact positions rather than their image-only ordinal.
+                slots: attachments.imageOrder.map((kind, imageIndex) => ({
+                  kind,
+                  factIndex: imageFactIndexes[imageIndex] ?? imageIndex,
+                })),
+              },
+            }
+          : {}),
+      };
+    }),
   );
   const pluginBoundMediaPromise =
-    attachments.explicitOriginTargetsPlugin && attachments.parsedImages.length > 0
-      ? persistedMediaForTranscriptPromise.then(resolveChatSendManagedMedia)
+    attachments.explicitOriginTargetsPlugin && attachments.parsedMedia.length > 0
+      ? preparedUserTurnMediaPromise
       : Promise.resolve([]);
   void pluginBoundMediaPromise.catch(() => undefined);
   const messageContext = buildChatSendMessageContext({
@@ -267,8 +254,7 @@ export function prepareChatSendUserTurn(params: {
     client,
     clientInfo: request.clientInfo,
     clientRunId: session.clientRunId,
-    mediaPathOffloadPaths: attachments.mediaPathOffloadPaths,
-    mediaPathOffloadTypes: attachments.mediaPathOffloadTypes,
+    mediaPathOffloads: attachments.mediaPathOffloads,
     mediaPathOffloadWorkspaceDir: attachments.mediaPathOffloadWorkspaceDir,
     originatingRoute: admission.originatingRoute,
     parsedMessage: attachments.parsedMessage,

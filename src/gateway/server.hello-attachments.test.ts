@@ -2,6 +2,12 @@
 // clients can validate a file before sending instead of hardcoding guesses.
 import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import {
+  CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
+  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+  CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
+  CHAT_ATTACHMENT_MAX_ITEMS,
+} from "../../packages/gateway-protocol/src/chat-attachment-limits.js";
 import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
 import {
   connectOk,
@@ -16,7 +22,15 @@ type GatewayHarness = Awaited<ReturnType<typeof createGatewaySuiteHarness>>;
 let gateway: GatewayHarness;
 
 type HelloPolicy = {
-  policy?: { attachments?: { maxBytes?: number; maxImageBytes?: number } };
+  policy?: {
+    attachments?: {
+      maxBytes?: number;
+      maxImageBytes?: number;
+      maxItems?: number;
+      maxAggregateDecodedBytes?: number;
+      maxEncodedRequestBytes?: number;
+    };
+  };
 };
 
 async function readAdvertisedAttachments(mediaMaxMb: number): Promise<unknown> {
@@ -46,10 +60,13 @@ describe("hello-ok attachment limits", () => {
     clearRuntimeConfigSnapshot();
   });
 
-  test("advertises the configured ceiling and the image hydration cap", async () => {
+  test("advertises the conservative frame-safe ceiling and image hydration cap", async () => {
     expect(await readAdvertisedAttachments(7)).toEqual({
       maxBytes: 7 * 1024 * 1024,
       maxImageBytes: MAX_IMAGE_BYTES,
+      maxItems: CHAT_ATTACHMENT_MAX_ITEMS,
+      maxAggregateDecodedBytes: CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
+      maxEncodedRequestBytes: CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
     });
   });
 
@@ -57,6 +74,9 @@ describe("hello-ok attachment limits", () => {
     expect(await readAdvertisedAttachments(2)).toEqual({
       maxBytes: 2 * 1024 * 1024,
       maxImageBytes: 2 * 1024 * 1024,
+      maxItems: CHAT_ATTACHMENT_MAX_ITEMS,
+      maxAggregateDecodedBytes: 8 * 1024 * 1024,
+      maxEncodedRequestBytes: CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
     });
   });
 });

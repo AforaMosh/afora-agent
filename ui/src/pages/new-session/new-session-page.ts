@@ -1963,6 +1963,9 @@ class NewSessionPage extends OpenClawLightDomElement {
               this.setMessageFromUser(message);
             }
           },
+          onAttachmentError: (message) => {
+            this.error = message;
+          },
           onVisibilityChange: (visibility) => {
             if (!this.submitting && !this.pendingCloud.sessionKey) {
               this.visibility = visibility;

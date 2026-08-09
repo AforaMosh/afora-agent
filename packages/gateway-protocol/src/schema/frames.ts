@@ -139,15 +139,15 @@ export const HelloOkSchema = closedObject({
     maxPayload: Type.Integer({ minimum: 1 }),
     maxBufferedBytes: Type.Integer({ minimum: 1 }),
     tickIntervalMs: Type.Integer({ minimum: 1 }),
-    // Additive: unconditional decoded-size ceilings for chat attachments, so
-    // clients can validate a file before sending instead of hardcoding guesses.
-    // Per attachment, not per frame: the encoded request must still fit
-    // `maxPayload`. MIME acceptance and per-message counts stay server-side
-    // because they depend on the entrypoint, resolved model, and payload sniffing.
+    // Additive: unconditional frame-safe ceilings for chat attachments, so
+    // clients can reject a batch before reading files into Base64 data URLs.
     attachments: Type.Optional(
       closedObject({
         maxBytes: Type.Integer({ minimum: 1 }),
         maxImageBytes: Type.Integer({ minimum: 1 }),
+        maxItems: Type.Optional(Type.Integer({ minimum: 1 })),
+        maxAggregateDecodedBytes: Type.Optional(Type.Integer({ minimum: 1 })),
+        maxEncodedRequestBytes: Type.Optional(Type.Integer({ minimum: 1 })),
       }),
     ),
     allowedSessionVisibilities: Type.Optional(Type.Array(SessionVisibilitySchema)),

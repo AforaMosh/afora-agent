@@ -497,6 +497,12 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
       getPendingAttachmentReads: () => attachmentReads.pendingReads,
       readSignal: attachmentReadSignal,
       onPendingReadsChange: (delta) => attachmentReads.updatePending(attachmentReadSignal, delta),
+      attachmentLimits: gatewaySnapshot.hello?.policy?.attachments,
+      onAttachmentError: (message) => {
+        state.lastError = message;
+        state.chatError = message;
+        state.requestUpdate?.();
+      },
       onAttachmentsChange: (next) => {
         state.chatAttachments = next;
         state.requestUpdate?.();

@@ -16,10 +16,14 @@ const INBOUND_MEDIA_PROBE_BUDGET_MS = 3000;
 
 /** Attachment metadata accepted from channel plugins before core normalization. */
 export type ChannelInboundMediaInput = {
+  sourceId?: string | null;
+  sourceIndex?: number | null;
   path?: string | null;
   url?: string | null;
   contentType?: string | null;
   kind?: InboundMediaFacts["kind"] | null;
+  fileName?: string | null;
+  sizeBytes?: number | null;
   durationMs?: number | null;
   width?: number | null;
   height?: number | null;
@@ -103,7 +107,13 @@ export function toInboundMediaFacts(
     transcribed?: (media: ChannelInboundMediaInput, index: number) => boolean;
   } = {},
 ): InboundMediaFacts[] {
-  return normalizeMediaFacts(media, defaults);
+  return normalizeMediaFacts(
+    media?.map((entry, sourceIndex) => ({
+      ...entry,
+      sourceIndex: entry.sourceIndex ?? sourceIndex,
+    })),
+    defaults,
+  );
 }
 
 function resolveProbeKind(media: InboundMediaFacts): MediaProbeKind | undefined {
@@ -147,7 +157,11 @@ export async function toInboundMediaFactsWithMetadata(
     },
   );
   for (const [candidateIndex, candidate] of candidates.entries()) {
-    enriched[candidate.index] = { ...candidate.fact, ...metadata[candidateIndex] };
+    enriched[candidate.index] = {
+      ...(enriched[candidate.index] ?? candidate.fact),
+      ...metadata[candidateIndex],
+      ...(candidate.fact.sizeBytes !== undefined ? { sizeBytes: candidate.fact.sizeBytes } : {}),
+    };
   }
   return enriched;
 }
@@ -162,12 +176,20 @@ export function toHistoryMediaEntries(
 ): HistoryMediaEntry[] {
   return toInboundMediaFacts(media, defaults).map((entry) => {
     const historyEntry: HistoryMediaEntry = {
+      sourceId: entry.sourceId,
+      sourceIndex: entry.sourceIndex,
       path: entry.path,
       url: entry.url,
       contentType: entry.contentType,
       kind: entry.kind,
       messageId: entry.messageId,
     };
+    if (entry.fileName) {
+      historyEntry.fileName = entry.fileName;
+    }
+    if (entry.sizeBytes !== undefined) {
+      historyEntry.sizeBytes = entry.sizeBytes;
+    }
     if (entry.durationMs) {
       historyEntry.durationMs = entry.durationMs;
     }

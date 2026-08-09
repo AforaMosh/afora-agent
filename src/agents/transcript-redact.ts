@@ -15,10 +15,10 @@ import type { ProviderEndpointClass } from "./provider-attribution.js";
 import { resolveProviderEndpoint } from "./provider-attribution.js";
 import type { AgentMessage } from "./runtime/index.js";
 import {
-  sanitizeTranscriptImageDataUrlField,
-  sanitizeTranscriptImageRecord,
-  shouldPreserveNestedTranscriptImageDataUrlFields,
-  shouldPreserveTranscriptImagePayload,
+  sanitizeTranscriptMediaDataUrlField,
+  sanitizeTranscriptMediaRecord,
+  shouldPreserveNestedTranscriptMediaDataUrlFields,
+  shouldPreserveTranscriptMediaPayload,
 } from "./transcript-redact-images.js";
 
 function resolveTranscriptRedactPatterns(patterns?: string[]) {
@@ -525,7 +525,7 @@ function redactTranscriptStructuredValue(
   cfg?: OpenClawConfig,
   fieldKey?: string,
   seen: WeakSet<object> = new WeakSet<object>(),
-  preserveImageDataUrlFields = false,
+  preserveMediaDataUrlFields = false,
   location: TranscriptValueLocation = "nested",
   assistantRoute?: TranscriptAssistantRoute,
 ): unknown {
@@ -547,7 +547,7 @@ function redactTranscriptStructuredValue(
         cfg,
         fieldKey,
         seen,
-        preserveImageDataUrlFields,
+        preserveMediaDataUrlFields,
         location === "assistant-content-array" ? "assistant-content-block" : "nested",
         assistantRoute,
       );
@@ -572,8 +572,8 @@ function redactTranscriptStructuredValue(
   }
 
   seen.add(value);
-  const sanitizedImageRecord = sanitizeTranscriptImageRecord(value);
-  const source = sanitizedImageRecord ?? value;
+  const sanitizedMediaRecord = sanitizeTranscriptMediaRecord(value);
+  const source = sanitizedMediaRecord ?? value;
   const currentAssistantRoute =
     location === "root" && source.role === "assistant"
       ? resolveTranscriptAssistantRoute(source, cfg)
@@ -669,11 +669,11 @@ function redactTranscriptStructuredValue(
       continue;
     }
     if (typeof item === "string") {
-      const sanitizedDataUrl = sanitizeTranscriptImageDataUrlField({
+      const sanitizedDataUrl = sanitizeTranscriptMediaDataUrlField({
         source,
         key,
         value: item,
-        preserveImageDataUrlFields,
+        preserveMediaDataUrlFields,
       });
       if (sanitizedDataUrl !== undefined) {
         if (sanitizedDataUrl !== item) {
@@ -683,7 +683,7 @@ function redactTranscriptStructuredValue(
         continue;
       }
     }
-    if (shouldPreserveTranscriptImagePayload(source, key, item, preserveImageDataUrlFields)) {
+    if (shouldPreserveTranscriptMediaPayload(source, key, item, preserveMediaDataUrlFields)) {
       continue;
     }
     const redacted = redactTranscriptStructuredValue(
@@ -691,7 +691,7 @@ function redactTranscriptStructuredValue(
       cfg,
       key,
       seen,
-      preserveImageDataUrlFields || shouldPreserveNestedTranscriptImageDataUrlFields(source, key),
+      preserveMediaDataUrlFields || shouldPreserveNestedTranscriptMediaDataUrlFields(source, key),
       location === "root" && source.role === "assistant" && key === "content" && Array.isArray(item)
         ? "assistant-content-array"
         : "nested",

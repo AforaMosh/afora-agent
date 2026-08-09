@@ -24,6 +24,49 @@ function readManifest(): MoonshotManifest {
 }
 
 describe("moonshot provider plugin", () => {
+  it("attaches native video only to K3 ordinary Chat on official Moonshot endpoints", async () => {
+    const provider = await registerSingleProviderPlugin(plugin);
+    const baseModel = {
+      id: "kimi-k3",
+      name: "Kimi K3",
+      provider: "moonshot",
+      api: "openai-completions",
+      baseUrl: "https://api.moonshot.ai/v1",
+      reasoning: true,
+      input: ["text", "image", "video"],
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 1_048_576,
+      maxTokens: 1_048_576,
+    } satisfies Model;
+    const normalize = (model: Model, providerId = "moonshot") =>
+      provider.normalizeResolvedModel?.({
+        provider: providerId,
+        modelId: model.id,
+        model,
+      } as never);
+
+    expect(normalize(baseModel)).toMatchObject({
+      nativeVideoInput: {
+        wireFamily: "openai-chat-video-url",
+        maxDecodedBytesPerItem: 16 * 1024 * 1024,
+        maxItems: 4,
+        maxAggregateDecodedBytes: 48 * 1024 * 1024,
+        aggregateScope: "video",
+        maxSerializedRequestBytesExclusive: 100_000_000,
+      },
+    });
+    for (const candidate of [
+      { ...baseModel, id: "kimi-k2.7-code" },
+      { ...baseModel, api: "anthropic-messages" as const },
+      { ...baseModel, baseUrl: "https://proxy.example.test/v1" },
+      { ...baseModel, baseUrl: "https://api.moonshot.ai/v1?token=inline" },
+      { ...baseModel, baseUrl: "https://user" + ":secret@api.moonshot.ai/v1" },
+      { ...baseModel, provider: "kimi-coding" },
+    ]) {
+      expect(normalize(candidate, candidate.provider)).not.toHaveProperty("nativeVideoInput");
+    }
+  });
+
   it("mirrors Kimi web-search env credentials in manifest metadata", () => {
     const manifestEnvVars =
       readManifest().setup?.providers?.find((provider) => provider.id === "moonshot")?.envVars ??

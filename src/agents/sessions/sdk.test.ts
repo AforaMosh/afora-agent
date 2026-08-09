@@ -481,6 +481,7 @@ describe("AgentSession queued user turns", () => {
     ]);
     expect(readRuntimePromptImageOrder(runtimeMessage)).toEqual(imageOrder);
     expect((runtimeMessage as unknown as Record<string, unknown>)["__openclaw"]).toEqual({
+      mediaBlockFactIndexes: [0],
       mediaImageBlockFactIndexes: [0],
     });
     expect(JSON.stringify(runtimeMessage)).not.toContain("runtimePromptMediaFacts");

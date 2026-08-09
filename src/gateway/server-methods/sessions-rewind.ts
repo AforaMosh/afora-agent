@@ -1,4 +1,3 @@
-import path from "node:path";
 import {
   ErrorCodes,
   errorShape,
@@ -12,16 +11,17 @@ import { listRegisteredAgentHarnesses } from "../../agents/harness/registry.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue/cleanup.js";
 import {
   listSessionBranches,
+  preflightSessionMessageCut,
   type SessionBranchListResult,
   type SessionBranchSwitchMutationResult,
   type SessionMessageCutMutationResult,
+  type SessionMessageCutPreflightResult,
 } from "../../config/sessions/session-accessor.js";
 import {
   forkSqliteSessionAtMessage as forkSessionAtMessage,
   rewindSqliteSessionToMessage as rewindSessionToMessage,
   switchSqliteSessionBranch as switchSessionBranch,
 } from "../../config/sessions/session-accessor.sqlite.js";
-import { MEDIA_MAX_BYTES, readMediaBuffer } from "../../media/store.js";
 import {
   isCompetingSessionWorkAdmissionActive,
   runExclusiveSessionLifecycleMutation,
@@ -38,6 +38,10 @@ import { hasVisibleActiveSessionRun } from "./session-active-runs.js";
 import { emitSessionsChanged } from "./session-change-event.js";
 import { resolveOperatorSessionCreation } from "./session-creation-provenance.js";
 import {
+  restoreSessionEditorAttachments,
+  type EditorAttachment,
+} from "./session-editor-attachments.js";
+import {
   loadAccessorSessionEntryForGatewayTarget,
   resolveSessionWorkerPlacementMutationError,
   respondSessionWorkerPlacementMutationError,
@@ -53,40 +57,6 @@ type MessageCutMutationResult =
 
 const EXTERNAL_CONVERSATION_ERROR =
   "Session history changes are unavailable because this session is owned by an external agent harness.";
-
-// A message realistically carries a handful of images; a corrupt transcript must
-// not turn rewind into a bulk media read.
-const EDITOR_MEDIA_REF_LIMIT = 10;
-
-async function resolveEditorMediaAttachments(
-  refs: Array<{ path: string; contentType: string }> | undefined,
-): Promise<Array<{ mimeType: string; data: string }>> {
-  if (!refs) {
-    return [];
-  }
-  const seen = new Set<string>();
-  const attachments: Array<{ mimeType: string; data: string }> = [];
-  for (const ref of refs) {
-    // Transcript paths are untrusted hints; only the basename is read through the
-    // media store (its traversal guards and byte cap stay authoritative), so
-    // dedupe on that resolved id — path aliases must not repeat the same read.
-    const id = path.basename(ref.path);
-    if (seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    if (seen.size > EDITOR_MEDIA_REF_LIMIT) {
-      break;
-    }
-    try {
-      const media = await readMediaBuffer(id, "inbound", MEDIA_MAX_BYTES);
-      attachments.push({ mimeType: ref.contentType, data: media.buffer.toString("base64") });
-    } catch {
-      // Skipped refs (missing file, oversized, guard rejection) never fail the cut.
-    }
-  }
-  return attachments;
-}
 
 function resolveUpstreamForkHarness(link: SessionUpstreamLink) {
   const matches = listRegisteredAgentHarnesses().filter((entry) =>
@@ -421,6 +391,26 @@ async function mutateSessionAtMessage(
         });
         return;
       }
+      let editorAttachments: EditorAttachment[] = [];
+      if (action !== "switch") {
+        const preflight = await preflightSessionMessageCut({
+          agentId: current.target.agentId,
+          entryId,
+          sessionKey: current.canonicalKey,
+          sessionStoreKey: current.sessionStoreKey,
+          storePath: current.storePath,
+        });
+        if (preflight.status !== "ready") {
+          respondMessageCutError(preflight, action, entryId, respond);
+          return;
+        }
+        const restored = await restoreSessionEditorAttachments(preflight);
+        if (restored.status === "failed") {
+          respondEditorAttachmentRestoreError(restored.reason, action, respond);
+          return;
+        }
+        editorAttachments = restored.attachments;
+      }
       let result: MessageCutMutationResult;
       try {
         result = await (action === "fork"
@@ -469,15 +459,6 @@ async function mutateSessionAtMessage(
         respondMessageCutError(result, action, entryId, respond);
         return;
       }
-      const editorAttachments =
-        action === "switch"
-          ? []
-          : [
-              ...("editorAttachments" in result ? (result.editorAttachments ?? []) : []),
-              ...(await resolveEditorMediaAttachments(
-                "editorMediaRefs" in result ? result.editorMediaRefs : undefined,
-              )),
-            ];
       if (action !== "fork") {
         clearSessionQueues(lifecycleIdentities);
       } else {
@@ -519,8 +500,33 @@ async function mutateSessionAtMessage(
   });
 }
 
+function respondEditorAttachmentRestoreError(
+  reason: "invalid" | "limit" | "unavailable",
+  action: MessageCutAction,
+  respond: GatewayRequestHandlerOptions["respond"],
+): void {
+  const label = action === "fork" ? "Fork" : "Rewind";
+  const message =
+    reason === "limit"
+      ? `${label} cannot restore this message because its attachments exceed the editor limits. The session was not changed.`
+      : reason === "invalid"
+        ? `${label} cannot restore this message because it contains an unsafe or invalid attachment reference. The session was not changed.`
+        : `${label} cannot restore this message because an attachment is missing or expired. The session was not changed.`;
+  respond(
+    false,
+    undefined,
+    errorShape(
+      reason === "unavailable" ? ErrorCodes.UNAVAILABLE : ErrorCodes.INVALID_REQUEST,
+      message,
+    ),
+  );
+}
+
 function respondMessageCutError(
-  result: Exclude<MessageCutMutationResult, { status: "created" }>,
+  result: Exclude<
+    MessageCutMutationResult | SessionMessageCutPreflightResult,
+    { status: "created" } | { status: "ready" }
+  >,
   action: MessageCutAction,
   entryId: string,
   respond: GatewayRequestHandlerOptions["respond"],

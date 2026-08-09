@@ -258,7 +258,7 @@ describe("resolveGoogleGeminiForwardCompatModel", () => {
       provider: "google",
       id: "gemini-3-flash-preview",
       api: "google-generative-ai",
-      input: ["text", "image"],
+      input: ["text", "image", "video"],
       contextWindow: 1_048_576,
       reasoning: true,
     });

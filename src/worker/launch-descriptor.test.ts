@@ -58,6 +58,28 @@ describe("worker launch descriptor", () => {
     });
   });
 
+  it("rejects inline video from an earlier user turn", () => {
+    const descriptor = launchDescriptor();
+    const candidate = {
+      ...descriptor,
+      assignment: {
+        ...descriptor.assignment,
+        initialMessages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Earlier clip." },
+              { type: "video", data: "Y2xpcA==", mimeType: "video/mp4" },
+            ],
+            timestamp: 1,
+          },
+        ],
+      },
+    };
+
+    expect(() => parseWorkerLaunchDescriptor(candidate)).toThrow();
+  });
+
   it("rejects unknown fields at every launch-owned boundary", () => {
     const descriptor = launchDescriptor();
     const cases: unknown[] = [

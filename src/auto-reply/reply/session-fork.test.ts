@@ -9,7 +9,10 @@ import {
   replaceSessionEntry,
 } from "../../config/sessions/session-accessor.js";
 import { replaceSqliteTranscriptEvents } from "../../config/sessions/session-accessor.sqlite.js";
-import type { InternalSessionEntry } from "../../config/sessions/types.js";
+import {
+  SESSION_TOTAL_TOKENS_VERSION,
+  type InternalSessionEntry,
+} from "../../config/sessions/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import {
   forkSessionEntryFromParent,
@@ -247,7 +250,7 @@ describe("forkSessionEntryFromParent", () => {
         sessionId: "parent-session",
         totalTokens: 150_000,
         totalTokensFresh: true,
-        totalTokensVersion: 1 as const,
+        totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION,
         updatedAt: 1,
       },
     );

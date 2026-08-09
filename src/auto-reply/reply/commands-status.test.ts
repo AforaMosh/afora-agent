@@ -14,6 +14,7 @@ import {
   resetSubagentRegistryForTests,
 } from "../../agents/subagent-registry.test-helpers.js";
 import type { OpenClawConfig } from "../../config/config.js";
+import { SESSION_TOTAL_TOKENS_VERSION } from "../../config/sessions.js";
 import {
   persistSessionTranscriptTurn,
   replaceSessionEntry,
@@ -2028,7 +2029,7 @@ describe("buildStatusReply subagent summary", () => {
         updatedAt: 0,
         totalTokens: 25_000,
         totalTokensFresh: true,
-        totalTokensVersion: 1,
+        totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION,
       },
       sessionKey: "agent:main:main",
       parentSessionKey: "agent:main:main",
@@ -2076,7 +2077,7 @@ describe("buildStatusReply subagent summary", () => {
         updatedAt: 0,
         totalTokens: 181_000,
         totalTokensFresh: true,
-        totalTokensVersion: 1,
+        totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION,
         contextTokens: 400_000,
       },
       sessionKey: "agent:main:main",

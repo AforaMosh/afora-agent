@@ -9,6 +9,11 @@ import {
 import { setPluginToolMeta } from "../plugins/tools.js";
 import { sanitizeServerName } from "./agent-bundle-mcp-names.js";
 import { compileGlobPatterns, matchesAnyGlobPattern } from "./glob-pattern.js";
+import {
+  projectMcpContentBlocks,
+  projectMcpJsonValue,
+  stringifyMcpJsonValue,
+} from "./mcp-content.js";
 import type { AgentToolResult } from "./runtime/index.js";
 import { DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY, normalizeToolName } from "./tool-policy.js";
 import { jsonResult } from "./tools/common.js";
@@ -37,30 +42,16 @@ function mapMcpPayloadToAgentToolResult(payload: unknown): AgentToolResult<unkno
     return jsonResult(payload);
   }
   const rawContent = Array.isArray(payload.content) ? payload.content : [];
-  const content: AgentToolResult<unknown>["content"] = [];
-  for (const block of rawContent) {
-    if (!isRecord(block)) {
-      continue;
-    }
-    if (block.type === "text" && typeof block.text === "string") {
-      content.push({ type: "text", text: block.text });
-    } else if (
-      block.type === "image" &&
-      typeof block.data === "string" &&
-      typeof block.mimeType === "string"
-    ) {
-      content.push({ type: "image", data: block.data, mimeType: block.mimeType });
-    }
-  }
+  const content = projectMcpContentBlocks(rawContent);
   const structuredText = isRecord(payload.structuredContent)
-    ? JSON.stringify(payload.structuredContent, null, 2)
+    ? stringifyMcpJsonValue(payload.structuredContent)
     : "";
   if (structuredText) {
     content.push({ type: "text", text: structuredText });
   }
   return {
     content,
-    details: payload,
+    details: projectMcpJsonValue(payload),
   };
 }
 

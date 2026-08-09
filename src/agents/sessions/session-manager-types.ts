@@ -1,5 +1,5 @@
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import type { ImageContent, TextContent } from "../../llm/types.js";
+import type { ModelInputContent } from "../../llm/types.js";
 import type { AgentMessage } from "../runtime/index.js";
 
 export interface SessionHeader {
@@ -92,7 +92,7 @@ export interface SessionInfoEntry extends SessionEntryBase {
 export interface CustomMessageEntry<T = unknown> extends SessionEntryBase {
   type: "custom_message";
   customType: string;
-  content: string | (TextContent | ImageContent)[];
+  content: string | ModelInputContent[];
   details?: T;
   display: boolean;
 }

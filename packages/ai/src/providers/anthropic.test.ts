@@ -1190,6 +1190,42 @@ describe("Anthropic provider", () => {
     ]);
   });
 
+  it("projects unsupported user video to bounded text before Anthropic payloads", async () => {
+    let capturedPayload: unknown;
+    const videoData = Buffer.from("private-video").toString("base64");
+    const stream = streamAnthropic(
+      makeAnthropicModel({ input: ["text", "image"] }),
+      {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "look" },
+              { type: "video", mimeType: "video/mp4", data: videoData },
+            ],
+            timestamp: 0,
+          },
+        ],
+      },
+      {
+        apiKey: "test-api-key",
+        onPayload: (payload) => {
+          capturedPayload = payload;
+          throw new Error("stop before network");
+        },
+      },
+    );
+
+    const result = await stream.result();
+    expect(result.stopReason).toBe("error");
+    const [userMessage] = (capturedPayload as { messages: [Record<string, unknown>] }).messages;
+    expect(userMessage.content).toMatchObject([
+      { type: "text", text: "look" },
+      { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+    expect(JSON.stringify(capturedPayload)).not.toContain(videoData);
+  });
+
   it("normalizes unsupported tool result image blocks before Anthropic payloads", async () => {
     configureTestAnthropicImageNormalizer();
     let capturedPayload: unknown;

@@ -92,7 +92,6 @@ beforeEach(async () => {
             { path: storedImagePath, contentType: "image/png" },
             // Duplicate ref proves dedupe: the response must carry this image once.
             { path: storedImagePath, contentType: "image/png" },
-            { path: `${storedImagePath}.missing`, contentType: "image/png" },
           ],
         },
       },
@@ -183,6 +182,28 @@ async function invoke(
     isWebchatConnect: () => false,
   });
   return respond;
+}
+
+async function appendVideoMessage(params: {
+  entryId: string;
+  media: Record<string, unknown>;
+}): Promise<void> {
+  const scope = { agentId: "main", sessionId: sourceSessionId, sessionKey };
+  await appendTranscriptMessage(scope, {
+    eventId: params.entryId,
+    parentId: "assistant-entry",
+    message: {
+      role: "user",
+      content: "edit this clip",
+      __openclaw: { media: [params.media] },
+    },
+  });
+  await appendTranscriptEvent(scope, {
+    type: "leaf",
+    id: `${params.entryId}-leaf`,
+    parentId: "assistant-entry",
+    targetId: params.entryId,
+  });
 }
 
 type QueuedSessionWork = {
@@ -406,7 +427,7 @@ describe("session message-cut methods", () => {
       }),
       undefined,
     );
-    expect(mocks.readMediaBuffer).toHaveBeenCalledTimes(2);
+    expect(mocks.readMediaBuffer).toHaveBeenCalledTimes(1);
     const forkKey = (fork.mock.calls[0]?.[1] as { sessionKey?: string } | undefined)?.sessionKey;
     expect(forkKey).toBeTruthy();
     const forkEntry = loadSessionEntry({ agentId: "main", sessionKey: forkKey ?? "" });
@@ -435,7 +456,191 @@ describe("session message-cut methods", () => {
       },
       undefined,
     );
-    expect(mocks.readMediaBuffer).toHaveBeenCalledTimes(4);
+    expect(mocks.readMediaBuffer).toHaveBeenCalledTimes(2);
+  });
+
+  it("restores a 6 MiB claim-check video before rewinding", async () => {
+    const storedVideoId = "stored-video.mp4";
+    const storedVideoData = Buffer.alloc(6 * 1024 * 1024, 1);
+    mocks.readMediaBuffer.mockImplementation(async (id: string) => {
+      if (id !== storedVideoId) {
+        throw new Error(`missing media: ${id}`);
+      }
+      return {
+        id,
+        path: `/state/media/inbound/${id}`,
+        buffer: storedVideoData,
+        size: storedVideoData.byteLength,
+      };
+    });
+    const scope = { agentId: "main", sessionId: sourceSessionId, sessionKey };
+    await appendTranscriptMessage(scope, {
+      eventId: "video-entry",
+      parentId: "assistant-entry",
+      message: {
+        role: "user",
+        content: "edit this clip",
+        __openclaw: {
+          media: [
+            {
+              sourceId: storedVideoId,
+              sourceIndex: 0,
+              path: `/state/media/inbound/${storedVideoId}`,
+              url: `media://inbound/${storedVideoId}`,
+              kind: "video",
+              contentType: "video/mp4",
+              sizeBytes: storedVideoData.byteLength,
+            },
+          ],
+        },
+      },
+    });
+    await appendTranscriptEvent(scope, {
+      type: "leaf",
+      id: "active-video-leaf",
+      parentId: "assistant-entry",
+      targetId: "video-entry",
+    });
+
+    const rewind = await invoke("sessions.rewind", "video-entry");
+
+    expect(rewind).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ editorText: "edit this clip" }),
+      undefined,
+    );
+    const payload = rewind.mock.calls[0]?.[1] as
+      | { editorAttachments?: Array<{ data: string; mimeType: string }> }
+      | undefined;
+    expect(payload?.editorAttachments).toHaveLength(1);
+    expect(payload?.editorAttachments?.[0]).toMatchObject({ mimeType: "video/mp4" });
+    expect(payload?.editorAttachments?.[0]?.data.length).toBe((6 * 1024 * 1024 * 4) / 3);
+    expect(mocks.readMediaBuffer).toHaveBeenCalledWith(storedVideoId, "inbound", 8 * 1024 * 1024);
+  });
+
+  it("rejects a 20 MiB video before fork mutation or media read", async () => {
+    const storedVideoId = "oversized-video.mp4";
+    await appendVideoMessage({
+      entryId: "oversized-video-entry",
+      media: {
+        sourceId: storedVideoId,
+        sourceIndex: 0,
+        path: `/state/media/inbound/${storedVideoId}`,
+        url: `media://inbound/${storedVideoId}`,
+        kind: "video",
+        contentType: "video/mp4",
+        sizeBytes: 20 * 1024 * 1024,
+      },
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+    const entryCountBefore = listSessionEntries({ agentId: "main" }).length;
+
+    const respond = await invoke("sessions.fork", "oversized-video-entry");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: expect.stringContaining("attachments exceed the editor limits"),
+      }),
+    );
+    expect(mocks.readMediaBuffer).not.toHaveBeenCalled();
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
+    expect(listSessionEntries({ agentId: "main" })).toHaveLength(entryCountBefore);
+  });
+
+  it("rejects an expired video before rewind and preserves queued work", async () => {
+    const storedVideoId = "expired-video.mp4";
+    mocks.readMediaBuffer.mockRejectedValue(new Error("missing media"));
+    await appendVideoMessage({
+      entryId: "expired-video-entry",
+      media: {
+        sourceId: storedVideoId,
+        sourceIndex: 0,
+        path: `/state/media/inbound/${storedVideoId}`,
+        url: `media://inbound/${storedVideoId}`,
+        kind: "video",
+        contentType: "video/mp4",
+        sizeBytes: 6 * 1024 * 1024,
+      },
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+    const work = enqueueSessionWork("expired rewind");
+
+    const respond = await invoke("sessions.rewind", "expired-video-entry");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.UNAVAILABLE,
+        message: expect.stringContaining("attachment is missing or expired"),
+      }),
+    );
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
+    expectSessionWorkQueued(work);
+    setCommandLaneConcurrency(sessionLane, 1);
+    await expect(work.command).resolves.toBe("expired rewind command");
+  });
+
+  it("rejects a missing video before creating a fork target", async () => {
+    const storedVideoId = "missing-video.mp4";
+    mocks.readMediaBuffer.mockRejectedValue(new Error("missing media"));
+    await appendVideoMessage({
+      entryId: "missing-video-entry",
+      media: {
+        sourceId: storedVideoId,
+        sourceIndex: 0,
+        path: `/state/media/inbound/${storedVideoId}`,
+        url: `media://inbound/${storedVideoId}`,
+        kind: "video",
+        contentType: "video/mp4",
+        sizeBytes: 1024,
+      },
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+    const entryCountBefore = listSessionEntries({ agentId: "main" }).length;
+
+    const respond = await invoke("sessions.fork", "missing-video-entry");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({ code: ErrorCodes.UNAVAILABLE }),
+    );
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
+    expect(listSessionEntries({ agentId: "main" })).toHaveLength(entryCountBefore);
+  });
+
+  it("rejects an unsafe video claim check before rewind mutation", async () => {
+    const storedVideoId = "unsafe-video.mp4";
+    await appendVideoMessage({
+      entryId: "unsafe-video-entry",
+      media: {
+        sourceId: storedVideoId,
+        sourceIndex: 0,
+        path: `/state/media/inbound/${storedVideoId}`,
+        url: "media://inbound/nested%2Funsafe-video.mp4",
+        kind: "video",
+        contentType: "video/mp4",
+        sizeBytes: 1024,
+      },
+    });
+    const sourceBefore = loadSessionEntry({ agentId: "main", sessionKey })?.sessionId;
+
+    const respond = await invoke("sessions.rewind", "unsafe-video-entry");
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: expect.stringContaining("unsafe or invalid attachment reference"),
+      }),
+    );
+    expect(mocks.readMediaBuffer).not.toHaveBeenCalled();
+    expect(loadSessionEntry({ agentId: "main", sessionKey })?.sessionId).toBe(sourceBefore);
   });
 
   it.each([

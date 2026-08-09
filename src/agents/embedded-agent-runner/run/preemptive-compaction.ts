@@ -1,6 +1,7 @@
 /**
  * Estimates prompt pressure and decides pre-prompt compaction routing.
  */
+import { estimateNativeVideoTokens } from "@openclaw/llm-core";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import type { SessionContextBudgetStatus } from "../../../config/sessions.js";
 import { estimateStringChars } from "../../../utils/cjk-chars.js";
@@ -28,7 +29,7 @@ const TOOL_RESULT_CHARS_PER_TOKEN = 2;
 const JSON_PAYLOAD_CHARS_PER_TOKEN = 3;
 const MESSAGE_BOUNDARY_OVERHEAD_TOKENS = 12;
 const CONTENT_BLOCK_OVERHEAD_TOKENS = 6;
-const IMAGE_BLOCK_TOKENS = 2_000;
+const MEDIA_BLOCK_TOKENS = 2_000;
 const TRUNCATION_ROUTE_BUFFER_TOKENS = 512;
 
 /** Pre-prompt routing decision plus the budget facts used to explain it in logs and session state. */
@@ -114,7 +115,13 @@ function estimateContentBlockTokenPressure(
     return CONTENT_BLOCK_OVERHEAD_TOKENS + estimateStringTokenPressure(text, charsPerToken, mode);
   }
   if (type === "image") {
-    return IMAGE_BLOCK_TOKENS;
+    return MEDIA_BLOCK_TOKENS;
+  }
+  if (type === "video") {
+    return estimateNativeVideoTokens({
+      base64: typeof block.data === "string" ? block.data : "",
+      minimumTokens: MEDIA_BLOCK_TOKENS,
+    });
   }
   return (
     CONTENT_BLOCK_OVERHEAD_TOKENS + estimateJsonPayloadTokenPressure(block, charsPerToken, mode)

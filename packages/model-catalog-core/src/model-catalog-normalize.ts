@@ -13,6 +13,7 @@ import {
 } from "./model-catalog-refs.js";
 import {
   MODEL_CATALOG_APIS,
+  MODEL_CATALOG_INPUTS,
   MODEL_CATALOG_THINKING_LEVELS,
   isModelCatalogThinkingFormat,
   type ModelCatalog,
@@ -38,7 +39,7 @@ import {
 
 // Normalizes raw provider model catalogs into stable rows for lookup and merging.
 
-const MODEL_CATALOG_INPUTS = new Set(["text", "image", "document"]);
+const MODEL_CATALOG_INPUT_SET = new Set<string>(MODEL_CATALOG_INPUTS);
 const MODEL_CATALOG_DISCOVERY_MODES = new Set(["static", "refreshable", "runtime"]);
 const MODEL_CATALOG_STATUSES = new Set(["available", "preview", "deprecated", "disabled"]);
 const MODEL_CATALOG_API_SET = new Set<string>(MODEL_CATALOG_APIS);
@@ -119,7 +120,7 @@ function normalizeModelCatalogApi(value: unknown): ModelCatalogApi | undefined {
 
 function normalizeModelCatalogInputs(value: unknown): ModelCatalogInput[] | undefined {
   const inputs = normalizeTrimmedStringList(value).filter((input): input is ModelCatalogInput =>
-    MODEL_CATALOG_INPUTS.has(input),
+    MODEL_CATALOG_INPUT_SET.has(input),
   );
   return inputs.length > 0 ? inputs : undefined;
 }

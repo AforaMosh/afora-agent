@@ -133,6 +133,15 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
         __openclaw: {
           media: [
             { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+            {
+              sourceId: "stored-video.mp4",
+              sourceIndex: 1,
+              path: "/state/media/inbound/stored-video.mp4",
+              url: "media://inbound/stored-video.mp4",
+              kind: "video",
+              contentType: "video/mp4",
+              sizeBytes: 1024,
+            },
             { path: "/state/media/inbound/notes.txt", contentType: "text/plain" },
           ],
         },
@@ -456,7 +465,7 @@ describe("SQLite session message cuts", () => {
     ).resolves.toMatchObject({ status });
   });
 
-  it("rewinds by repointing the active leaf and returns the editor text", async () => {
+  it("rewinds by repointing the active leaf and returns inline images plus durable media", async () => {
     const { env } = await createSession();
 
     const result = await rewindSessionToMessage({
@@ -473,6 +482,7 @@ describe("SQLite session message cuts", () => {
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
         { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+        { path: "/state/media/inbound/stored-video.mp4", contentType: "video/mp4" },
       ],
     });
     if (result.status !== "created") {
@@ -558,6 +568,7 @@ describe("SQLite session message cuts", () => {
       editorAttachments: [{ mimeType: "image/png", data: "aW1hZ2U=" }],
       editorMediaRefs: [
         { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
+        { path: "/state/media/inbound/stored-video.mp4", contentType: "video/mp4" },
       ],
     });
     if (result.status !== "created") {

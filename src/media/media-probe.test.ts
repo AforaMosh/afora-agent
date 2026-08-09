@@ -59,10 +59,13 @@ async function probeMediaFile(filePath: string, kind: MediaProbeKind): Promise<M
 
 describe("probeMediaFile", () => {
   it("returns audio duration from one bounded file probe", async () => {
-    runFfprobe.mockResolvedValueOnce(JSON.stringify({ format: { duration: "12.3456" } }));
+    runFfprobe.mockResolvedValueOnce(
+      JSON.stringify({ format: { duration: "12.3456", size: "4" } }),
+    );
 
     await expect(probeMediaFile(songPath, "audio")).resolves.toEqual({
       durationMs: 12_346,
+      sizeBytes: 4,
     });
     expect(runFfprobe).toHaveBeenCalledOnce();
     expect(runFfprobe).toHaveBeenCalledWith(
@@ -72,7 +75,7 @@ describe("probeMediaFile", () => {
         "-protocol_whitelist",
         "fd",
         "-show_entries",
-        "format=duration:stream=index,codec_type,codec_name,profile,pix_fmt,duration,width,height:stream_disposition=default,attached_pic",
+        "format=duration,size:stream=index,codec_type,codec_name,profile,pix_fmt,duration,width,height:stream_disposition=default,attached_pic",
         "-of",
         "json",
         "-fd",
@@ -86,13 +89,14 @@ describe("probeMediaFile", () => {
   it("returns video duration and dimensions from the selected stream", async () => {
     runFfprobe.mockResolvedValueOnce(
       JSON.stringify({
-        format: { duration: "10" },
+        format: { duration: "10", size: "4" },
         streams: [{ codec_type: "video", duration: "3.2", width: 720, height: 1280 }],
       }),
     );
 
     await expect(probeMediaFile(clipPath, "video")).resolves.toEqual({
       durationMs: 3200,
+      sizeBytes: 4,
       width: 720,
       height: 1280,
     });
@@ -176,11 +180,15 @@ describe("probeMediaFile", () => {
 
   it("uses stream duration when the container duration is absent", async () => {
     runFfprobe.mockResolvedValueOnce(
-      JSON.stringify({ streams: [{ codec_type: "audio", duration: "1.5" }] }),
+      JSON.stringify({
+        format: { size: "5" },
+        streams: [{ codec_type: "audio", duration: "1.5" }],
+      }),
     );
 
     await expect(probeMediaFile(voicePath, "audio")).resolves.toEqual({
       durationMs: 1500,
+      sizeBytes: 5,
     });
   });
 
@@ -266,7 +274,7 @@ describe("probeVideoDimensions", () => {
         "-protocol_whitelist",
         "pipe",
         "-show_entries",
-        "format=duration:stream=index,codec_type,codec_name,profile,pix_fmt,duration,width,height:stream_disposition=default,attached_pic",
+        "format=duration,size:stream=index,codec_type,codec_name,profile,pix_fmt,duration,width,height:stream_disposition=default,attached_pic",
         "-of",
         "json",
         "pipe:0",

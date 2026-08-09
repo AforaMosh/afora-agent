@@ -2,7 +2,12 @@
 import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
 import {
   calculateCost,
+  createNativeVideoAdmissionAccumulator,
+  decodedBase64Bytes,
   getEnvApiKey,
+  NATIVE_TOOL_VIDEO_OMISSION,
+  NATIVE_VIDEO_OMISSION,
+  resolveNativeVideoInputContract,
   type Context,
   type Model,
   type SimpleStreamOptions,
@@ -41,7 +46,7 @@ import {
 } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { parseGeminiAuth } from "./gemini-auth.js";
 import { stripGoogleProviderPrefix } from "./model-id.js";
-import { normalizeGoogleApiBaseUrl } from "./provider-policy.js";
+import { isOfficialGoogleAiStudioBaseUrl, normalizeGoogleApiBaseUrl } from "./provider-policy.js";
 import {
   isGoogleGemini25ThinkingBudgetModel,
   isGoogleGemini3FlashModel,
@@ -529,6 +534,91 @@ function normalizeGoogleThinkingConfig(
   return Object.keys(thinkingConfig).length > 0 ? thinkingConfig : undefined;
 }
 
+type MutableGooglePart = Record<string, unknown>;
+
+function inlineDataFromGooglePart(part: MutableGooglePart) {
+  return isRecord(part.inlineData) ? part.inlineData : undefined;
+}
+
+function serializedGoogleRequestBytes(request: GoogleGenerateContentRequest): number {
+  return new TextEncoder().encode(JSON.stringify(request)).byteLength;
+}
+
+/** Revalidates the completed AI Studio request, including total inline-media overhead. */
+function enforceGoogleNativeVideoRequestLimits(
+  model: GoogleTransportModel,
+  request: GoogleGenerateContentRequest,
+): GoogleGenerateContentRequest {
+  const contract = resolveNativeVideoInputContract(model);
+  const contentPartLists = request.contents.flatMap((content) =>
+    Array.isArray(content.parts)
+      ? [{ role: content.role, parts: content.parts as MutableGooglePart[] }]
+      : [],
+  );
+  let aggregateDecodedBytes = 0;
+  for (const { parts } of contentPartLists) {
+    for (const part of parts) {
+      const inlineData = inlineDataFromGooglePart(part);
+      const mimeType = typeof inlineData?.mimeType === "string" ? inlineData.mimeType : "";
+      const data = typeof inlineData?.data === "string" ? inlineData.data : "";
+      if (inlineData && !mimeType.toLowerCase().startsWith("video/")) {
+        aggregateDecodedBytes += decodedBase64Bytes(data) ?? 0;
+      }
+      const functionResponse = isRecord(part.functionResponse) ? part.functionResponse : undefined;
+      const nested = Array.isArray(functionResponse?.parts)
+        ? (functionResponse.parts as MutableGooglePart[])
+        : [];
+      for (let index = 0; index < nested.length; index += 1) {
+        const nestedData = inlineDataFromGooglePart(nested[index] ?? {});
+        const nestedMime =
+          typeof nestedData?.mimeType === "string" ? nestedData.mimeType.toLowerCase() : "";
+        if (nestedMime.startsWith("video/")) {
+          nested[index] = { text: NATIVE_VIDEO_OMISSION };
+        } else if (nestedData && typeof nestedData.data === "string") {
+          aggregateDecodedBytes += decodedBase64Bytes(nestedData.data) ?? 0;
+        }
+      }
+    }
+  }
+
+  const admission = createNativeVideoAdmissionAccumulator({
+    contract,
+    wireFamily: "google-inline-data",
+    initialAggregateDecodedBytes: aggregateDecodedBytes,
+  });
+  const accepted: Array<{ parts: MutableGooglePart[]; index: number }> = [];
+  for (const { role, parts } of contentPartLists) {
+    for (let index = 0; index < parts.length; index += 1) {
+      const part = parts[index] ?? {};
+      const inlineData = inlineDataFromGooglePart(part);
+      const mimeType = typeof inlineData?.mimeType === "string" ? inlineData.mimeType : "";
+      if (!mimeType.toLowerCase().startsWith("video/")) {
+        continue;
+      }
+      const data = typeof inlineData?.data === "string" ? inlineData.data : "";
+      const result = role === "user" ? admission.admit({ mimeType, data }) : undefined;
+      if (!result?.ok) {
+        parts[index] = { text: NATIVE_VIDEO_OMISSION };
+        continue;
+      }
+      inlineData.mimeType = result.wireMimeType;
+      accepted.push({ parts, index });
+    }
+  }
+  if (contract) {
+    while (
+      accepted.length > 0 &&
+      serializedGoogleRequestBytes(request) >= contract.maxSerializedRequestBytesExclusive
+    ) {
+      const rejected = accepted.pop();
+      if (rejected) {
+        rejected.parts[rejected.index] = { text: NATIVE_VIDEO_OMISSION };
+      }
+    }
+  }
+  return request;
+}
+
 function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
   const contents: Array<Record<string, unknown>> = [];
   const replayToolCallThoughtSignatures = new Map<string, string>();
@@ -542,6 +632,28 @@ function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
       preserveCrossModelToolCallThoughtSignature: requiresToolCallThoughtSignature(model.id),
     },
   );
+  const videoContract = resolveNativeVideoInputContract(routeModel);
+  const videoAdmission = createNativeVideoAdmissionAccumulator({
+    contract: videoContract,
+    wireFamily: "google-inline-data",
+    initialAggregateDecodedBytes:
+      videoContract?.aggregateScope === "all-inline-media"
+        ? transformedMessages.reduce(
+            (total, message) =>
+              total +
+              (Array.isArray(message.content)
+                ? message.content.reduce(
+                    (messageTotal, block) =>
+                      block.type === "image"
+                        ? messageTotal + (decodedBase64Bytes(block.data) ?? 0)
+                        : messageTotal,
+                    0,
+                  )
+                : 0),
+            0,
+          )
+        : 0,
+  });
   // Parallel calls need one immediate function-response turn. Gemini < 3 images cannot
   // live inside functionResponse, so hold them until the consecutive result run ends.
   const pendingToolResultImageTurns: Array<Record<string, unknown>> = [];
@@ -564,18 +676,36 @@ function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
         });
         continue;
       }
-      const parts = msg.content
-        .map((item) =>
-          item.type === "text"
-            ? { text: sanitizeTransportPayloadText(item.text) || " " }
-            : {
-                inlineData: {
-                  mimeType: item.mimeType,
-                  data: item.data,
-                },
+      const parts = msg.content.flatMap<Record<string, unknown>>((item) => {
+        if (item.type === "text") {
+          return [{ text: sanitizeTransportPayloadText(item.text) || " " }];
+        }
+        if (item.type === "video") {
+          const result = videoAdmission.admit(item);
+          if (!result.ok) {
+            return [{ text: NATIVE_VIDEO_OMISSION }];
+          }
+          return [
+            {
+              inlineData: {
+                mimeType: result.wireMimeType,
+                data: item.data,
               },
-        )
-        .filter((item) => model.input.includes("image") || !("inlineData" in item));
+            },
+          ];
+        }
+        if (item.type === "image" && !model.input.includes("image")) {
+          return [];
+        }
+        return [
+          {
+            inlineData: {
+              mimeType: item.mimeType,
+              data: item.data,
+            },
+          },
+        ];
+      });
       if (parts.length === 0) {
         parts.push({ text: " " });
       }
@@ -664,20 +794,23 @@ function convertGoogleMessages(model: GoogleTransportModel, context: Context) {
 
     if (msg.role === "toolResult") {
       const textResult = extractToolResultText(msg.content);
-      const imageContent = model.input.includes("image")
-        ? msg.content.filter(
-            (item): item is Extract<(typeof msg.content)[number], { type: "image" }> =>
-              item.type === "image" && describeToolResultMediaPlaceholder([item]) !== undefined,
-          )
-        : [];
-      const mediaPlaceholder = describeToolResultMediaPlaceholder(msg.content);
+      const hasToolVideo = msg.content.some((item) => item.type === "video");
+      const imageContent = msg.content.filter(
+        (item): item is Extract<(typeof msg.content)[number], { type: "image" }> =>
+          item.type === "image" &&
+          model.input.includes("image") &&
+          describeToolResultMediaPlaceholder([item]) !== undefined,
+      );
+      const mediaPlaceholder = hasToolVideo
+        ? NATIVE_TOOL_VIDEO_OMISSION
+        : describeToolResultMediaPlaceholder(msg.content);
       const responseValue = textResult
         ? sanitizeTransportPayloadText(textResult)
         : (mediaPlaceholder ?? "");
-      const imageParts = imageContent.map((imageBlock) => ({
+      const imageParts = imageContent.map((mediaBlock) => ({
         inlineData: {
-          mimeType: imageBlock.mimeType,
-          data: imageBlock.data,
+          mimeType: mediaBlock.mimeType,
+          data: mediaBlock.data,
         },
       }));
       const modelSupportsMultimodalFunctionResponse = supportsMultimodalFunctionResponse(model.id);
@@ -830,7 +963,7 @@ function collectGoogleTransportApiKeys(params: {
 }): string[] {
   if (
     params.kind !== "google-generative-ai" ||
-    !isOfficialGoogleGenerativeAiBaseUrl(params.model.baseUrl) ||
+    !isOfficialGoogleAiStudioBaseUrl(params.model.baseUrl) ||
     isGoogleOauthApiKey(params.primaryApiKey) ||
     hasGoogleAuthHeader(params.model.headers) ||
     hasGoogleAuthHeader(params.options?.headers)
@@ -878,18 +1011,6 @@ function buildGoogleTransportRequestUrl(
     : buildGoogleGenerativeAiRequestUrl(model);
 }
 
-function isOfficialGoogleGenerativeAiBaseUrl(baseUrl: string | undefined): boolean {
-  if (!baseUrl) {
-    return true;
-  }
-  try {
-    const url = new URL(baseUrl);
-    return url.protocol === "https:" && url.hostname === "generativelanguage.googleapis.com";
-  } catch {
-    return false;
-  }
-}
-
 function resolveGoogleGemini3FirstResponseRetryMs(env = process.env): number {
   const raw = env[GOOGLE_GEMINI3_FIRST_RESPONSE_RETRY_ENV];
   if (raw === undefined || raw.trim() === "") {
@@ -905,7 +1026,7 @@ function shouldRetryGoogleGemini3FirstResponse(params: {
   if (params.kind !== "google-generative-ai") {
     return false;
   }
-  if (!isOfficialGoogleGenerativeAiBaseUrl(params.model.baseUrl)) {
+  if (!isOfficialGoogleAiStudioBaseUrl(params.model.baseUrl)) {
     return false;
   }
   return isGoogleGemini3ProModel(params.model.id) || isGoogleGemini3FlashModel(params.model.id);
@@ -1330,6 +1451,7 @@ function createGoogleTransportStreamFn(kind: CanonicalGoogleTransportApi): Strea
         if (nextParams !== undefined) {
           params = nextParams as GoogleGenerateContentRequest;
         }
+        enforceGoogleNativeVideoRequestLimits(model, params);
         const requestUrl = buildGoogleTransportRequestUrl(kind, model, options);
         const fetchImpl = (options as { fetch?: typeof fetch } | undefined)?.fetch;
         const openSse = async (apiKeyForRequest: string | undefined) => {

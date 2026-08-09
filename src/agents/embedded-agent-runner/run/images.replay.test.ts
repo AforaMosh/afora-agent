@@ -623,17 +623,15 @@ describe("structured prompt media replay", () => {
     }
   });
 
-  it("keeps described image facts suppressed across serialize and restore", async () => {
+  it("keeps described image layout suppression across serialize and restore", async () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-replay-suppressed-"));
     const imagePath = path.join(workspaceDir, "described.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const serialized = JSON.stringify(
       buildPersistedUserTurnMessage({
         text: "description already present",
-        media: [
-          { path: imagePath, contentType: "image/png", hydrationSuppressed: true },
-          { kind: "sticker", hydrationSuppressed: true },
-        ],
+        media: [{ path: imagePath, contentType: "image/png" }, { kind: "sticker" }],
+        mediaImageLayout: { slots: [], suppressedFactIndexes: [0, 1] },
       }),
     );
     const restored = JSON.parse(serialized) as AgentMessage;
@@ -641,7 +639,7 @@ describe("structured prompt media replay", () => {
       | Record<string, unknown>
       | undefined;
     const persistedMedia = meta?.media as
-      | Array<{ path?: string; contentType?: string; hydrationSuppressed?: boolean }>
+      | Array<{ path?: string; contentType?: string }>
       | undefined;
 
     try {
@@ -649,15 +647,15 @@ describe("structured prompt media replay", () => {
         expect.objectContaining({
           path: imagePath,
           contentType: "image/png",
-          hydrationSuppressed: true,
         }),
-        expect.objectContaining({ kind: "sticker", hydrationSuppressed: true }),
+        expect.objectContaining({ kind: "sticker" }),
       ]);
       const replayHydration = await detectAndLoadPromptImages({
         prompt: "description already present",
         media: persistedMedia,
         workspaceDir,
         model: { input: ["text", "image"] },
+        mediaImageLayout: { slots: [], suppressedFactIndexes: [0, 1] },
         workspaceOnly: true,
       });
       expect(replayHydration.failedMediaCount).toBe(0);

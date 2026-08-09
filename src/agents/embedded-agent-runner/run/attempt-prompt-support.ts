@@ -208,6 +208,7 @@ export function observeEmbeddedAttemptPrompt(input: {
   hookMessagesForCurrentPrompt: AgentMessage[];
   hookRunner: PromptHookRunner;
   imageCount: number;
+  videoCount?: number;
   isRawModelRun: boolean;
   llmBoundaryPromptForPrecheck: string;
   promptForModel: string;
@@ -249,6 +250,7 @@ export function observeEmbeddedAttemptPrompt(input: {
       ),
       ...(input.toolSearchCompacted ? { providerVisibleTools } : {}),
       imagesCount: input.imageCount,
+      ...(input.videoCount ? { videosCount: input.videoCount } : {}),
       streamStrategy: input.streamStrategy,
       transport: input.transport,
       transcriptLeafId: input.transcriptLeafId,
@@ -262,6 +264,7 @@ export function observeEmbeddedAttemptPrompt(input: {
         messages: input.sessionMessages,
         runtimeOnly: input.promptSubmissionRuntimeOnly,
         imageCount: input.imageCount,
+        videoCount: input.videoCount,
       });
   if (promptSkipReason) {
     skipPromptSubmission = true;
@@ -278,6 +281,7 @@ export function observeEmbeddedAttemptPrompt(input: {
       prompt: input.promptForModel,
       messages: input.sessionMessages,
       imagesCount: input.imageCount,
+      ...(input.videoCount ? { videosCount: input.videoCount } : {}),
     });
   }
 
@@ -317,9 +321,11 @@ export function observeEmbeddedAttemptPrompt(input: {
         `historyTextChars=${sessionSummary.totalTextChars} ` +
         `maxMessageTextChars=${sessionSummary.maxMessageTextChars} ` +
         `historyImageBlocks=${sessionSummary.totalImageBlocks} ` +
+        `historyVideoBlocks=${sessionSummary.totalVideoBlocks} ` +
         `systemPromptChars=${input.systemPromptText?.length ?? 0} ` +
         `promptChars=${input.effectivePrompt.length} ` +
         `promptImages=${input.imageCount} ` +
+        `promptVideos=${input.videoCount ?? 0} ` +
         `provider=${attempt.provider}/${attempt.modelId} sessionFile=${attempt.sessionFile}`,
     );
   }

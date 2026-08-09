@@ -1300,7 +1300,7 @@ describe("session MCP runtime", () => {
         { type: "image", data: "aW1hZ2U=", mimeType: "image/png" },
         { type: "text", text: "[Report] https://example.com/report" },
         { type: "text", text: "memo body" },
-        { type: "text", text: "[audio audio/mpeg]" },
+        { type: "text", text: "[audio omitted: audio/mpeg]" },
       ]);
       await waitForFileText(logPath, "recv tools/call", LIST_TOOLS_SERVER_LOG_TIMEOUT_MS);
     } finally {

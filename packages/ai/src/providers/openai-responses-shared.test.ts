@@ -363,6 +363,35 @@ describe("Responses reasoning effort", () => {
 describe("convertResponsesMessages", () => {
   const allowedToolCallProviders = testAllowedToolCallProviders;
 
+  it("never emits Responses video variants for user or tool content", () => {
+    const input = convertResponsesMessages(
+      { ...nativeOpenAIModel, input: ["text", "image", "video"] },
+      {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "private-user" }],
+            timestamp: 1,
+          },
+          {
+            role: "toolResult",
+            toolCallId: "call_video",
+            toolName: "video",
+            content: [{ type: "video", mimeType: "video/mp4", data: "private-tool" }],
+            isError: false,
+            timestamp: 2,
+          },
+        ],
+      },
+      allowedToolCallProviders,
+    );
+    const serialized = JSON.stringify(input);
+    expect(serialized).toContain("video omitted");
+    expect(serialized).not.toContain("private-user");
+    expect(serialized).not.toContain("private-tool");
+    expect(serialized).not.toContain("input_video");
+  });
+
   it("adds explicit message item types for system and user input items", () => {
     const input = convertResponsesMessages(
       nativeOpenAIModel,

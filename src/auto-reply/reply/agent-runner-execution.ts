@@ -61,7 +61,6 @@ import { createAgentTurnPresentation } from "./agent-runner-presentation.js";
 import { createAgentTurnTimingTracker } from "./agent-runner-turn-timing.js";
 import { resolveQueuedReplyRuntimeConfig } from "./agent-runner-utils.js";
 import { shouldNotifyUserAboutCompaction } from "./compaction-notice.js";
-import { resolveCurrentTurnImages } from "./current-turn-images.js";
 import type { FollowupRun } from "./queue.js";
 import type { ReplyMediaContext } from "./reply-media-paths.js";
 import { createReplyMediaContext } from "./reply-media-paths.runtime.js";
@@ -176,7 +175,10 @@ async function executeAgentTurnInternalWithRetryState(
     });
   }
   let replyMediaContext: ReplyMediaContext;
-  let currentTurnImages: Awaited<ReturnType<typeof resolveCurrentTurnImages>>;
+  let currentTurnMedia: Pick<
+    FollowupRun,
+    "handledVideoSourceIds" | "handledVideoSourceIndexes" | "imageOrder" | "images" | "inputMedia"
+  >;
   try {
     replyMediaContext =
       params.replyMediaContext ??
@@ -197,14 +199,13 @@ async function executeAgentTurnInternalWithRetryState(
           requesterSenderE164: params.followupRun.run.senderE164,
         }),
       );
-    currentTurnImages = await agentTurnTiming.measure("current_turn_images", () =>
-      resolveCurrentTurnImages({
-        ctx: params.sessionCtx,
-        cfg: runtimeConfig,
-        images: params.followupRun.images ?? params.opts?.images,
-        imageOrder: params.followupRun.imageOrder ?? params.opts?.imageOrder,
-      }),
-    );
+    currentTurnMedia = {
+      inputMedia: params.followupRun.inputMedia,
+      images: params.followupRun.images,
+      imageOrder: params.followupRun.imageOrder,
+      handledVideoSourceIndexes: params.followupRun.handledVideoSourceIndexes,
+      handledVideoSourceIds: params.followupRun.handledVideoSourceIds,
+    };
   } catch (error) {
     clearAgentRunContext(runId, lifecycleGeneration);
     throw error;
@@ -304,7 +305,7 @@ async function executeAgentTurnInternalWithRetryState(
         liveModelSwitchRuntimeEntry,
         runId,
         runAbortSignal: params.replyOperation?.abortSignal ?? params.opts?.abortSignal,
-        currentTurnImages,
+        currentTurnMedia,
         state: fallbackCycleState,
         presentation,
         directlySentBlockKeys,
@@ -353,6 +354,7 @@ async function executeAgentTurnInternalWithRetryState(
         modelPatch,
       });
       if (action.kind === "final") {
+        clearAgentRunContext(runId, fallbackCycleState.lifecycleGeneration);
         return {
           ...action,
           resolved: {

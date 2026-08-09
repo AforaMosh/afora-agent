@@ -145,26 +145,6 @@ describe("prepareCliPromptImagePayload prompt references", () => {
     }
   });
 
-  it("surfaces inline sanitization failure when a preceding image fact is suppressed", async () => {
-    await expect(
-      prepareCliPromptImagePayload({
-        backend: { command: "codex" },
-        prompt: "already described",
-        workspaceDir: "/tmp",
-        images: [{ type: "image", data: "%%%", mimeType: "image/png" }],
-        imageOrder: ["inline"],
-        media: [
-          {
-            path: "/tmp/described-missing.png",
-            contentType: "image/png",
-            hydrationSuppressed: true,
-          },
-          { path: "/tmp/inline.png", contentType: "image/png" },
-        ],
-      }),
-    ).rejects.toThrow("failed to hydrate 1 structured image attachment");
-  });
-
   it("accepts an intentionally non-hydrating remote-only image fact", async () => {
     const media = buildInboundMediaNoteProjection({
       media: [{ url: "https://example.com/described.png", contentType: "image/png" }],

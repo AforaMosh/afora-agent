@@ -12,6 +12,8 @@ import { hydratePromptMediaMessages } from "../../agents/embedded-agent-runner/r
 import type { AgentMessage } from "../../agents/runtime/index.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { resolveStateDir } from "../../config/paths.js";
+import { DEFAULT_MAX_BYTES } from "../../media-understanding/defaults.constants.js";
+import type { MediaFact } from "../../media/media-facts.js";
 import {
   buildPersistedUserTurnMessage,
   type UserTurnInput,
@@ -51,6 +53,7 @@ function createAttachments(
     explicitOriginTargetsPlugin: boolean;
     mediaPathOffloadPaths: string[];
     mediaPathOffloadTypes: string[];
+    mediaPathOffloads: MediaFact[];
     mediaPathOffloadWorkspaceDir: string | undefined;
     imageOrder: Array<"inline" | "offloaded">;
     offloadedRefs: Array<{
@@ -63,18 +66,38 @@ function createAttachments(
       sizeBytes: number;
     }>;
     parsedMessage: string;
+    parsedMedia: MediaFact[];
+    supportsNativeVideo: boolean;
   }> = {},
 ) {
+  const offloadedRefs = overrides.offloadedRefs ?? [];
+  const parsedMedia =
+    overrides.parsedMedia ??
+    offloadedRefs.map((ref, sourceIndex) => ({
+      sourceId: ref.id,
+      sourceIndex,
+      path: ref.path,
+      url: ref.mediaRef,
+      contentType: ref.mimeType,
+      kind: ref.kind,
+      fileName: ref.label,
+      sizeBytes: ref.sizeBytes,
+    }));
   return {
     explicitOriginTargetsPlugin: false,
     imageOrder: [],
     mediaPathOffloadPaths: [],
     mediaPathOffloadTypes: [],
+    mediaPathOffloads:
+      overrides.mediaPathOffloads ??
+      ((overrides.mediaPathOffloadPaths?.length ?? 0) > 0 ? parsedMedia : []),
     mediaPathOffloadWorkspaceDir: undefined,
-    offloadedRefs: [],
+    offloadedRefs,
+    parsedMedia,
     parsedImages: [],
     parsedMessage: "hello",
     prepareAttachmentsMs: undefined,
+    supportsNativeVideo: false,
     ...overrides,
   };
 }
@@ -171,6 +194,15 @@ describe("prepareChatSendUserTurn", () => {
       attachments: createAttachments({
         mediaPathOffloadPaths: ["uploads/report.pdf"],
         mediaPathOffloadTypes: ["application/pdf"],
+        mediaPathOffloads: [
+          {
+            sourceId: "report.pdf",
+            sourceIndex: 0,
+            path: "uploads/report.pdf",
+            contentType: "application/pdf",
+            kind: "document",
+          },
+        ],
         mediaPathOffloadWorkspaceDir: "/workspace",
       }),
       client: {
@@ -203,8 +235,11 @@ describe("prepareChatSendUserTurn", () => {
       ApprovalReviewerDeviceId: "device-1",
       media: [
         {
+          sourceId: "report.pdf",
+          sourceIndex: 0,
           path: "uploads/report.pdf",
           contentType: "application/pdf",
+          kind: "document",
           workspaceDir: "/workspace",
         },
       ],
@@ -265,9 +300,14 @@ describe("prepareChatSendUserTurn", () => {
     expect(prepared.ctx.Body).toBe(`inspect\n[media attached: ${mediaRef}]`);
     expect(prepared.replyOptionMedia).toEqual([
       {
+        sourceId: "image-1.png",
+        sourceIndex: 0,
         path: "/media/inbound/image-1.png",
         url: mediaRef,
         contentType: "image/png",
+        kind: "image",
+        fileName: "image.png",
+        sizeBytes: 10,
       },
     ]);
     await expect(readInput()).resolves.toMatchObject({
@@ -319,13 +359,14 @@ describe("prepareChatSendUserTurn", () => {
     const input = await readInput();
     expect(input.media).toEqual([
       {
+        sourceId: fileName,
+        sourceIndex: 0,
         path: `/media/inbound/${fileName}`,
         url: mediaRef,
         contentType: mimeType,
         kind,
         fileName,
         sizeBytes: 12,
-        hydrationSuppressed: true,
       },
     ]);
     const persisted = buildPersistedUserTurnMessage({ ...input, text: "play this" });
@@ -333,6 +374,203 @@ describe("prepareChatSendUserTurn", () => {
       ((persisted as unknown as Record<string, unknown>)["__openclaw"] as { media?: unknown })
         .media,
     ).toEqual(input.media);
+  });
+
+  it.each([false, true])(
+    "keeps supported video as a native claim check for plugin binding=%s",
+    async (explicitOriginTargetsPlugin) => {
+      const { controller, readInput } = createUserTurnInputController();
+      const mediaRef = "media://inbound/clip.mp4";
+      const prepared = prepareChatSendUserTurn({
+        request: {
+          clientInfo: createClientInfo(),
+          normalizedAttachments: [{}],
+          suppressCommandInterpretation: false,
+          systemInputProvenance: undefined,
+          systemProvenanceReceipt: undefined,
+        },
+        session: {
+          agentId: "main",
+          clientRunId: "run-video",
+          sessionKey: "agent:main:main",
+        },
+        admission: {
+          originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
+        },
+        attachments: createAttachments({
+          explicitOriginTargetsPlugin,
+          supportsNativeVideo: true,
+          offloadedRefs: [
+            {
+              mediaRef,
+              id: "clip.mp4",
+              path: "/media/inbound/clip.mp4",
+              kind: "video",
+              mimeType: "video/mp4",
+              label: "clip.mp4",
+              sizeBytes: 12,
+            },
+          ],
+          parsedMessage: `watch this\n[media attached: ${mediaRef}]`,
+        }),
+        client: null,
+        logGateway: { warn: vi.fn() } as never,
+        userTurn: controller,
+      });
+
+      expect(prepared.ctx.media).toBeUndefined();
+      expect(prepared.replyOptionImages).toBeUndefined();
+      expect(prepared.replyOptionMedia).toEqual([
+        {
+          sourceId: "clip.mp4",
+          sourceIndex: 0,
+          path: "/media/inbound/clip.mp4",
+          url: mediaRef,
+          contentType: "video/mp4",
+          kind: "video",
+          fileName: "clip.mp4",
+          sizeBytes: 12,
+        },
+      ]);
+
+      const input = await readInput();
+      expect(input.media).toEqual(prepared.replyOptionMedia);
+      await expect(prepared.pluginBoundMediaPromise).resolves.toEqual(
+        explicitOriginTargetsPlugin ? prepared.replyOptionMedia : [],
+      );
+      const persisted = buildPersistedUserTurnMessage({ ...input, text: "watch this" });
+      expect(JSON.stringify(persisted)).not.toContain("base64");
+      expect(
+        ((persisted as unknown as Record<string, unknown>)["__openclaw"] as { media?: unknown })
+          .media,
+      ).toEqual(input.media);
+    },
+  );
+
+  it("preserves video-before-image attachment and persisted image-slot ordering", async () => {
+    const { controller, readInput } = createUserTurnInputController();
+    const videoRef = "media://inbound/first.mp4";
+    const imageRef = "media://inbound/second.png";
+    const prepared = prepareChatSendUserTurn({
+      request: {
+        clientInfo: createClientInfo(),
+        normalizedAttachments: [{ mimeType: "video/mp4" }, { mimeType: "image/png" }],
+        suppressCommandInterpretation: false,
+        systemInputProvenance: undefined,
+        systemProvenanceReceipt: undefined,
+      },
+      session: {
+        agentId: "main",
+        clientRunId: "run-mixed-video",
+        sessionKey: "agent:main:main",
+      },
+      admission: {
+        originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
+      },
+      attachments: createAttachments({
+        imageOrder: ["offloaded"],
+        supportsNativeVideo: true,
+        offloadedRefs: [
+          {
+            mediaRef: videoRef,
+            id: "first.mp4",
+            path: "/media/inbound/first.mp4",
+            kind: "video",
+            mimeType: "video/mp4",
+            label: "first.mp4",
+            sizeBytes: 12,
+          },
+          {
+            mediaRef: imageRef,
+            id: "second.png",
+            path: "/media/inbound/second.png",
+            kind: "image",
+            mimeType: "image/png",
+            label: "second.png",
+            sizeBytes: 10,
+          },
+        ],
+      }),
+      client: null,
+      logGateway: { warn: vi.fn() } as never,
+      userTurn: controller,
+    });
+
+    expect(prepared.replyOptionMedia?.map((fact) => fact.contentType)).toEqual([
+      "video/mp4",
+      "image/png",
+    ]);
+    await expect(readInput()).resolves.toMatchObject({
+      media: [
+        expect.objectContaining({ kind: "video", contentType: "video/mp4" }),
+        expect.objectContaining({ kind: "image", contentType: "image/png" }),
+      ],
+      mediaImageLayout: { slots: [{ kind: "offloaded", factIndex: 1 }] },
+    });
+  });
+
+  it("keeps oversized native-capable video on the media-understanding fallback", async () => {
+    const { controller, readInput } = createUserTurnInputController();
+    const mediaRef = "media://inbound/large.mp4";
+    const sizeBytes = DEFAULT_MAX_BYTES.video + 1;
+    const prepared = prepareChatSendUserTurn({
+      request: {
+        clientInfo: createClientInfo(),
+        normalizedAttachments: [{}],
+        suppressCommandInterpretation: false,
+        systemInputProvenance: undefined,
+        systemProvenanceReceipt: undefined,
+      },
+      session: {
+        agentId: "main",
+        clientRunId: "run-video-large",
+        sessionKey: "agent:main:main",
+      },
+      admission: {
+        originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
+      },
+      attachments: createAttachments({
+        supportsNativeVideo: true,
+        mediaPathOffloadPaths: ["/media/inbound/large.mp4"],
+        mediaPathOffloadTypes: ["video/mp4"],
+        offloadedRefs: [
+          {
+            mediaRef,
+            id: "large.mp4",
+            path: "/media/inbound/large.mp4",
+            kind: "video",
+            mimeType: "video/mp4",
+            label: "large.mp4",
+            sizeBytes,
+          },
+        ],
+      }),
+      client: null,
+      logGateway: { warn: vi.fn() } as never,
+      userTurn: controller,
+    });
+
+    expect(prepared.replyOptionMedia).toEqual([
+      expect.objectContaining({
+        sourceId: "large.mp4",
+        sourceIndex: 0,
+        contentType: "video/mp4",
+        sizeBytes,
+      }),
+    ]);
+    expect(prepared.ctx.media).toEqual([
+      expect.objectContaining({
+        path: "/media/inbound/large.mp4",
+        contentType: "video/mp4",
+        workspaceDir: "/media/inbound",
+        kind: "video",
+        fileName: "large.mp4",
+        sizeBytes,
+      }),
+    ]);
+    await expect(readInput()).resolves.toMatchObject({
+      media: [{ contentType: "video/mp4", sizeBytes }],
+    });
   });
 
   it("persists and prunes the staged PDF claim-check alias as structured ownership", async () => {
@@ -376,13 +614,14 @@ describe("prepareChatSendUserTurn", () => {
     const input = await readInput();
     expect(input.media).toEqual([
       {
+        sourceId: "report.pdf",
+        sourceIndex: 0,
         path: "/media/inbound/report.pdf",
         url: mediaRef,
         contentType: "application/pdf",
         kind: "document",
         fileName: "report.pdf",
         sizeBytes: 10,
-        hydrationSuppressed: true,
       },
     ]);
     const persisted = buildPersistedUserTurnMessage({
@@ -457,6 +696,8 @@ describe("prepareChatSendUserTurn", () => {
       const input = await readInput();
       expect(input.media).toEqual([
         {
+          sourceId: path.basename(imagePath),
+          sourceIndex: 0,
           path: imagePath,
           url: mediaRef,
           contentType: "image/png",
@@ -465,7 +706,6 @@ describe("prepareChatSendUserTurn", () => {
           sizeBytes: 10,
         },
       ]);
-      expect(input.media?.[0]).not.toHaveProperty("hydrationSuppressed");
       const persisted = buildPersistedUserTurnMessage({ ...input, text });
       expect(
         (
@@ -475,6 +715,8 @@ describe("prepareChatSendUserTurn", () => {
         ).media,
       ).toEqual([
         {
+          sourceId: id,
+          sourceIndex: 0,
           path: imagePath,
           url: mediaRef,
           contentType: "image/png",

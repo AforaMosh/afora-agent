@@ -1,9 +1,15 @@
 /**
  * Runs native harness tool-result middleware around tool execution results.
  */
+import { decodedBase64Bytes, NATIVE_TOOL_VIDEO_OMISSION } from "@openclaw/llm-core";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { boundedJsonUtf8Bytes } from "../../infra/json-utf8-bytes.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import {
+  DEFAULT_MAX_BYTES,
+  DEFAULT_VIDEO_MAX_BASE64_BYTES,
+} from "../../media-understanding/defaults.constants.js";
+import { sanitizeDurableMediaPayload } from "../../media/media-reference-projection.js";
 import type {
   AgentToolResultMiddleware,
   AgentToolResultMiddlewareContext,
@@ -23,6 +29,7 @@ const log = createSubsystemLogger("agents/harness");
 const MAX_MIDDLEWARE_CONTENT_BLOCKS = 200;
 const MAX_MIDDLEWARE_TEXT_CHARS = 100_000;
 const MAX_MIDDLEWARE_IMAGE_DATA_CHARS = 5_000_000;
+const MAX_MIDDLEWARE_MEDIA_BYTES = DEFAULT_MAX_BYTES.video;
 const MAX_MIDDLEWARE_CONTENT_DEPTH = 20;
 const MAX_MIDDLEWARE_DETAILS_BYTES = 100_000;
 const MAX_MIDDLEWARE_DETAILS_DEPTH = 20;
@@ -30,7 +37,11 @@ const MAX_MIDDLEWARE_DETAILS_KEYS = 1_000;
 const NESTED_TOOL_RESULT_BLOCK_TYPES = new Set(["toolresult", "tool_result"]);
 
 type MiddlewareContentBlock = OpenClawAgentToolResult["content"][number];
-type MiddlewareContentCoerceState = { depth: number; seen: Set<object> };
+type MiddlewareContentCoerceState = {
+  depth: number;
+  seen: Set<object>;
+  invalidVideo: { value: boolean };
+};
 type MiddlewareToolResultCoerceOptions = {
   sanitizeContent?: boolean;
   sanitizeDetails?: boolean;
@@ -50,6 +61,22 @@ function isValidMiddlewareContentBlock(value: unknown): boolean {
       typeof value.data === "string" &&
       value.data.length <= MAX_MIDDLEWARE_IMAGE_DATA_CHARS
     );
+  }
+  if (value.type === "video") {
+    if (
+      typeof value.mimeType !== "string" ||
+      value.mimeType.length > 100 ||
+      !/^video\/[a-z0-9][a-z0-9.+-]*$/iu.test(value.mimeType) ||
+      typeof value.data !== "string" ||
+      value.data.length === 0 ||
+      value.data.length > DEFAULT_VIDEO_MAX_BASE64_BYTES ||
+      value.data.length % 4 === 1 ||
+      !/^[A-Za-z0-9+/]+={0,2}$/u.test(value.data)
+    ) {
+      return false;
+    }
+    const decodedBytes = decodedBase64Bytes(value.data);
+    return decodedBytes !== undefined && decodedBytes <= DEFAULT_MAX_BYTES.video;
   }
   return false;
 }
@@ -95,12 +122,36 @@ function isValidMiddlewareToolResult(value: unknown): value is OpenClawAgentTool
   if (!isRecord(value) || !Array.isArray(value.content)) {
     return false;
   }
-  if (value.content.length > MAX_MIDDLEWARE_CONTENT_BLOCKS) {
+  if (value.content.length === 0 || value.content.length > MAX_MIDDLEWARE_CONTENT_BLOCKS) {
     return false;
   }
-  return (
-    value.content.every(isValidMiddlewareContentBlock) && isValidMiddlewareDetails(value.details)
-  );
+  let aggregateMediaBytes = 0;
+  for (const block of value.content) {
+    if (!isValidMiddlewareContentBlock(block)) {
+      return false;
+    }
+    if (block.type === "image") {
+      aggregateMediaBytes += Math.ceil((block.data.length * 3) / 4);
+    } else if (block.type === "video") {
+      aggregateMediaBytes += decodedBase64Bytes(block.data) ?? MAX_MIDDLEWARE_MEDIA_BYTES + 1;
+    }
+    if (aggregateMediaBytes > MAX_MIDDLEWARE_MEDIA_BYTES) {
+      return false;
+    }
+  }
+  return isValidMiddlewareDetails(value.details);
+}
+
+function projectToolResultVideos(result: OpenClawAgentToolResult): OpenClawAgentToolResult {
+  if (!result.content.some((block) => block.type === "video")) {
+    return result;
+  }
+  return {
+    ...result,
+    content: result.content.map((block) =>
+      block.type === "video" ? { type: "text", text: NATIVE_TOOL_VIDEO_OMISSION } : block,
+    ),
+  };
 }
 
 function descendMiddlewareContentCoerceState(
@@ -111,11 +162,11 @@ function descendMiddlewareContentCoerceState(
     return undefined;
   }
   if (value === null || typeof value !== "object") {
-    return { depth: state.depth + 1, seen: state.seen };
+    return { ...state, depth: state.depth + 1 };
   }
   return state.seen.has(value)
     ? undefined
-    : { depth: state.depth + 1, seen: new Set([...state.seen, value]) };
+    : { ...state, depth: state.depth + 1, seen: new Set([...state.seen, value]) };
 }
 
 function serializeMiddlewareValue(value: unknown): string | undefined {
@@ -213,6 +264,11 @@ function coerceMiddlewareContentArray(
       break;
     }
     const coerced = coerceMiddlewareContentBlocks(entry, state, options);
+    // Invalid nested video must fail closed instead of leaking its base64 through JSON text.
+    if (coerced.length === 0 && isRecord(entry) && entry.type === "video") {
+      state.invalidVideo.value = true;
+      return [];
+    }
     const text = coerced.length === 0 ? coerceMiddlewareText(entry, state, options) : undefined;
     for (const block of text
       ? [{ type: "text" as const, text: truncateUtf16Safe(text, MAX_MIDDLEWARE_TEXT_CHARS) }]
@@ -277,10 +333,22 @@ function coerceMiddlewareToolResult(
   if (!isRecord(value) || !Array.isArray(value.content)) {
     return undefined;
   }
-  const state: MiddlewareContentCoerceState = { depth: 0, seen: new Set() };
+  const state: MiddlewareContentCoerceState = {
+    depth: 0,
+    seen: new Set(),
+    invalidVideo: { value: false },
+  };
   const content: OpenClawAgentToolResult["content"] = [];
   for (const block of value.content.slice(0, MAX_MIDDLEWARE_CONTENT_BLOCKS)) {
-    for (const coerced of coerceMiddlewareContentBlocks(block, state, options)) {
+    const coercedBlocks = coerceMiddlewareContentBlocks(block, state, options);
+    // A valid neighboring caption must never silently legitimize an invalid video payload.
+    if (
+      state.invalidVideo.value ||
+      (coercedBlocks.length === 0 && isRecord(block) && block.type === "video")
+    ) {
+      return undefined;
+    }
+    for (const coerced of coercedBlocks) {
       if (content.length >= MAX_MIDDLEWARE_CONTENT_BLOCKS) {
         break;
       }
@@ -319,7 +387,7 @@ function coerceMiddlewareToolResult(
  * cannot be represented at all (top-level function/symbol/undefined).
  */
 function sanitizeMiddlewareDetailsValue(value: unknown): unknown {
-  const serialized = serializeMiddlewareValue(value);
+  const serialized = serializeMiddlewareValue(sanitizeDurableMediaPayload(value));
   if (serialized === undefined) {
     return null;
   }
@@ -337,17 +405,31 @@ function sanitizeMiddlewareDetailsValue(value: unknown): unknown {
  * harness owes a registered middleware a JSON-safe view of that payload;
  * subsequent middleware-side mutations are still validated strictly.
  */
-function sanitizeToolResultForMiddleware(result: OpenClawAgentToolResult): OpenClawAgentToolResult {
+function sanitizeToolResultForMiddleware(
+  result: OpenClawAgentToolResult,
+): OpenClawAgentToolResult | undefined {
   const coerced = coerceMiddlewareToolResult(result, {
     sanitizeContent: true,
     sanitizeDetails: true,
   });
   if (coerced) {
-    return coerced;
+    return projectToolResultVideos(coerced);
   }
-  return result.details == null || isValidMiddlewareDetails(result.details)
-    ? result
-    : { ...result, details: sanitizeMiddlewareDetailsValue(result.details) };
+  return undefined;
+}
+
+function projectToolResultWithoutMiddleware(
+  result: OpenClawAgentToolResult,
+): OpenClawAgentToolResult | undefined {
+  const coerced = coerceMiddlewareToolResult(
+    { content: result.content },
+    { sanitizeContent: true },
+  );
+  if (!coerced) {
+    return undefined;
+  }
+  const projected = projectToolResultVideos({ ...result, content: coerced.content });
+  return projected.content === result.content ? result : projected;
 }
 
 function buildMiddlewareFailureResult(): OpenClawAgentToolResult {
@@ -425,20 +507,31 @@ export function createAgentToolResultMiddlewareRunner(
       event: AgentToolResultMiddlewareEvent,
     ): Promise<OpenClawAgentToolResult> {
       const handlersForRun = await resolveHandlers();
-      // Fast path: with no middleware registered the result is delivered
-      // unchanged; skip validation entirely so tool emitters that produce
-      // dependency payloads on `details` (SDK objects with methods, cycles)
-      // are not penalized for behavior the validator was added to police.
-      if (handlersForRun.length === 0) {
-        return event.result;
-      }
       // Snapshot the confirmed side effect before legacy middleware can mutate
       // or sanitization can collapse the receipt; never expose the raw result.
       const deliveredMessagingFallback = buildDeliveredMessagingFailureFallback(
         event,
         event.result,
       );
+      // Even without middleware, validate and project model-visible content.
+      // Preserve dependency object topology on the fast path while stripping
+      // video bytes/data URLs before model use or transcript persistence.
+      if (handlersForRun.length === 0) {
+        return (
+          projectToolResultWithoutMiddleware(event.result) ??
+          reconcileDeliveredMessagingFailure(
+            buildMiddlewareFailureResult(),
+            deliveredMessagingFallback,
+          )
+        );
+      }
       let current = sanitizeToolResultForMiddleware(event.result);
+      if (!current) {
+        current = {
+          content: [],
+          details: sanitizeMiddlewareDetailsValue(event.result.details),
+        };
+      }
       for (const handler of handlersForRun) {
         try {
           const next = await handler({ ...event, result: current }, ctx);
@@ -448,7 +541,7 @@ export function createAgentToolResultMiddlewareRunner(
           const candidate = next?.result ?? current;
           const coercedCandidate = coerceMiddlewareToolResult(candidate);
           if (coercedCandidate) {
-            current = coercedCandidate;
+            current = projectToolResultVideos(coercedCandidate);
           } else {
             log.warn(
               `[${ctx.runtime}] discarded invalid tool result middleware output for ${truncateUtf16Safe(

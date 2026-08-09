@@ -5,6 +5,7 @@ import {
   isMeaningfulMediaFact,
   readPersistedMediaFacts,
 } from "../../../../src/media/media-facts.js";
+import { normalizeCanonicalInboundMediaUri } from "../../../../src/media/media-reference-projection.js";
 import { stripEnvelope } from "../../../../src/shared/chat-envelope.js";
 import { extractAssistantVisibleText as extractSharedAssistantVisibleText } from "../../../../src/shared/chat-message-content.js";
 import { normalizeLowercaseStringOrEmpty } from "../string-coerce.ts";
@@ -140,9 +141,13 @@ export function readTranscriptMediaEntries(message: unknown): Array<{
     return [];
   }
   return (readPersistedMediaFacts(message) ?? []).flatMap((fact) => {
-    const path = fact.path ?? fact.url;
-    return path
-      ? [{ path, mediaType: fact.contentType ?? fact.kind, fileName: fact.fileName }]
+    const source =
+      normalizeCanonicalInboundMediaUri(fact.url) ??
+      normalizeCanonicalInboundMediaUri(fact.path) ??
+      fact.path ??
+      fact.url;
+    return source
+      ? [{ path: source, mediaType: fact.contentType ?? fact.kind, fileName: fact.fileName }]
       : [];
   });
 }

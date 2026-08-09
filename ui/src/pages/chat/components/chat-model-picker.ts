@@ -24,6 +24,7 @@ export type ChatModelPickerOption = {
   label: string;
   provider: string;
   supportsTools?: boolean;
+  supportsVideo?: boolean;
   value: string;
 };
 
@@ -311,8 +312,10 @@ export function renderChatModelPicker(params: ChatModelPickerParams) {
       ? defaultModelOption
       : params.modelOptions.find((option) => option.value === params.selectedModelValue);
   const modelToolsUnavailable = activeModelOption?.supportsTools === false;
+  const modelSupportsVideo = activeModelOption?.supportsVideo === true;
   const triggerTitle = [
     params.triggerStatusLabel ?? params.triggerModelLabel,
+    modelSupportsVideo ? t("chat.modelControls.nativeVideo") : "",
     modelToolsUnavailable ? t("chat.modelControls.chatOnly") : "",
   ]
     .filter(Boolean)
@@ -405,6 +408,7 @@ export function renderChatModelPicker(params: ChatModelPickerParams) {
         data-chat-model-locked=${params.modelSelectionLocked ? "true" : "false"}
         data-chat-select-value=${params.selectedModelValue}
         data-chat-model-tools=${modelToolsUnavailable ? "unavailable" : "available"}
+        data-chat-model-video=${modelSupportsVideo ? "supported" : "unsupported"}
         aria-label=${`${t("chat.selectors.model")}: ${triggerTitle}`}
         aria-disabled=${params.disabled ? "true" : "false"}
         title=${params.disabledReason ?? triggerTitle}
@@ -508,6 +512,7 @@ export function renderChatModelPicker(params: ChatModelPickerParams) {
                                   entry.contextWindow
                                     ? formatContextTokenCapacity(entry.contextWindow)
                                     : "",
+                                  entry.supportsVideo ? t("chat.modelControls.nativeVideo") : "",
                                   entry.supportsTools === false
                                     ? t("chat.modelControls.chatOnly")
                                     : "",

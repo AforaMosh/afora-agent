@@ -61,6 +61,9 @@ describe("dispatchEmbeddedAttemptPrompt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     hoisted.prepareEmbeddedAttemptPromptExecution.mockResolvedValue({
+      media: [{ type: "image", data: "aW1hZ2U=", mimeType: "image/png" }],
+      orderedBlocks: [{ type: "image", data: "aW1hZ2U=", mimeType: "image/png" }],
+      videoOmissions: [],
       images: [{ type: "image", data: "aW1hZ2U=", mimeType: "image/png" }],
       imageFactIndexes: [null],
       detectedRefs: [],
@@ -80,6 +83,9 @@ describe("dispatchEmbeddedAttemptPrompt", () => {
     hoisted.prepareEmbeddedAttemptPromptExecution.mockImplementationOnce(async () => {
       order.push("images");
       return {
+        media: [{ type: "image", data: "aW1hZ2U=", mimeType: "image/png" }],
+        orderedBlocks: [{ type: "image", data: "aW1hZ2U=", mimeType: "image/png" }],
+        videoOmissions: [],
         images: [{ type: "image", data: "aW1hZ2U=", mimeType: "image/png" }],
         imageFactIndexes: [null],
         detectedRefs: [],
@@ -117,7 +123,8 @@ describe("dispatchEmbeddedAttemptPrompt", () => {
     );
     expect(hoisted.submitEmbeddedAttemptPrompt).toHaveBeenCalledWith(
       expect.objectContaining({
-        images: [expect.objectContaining({ type: "image" })],
+        inputContent: [expect.objectContaining({ type: "image" })],
+        inputMedia: [expect.objectContaining({ type: "image" })],
         modelPrompt: "model prompt",
         runtimeContextMessage: expect.objectContaining({ content: "runtime" }),
         transcriptPrompt: "session prompt",
@@ -142,6 +149,87 @@ describe("dispatchEmbeddedAttemptPrompt", () => {
     expect(result.promptError).toBe(promptError);
     expect(releaseLeasedSteering).toHaveBeenCalledWith(promptError);
     expect(hoisted.submitEmbeddedAttemptPrompt).not.toHaveBeenCalled();
+  });
+
+  it("counts video independently and submits it through canonical input media", async () => {
+    const video = { type: "video", data: "dmlkZW8=", mimeType: "video/mp4" };
+    hoisted.prepareEmbeddedAttemptPromptExecution.mockResolvedValueOnce({
+      media: [video],
+      orderedBlocks: [video],
+      videoOmissions: [],
+      images: [],
+      imageFactIndexes: [],
+      detectedRefs: [],
+      failedMediaCount: 0,
+      loadedCount: 1,
+      skippedCount: 0,
+    });
+
+    await dispatchEmbeddedAttemptPrompt(createInput());
+
+    expect(hoisted.observeEmbeddedAttemptPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ imageCount: 0, videoCount: 1 }),
+    );
+    expect(hoisted.submitEmbeddedAttemptPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ inputMedia: [video] }),
+    );
+  });
+
+  it("injects one bounded omission into the model prompt without changing transcript text", async () => {
+    hoisted.prepareEmbeddedAttemptPromptExecution.mockResolvedValueOnce({
+      media: [],
+      orderedBlocks: [{ type: "text", text: "(video omitted: attachment is unavailable)" }],
+      videoOmissions: [
+        {
+          factIndex: 0,
+          sourceIndex: 0,
+          reason: "unavailable",
+          text: "(video omitted: attachment is unavailable)",
+        },
+      ],
+      images: [],
+      imageFactIndexes: [],
+      detectedRefs: [],
+      failedMediaCount: 1,
+      loadedCount: 0,
+      skippedCount: 1,
+    });
+
+    await dispatchEmbeddedAttemptPrompt(createInput());
+
+    expect(hoisted.submitEmbeddedAttemptPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inputContent: [{ type: "text", text: "(video omitted: attachment is unavailable)" }],
+        modelPrompt: "model prompt",
+        transcriptPrompt: "session prompt",
+      }),
+    );
+  });
+
+  it("submits delivered and omitted media in canonical source order", async () => {
+    const video = { type: "video" as const, data: "dmlkZW8=", mimeType: "video/mp4" };
+    const image = { type: "image" as const, data: "aW1hZ2U=", mimeType: "image/png" };
+    const omission = { type: "text" as const, text: "(video omitted: too many video attachments)" };
+    hoisted.prepareEmbeddedAttemptPromptExecution.mockResolvedValueOnce({
+      media: [video, image],
+      orderedBlocks: [video, omission, image],
+      videoOmissions: [{ factIndex: 1, sourceIndex: 1, reason: "count", text: omission.text }],
+      images: [image],
+      imageFactIndexes: [2],
+      detectedRefs: [],
+      failedMediaCount: 1,
+      loadedCount: 2,
+      skippedCount: 1,
+    });
+
+    await dispatchEmbeddedAttemptPrompt(createInput());
+
+    expect(hoisted.submitEmbeddedAttemptPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inputContent: [video, omission, image],
+        inputMedia: [video, image],
+      }),
+    );
   });
 
   it("publishes preflight state before a submission failure", async () => {

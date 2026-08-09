@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { MODEL_CATALOG_APIS, MODEL_CATALOG_THINKING_LEVELS } from "./model-catalog-types.js";
+import {
+  MODEL_CATALOG_APIS,
+  MODEL_CATALOG_INPUTS,
+  MODEL_CATALOG_THINKING_LEVELS,
+} from "./model-catalog-types.js";
 import type { ModelCatalogProvider } from "./model-catalog-types.js";
 
 export const REMOTE_CATALOG_MAX_FUTURE_SKEW_MS = 24 * 60 * 60_000;
@@ -46,7 +50,7 @@ const modelSchema = z.object({
   api: z.enum(MODEL_CATALOG_APIS).optional(),
   baseUrl: z.string().optional(),
   headers: stringMapSchema.optional(),
-  input: z.array(z.enum(["text", "image", "document"])).optional(),
+  input: z.array(z.enum(MODEL_CATALOG_INPUTS)).optional(),
   reasoning: z.boolean().optional(),
   contextWindow: z.number().finite().positive().optional(),
   contextTokens: z.number().int().positive().optional(),

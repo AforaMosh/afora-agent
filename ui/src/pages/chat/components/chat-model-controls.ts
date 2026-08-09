@@ -218,6 +218,7 @@ export function renderChatModelControls(props: ChatModelControlsProps) {
       ...(typeof catalogEntry?.supportsTools === "boolean"
         ? { supportsTools: catalogEntry.supportsTools }
         : {}),
+      ...(catalogEntry?.input?.includes("video") ? { supportsVideo: true } : {}),
       isDefault,
       value: option.value,
       label: resolveChatModelPickerLabel(option.value, option.label, props.modelCatalog),

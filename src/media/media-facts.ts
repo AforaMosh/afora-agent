@@ -10,10 +10,15 @@ import {
   asPositiveSafeInteger as normalizePositiveInteger,
 } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { sanitizeMediaReferenceForProjection } from "./media-reference-projection.js";
 import type { PromptImageOrderEntry } from "./prompt-image-order.js";
 
-/** One ordered runtime attachment; array position is its alignment identity. */
+/** One ordered runtime attachment with producer-owned source identity. */
 export type MediaFact = {
+  /** Stable producer identity for this attachment within its source turn. */
+  sourceId?: string;
+  /** Original zero-based position before any kind-specific projection or hook. */
+  sourceIndex?: number;
   path?: string;
   url?: string;
   contentType?: string;
@@ -28,20 +33,22 @@ export type MediaFact = {
   workspaceDir?: string;
   /** Internal proof that this exact fact was covered by a legacy staged projection. */
   staged?: boolean;
-  // Declared field, not a symbol: suppression must survive every fact copy or
-  // reprojection boundary; described images otherwise rehydrate or count failed.
-  // Structured persistence may retain it; legacy Media* projections never emit it.
-  hydrationSuppressed?: boolean;
 };
 
 export type MediaFactInput = {
   [Key in keyof MediaFact]?: MediaFact[Key] | null;
 };
 
+type MediaBlockFactIndex = number | null;
+
 const RUNTIME_PROMPT_MEDIA_FACTS = Symbol.for("openclaw.runtimePromptMediaFacts");
 
 function normalizeNonNegativeNumber(value: number | null | undefined): number | undefined {
   return asFiniteNumberInRange(value, { min: 0 });
+}
+
+function normalizeNonNegativeInteger(value: number | null | undefined): number | undefined {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
 /** Attaches facts to a runtime prompt message without changing serialized/model-visible bytes. */
@@ -70,6 +77,27 @@ export function readRuntimePromptMediaFacts(message: object): MediaFact[] | unde
 export function readPersistedMediaFacts(message: object): MediaFact[] | undefined {
   const media = readPersistedMediaFactInputs(message);
   return media ? normalizeMediaFacts(media) : undefined;
+}
+
+/** Reads inline media provenance; each caller owns cardinality for its content shape. */
+export function readPersistedMediaBlockFactIndexes(
+  message: object,
+): MediaBlockFactIndex[] | undefined {
+  const metadata = (message as Record<string, unknown>)["__openclaw"];
+  const value =
+    metadata && typeof metadata === "object" && !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>).mediaBlockFactIndexes
+      : undefined;
+  if (
+    !Array.isArray(value) ||
+    !value.every(
+      (entry) =>
+        entry === null || (typeof entry === "number" && Number.isSafeInteger(entry) && entry >= 0),
+    )
+  ) {
+    return undefined;
+  }
+  return value as MediaBlockFactIndex[];
 }
 
 function readPersistedMediaFactInputs(message: object): MediaFactInput[] | undefined {
@@ -227,6 +255,8 @@ export function canonicalizePersistedUserMessageMedia<T extends object>(
     const explicitKind = existing?.kind ?? (bareLegacyKind ? (legacyType as MediaKind) : undefined);
     media.push({
       ...(fact.path ? { path: fact.path } : {}),
+      ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
+      ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
       ...(fact.url ? { url: fact.url } : {}),
       ...(fact.contentType && !bareLegacyKind ? { contentType: fact.contentType } : {}),
       ...(explicitKind ? { kind: explicitKind } : {}),
@@ -239,7 +269,6 @@ export function canonicalizePersistedUserMessageMedia<T extends object>(
       ...(fact.messageId ? { messageId: fact.messageId } : {}),
       ...(fact.workspaceDir ? { workspaceDir: fact.workspaceDir } : {}),
       ...(fact.staged || stagedMedia?.[index]?.staged ? { staged: true } : {}),
-      ...(fact.hydrationSuppressed ? { hydrationSuppressed: true } : {}),
     });
   }
 
@@ -318,6 +347,26 @@ export function isImageMediaFact(fact: MediaFactInput): boolean {
   return extension === ".tif" || extension === ".tiff";
 }
 
+/** Returns whether a fact can produce native video input. */
+export function isVideoMediaFact(fact: MediaFactInput): boolean {
+  if (fact.kind && fact.kind !== "unknown") {
+    return fact.kind === "video";
+  }
+  const normalizedContentType = normalizeMimeType(fact.contentType);
+  if (normalizedContentType && !isGenericBinaryMediaContentType(normalizedContentType)) {
+    return normalizedContentType === "video" || kindFromMime(normalizedContentType) === "video";
+  }
+  return (
+    kindFromMime(
+      mimeTypeFromFilePath(
+        normalizeOptionalString(fact.path) ??
+          normalizeOptionalString(fact.url) ??
+          normalizeOptionalString(fact.fileName),
+      ),
+    ) === "video"
+  );
+}
+
 type MediaFactDefaults<TInput extends MediaFactInput = MediaFactInput> = {
   kind?: MediaKind;
   messageId?: string;
@@ -355,12 +404,16 @@ function normalizeMediaFact<TInput extends MediaFactInput>(
 ): MediaFact {
   const workspaceDir = normalizeOptionalString(media.workspaceDir) ?? defaults.workspaceDir;
   const contentType = normalizeOptionalString(media.contentType);
+  const mediaPath = normalizeOptionalString(media.path);
+  const mediaUrl = normalizeOptionalString(media.url);
   const durationMs = normalizePositiveInteger(media.durationMs);
   const width = normalizePositiveInteger(media.width);
   const height = normalizePositiveInteger(media.height);
   const normalized: MediaFact = {
-    path: normalizeOptionalString(media.path),
-    url: normalizeOptionalString(media.url),
+    sourceId: normalizeOptionalString(media.sourceId),
+    sourceIndex: normalizeNonNegativeInteger(media.sourceIndex),
+    path: mediaPath ? sanitizeMediaReferenceForProjection(mediaPath) : undefined,
+    url: mediaUrl ? sanitizeMediaReferenceForProjection(mediaUrl) : undefined,
     contentType,
     kind:
       media.kind ??
@@ -375,7 +428,6 @@ function normalizeMediaFact<TInput extends MediaFactInput>(
     messageId: normalizeOptionalString(media.messageId) ?? defaults.messageId,
     ...(workspaceDir ? { workspaceDir } : {}),
     ...(media.staged === true ? { staged: true } : {}),
-    ...(media.hydrationSuppressed === true ? { hydrationSuppressed: true } : {}),
   };
   return normalized;
 }
@@ -445,6 +497,8 @@ function resolveMediaFactsWithPrecedence(
         path: legacyProjectionWins
           ? (normalizeOptionalString(legacyPath) ?? fact?.path)
           : (fact?.path ?? legacyPath),
+        sourceId: fact?.sourceId,
+        sourceIndex: fact?.sourceIndex ?? index,
         url: legacyProjectionWins
           ? (normalizeOptionalString(legacyUrl) ?? fact?.url)
           : (fact?.url ?? legacyUrl),
@@ -471,7 +525,6 @@ function resolveMediaFactsWithPrecedence(
           (legacyProjectionWins &&
             source.MediaStaged === true &&
             (!legacyHasPath || Boolean(normalizeOptionalString(legacyPath)))),
-        hydrationSuppressed: fact?.hydrationSuppressed,
       },
       index,
     );

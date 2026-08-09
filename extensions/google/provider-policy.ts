@@ -8,6 +8,7 @@ import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runti
 import { normalizeAntigravityModelId, normalizeGoogleModelId } from "./model-id.js";
 import {
   isGoogleGenerativeAiApi,
+  isOfficialGoogleAiStudioBaseUrl,
   isGoogleVertexBaseUrl,
   normalizeGoogleApiBaseUrl,
   normalizeGoogleGenerativeAiBaseUrl,
@@ -17,6 +18,7 @@ import { isGoogleGemini3ProModel, isGoogleGemini3ThinkingLevelModel } from "./th
 export {
   DEFAULT_GOOGLE_API_BASE_URL,
   isGoogleGenerativeAiApi,
+  isOfficialGoogleAiStudioBaseUrl,
   isGoogleVertexBaseUrl,
   isGoogleVertexHostname,
   normalizeGoogleApiBaseUrl,

@@ -9,10 +9,11 @@ sidebarTitle: "Media overview"
 ---
 
 OpenClaw generates images, videos, and music, understands inbound media
-(images, audio, video), and speaks replies aloud with text-to-speech. All
-media capabilities are tool-driven: the agent decides when to use them based
-on the conversation, and each tool only appears when at least one backing
-provider is configured.
+(images, audio, video), and speaks replies aloud with text-to-speech. Generation
+and speech capabilities are tool-driven: the agent decides when to use them,
+and each tool only appears when at least one backing provider is configured.
+Inbound media can instead be prepared before the reply or, on an explicitly
+supported route, delivered natively with the user message.
 
 Live speech uses the Talk session contract instead of the one-shot media tool
 path. Talk has three modes: provider-native `realtime`, local or streaming
@@ -57,10 +58,11 @@ telephony, meetings, browser realtime, and native push-to-talk clients.
 ## Provider capability matrix
 
 <Note>
-This table covers the dedicated media-generation, TTS, and STT plugins. Many
-chat-model providers (Anthropic, Google, OpenAI, and others) also understand
-inbound media through their reply model; see the full provider list in
-[Media understanding](/nodes/media-understanding#provider-support-matrix).
+This table covers dedicated media-generation, understanding, TTS, and STT
+plugins, not native chat-input support. Native user-message video is currently
+limited to ordinary Google AI Studio Gemini chat and ordinary Moonshot K3 Chat
+Completions. Other providers may still produce a preprocessing description;
+see [Media understanding](/nodes/media-understanding#provider-support-matrix).
 </Note>
 
 | Provider          | Image | Video | Music | TTS | STT | Realtime voice | Media understanding |

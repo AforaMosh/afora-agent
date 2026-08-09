@@ -1,13 +1,17 @@
 // Package-owned transcript transform used by providers and the inert transport host.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import {
+  NATIVE_TOOL_VIDEO_OMISSION,
+  NATIVE_VIDEO_OMISSION,
+  supportsNativeVideoInput,
+} from "@openclaw/llm-core";
+import { hasMediaPayload } from "./media-payload.js";
 import { resolveModelBoundThinkingReplayMode } from "./providers/anthropic-model-contract.js";
 import type {
   Api,
   AssistantMessage,
-  ImageContent,
   Message,
   Model,
-  TextContent,
+  ModelInputContent,
   ToolCall,
   ToolResultMessage,
 } from "./types.js";
@@ -15,61 +19,79 @@ import type {
 const NON_VISION_USER_IMAGE_PLACEHOLDER = "(image omitted: model does not support images)";
 const NON_VISION_TOOL_IMAGE_PLACEHOLDER = "(tool image omitted: model does not support images)";
 
-function isImageWithMediaPayload<T>(block: T): block is T & { type: "image"; data: string } {
-  return (
-    isRecord(block) &&
-    block.type === "image" &&
-    typeof block.data === "string" &&
-    block.data.trim().length > 0
-  );
-}
-
-function replaceImagesWithPlaceholder(
-  content: (TextContent | ImageContent)[],
-  placeholder: string,
-): TextContent[] {
-  const result: TextContent[] = [];
-  let previousWasPlaceholder = false;
+function replaceUnsupportedMediaWithPlaceholders<TApi extends Api>(
+  content: ModelInputContent[],
+  model: Model<TApi>,
+  role: "user" | "toolResult",
+): ModelInputContent[] {
+  const result: ModelInputContent[] = [];
+  const supportsImages = model.input.includes("image");
+  const supportsVideos = role === "user" && supportsNativeVideoInput(model);
+  let previousPlaceholder: string | undefined;
 
   for (const block of content) {
-    if (block.type === "image") {
-      if (!isImageWithMediaPayload(block)) {
+    const unsupportedImage = block.type === "image" && !supportsImages;
+    const unsupportedVideo = block.type === "video" && !supportsVideos;
+    if (unsupportedImage || unsupportedVideo) {
+      if (unsupportedImage && !hasMediaPayload(block)) {
         continue;
       }
-      if (!previousWasPlaceholder) {
+      const placeholder = unsupportedImage
+        ? role === "user"
+          ? NON_VISION_USER_IMAGE_PLACEHOLDER
+          : NON_VISION_TOOL_IMAGE_PLACEHOLDER
+        : role === "user"
+          ? NATIVE_VIDEO_OMISSION
+          : NATIVE_TOOL_VIDEO_OMISSION;
+      if (block.type === "video" || previousPlaceholder !== placeholder) {
         result.push({ type: "text", text: placeholder });
       }
-      previousWasPlaceholder = true;
+      previousPlaceholder = placeholder;
       continue;
     }
 
     result.push(block);
-    previousWasPlaceholder = block.text === placeholder;
+    previousPlaceholder = block.type === "text" ? block.text : undefined;
   }
 
   return result;
 }
 
-function downgradeUnsupportedImages<TApi extends Api>(
+function downgradeUnsupportedMedia<TApi extends Api>(
   messages: Message[],
   model: Model<TApi>,
 ): Message[] {
-  if (model.input.includes("image")) {
+  const supportsImages = model.input.includes("image");
+  const supportsVideos = supportsNativeVideoInput(model);
+  if (
+    supportsImages &&
+    supportsVideos &&
+    !messages.some(
+      (message) =>
+        message.role === "toolResult" &&
+        Array.isArray(message.content) &&
+        message.content.some((block) => block.type === "video"),
+    )
+  ) {
     return messages;
   }
 
   return messages.map((msg) => {
-    if (msg.role === "user" && Array.isArray(msg.content)) {
-      return {
-        ...msg,
-        content: replaceImagesWithPlaceholder(msg.content, NON_VISION_USER_IMAGE_PLACEHOLDER),
-      };
+    if ((msg.role !== "user" && msg.role !== "toolResult") || !Array.isArray(msg.content)) {
+      return msg;
     }
 
-    if (msg.role === "toolResult") {
+    const content = msg.content;
+    if (
+      content.some(
+        (block) =>
+          (block.type === "image" && !supportsImages) ||
+          (block.type === "video" && (msg.role === "toolResult" || !supportsVideos)),
+      )
+    ) {
       return {
         ...msg,
-        content: replaceImagesWithPlaceholder(msg.content, NON_VISION_TOOL_IMAGE_PLACEHOLDER),
+        content: replaceUnsupportedMediaWithPlaceholders(content, model, msg.role),
       };
     }
 
@@ -92,10 +114,10 @@ export function transformMessages<TApi extends Api>(
   const normalizedMessages = messages.map((msg) =>
     msg.content == null ? { ...msg, content: [] } : msg,
   );
-  const imageAwareMessages = downgradeUnsupportedImages(normalizedMessages, model);
+  const mediaAwareMessages = downgradeUnsupportedMedia(normalizedMessages, model);
 
-  // First pass: transform messages (unsupported image downgrade, thinking blocks, tool call ID normalization)
-  const transformed = imageAwareMessages.map((msg) => {
+  // First pass: transform messages (unsupported media downgrade, thinking blocks, tool call ID normalization)
+  const transformed = mediaAwareMessages.map((msg) => {
     // User messages pass through unchanged
     if (msg.role === "user") {
       return msg;

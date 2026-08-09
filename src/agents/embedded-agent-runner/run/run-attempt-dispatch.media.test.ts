@@ -11,6 +11,36 @@ import { preparePluginHarnessPromptImages } from "./plugin-harness-prompt-images
 const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGP4////KwAJ5gPoxLp9owAAAABJRU5ErkJggg==";
 describe("plugin harness prompt media", () => {
+  it("does not forward video even when a prepared model contract is present", async () => {
+    const result = await preparePluginHarnessPromptImages({
+      runParams: {
+        inputMedia: [{ type: "video", data: "dmlkZW8=", mimeType: "video/mp4" }],
+        sessionId: "session-plugin-video",
+      },
+      runtime: {
+        model: {
+          input: ["text", "video"],
+          nativeVideoInput: {
+            wireFamily: "google-inline-data",
+            mimeTypes: { "video/mp4": "video/mp4" },
+            maxDecodedBytesPerItem: 8 * 1024 * 1024,
+            maxItems: 4,
+            maxAggregateDecodedBytes: 12 * 1024 * 1024,
+            aggregateScope: "all-inline-media",
+            maxSerializedRequestBytesExclusive: 20_000_000,
+          },
+        },
+        sessionId: "session-plugin-video",
+        workspaceDir: "/tmp",
+      },
+      pluginHarnessOwnsTransport: true,
+    } as unknown as Parameters<typeof preparePluginHarnessPromptImages>[0]);
+
+    expect(result.inputMedia).toEqual([]);
+    expect(result.videoOmissions).toEqual(["(video omitted: model does not support videos)"]);
+    expect(JSON.stringify(result)).not.toContain("dmlkZW8=");
+  });
+
   it("does not hydrate marker or bare paths from recalled memory context", async () => {
     const recalledMemory = [
       "<relevant-memories>",
@@ -33,7 +63,12 @@ describe("plugin harness prompt media", () => {
         },
         pluginHarnessOwnsTransport: true,
       } as unknown as Parameters<typeof preparePluginHarnessPromptImages>[0]),
-    ).resolves.toEqual({ images: undefined, imageOrder: undefined, media: undefined });
+    ).resolves.toEqual({
+      images: undefined,
+      imageOrder: undefined,
+      media: undefined,
+      videoOmissions: [],
+    });
   });
 
   it.each([
@@ -104,7 +139,7 @@ describe("plugin harness prompt media", () => {
       if (testCase.expectedImages > 0) {
         expect(result.images?.[0]?.mimeType).toBe("image/png");
       } else {
-        expect(result.media).toEqual(media);
+        expect(result.media).toMatchObject(media);
       }
     } finally {
       envSnapshot.restore();
@@ -162,9 +197,7 @@ describe("plugin harness prompt media", () => {
       ]);
       expect(readRuntimePromptImageFactIndexes(result.images ?? [])).toEqual([0]);
       expect(result.imageOrder).toEqual(["inline"]);
-      expect(result.media?.[0]).toMatchObject({ contentType: "image/png", kind: "image" });
-      expect(result.media?.[0]).not.toHaveProperty("path");
-      expect(result.media?.[0]).not.toHaveProperty("url");
+      expect(result.media?.[0]).toMatchObject({ path: imagePath, contentType: "image/png" });
       expect(result.media?.[1]).toMatchObject(documentFact);
 
       const serialized = JSON.stringify(result);
@@ -264,11 +297,26 @@ describe("plugin harness prompt media", () => {
             {
               path: "/tmp/described-missing.png",
               contentType: "image/png",
-              hydrationSuppressed: true,
             },
             { path: "/tmp/inline.png", contentType: "image/png" },
           ],
           sessionId: "session-suppressed-before-inline",
+          userTurnTranscriptRecorder: {
+            message: {
+              role: "user",
+              content: "compare",
+              __openclaw: {
+                media: [
+                  { path: "/tmp/described-missing.png", contentType: "image/png" },
+                  { path: "/tmp/inline.png", contentType: "image/png" },
+                ],
+                mediaImageLayout: {
+                  slots: [{ kind: "inline", factIndex: 1 }],
+                  suppressedFactIndexes: [0],
+                },
+              },
+            },
+          },
         },
         runtime: {
           model: { input: ["text", "image"] },
@@ -310,11 +358,8 @@ describe("plugin harness prompt media", () => {
     expect(result.images).toEqual([]);
     expect(result.media?.[0]).toMatchObject({
       contentType: "image/png",
-      kind: "image",
-      hydrationSuppressed: true,
+      url: "https://example.com/described.png",
     });
-    expect(result.media?.[0]).not.toHaveProperty("path");
-    expect(result.media?.[0]).not.toHaveProperty("url");
   });
 
   it("retains layout-derived suppression after plugin host materialization", async () => {
@@ -357,9 +402,10 @@ describe("plugin harness prompt media", () => {
 
     expect(result.images).toEqual([inlineImage]);
     expect(result.imageOrder).toEqual(["inline"]);
-    expect(result.media?.[0]).toMatchObject({ kind: "image", hydrationSuppressed: true });
-    expect(result.media?.[1]).toMatchObject({ kind: "image" });
-    expect(result.media?.[1]).not.toHaveProperty("hydrationSuppressed");
+    expect(result.media).toMatchObject([
+      { path: "/tmp/described.png", contentType: "image/png" },
+      { path: "/tmp/inline.png", contentType: "image/png" },
+    ]);
   });
 
   it("keeps unsupported native images as aligned type-only facts", async () => {
@@ -384,9 +430,8 @@ describe("plugin harness prompt media", () => {
 
     expect(result.images).toEqual([]);
     expect(result.media?.[0]).toMatchObject({ contentType: "image/png" });
-    expect(result.media?.[0]).not.toHaveProperty("path");
-    expect(result.media?.[1]).toMatchObject({ kind: "image" });
-    expect(result.media?.[1]).not.toHaveProperty("path");
+    expect(result.media?.[0]).toHaveProperty("path", "/tmp/photo.png");
+    expect(result.media?.[1]).toMatchObject({ kind: "unknown", path: "/tmp/inferred.png" });
   });
 
   it("leaves facts untouched when the native harness owns transport", async () => {
@@ -397,6 +442,11 @@ describe("plugin harness prompt media", () => {
       pluginHarnessOwnsTransport: false,
     } as unknown as Parameters<typeof preparePluginHarnessPromptImages>[0]);
 
-    expect(result).toEqual({ images: undefined, imageOrder: undefined, media });
+    expect(result).toEqual({
+      images: undefined,
+      imageOrder: undefined,
+      media,
+      videoOmissions: [],
+    });
   });
 });

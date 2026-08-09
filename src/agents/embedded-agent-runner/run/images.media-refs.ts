@@ -42,18 +42,7 @@ function mediaFactToImageRef(fact: MediaFact, factIndex: number): MediaImageRef 
   const mediaUri = [fact.url, fact.path].find((value) => value?.startsWith("media://inbound/"));
   const identity = mediaUri ?? fact.path ?? fact.url;
   if (!identity) {
-    return fact.hydrationSuppressed === true
-      ? {
-          aliases: [],
-          detect: false,
-          factIndex,
-          raw: "",
-          type: "path",
-          resolved: "",
-          hydrate: false,
-          ...(fact.workspaceDir ? { workspaceDir: fact.workspaceDir } : {}),
-        }
-      : undefined;
+    return undefined;
   }
   let resolved = mediaUri;
   if (!resolved && identity && /^file:/i.test(identity)) {
@@ -72,7 +61,6 @@ function mediaFactToImageRef(fact: MediaFact, factIndex: number): MediaImageRef 
   if (resolved?.startsWith("~")) {
     resolved = resolveUserPath(resolved);
   }
-  const hydrate = fact.hydrationSuppressed !== true;
   if (!resolved || isOpenClawCliImageCachePath(resolved)) {
     return {
       aliases: [fact.path, fact.url].filter((value): value is string => Boolean(value)),
@@ -91,7 +79,7 @@ function mediaFactToImageRef(fact: MediaFact, factIndex: number): MediaImageRef 
     raw: mediaUri ?? fact.path ?? fact.url ?? resolved,
     type: mediaUri ? "media-uri" : "path",
     resolved,
-    hydrate,
+    hydrate: true,
     ...(fact.workspaceDir ? { workspaceDir: fact.workspaceDir } : {}),
   };
 }
@@ -106,12 +94,7 @@ export function collectMediaImageRefs(
 
 export function collectIdentitylessMediaImageFactIndexes(media?: readonly MediaFact[]): number[] {
   return normalizeMediaFacts(media).flatMap((fact, factIndex) =>
-    isImageMediaFact(fact) &&
-    fact.hydrationSuppressed !== true &&
-    fact.path === undefined &&
-    fact.url === undefined
-      ? [factIndex]
-      : [],
+    isImageMediaFact(fact) && fact.path === undefined && fact.url === undefined ? [factIndex] : [],
   );
 }
 

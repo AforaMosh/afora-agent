@@ -1,3 +1,4 @@
+import { formatNativeVideoOmission } from "@openclaw/llm-core";
 import { resolveBootstrapWarningSignaturesSeen } from "../../agents/bootstrap-budget.js";
 import type { BootstrapContextRunKind } from "../../agents/bootstrap-mode.js";
 import type { RunCliAgentParams } from "../../agents/cli-runner/types.js";
@@ -15,6 +16,8 @@ import {
 import { withLocalSessionPlacementTurnAdmission } from "../../agents/session-placement-admission.js";
 import { normalizeChatType } from "../../channels/chat-type.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { isVideoMediaFact } from "../../media/media-facts.js";
+import { readRuntimePromptImageFactIndexes } from "../../media/runtime-prompt-image-provenance.js";
 import {
   getGeneratedMediaTaskIdsForSessionKey,
   hasNewGeneratedMediaTaskForSessionKey,
@@ -73,8 +76,8 @@ export async function runCliFallbackCandidate(params: {
   fastModeAutoProgressState: FastModeAutoProgressState;
   bootstrapContextRunKind: BootstrapContextRunKind;
   bootstrapPromptWarningSignaturesSeen: string[];
-  currentTurnImages: Awaited<
-    ReturnType<typeof import("./current-turn-images.js").resolveCurrentTurnImages>
+  currentTurnMedia: Awaited<
+    ReturnType<typeof import("./current-turn-images.js").resolveCurrentTurnInputMedia>
   >;
   signalExecutionPhaseForTyping: NonNullable<RunEmbeddedAgentParams["onExecutionPhase"]>;
   notifyAgentRunStart: () => void;
@@ -87,6 +90,53 @@ export async function runCliFallbackCandidate(params: {
   bootstrapPromptWarningSignaturesSeen: string[];
 }> {
   const turn = params.turn;
+  const inputMedia = params.currentTurnMedia.inputMedia ?? [];
+  const mediaFactIndexes = readRuntimePromptImageFactIndexes(inputMedia);
+  const handledSourceIds = new Set(params.currentTurnMedia.handledVideoSourceIds ?? []);
+  const handledSourceIndexes = new Set(params.currentTurnMedia.handledVideoSourceIndexes ?? []);
+  const facts = turn.followupRun.media ?? [];
+  const representedFactIndexes = new Set(
+    (mediaFactIndexes ?? []).filter((entry): entry is number => entry !== null),
+  );
+  let omissionSequence = 0;
+  const orderedOmissions: Array<{ order: number; sequence: number; text: string }> = [];
+  for (const [mediaIndex, media] of inputMedia.entries()) {
+    if (media.type !== "video") {
+      continue;
+    }
+    const factIndex = mediaFactIndexes?.[mediaIndex];
+    const fact = factIndex == null ? undefined : facts[factIndex];
+    const factSourceIndex = fact?.sourceIndex ?? factIndex;
+    const handled = fact
+      ? (fact.sourceId !== undefined && handledSourceIds.has(fact.sourceId)) ||
+        (factSourceIndex !== undefined && handledSourceIndexes.has(factSourceIndex))
+      : false;
+    if (!handled) {
+      orderedOmissions.push({
+        order: mediaIndex,
+        sequence: omissionSequence++,
+        text: formatNativeVideoOmission("unsupported"),
+      });
+    }
+  }
+  for (const [factIndex, fact] of facts.entries()) {
+    const handled =
+      (fact.sourceId !== undefined && handledSourceIds.has(fact.sourceId)) ||
+      handledSourceIndexes.has(fact.sourceIndex ?? factIndex);
+    if (isVideoMediaFact(fact) && !handled && !representedFactIndexes.has(factIndex)) {
+      orderedOmissions.push({
+        order: fact.sourceIndex ?? factIndex,
+        sequence: omissionSequence++,
+        text: formatNativeVideoOmission("unsupported"),
+      });
+    }
+  }
+  const videoOmissions = orderedOmissions
+    .toSorted((left, right) => left.order - right.order || left.sequence - right.sequence)
+    .map((entry) => entry.text);
+  const cliPrompt = videoOmissions.length
+    ? `${turn.commandBody}\n\n${videoOmissions.join("\n")}`
+    : turn.commandBody;
   const cliSessionBinding = getCliSessionBinding(
     turn.getActiveSessionEntry(),
     params.cliExecutionProvider,
@@ -344,7 +394,7 @@ export async function runCliFallbackCandidate(params: {
             cwd: turn.followupRun.run.cwd,
             config: params.runtimeConfig,
             toolOverrides: turn.followupRun.run.toolOverrides,
-            prompt: turn.commandBody,
+            prompt: cliPrompt,
             transcriptPrompt: turn.transcriptCommandBody,
             media: turn.followupRun.media,
             suppressNextUserMessagePersistence: params.suppressQueuedUserPersistenceForCandidate,
@@ -392,8 +442,8 @@ export async function runCliFallbackCandidate(params: {
               params.bootstrapPromptWarningSignaturesSeen[
                 params.bootstrapPromptWarningSignaturesSeen.length - 1
               ],
-            images: params.currentTurnImages.images,
-            imageOrder: params.currentTurnImages.imageOrder,
+            images: params.currentTurnMedia.images,
+            imageOrder: params.currentTurnMedia.imageOrder,
             skillsSnapshot: turn.followupRun.run.skillsSnapshot,
             messageChannel: turn.followupRun.originatingChannel ?? undefined,
             messageProvider: hookMessageProvider,

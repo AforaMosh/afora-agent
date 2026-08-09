@@ -6,7 +6,32 @@ import {
   extractText,
   extractTextCached,
   extractThinkingCached,
+  readTranscriptMediaEntries,
 } from "./message-extract.ts";
+
+describe("readTranscriptMediaEntries", () => {
+  it("prefers canonical managed references over absolute server paths", () => {
+    expect(
+      readTranscriptMediaEntries({
+        __openclaw: {
+          media: [
+            {
+              path: "/Users/operator/.openclaw/media/inbound/clip.mp4",
+              url: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+              contentType: "video/mp4",
+            },
+          ],
+        },
+      }),
+    ).toEqual([
+      {
+        path: "media://inbound/clip---00000000-0000-4000-8000-000000000000.mp4",
+        mediaType: "video/mp4",
+        fileName: undefined,
+      },
+    ]);
+  });
+});
 
 describe("extractTextCached", () => {
   it("matches extractText output", () => {

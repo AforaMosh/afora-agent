@@ -1,4 +1,4 @@
-/** Runs prompt-local image preparation, observability, preflight, and provider dispatch. */
+/** Runs prompt-local media preparation, observability, preflight, and provider dispatch. */
 import type { prepareEmbeddedAttemptPromptContext } from "./attempt-prompt-build.js";
 import { prepareEmbeddedAttemptPromptPreflight } from "./attempt-prompt-preflight.js";
 import {
@@ -32,6 +32,7 @@ export async function dispatchEmbeddedAttemptPrompt(input: {
     | "effectivePrompt"
     | "hookMessagesForCurrentPrompt"
     | "imageCount"
+    | "videoCount"
     | "llmBoundaryPromptForPrecheck"
     | "promptForModel"
     | "promptSubmissionRuntimeOnly"
@@ -58,7 +59,8 @@ export async function dispatchEmbeddedAttemptPrompt(input: {
     | "attempt"
     | "activeSession"
     | "contextTokenBudget"
-    | "images"
+    | "inputContent"
+    | "inputMedia"
     | "modelPrompt"
     | "runtimeContextMessage"
     | "runtimeOnly"
@@ -69,12 +71,17 @@ export async function dispatchEmbeddedAttemptPrompt(input: {
   >;
 }): Promise<PromptDispatchState> {
   const { activeSession, attempt, promptContext } = input;
-  const imageResult = await prepareEmbeddedAttemptPromptExecution({
+  const mediaResult = await prepareEmbeddedAttemptPromptExecution({
     ...input.execution,
     attempt,
     prompt: promptContext.promptSubmission.prompt,
     skipPromptSubmission: input.state.skipPromptSubmission,
   });
+  const omissionText = mediaResult.videoOmissions.map((omission) => omission.text).join("\n");
+  const promptForModel = promptContext.promptForModel;
+  const promptForPrecheck = omissionText
+    ? `${promptContext.llmBoundaryPromptForPrecheck}\n\n${omissionText}`
+    : promptContext.llmBoundaryPromptForPrecheck;
 
   const reserveTokens = input.getCompactionReserveTokens();
   let state: PromptDispatchState = {
@@ -85,9 +92,10 @@ export async function dispatchEmbeddedAttemptPrompt(input: {
       contextTokenBudget: promptContext.contextTokenBudget,
       effectivePrompt: promptContext.effectivePrompt,
       hookMessagesForCurrentPrompt: promptContext.hookMessagesForCurrentPrompt,
-      imageCount: imageResult.images.length,
-      llmBoundaryPromptForPrecheck: promptContext.llmBoundaryPromptForPrecheck,
-      promptForModel: promptContext.promptForModel,
+      imageCount: mediaResult.images.length,
+      videoCount: mediaResult.media.length - mediaResult.images.length,
+      llmBoundaryPromptForPrecheck: promptForPrecheck,
+      promptForModel,
       promptSubmissionRuntimeOnly: promptContext.promptSubmission.runtimeOnly,
       reserveTokens,
       sessionMessages: activeSession.messages,
@@ -104,7 +112,7 @@ export async function dispatchEmbeddedAttemptPrompt(input: {
     ...(input.activeContextEngine ? { activeContextEngine: input.activeContextEngine } : {}),
     contextTokenBudget: promptContext.contextTokenBudget,
     hookMessagesForCurrentPrompt: promptContext.hookMessagesForCurrentPrompt,
-    promptForPrecheck: promptContext.llmBoundaryPromptForPrecheck,
+    promptForPrecheck,
     reserveTokens,
     sessionMessageCount: activeSession.messages.length,
     state,
@@ -119,8 +127,9 @@ export async function dispatchEmbeddedAttemptPrompt(input: {
       attempt,
       activeSession,
       contextTokenBudget: promptContext.contextTokenBudget,
-      images: imageResult.images,
-      modelPrompt: promptContext.promptForModel,
+      inputContent: mediaResult.orderedBlocks,
+      inputMedia: mediaResult.media,
+      modelPrompt: promptForModel,
       ...(promptContext.runtimeContextMessageForCurrentTurn
         ? { runtimeContextMessage: promptContext.runtimeContextMessageForCurrentTurn }
         : {}),

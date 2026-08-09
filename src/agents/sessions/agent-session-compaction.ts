@@ -13,6 +13,7 @@ import {
 import { AgentSessionInspection } from "./agent-session-inspection.js";
 import { unwrapCoreResult } from "./agent-session-utils.js";
 import { formatNoModelSelectedMessage } from "./auth-guidance.js";
+import { projectSessionCompactionMedia } from "./compaction-media-projection.js";
 import { preflightManualSessionCompaction } from "./manual-compaction-preflight.js";
 import { getModelRegistryRuntime } from "./model-registry-runtime.js";
 import { getLatestCompactionEntry, type CompactionEntry } from "./session-manager.js";
@@ -163,7 +164,7 @@ export abstract class AgentSessionCompaction extends AgentSessionInspection {
       return { status: "skipped" };
     }
 
-    const pathEntries = this.sessionManager.getBranch();
+    const pathEntries = projectSessionCompactionMedia(this.sessionManager.getBranch());
     let preparation: CompactionPreparation | undefined;
     if (isManual) {
       const manualPreflight = preflightManualSessionCompaction(pathEntries, options.settings);

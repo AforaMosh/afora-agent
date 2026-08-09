@@ -63,6 +63,7 @@ type MockResolvedModel = {
   provider: string;
   contextWindow: number;
   api: string;
+  input: Array<"text" | "image">;
   baseUrl?: string;
   reasoning?: boolean;
 };
@@ -230,6 +231,7 @@ function createMockResolvedModel(
       provider,
       contextWindow: 200000,
       api: providerConfig?.api ?? (usesOpenAITransport ? "openai-responses" : "messages"),
+      input: ["text", "image"],
       ...(providerConfig?.baseUrl
         ? { baseUrl: providerConfig.baseUrl }
         : usesOpenAITransport

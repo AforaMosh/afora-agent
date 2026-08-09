@@ -1,6 +1,7 @@
 import {
   forkSqliteSessionAtMessage,
   listSqliteSessionBranches,
+  preflightSqliteSessionMessageCut,
   resolveSessionTranscriptActiveLeafEntryId as resolveSqliteSessionTranscriptActiveLeafEntryId,
   rewindSqliteSessionToMessage,
   switchSqliteSessionBranch,
@@ -13,6 +14,7 @@ import type {
   SessionBranchSwitchMutationResult,
   SessionMessageCutMutationParams,
   SessionMessageCutMutationResult,
+  SessionMessageCutPreflightResult,
 } from "./session-accessor.types.js";
 
 export async function listSessionBranches(
@@ -25,6 +27,12 @@ export function resolveSessionTranscriptActiveLeafEntryId(
   events: readonly TranscriptEvent[],
 ): string | undefined {
   return resolveSqliteSessionTranscriptActiveLeafEntryId(events);
+}
+
+export async function preflightSessionMessageCut(
+  params: SessionMessageCutMutationParams,
+): Promise<SessionMessageCutPreflightResult> {
+  return await preflightSqliteSessionMessageCut(params);
 }
 
 export async function rewindSessionToMessage(

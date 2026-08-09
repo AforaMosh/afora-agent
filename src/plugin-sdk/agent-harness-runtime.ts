@@ -34,7 +34,7 @@ import {
   prepareWatchedSessionsPrompt,
 } from "../agents/watched-sessions-prompt.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
-import type { ImageContent } from "../llm/types.js";
+import type { ImageContent, Model } from "../llm/types.js";
 import { redactToolDetail } from "../logging/redact.js";
 import type { PromptImageOrderEntry } from "../media/prompt-image-order.js";
 import { truncateUtf16Safe } from "../utils.js";
@@ -295,7 +295,7 @@ export { normalizeProviderToolSchemas } from "../agents/embedded-agent-runner/to
 export async function detectAndLoadAgentHarnessPromptImages(params: {
   prompt: string;
   workspaceDir: string;
-  model: { input?: string[] };
+  model: Pick<Model, "input" | "nativeVideoInput">;
   existingImages?: ImageContent[];
   imageOrder?: PromptImageOrderEntry[];
   media?: import("../media/media-facts.js").MediaFact[];

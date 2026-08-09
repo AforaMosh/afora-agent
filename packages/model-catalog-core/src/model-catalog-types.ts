@@ -137,8 +137,9 @@ export type ModelCatalogMediaInputConfig = {
   image?: ModelCatalogImageInputConfig;
 };
 
-/** Supported input modality for a model. */
-export type ModelCatalogInput = "text" | "image" | "document";
+/** Supported input modalities for a model. */
+export const MODEL_CATALOG_INPUTS = ["text", "image", "video", "document"] as const;
+export type ModelCatalogInput = (typeof MODEL_CATALOG_INPUTS)[number];
 /** Model-level thinking settings carried by provider catalog metadata. */
 export const MODEL_CATALOG_THINKING_LEVELS = [
   "off",

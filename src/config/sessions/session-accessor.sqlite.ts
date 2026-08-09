@@ -57,6 +57,7 @@ export {
 export {
   forkSqliteSessionAtMessage,
   listSqliteSessionBranches,
+  preflightSqliteSessionMessageCut,
   resolveSessionTranscriptActiveLeafEntryId,
   rewindSqliteSessionToMessage,
   switchSqliteSessionBranch,

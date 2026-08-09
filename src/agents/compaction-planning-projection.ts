@@ -8,6 +8,7 @@ const PLANNING_MAX_CHARS = 256 * 1024;
 const MAX_ARGUMENT_ESTIMATE_CHARS = 1_000_000;
 const UNMEASURABLE_ARGUMENT_OMITTED_CHARS = Number.MAX_SAFE_INTEGER;
 const OMITTED_CHARS_FIELD = "__openclawCompactionPlanningOmittedChars";
+const OMITTED_VIDEO_TOKENS_FIELD = "__openclawCompactionPlanningOmittedVideoTokens";
 
 type ProjectionBudget = {
   remainingChars: number;
@@ -16,6 +17,15 @@ type ProjectionBudget = {
 export function readCompactionPlanningOmittedChars(message: AgentMessage): number {
   const value = (message as unknown as Record<string, unknown>)[OMITTED_CHARS_FIELD];
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+export function readCompactionPlanningOmittedVideoTokens(message: AgentMessage): number {
+  const value = (message as unknown as Record<string, unknown>)[OMITTED_VIDEO_TOKENS_FIELD];
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : 0;
+}
+
+function addBoundedPlanningTokens(left: number, right: number): number {
+  return Math.min(Number.MAX_SAFE_INTEGER, left + right);
 }
 
 function projectText(
@@ -142,16 +152,26 @@ function projectToolArguments(value: unknown, budget: ProjectionBudget): number 
 function projectContentBlock(
   block: unknown,
   budget: ProjectionBudget,
-): { block: unknown; omittedChars: number; changed: boolean } {
+  estimateVideoTokens: (block: Record<string, unknown>) => number,
+): { block: unknown; omittedChars: number; omittedVideoTokens: number; changed: boolean } {
   if (!block || typeof block !== "object") {
-    return { block, omittedChars: 0, changed: false };
+    return { block, omittedChars: 0, omittedVideoTokens: 0, changed: false };
   }
   const record = block as Record<string, unknown>;
   const type = typeof record.type === "string" ? record.type : "";
-  if (type === "image" && typeof record.data === "string" && record.data.length > 0) {
+  if (
+    (type === "image" || type === "video") &&
+    typeof record.data === "string" &&
+    record.data.length > 0
+  ) {
+    const projectedBlock = { ...record, data: "" };
     return {
-      block: { ...record, data: "" },
+      block: projectedBlock,
       omittedChars: 0,
+      omittedVideoTokens:
+        type === "video"
+          ? Math.max(0, estimateVideoTokens(record) - estimateVideoTokens(projectedBlock))
+          : 0,
       changed: true,
     };
   }
@@ -195,8 +215,8 @@ function projectContentBlock(
     }
   }
   return next
-    ? { block: next, omittedChars, changed: true }
-    : { block, omittedChars, changed: false };
+    ? { block: next, omittedChars, omittedVideoTokens: 0, changed: true }
+    : { block, omittedChars, omittedVideoTokens: 0, changed: false };
 }
 
 function projectStringFields(
@@ -225,7 +245,11 @@ function projectStringFields(
     : message;
 }
 
-function projectMessage(message: AgentMessage, budget: ProjectionBudget): AgentMessage {
+function projectMessage(
+  message: AgentMessage,
+  budget: ProjectionBudget,
+  estimateVideoTokens: (block: Record<string, unknown>) => number,
+): AgentMessage {
   let source = message;
   if (message.role === "assistant") {
     source = {
@@ -258,24 +282,37 @@ function projectMessage(message: AgentMessage, budget: ProjectionBudget): AgentM
   }
 
   let omittedChars = 0;
+  let omittedVideoTokens = 0;
   let changed = false;
   const projectedContent = content.map((block) => {
-    const projected = projectContentBlock(block, budget);
+    const projected = projectContentBlock(block, budget, estimateVideoTokens);
     omittedChars += projected.omittedChars;
+    omittedVideoTokens = addBoundedPlanningTokens(omittedVideoTokens, projected.omittedVideoTokens);
     changed ||= projected.changed;
     return projected.block;
   });
   if (!changed) {
     return source;
   }
-  return {
+  const next: Record<string, unknown> = {
     ...(source as unknown as Record<string, unknown>),
     content: projectedContent,
     [OMITTED_CHARS_FIELD]: readCompactionPlanningOmittedChars(source) + omittedChars,
-  } as unknown as AgentMessage;
+  };
+  const totalOmittedVideoTokens = addBoundedPlanningTokens(
+    readCompactionPlanningOmittedVideoTokens(source),
+    omittedVideoTokens,
+  );
+  if (totalOmittedVideoTokens > 0) {
+    next[OMITTED_VIDEO_TOKENS_FIELD] = totalOmittedVideoTokens;
+  }
+  return next as unknown as AgentMessage;
 }
 
-export function projectCompactionPlanningMessages(messages: AgentMessage[]): AgentMessage[] {
+export function projectCompactionPlanningMessages(
+  messages: AgentMessage[],
+  estimateVideoTokens: (block: Record<string, unknown>) => number,
+): AgentMessage[] {
   const budget = { remainingChars: PLANNING_MAX_CHARS };
-  return messages.map((message) => projectMessage(message, budget));
+  return messages.map((message) => projectMessage(message, budget, estimateVideoTokens));
 }

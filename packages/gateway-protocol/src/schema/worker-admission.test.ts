@@ -350,6 +350,24 @@ describe("worker protocol schemas", () => {
     ).toBe(false);
   });
 
+  it("rejects inline video from transcript commits and inference context", () => {
+    const videoMessage = {
+      role: "user",
+      content: [{ type: "video", data: "Y2xpcA==", mimeType: "video/mp4" }],
+      timestamp: 1,
+    };
+
+    expect(
+      validateWorkerTranscriptCommitParams(transcriptCommit({ messages: [videoMessage] })),
+    ).toBe(false);
+    expect(
+      validateWorkerInferenceStartParams({
+        ...inferenceStart,
+        context: { messages: [videoMessage] },
+      }),
+    ).toBe(false);
+  });
+
   it("validates the additive live-event protocol", () => {
     expect(WORKER_RPC_SET_VERSION).toBe(1);
     expect(WORKER_PROTOCOL_FEATURES).toContain("worker-live-event-v1");

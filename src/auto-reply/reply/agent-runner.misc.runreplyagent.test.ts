@@ -12,7 +12,7 @@ import {
 import { testing as embeddedRunTesting } from "../../agents/embedded-agent-runner/runs.test-support.js";
 import { clearRuntimeConfigSnapshot } from "../../config/config.js";
 import type { OpenClawConfig } from "../../config/config.js";
-import type { SessionEntry } from "../../config/sessions.js";
+import { SESSION_TOTAL_TOKENS_VERSION, type SessionEntry } from "../../config/sessions.js";
 import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import {
   onInternalDiagnosticEvent,
@@ -558,7 +558,7 @@ describe("runReplyAgent auto-compaction token update", () => {
       updatedAt: Date.now(),
       totalTokens: 200_000,
       totalTokensFresh: true,
-      totalTokensVersion: 1 as const,
+      totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION,
     };
     await seedSessionStore({ storePath, sessionKey, entry: sessionEntry });
     compactState.compactEmbeddedAgentSessionMock.mockRejectedValueOnce(new GatewayDrainingError());
@@ -2782,7 +2782,7 @@ describe("runReplyAgent fallback reasoning tags", () => {
         updatedAt: Date.now(),
         totalTokens: 1_000_000,
         totalTokensFresh: true,
-        totalTokensVersion: 1 as const,
+        totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION,
         compactionCount: 0,
       },
     });

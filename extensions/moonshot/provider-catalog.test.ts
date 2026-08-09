@@ -55,7 +55,7 @@ describe("moonshot provider catalog", () => {
         xhigh: "max",
         max: "max",
       },
-      input: ["text", "image"],
+      input: ["text", "image", "video"],
       contextWindow: 1_048_576,
       maxTokens: 1_048_576,
       cost: {

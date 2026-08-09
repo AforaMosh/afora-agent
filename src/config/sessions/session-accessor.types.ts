@@ -678,6 +678,30 @@ export type SessionCompactionCheckpointMutationResult =
   | { status: "model-selection-locked" }
   | { status: "failed" };
 
+export type SessionEditorMediaRef = {
+  contentType?: string;
+  kind?: "image" | "video";
+  path?: string;
+  sizeBytes?: number;
+  sourceId?: string;
+  sourceIndex?: number;
+  url?: string;
+};
+
+export type SessionMessageCutPreflightResult =
+  | {
+      status: "ready";
+      editorText?: string;
+      editorAttachments?: Array<{ mimeType: string; data: string }>;
+      editorMediaRefs?: SessionEditorMediaRef[];
+    }
+  | { status: "missing-session" }
+  | { status: "missing-entry" }
+  | { status: "not-user-message" }
+  | { status: "off-active-path" }
+  | { status: "unsupported-storage" }
+  | { status: "failed" };
+
 export type SessionMessageCutMutationResult =
   | {
       status: "created";
@@ -685,7 +709,7 @@ export type SessionMessageCutMutationResult =
       entry: SessionEntry;
       editorText?: string;
       editorAttachments?: Array<{ mimeType: string; data: string }>;
-      editorMediaRefs?: Array<{ path: string; contentType: string }>;
+      editorMediaRefs?: SessionEditorMediaRef[];
     }
   | { status: "missing-session" }
   | { status: "missing-entry" }

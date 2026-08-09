@@ -591,6 +591,19 @@ vi.mock("../runs.js", () => ({
 vi.mock("./images.js", () => ({
   detectAndLoadPromptImages: (...args: unknown[]) =>
     (hoisted.detectAndLoadPromptImagesMock as (...args: unknown[]) => unknown)(...args),
+  detectAndLoadPromptMedia: async (...args: unknown[]) => {
+    const result = await (
+      hoisted.detectAndLoadPromptImagesMock as (...args: unknown[]) => Promise<{
+        images: unknown[];
+      }>
+    )(...args);
+    return {
+      ...result,
+      media: result.images,
+      orderedBlocks: result.images,
+      videoOmissions: [],
+    };
+  },
 }));
 
 vi.mock("../../system-prompt-params.js", () => ({
@@ -957,7 +970,11 @@ type MutableSession = {
   };
   prompt: (
     prompt: string,
-    options?: { images?: unknown[]; preflightResult?: (submitted: boolean) => void },
+    options?: {
+      media?: unknown[];
+      images?: unknown[];
+      preflightResult?: (submitted: boolean) => void;
+    },
   ) => Promise<void>;
   setBaseSystemPrompt: (systemPrompt: string) => void;
   sendCustomMessage: (
@@ -979,7 +996,11 @@ type MutableSession = {
 type SessionPromptOverride = (
   session: MutableSession,
   prompt: string,
-  options?: { images?: unknown[]; preflightResult?: (submitted: boolean) => void },
+  options?: {
+    media?: unknown[];
+    images?: unknown[];
+    preflightResult?: (submitted: boolean) => void;
+  },
 ) => Promise<void>;
 
 type TestAgentStream = {
@@ -1133,14 +1154,22 @@ export function createDefaultEmbeddedSession(params?: {
   prompt?: (
     session: MutableSession,
     prompt: string,
-    options?: { images?: unknown[]; preflightResult?: (submitted: boolean) => void },
+    options?: {
+      media?: unknown[];
+      images?: unknown[];
+      preflightResult?: (submitted: boolean) => void;
+    },
   ) => Promise<void>;
 }): MutableSession {
   let activeToolNames: string[] = [];
   let pendingPrompt:
     | {
         prompt: string;
-        options?: { images?: unknown[]; preflightResult?: (submitted: boolean) => void };
+        options?: {
+          media?: unknown[];
+          images?: unknown[];
+          preflightResult?: (submitted: boolean) => void;
+        };
       }
     | undefined;
   const session: MutableSession = {
@@ -1153,6 +1182,7 @@ export function createDefaultEmbeddedSession(params?: {
         pendingPrompt = {
           prompt: String(prompt),
           options: options as {
+            media?: unknown[];
             images?: unknown[];
             preflightResult?: (submitted: boolean) => void;
           },
