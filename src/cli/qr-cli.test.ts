@@ -582,11 +582,7 @@ describe("registerQrCli", () => {
     loadConfig.mockReturnValue(createRemoteQrConfig({ withTailscale: testCase.withTailscale }));
     mockTailscaleCommands(PUBLISHED_TAILSCALE_SERVE_ROUTE);
 
-    try {
-      await runQr(["--json", "--remote"]);
-    } catch {
-      console.error("DEBUG-ERRS", JSON.stringify(runtimeError.mock.calls));
-    }
+    await runQr(["--json", "--remote"]);
 
     const payload = parseLastLoggedQrJson();
     expect(payload.gatewayUrl).toBe("wss://remote.example.com:444");

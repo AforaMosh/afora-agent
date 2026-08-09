@@ -266,17 +266,27 @@ function buildAccessLines(payload: SetupPayload, markdown = false): string[] {
   ];
 }
 
-type ReadyPairingConnectivity = Extract<PairingSetupConnectivityResolution, { ok: true }>;
+type PairingConnectivityResolver = () => Promise<PairingSetupConnectivityResolution>;
 
-async function issueSetupPayload(resolved: ReadyPairingConnectivity): Promise<SetupPayload> {
-  const { issueDeviceBootstrapToken } = await loadDevicePairApiModule();
-  const issuedBootstrap = await issueDeviceBootstrapToken({
-    profile: resolved.bootstrapProfile,
-  });
+/**
+ * Re-resolves route and auth immediately before minting. A `/pair` reply can
+ * reissue after a delivery failure, and a config reload between attempts can
+ * retire the route or the credential the first resolution saw, so reusing that
+ * snapshot would hand out a code the Gateway no longer honors.
+ */
+async function issueSetupPayload(resolve: PairingConnectivityResolver): Promise<SetupPayload> {
+  const resolved = await resolve();
+  if (!resolved.ok) {
+    throw new Error(resolved.error);
+  }
   const [url] = resolved.urls;
   if (!url) {
     throw new Error("Gateway URL unavailable.");
   }
+  const { issueDeviceBootstrapToken } = await loadDevicePairApiModule();
+  const issuedBootstrap = await issueDeviceBootstrapToken({
+    profile: resolved.bootstrapProfile,
+  });
   return {
     url,
     ...(resolved.urls.length > 1 ? { urls: resolved.urls } : {}),
@@ -430,18 +440,22 @@ export default definePluginEntry({
           runPluginCommandWithTimeout,
         } = await loadDevicePairApiModule();
         const pluginConfig = (api.pluginConfig ?? {}) as DevicePairPluginConfig;
-        const connectivity = await resolvePairingSetupConnectivityFromConfig(api.config, {
-          publicUrl: pluginConfig.publicUrl,
-          ...(authState.canIssueFullAccessSetup
-            ? {}
-            : { bootstrapProfile: PAIRING_SETUP_BOOTSTRAP_PROFILE }),
-          runCommandWithTimeout: async (argv, opts) =>
-            await runPluginCommandWithTimeout({
-              argv,
-              timeoutMs: opts.timeoutMs,
-              env: opts.env,
-            }),
-        });
+        const resolveConnectivity: PairingConnectivityResolver = async () =>
+          await resolvePairingSetupConnectivityFromConfig(api.config, {
+            publicUrl: pluginConfig.publicUrl,
+            ...(authState.canIssueFullAccessSetup
+              ? {}
+              : { bootstrapProfile: PAIRING_SETUP_BOOTSTRAP_PROFILE }),
+            runCommandWithTimeout: async (argv, opts) =>
+              await runPluginCommandWithTimeout({
+                argv,
+                timeoutMs: opts.timeoutMs,
+                env: opts.env,
+              }),
+          });
+        // Resolved once up front so an unreachable route reports before any
+        // delivery work; every mint below re-resolves through the same seam.
+        const connectivity = await resolveConnectivity();
         if (!connectivity.ok) {
           return { text: `Error: ${connectivity.error}` };
         }
@@ -464,7 +478,7 @@ export default definePluginEntry({
             }
           }
 
-          let payload = await issueSetupPayload(connectivity);
+          let payload = await issueSetupPayload(resolveConnectivity);
           let setupCode = encodeSetupCode(payload);
 
           const infoLines = buildQrInfoLines({
@@ -510,7 +524,7 @@ export default definePluginEntry({
                 `device-pair: QR image send failed channel=${channel}, falling back (${(err as Error)?.message ?? err})`,
               );
               await revokeDeviceBootstrapToken({ token: payload.bootstrapToken }).catch(() => {});
-              payload = await issueSetupPayload(connectivity);
+              payload = await issueSetupPayload(resolveConnectivity);
               setupCode = encodeSetupCode(payload);
             } finally {
               if (qrFilePath) {
@@ -532,7 +546,7 @@ export default definePluginEntry({
                 `device-pair: webchat QR render failed, falling back (${(err as Error)?.message ?? err})`,
               );
               await revokeDeviceBootstrapToken({ token: payload.bootstrapToken }).catch(() => {});
-              payload = await issueSetupPayload(connectivity);
+              payload = await issueSetupPayload(resolveConnectivity);
               return {
                 text:
                   "QR image delivery is not available on this channel right now, so I generated a pasteable setup code instead.\n\n" +
@@ -570,7 +584,7 @@ export default definePluginEntry({
           normalizeOptionalString(ctx.from) ||
           normalizeOptionalString(ctx.to) ||
           "";
-        const payload = await issueSetupPayload(connectivity);
+        const payload = await issueSetupPayload(resolveConnectivity);
 
         if (channel === "telegram" && target) {
           try {

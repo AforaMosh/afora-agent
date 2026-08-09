@@ -490,7 +490,7 @@ describe("device-pair /pair qr", () => {
 
 describe("device-pair /pair default setup code", () => {
   it("uses the canonical pairing connectivity facade before issuing", async () => {
-    pluginApiMocks.resolvePairingSetupConnectivityFromConfig.mockResolvedValueOnce({
+    pluginApiMocks.resolvePairingSetupConnectivityFromConfig.mockResolvedValue({
       ok: true,
       urls: ["wss://gateway.example.test"],
       authLabel: "token",
@@ -502,7 +502,11 @@ describe("device-pair /pair default setup code", () => {
 
     await runDefaultSetup({}, { gatewayClientScopes: ["operator.admin"] });
 
-    expect(pluginApiMocks.resolvePairingSetupConnectivityFromConfig).toHaveBeenCalledTimes(1);
+    // Route and auth are resolved up front to report an unreachable Gateway
+    // early, then again at mint time so a reload between the two cannot leave
+    // the issued code pointing at a retired route.
+    expect(pluginApiMocks.resolvePairingSetupConnectivityFromConfig).toHaveBeenCalledTimes(2);
+    expect(pluginApiMocks.issueDeviceBootstrapToken).toHaveBeenCalledTimes(1);
     expect(pluginApiMocks.issueDeviceBootstrapToken).toHaveBeenCalledWith(FULL_SETUP_REQUEST);
   });
 
@@ -535,8 +539,25 @@ describe("device-pair /pair default setup code", () => {
     expect(text).toContain("Pairing setup code generated.");
   });
 
+  it("refuses to mint when the route is retired between resolution and issuance", async () => {
+    pluginApiMocks.resolvePairingSetupConnectivityFromConfig
+      .mockResolvedValueOnce({
+        ok: true,
+        urls: ["wss://gateway.example.test"],
+        authLabel: "token",
+        urlSource: "manual",
+        access: "full",
+        accessDowngraded: false,
+        bootstrapProfile: FULL_SETUP_REQUEST.profile,
+      })
+      .mockResolvedValueOnce({ ok: false, error: "Gateway auth is configured but unavailable." });
+
+    await expect(runDefaultSetup()).rejects.toThrow("Gateway auth is configured but unavailable.");
+    expect(pluginApiMocks.issueDeviceBootstrapToken).not.toHaveBeenCalled();
+  });
+
   it("uses the canonical access decision when issuing from the plugin", async () => {
-    pluginApiMocks.resolvePairingSetupConnectivityFromConfig.mockResolvedValueOnce({
+    pluginApiMocks.resolvePairingSetupConnectivityFromConfig.mockResolvedValue({
       ok: true,
       urls: ["ws://192.168.1.20:18789"],
       authLabel: "token",
