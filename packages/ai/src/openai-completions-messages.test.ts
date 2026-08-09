@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { convertMessages } from "./openai-completions-messages.js";
-import { enforceOpenAICompatibleChatVideoRequestLimits } from "./providers/openai-compatible-video-content.js";
+import {
+  captureOpenAICompatibleChatVideoProvenance,
+  enforceOpenAICompatibleChatVideoRequestLimits,
+} from "./providers/openai-compatible-video-content.js";
 import { resolveOpenAICompletionsCompat } from "./transports/openai-completions-compat.js";
 import type { AssistantMessage, Context, Model } from "./types.js";
 
@@ -357,25 +360,24 @@ describe("convertMessages provider-owned native video", () => {
         },
       ],
     };
-    enforceOpenAICompatibleChatVideoRequestLimits(params, {
-      nativeVideoInput: { ...nativeVideoInput, maxSerializedRequestBytesExclusive: 1 },
-    });
+    const provenance = captureOpenAICompatibleChatVideoProvenance(params);
+    enforceOpenAICompatibleChatVideoRequestLimits(
+      params,
+      {
+        nativeVideoInput: { ...nativeVideoInput, maxSerializedRequestBytesExclusive: 1 },
+      },
+      provenance,
+    );
     expect(JSON.stringify(params)).not.toContain("dmlkZW8=");
     expect(params.messages[0]?.content).toEqual([
       { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
     ]);
   });
 
-  it("evicts historical video before the current video at the serialized request cap", () => {
+  it("uses pre-hook oldest-first order at the serialized request cap", () => {
     const historicalData = Buffer.alloc(128, 1).toString("base64");
     const currentData = Buffer.alloc(128, 2).toString("base64");
     const expectedMessages = [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
-        ],
-      },
       {
         role: "user",
         content: [
@@ -383,6 +385,12 @@ describe("convertMessages provider-owned native video", () => {
             type: "video_url",
             video_url: { url: `data:video/mov;base64,${currentData}` },
           },
+        ],
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
         ],
       },
     ];
@@ -412,19 +420,164 @@ describe("convertMessages provider-owned native video", () => {
       ],
     };
 
-    enforceOpenAICompatibleChatVideoRequestLimits(params, {
-      nativeVideoInput: {
-        ...nativeVideoInput,
-        maxDecodedBytesPerItem: 128,
-        maxItems: 2,
-        maxAggregateDecodedBytes: 256,
-        maxSerializedRequestBytesExclusive,
+    const provenance = captureOpenAICompatibleChatVideoProvenance(params);
+    params.messages.reverse();
+    enforceOpenAICompatibleChatVideoRequestLimits(
+      params,
+      {
+        nativeVideoInput: {
+          ...nativeVideoInput,
+          maxDecodedBytesPerItem: 128,
+          maxItems: 2,
+          maxAggregateDecodedBytes: 256,
+          maxSerializedRequestBytesExclusive,
+        },
       },
-    });
+      provenance,
+    );
 
     expect(params.messages).toEqual(expectedMessages);
     expect(Buffer.byteLength(JSON.stringify(params))).toBeLessThan(
       maxSerializedRequestBytesExclusive,
     );
+  });
+
+  it.each([
+    ["structured clone", (value: unknown) => structuredClone(value)],
+    ["JSON roundtrip", (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown],
+  ])("preserves original video across a %s payload replacement", (_name, clone) => {
+    const original = {
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+        },
+      ],
+    };
+    const provenance = captureOpenAICompatibleChatVideoProvenance(original);
+    const replacement = clone(original) as typeof original;
+
+    enforceOpenAICompatibleChatVideoRequestLimits(replacement, videoModel, provenance);
+
+    expect(replacement.messages[0]?.content).toEqual([
+      { type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } },
+    ]);
+  });
+
+  it("admits only the captured occurrences after a hook injects an identical video", () => {
+    const videoPart = {
+      type: "video_url",
+      video_url: { url: "data:video/mp4;base64,bmV3" },
+    };
+    const original = {
+      messages: [
+        { role: "user", content: [structuredClone(videoPart), structuredClone(videoPart)] },
+      ],
+    };
+    const provenance = captureOpenAICompatibleChatVideoProvenance(original);
+    const replacement = JSON.parse(JSON.stringify(original)) as typeof original;
+    replacement.messages[0]!.content.push(structuredClone(videoPart));
+
+    enforceOpenAICompatibleChatVideoRequestLimits(
+      replacement,
+      {
+        nativeVideoInput: {
+          ...nativeVideoInput,
+          maxItems: 3,
+          maxAggregateDecodedBytes: 15,
+        },
+      },
+      provenance,
+    );
+
+    expect(replacement.messages[0]?.content).toEqual([
+      videoPart,
+      videoPart,
+      { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+  });
+
+  it.each([
+    [
+      "reordered",
+      (request: { messages: Array<{ content: unknown[] }> }) =>
+        request.messages[0]!.content.reverse(),
+    ],
+    [
+      "moved",
+      (request: { messages: Array<{ content: unknown[] }> }) =>
+        request.messages.push({ content: [request.messages[0]!.content.shift()] }),
+    ],
+    [
+      "modified",
+      (request: { messages: Array<{ content: Array<{ video_url?: { url: string } }> }> }) => {
+        request.messages[0]!.content[0]!.video_url!.url = "data:video/mp4;base64,bW9kaWZpZWQ=";
+      },
+    ],
+  ])("fails closed when cloned hook video is %s", (_name, mutate) => {
+    const original = {
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "video_url", video_url: { url: "data:video/mp4;base64,b25l" } },
+            { type: "video_url", video_url: { url: "data:video/mp4;base64,dHdv" } },
+          ],
+        },
+      ],
+    };
+    const provenance = captureOpenAICompatibleChatVideoProvenance(original);
+    const replacement = structuredClone(original) as typeof original;
+    mutate(replacement as never);
+
+    enforceOpenAICompatibleChatVideoRequestLimits(
+      replacement,
+      {
+        nativeVideoInput: {
+          ...nativeVideoInput,
+          maxItems: 2,
+          maxAggregateDecodedBytes: 10,
+        },
+      },
+      provenance,
+    );
+
+    const serialized = JSON.stringify(replacement);
+    expect(serialized).not.toMatch(/base64,(?:b25l|bW9kaWZpZWQ=)/u);
+    if (_name !== "modified") {
+      expect(serialized).not.toContain("base64,dHdv");
+    }
+  });
+
+  it("retains pre-hook current-turn priority when intact user turns are reordered", () => {
+    const original = {
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,b2xk" } }],
+        },
+        {
+          role: "user",
+          content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+        },
+      ],
+    };
+    const provenance = captureOpenAICompatibleChatVideoProvenance(original);
+    original.messages.reverse();
+
+    enforceOpenAICompatibleChatVideoRequestLimits(original, videoModel, provenance);
+
+    expect(original.messages).toEqual([
+      {
+        role: "user",
+        content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+        ],
+      },
+    ]);
   });
 });

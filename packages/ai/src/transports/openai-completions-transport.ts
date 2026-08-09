@@ -13,7 +13,10 @@ import { getEnvApiKey } from "../env-api-keys.js";
 import { convertMessages } from "../openai-completions-messages.js";
 import type { OpenAICompletionsOptions } from "../provider-options.js";
 import { resolveCacheRetention } from "../providers/cache-retention.js";
-import { enforceOpenAICompatibleChatVideoRequestLimits } from "../providers/openai-compatible-video-content.js";
+import {
+  captureOpenAICompatibleChatVideoProvenance,
+  enforceOpenAICompatibleChatVideoRequestLimits,
+} from "../providers/openai-compatible-video-content.js";
 import {
   createOpenAICompletionsToolCallDeltaNormalizer,
   finalizeOpenAICompletionsToolCalls,
@@ -333,11 +336,12 @@ export function createOpenAICompletionsTransportStreamFn(): StreamFn {
           context,
           options as OpenAICompletionsOptions | undefined,
         );
+        const videoProvenance = captureOpenAICompatibleChatVideoProvenance(params);
         const nextParams = await options?.onPayload?.(params, model);
         if (nextParams !== undefined) {
           params = nextParams as typeof params;
         }
-        enforceOpenAICompatibleChatVideoRequestLimits(params, model);
+        enforceOpenAICompatibleChatVideoRequestLimits(params, model, videoProvenance);
         if (
           (options as { openclawCodeModeToolSurface?: unknown } | undefined)
             ?.openclawCodeModeToolSurface === true

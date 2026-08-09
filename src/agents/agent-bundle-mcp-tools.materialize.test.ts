@@ -502,11 +502,36 @@ describe("createBundleMcpToolRuntime", () => {
     const wrappedDataUrl =
       `safe prefix data:video/mp4;base64,${wrappedFragments[0]} \t` +
       `${wrappedFragments[1]}\n${wrappedFragments[2]} safe suffix`;
+    const nestedAliasPayloads = {
+      inputVideo: Buffer.from("PRIVATE_NESTED_INPUT_VIDEO").toString("base64"),
+      outputAudio: Buffer.from("PRIVATE_NESTED_OUTPUT_AUDIO").toString("base64"),
+      deepAudio: Buffer.from("PRIVATE_DEEP_AUDIO").toString("base64"),
+    };
+    const nestedAliases = {
+      input_video: { data: nestedAliasPayloads.inputVideo, format: "mp4" },
+      output_audio: {
+        audio: [
+          { data: nestedAliasPayloads.outputAudio, format: "mp3" },
+          { nested: [{ blob: nestedAliasPayloads.deepAudio }] },
+        ],
+      },
+    };
+    const scalarAliasPayloads = {
+      inputVideo: Buffer.from("PRIVATE_SCALAR_INPUT_VIDEO").toString("base64"),
+      image: Buffer.from("PRIVATE_SCALAR_IMAGE").toString("base64"),
+      outputAudio: Buffer.from("PRIVATE_SCALAR_OUTPUT_AUDIO").toString("base64"),
+    };
+    const scalarAliases = {
+      input_video: scalarAliasPayloads.inputVideo,
+      nested: { image: scalarAliasPayloads.image },
+      output_audio: [scalarAliasPayloads.outputAudio],
+      input_video_label: "keep this label",
+    };
     const runtime = await materializeBundleMcpToolsForRun({
       runtime: makeToolRuntime({
         result: {
           content: [{ type: "text", text: wrappedDataUrl }],
-          structuredContent: { mediaPayloads, wrappedDataUrl },
+          structuredContent: { mediaPayloads, nestedAliases, scalarAliases, wrappedDataUrl },
         },
       }),
     });
@@ -540,7 +565,23 @@ describe("createBundleMcpToolRuntime", () => {
       expect(detailsText).not.toContain(fragment);
       expect(serialized).not.toContain(fragment);
     }
-    expect(contentText.match(/"data": "\[binary omitted\]"/gu)).toHaveLength(6);
+    for (const payload of Object.values(nestedAliasPayloads)) {
+      expect(contentText).not.toContain(payload);
+      expect(detailsText).not.toContain(payload);
+      expect(serialized).not.toContain(payload);
+    }
+    for (const payload of Object.values(scalarAliasPayloads)) {
+      expect(contentText).not.toContain(payload);
+      expect(detailsText).not.toContain(payload);
+      expect(serialized).not.toContain(payload);
+    }
+    expect(detailsText).toContain('"input_video":"[binary omitted]"');
+    expect(detailsText).toContain('"image":"[binary omitted]"');
+    expect(detailsText).toContain('"output_audio":["[binary omitted]"]');
+    expect(detailsText).toContain('"input_video_label":"keep this label"');
+    expect(contentText).toContain('"input_video_label": "keep this label"');
+    expect(contentText.match(/"data": "\[binary omitted\]"/gu)).toHaveLength(8);
+    expect(contentText.match(/"blob": "\[binary omitted\]"/gu)).toHaveLength(1);
     expect(contentText).toContain("safe prefix [data URL omitted]");
     expect(detailsText).toContain("safe prefix [data URL omitted]");
     expect(serialized).not.toContain("safe suffix");

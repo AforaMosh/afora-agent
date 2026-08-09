@@ -112,10 +112,7 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     expect(result.details).toEqual({ status: "error", middlewareError: true });
   });
 
-  it("delivers tool result unchanged when no middleware is registered", async () => {
-    // Without a middleware handler, the harness has no validator contract to
-    // satisfy and must not penalize tool emitters that legitimately produce
-    // dependency payloads (functions, cycles) on `details`.
+  it("delivers a safe own-data snapshot when no middleware is registered", async () => {
     const client: Record<string, unknown> = { type: "fake-channel-client" };
     const cyclicDetails: Record<string, unknown> = {
       ok: true,
@@ -137,7 +134,16 @@ describe("createAgentToolResultMiddlewareRunner", () => {
       result: original,
     });
 
-    expect(result).toBe(original);
+    expect(result).not.toBe(original);
+    expect(result).toEqual({
+      content: [{ type: "text", text: "delivered" }],
+      details: {
+        ok: true,
+        messageId: "abc",
+        delete: {},
+        client: { type: "fake-channel-client", message: "[Circular]" },
+      },
+    });
   });
 
   it("preserves empty content while malformed content still fails visibly without middleware", async () => {
@@ -160,7 +166,9 @@ describe("createAgentToolResultMiddlewareRunner", () => {
       },
     });
 
-    expect(emptyResult).toBe(empty);
+    expect(emptyResult).toEqual(empty);
+    expect(emptyResult).not.toBe(empty);
+    expect(emptyResult.details).not.toBe(empty.details);
     expect(malformedResult).toEqual({
       content: [{ type: "text", text: "Tool output unavailable due to post-processing error." }],
       details: { status: "error", middlewareError: true },
@@ -198,7 +206,8 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     expect(result.details).toEqual({
       ok: true,
       messageId: "1501757759073419394",
-      client: { type: "fake-channel-client" },
+      delete: {},
+      client: { type: "fake-channel-client", message: "[Circular]" },
     });
   });
 
@@ -275,7 +284,7 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     });
 
     expect(result.details).toEqual({ status: "error", middlewareError: true });
-    expect(observedDetails).toEqual({ ok: true });
+    expect(observedDetails).toEqual({ ok: true, callback: {}, self: "[Circular]" });
   });
 
   it("coerces incoming nested toolResult content before middleware validation", async () => {
@@ -488,12 +497,16 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     const classPayload = "cHJpdmF0ZS1jbGFzcw==";
     const jsonPayload = "cHJpdmF0ZS10b0pTT04=";
     const plainJsonPayload = "cHJpdmF0ZS1wbGFpbi10b0pTT04=";
+    let classSerializerCalls = 0;
+    let plainSerializerCalls = 0;
     class NestedMediaEnvelope {
       nested = { content_type: "video/webm", blob: classPayload };
     }
     class JsonMediaEnvelope {
+      #payload = jsonPayload;
       toJSON() {
-        return { contentType: "video/mp4", data: jsonPayload };
+        classSerializerCalls += 1;
+        return { contentType: "video/mp4", data: this.#payload };
       }
     }
     const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, []);
@@ -509,7 +522,10 @@ describe("createAgentToolResultMiddlewareRunner", () => {
           classEnvelope: new NestedMediaEnvelope(),
           jsonEnvelope: new JsonMediaEnvelope(),
           plainJsonEnvelope: {
-            toJSON: () => ({ contentType: "video/mp4", data: plainJsonPayload }),
+            toJSON: () => {
+              plainSerializerCalls += 1;
+              return { contentType: "video/mp4", data: plainJsonPayload };
+            },
           },
         },
       },
@@ -522,6 +538,8 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     expect(serialized).not.toContain(classPayload);
     expect(serialized).not.toContain(jsonPayload);
     expect(serialized).not.toContain(plainJsonPayload);
+    expect(classSerializerCalls).toBe(0);
+    expect(plainSerializerCalls).toBe(0);
   });
 
   it("redacts prefixed wrapped data URLs before middleware and coerces nested media safely", async () => {
@@ -590,7 +608,7 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     expect(JSON.stringify(result)).not.toContain(payload);
   });
 
-  it("preserves ordinary live detail identity while projecting nested media", async () => {
+  it("materializes prototype-custom details while projecting nested media", async () => {
     class DetailEnvelope {
       status = "ok";
     }
@@ -604,9 +622,9 @@ describe("createAgentToolResultMiddlewareRunner", () => {
       args: {},
       result: { content: [{ type: "text", text: "ok" }], details: ordinary },
     });
-    expect(ordinaryResult.details).toBe(ordinary);
-    expect(Object.getPrototypeOf(ordinaryResult.details)).toBe(DetailEnvelope.prototype);
-    expect((ordinaryResult.details as { self?: unknown }).self).toBe(ordinary);
+    expect(ordinaryResult.details).not.toBe(ordinary);
+    expect(Object.getPrototypeOf(ordinaryResult.details)).toBe(Object.prototype);
+    expect(ordinaryResult.details).toEqual({ status: "ok", self: "[Circular]" });
 
     const privateData = "cHJpdmF0ZS12aWRlbw==";
     const mediaResult = await runner.applyToolResultMiddleware({
@@ -918,7 +936,7 @@ describe("createAgentToolResultMiddlewareRunner", () => {
       },
     });
 
-    expect(result.details).toEqual({ ok: true, exitCode: 0, id: "10" });
+    expect(result.details).toEqual({ ok: true, exitCode: 0, callback: {}, id: "10" });
   });
 
   it("collapses oversized incoming details to a truncation marker", async () => {

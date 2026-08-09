@@ -22,6 +22,18 @@ const MCP_DATA_URL_PLACEHOLDER = "[data URL omitted]";
 const MCP_LOCAL_URI_PLACEHOLDER = "[local resource URI omitted]";
 const MCP_EMBEDDED_DATA_URL_RE = /data:[^,\s]+,[\s\S]*$/iu;
 const MCP_STRING_TRUNCATION_MARKER = "[truncated: MCP string exceeded 64,000 characters]";
+const MCP_MEDIA_CONTAINER_ALIASES = new Set([
+  "audio",
+  "audio_url",
+  "image",
+  "image_url",
+  "input_audio",
+  "input_image",
+  "input_video",
+  "output_audio",
+  "video",
+  "video_url",
+]);
 
 function isInlineDataUrl(value: string): boolean {
   return /^\s*data:/iu.test(value);
@@ -76,20 +88,23 @@ function mediaMimeType(record: Record<string, unknown>): string | undefined {
   return undefined;
 }
 
-function hasStructuredMediaData(record: Record<string, unknown>): boolean {
-  const type = typeof record.type === "string" ? record.type.toLowerCase() : "";
+function recordCarriesStructuredMedia(
+  record: Record<string, unknown>,
+  inheritedMediaContext: boolean,
+): boolean {
+  const type = typeof record.type === "string" ? record.type.trim().toLowerCase() : "";
   return (
-    typeof record.data === "string" &&
-    (type === "audio" ||
-      type === "image" ||
-      type === "video" ||
-      mediaMimeType(record) !== undefined)
+    inheritedMediaContext ||
+    MCP_MEDIA_CONTAINER_ALIASES.has(type) ||
+    mediaMimeType(record) !== undefined
   );
 }
 
 function projectMcpJsonValueInner(
   value: unknown,
   state: { values: number; truncated: boolean; seen: WeakSet<object> },
+  mediaContext = false,
+  scalarMediaContext = false,
 ): unknown {
   state.values += 1;
   if (state.values > MCP_STRUCTURED_MAX_VALUES) {
@@ -97,6 +112,9 @@ function projectMcpJsonValueInner(
     return MCP_VALUE_COUNT_MARKER;
   }
   if (typeof value === "string") {
+    if (scalarMediaContext) {
+      return MCP_BINARY_PLACEHOLDER;
+    }
     const projected = sanitizeMcpString(value);
     state.truncated ||= projected.length < value.length;
     return projected;
@@ -116,7 +134,7 @@ function projectMcpJsonValueInner(
         state.truncated = true;
         break;
       }
-      projected.push(projectMcpJsonValueInner(entry, state));
+      projected.push(projectMcpJsonValueInner(entry, state, mediaContext, scalarMediaContext));
     }
     state.seen.delete(value);
     return projected;
@@ -124,14 +142,14 @@ function projectMcpJsonValueInner(
 
   const source = value as Record<string, unknown>;
   const projected: Record<string, unknown> = {};
-  const redactMediaData = hasStructuredMediaData(source);
+  const recordMediaContext = recordCarriesStructuredMedia(source, mediaContext);
   for (const [key, entry] of Object.entries(source)) {
     if (state.values >= MCP_STRUCTURED_MAX_VALUES) {
       projected.omitted = MCP_VALUE_COUNT_MARKER;
       state.truncated = true;
       break;
     }
-    if (key === "blob" || (key === "data" && redactMediaData)) {
+    if (key === "blob" || (key === "data" && recordMediaContext)) {
       projected[key] = MCP_BINARY_PLACEHOLDER;
       continue;
     }
@@ -139,7 +157,13 @@ function projectMcpJsonValueInner(
       projected[key] = sanitizeMcpResourceUri(entry) ?? "[resource URI omitted]";
       continue;
     }
-    projected[key] = projectMcpJsonValueInner(entry, state);
+    const aliasMediaContext = MCP_MEDIA_CONTAINER_ALIASES.has(key.toLowerCase());
+    projected[key] = projectMcpJsonValueInner(
+      entry,
+      state,
+      recordMediaContext || aliasMediaContext,
+      aliasMediaContext,
+    );
   }
   state.seen.delete(value);
   return projected;

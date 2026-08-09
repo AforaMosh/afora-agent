@@ -172,4 +172,131 @@ describe("worker transcript durable media projection", () => {
       expect(JSON.stringify(result)).not.toContain(payload);
     },
   );
+
+  it("never invokes custom serializers before sizing or serializing worker frames", () => {
+    const payload = "private-worker-custom-serializer";
+    let calls = 0;
+    class SerializerTrap {
+      safe = "keep";
+      nested = { contentType: "video/mp4", data: payload };
+      #payload = payload;
+      toJSON() {
+        calls += 1;
+        return { contentType: "video/mp4", data: this.#payload };
+      }
+    }
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-video-json",
+      toolName: "camera",
+      content: [{ type: "text", text: "captured" }],
+      details: { custom: new SerializerTrap() },
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+    if (!result || result.kind !== "complete") {
+      throw new Error("expected complete worker transcript projection");
+    }
+
+    expect(result.message).toMatchObject({
+      details: {
+        custom: { safe: "keep", nested: "[video data omitted]" },
+      },
+    });
+    expect(calls).toBe(0);
+    expect(isWorkerTranscriptMessageFrameSafe(result.message)).toBe(true);
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain(payload);
+    expect(calls).toBe(0);
+  });
+
+  it("contains throwing detail getters before worker frame serialization", () => {
+    const payload = "private-worker-getter-video";
+    const details = {
+      nested: { contentType: "video/mp4", data: payload },
+    } as Record<string, unknown>;
+    let serializerReads = 0;
+    Object.defineProperty(details, "toJSON", {
+      enumerable: true,
+      get() {
+        serializerReads += 1;
+        throw new Error("synthetic worker toJSON getter failure");
+      },
+    });
+    Object.defineProperty(details, "hiddenMedia", {
+      enumerable: true,
+      get() {
+        throw new Error(`synthetic hidden worker media: ${payload}`);
+      },
+    });
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-video-getter",
+      toolName: "camera",
+      content: [{ type: "text", text: "captured" }],
+      details,
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+    if (!result || result.kind !== "complete") {
+      throw new Error("expected complete worker transcript projection");
+    }
+
+    expect(result.message).toMatchObject({
+      details: {
+        nested: "[video data omitted]",
+        hiddenMedia: "[media details omitted: unreadable property]",
+      },
+    });
+    expect(result.message.details).not.toHaveProperty("toJSON");
+    expect(serializerReads).toBe(0);
+    expect(isWorkerTranscriptMessageFrameSafe(result.message)).toBe(true);
+    expect(JSON.stringify(result)).not.toContain(payload);
+    expect(serializerReads).toBe(0);
+  });
+
+  it("detaches earlier details before a later getter mutates their source", () => {
+    const payload = "private-worker-late-getter-video";
+    const victim = { note: "safe before getter" } as Record<string, unknown>;
+    const details = { victim } as Record<string, unknown>;
+    let reads = 0;
+    Object.defineProperty(details, "mutator", {
+      enumerable: true,
+      get() {
+        reads += 1;
+        victim.contentType = "video/mp4";
+        victim.data = payload;
+        return "mutation complete";
+      },
+    });
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-late-getter",
+      toolName: "camera",
+      content: [{ type: "text", text: "captured" }],
+      details,
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+    if (!result || result.kind !== "complete") {
+      throw new Error("expected complete worker transcript projection");
+    }
+
+    expect(reads).toBe(1);
+    expect(victim).toMatchObject({ contentType: "video/mp4", data: payload });
+    expect(result.message).toMatchObject({
+      details: {
+        victim: { note: "safe before getter" },
+        mutator: "mutation complete",
+      },
+    });
+    expect(isWorkerTranscriptMessageFrameSafe(result.message)).toBe(true);
+    expect(JSON.stringify(result)).not.toContain(payload);
+  });
 });

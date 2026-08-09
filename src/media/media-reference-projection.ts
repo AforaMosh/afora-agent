@@ -72,6 +72,8 @@ const MEDIA_PAYLOAD_MAX_DEPTH = 24;
 const MEDIA_PAYLOAD_MAX_VALUES = 2_000;
 const MEDIA_PAYLOAD_MAX_STRING_CHARS = 1_000_000;
 const MEDIA_PAYLOAD_LIMIT_OMISSION = "[media details omitted: limit exceeded]";
+const MEDIA_PAYLOAD_UNREADABLE_OMISSION = "[media details omitted: unreadable property]";
+const MEDIA_PAYLOAD_BINARY_OMISSION = "[binary data omitted]";
 
 function isVideoRecord(record: Record<string, unknown>): boolean {
   const type = typeof record.type === "string" ? record.type.toLowerCase() : "";
@@ -105,75 +107,55 @@ function isModelVisibleMediaRecord(record: Record<string, unknown>): boolean {
   return hasMediaMime;
 }
 
-function isPlainRecord(value: object): value is Record<string, unknown> {
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
+type PropertyRead = { readable: true; value: unknown } | { readable: false };
 
-function hasTooManyEnumerableKeys(record: Record<string, unknown>, limit: number): boolean {
-  let count = 0;
-  for (const _key in record) {
-    count += 1;
-    if (count > limit) {
-      return true;
+type OwnPropertySnapshot = {
+  descriptors: Map<PropertyKey, PropertyDescriptor>;
+  enumerableKeys: string[];
+};
+
+function inspectOwnProperties(value: object): OwnPropertySnapshot | undefined {
+  let keys: PropertyKey[];
+  try {
+    keys = Reflect.ownKeys(value);
+  } catch {
+    return undefined;
+  }
+  const descriptors = new Map<PropertyKey, PropertyDescriptor>();
+  const enumerableKeys: string[] = [];
+  for (const key of keys) {
+    let descriptor: PropertyDescriptor | undefined;
+    try {
+      descriptor = Object.getOwnPropertyDescriptor(value, key);
+    } catch {
+      return undefined;
+    }
+    if (!descriptor) {
+      continue;
+    }
+    descriptors.set(key, descriptor);
+    if (typeof key === "string" && descriptor.enumerable) {
+      enumerableKeys.push(key);
     }
   }
-  return false;
+  return { descriptors, enumerableKeys };
 }
 
-function projectCustomJsonValue(value: object): unknown {
-  const toJSON = (value as { toJSON?: unknown }).toJSON;
-  if (typeof toJSON !== "function") {
-    return value;
+function readOwnProperty(value: object, descriptor: PropertyDescriptor | undefined): PropertyRead {
+  if (!descriptor) {
+    return { readable: false };
+  }
+  if ("value" in descriptor) {
+    return { readable: true, value: descriptor.value };
   }
   try {
-    const projected = Reflect.apply(toJSON, value, [""]);
-    return projected === value ? value : projected;
+    return {
+      readable: true,
+      value: descriptor.get ? Reflect.apply(descriptor.get, value, []) : undefined,
+    };
   } catch {
-    return value;
+    return { readable: false };
   }
-}
-
-function containsModelVisibleMediaPayload(
-  value: unknown,
-  state: { values: number; seen: WeakSet<object> } = {
-    values: 0,
-    seen: new WeakSet(),
-  },
-  depth = 0,
-): boolean {
-  state.values += 1;
-  if (depth > MEDIA_PAYLOAD_MAX_DEPTH || state.values > MEDIA_PAYLOAD_MAX_VALUES) {
-    return true;
-  }
-  if (typeof value === "string") {
-    return MEDIA_DATA_URL_START_RE.test(value);
-  }
-  if (!value || typeof value !== "object" || state.seen.has(value)) {
-    return false;
-  }
-  if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
-    return false;
-  }
-  if (!Array.isArray(value) && isModelVisibleMediaRecord(value as Record<string, unknown>)) {
-    return true;
-  }
-  const customJsonValue = projectCustomJsonValue(value);
-  if (customJsonValue !== value) {
-    return containsModelVisibleMediaPayload(customJsonValue, state, depth + 1);
-  }
-  if (
-    (Array.isArray(value) && value.length > MEDIA_PAYLOAD_MAX_VALUES - state.values) ||
-    (!Array.isArray(value) &&
-      hasTooManyEnumerableKeys(value, MEDIA_PAYLOAD_MAX_VALUES - state.values))
-  ) {
-    return true;
-  }
-  state.seen.add(value);
-  const entries = Array.isArray(value) ? value : Object.values(value);
-  const found = entries.some((entry) => containsModelVisibleMediaPayload(entry, state, depth + 1));
-  state.seen.delete(value);
-  return found;
 }
 
 function projectMediaPayload(
@@ -187,18 +169,18 @@ function projectMediaPayload(
   depth = 0,
   enforceLimits = true,
   mode: "durable-video" | "model-visible-media" = "durable-video",
-): { changed: boolean; value: unknown } {
+): unknown {
   state.values += 1;
   if (
     enforceLimits &&
     (depth > MEDIA_PAYLOAD_MAX_DEPTH || state.values > MEDIA_PAYLOAD_MAX_VALUES)
   ) {
-    return { changed: true, value: MEDIA_PAYLOAD_LIMIT_OMISSION };
+    return MEDIA_PAYLOAD_LIMIT_OMISSION;
   }
   if (typeof value === "string") {
     state.stringChars += value.length;
     if (enforceLimits && state.stringChars > MEDIA_PAYLOAD_MAX_STRING_CHARS) {
-      return { changed: true, value: MEDIA_PAYLOAD_LIMIT_OMISSION };
+      return MEDIA_PAYLOAD_LIMIT_OMISSION;
     }
     const dataUrlIndex = value.search(
       mode === "model-visible-media" ? MEDIA_DATA_URL_START_RE : VIDEO_DATA_URL_START_RE,
@@ -215,83 +197,106 @@ function projectMediaPayload(
       /^https?:\/\//iu.test(value)
         ? sanitizeMediaReferenceForProjection(value)
         : withoutInlineData;
-    return { changed: projected !== value, value: projected };
+    return projected;
   }
-  if (!value || typeof value !== "object") {
-    return { changed: false, value };
+  if (!value || (typeof value !== "object" && typeof value !== "function")) {
+    return value;
   }
   if (state.seen.has(value)) {
-    return { changed: true, value: "[Circular]" };
+    return "[Circular]";
   }
   if (ArrayBuffer.isView(value) || value instanceof ArrayBuffer) {
-    return { changed: false, value };
+    return MEDIA_PAYLOAD_BINARY_OMISSION;
   }
-  if (
-    !Array.isArray(value) &&
-    ((mode === "durable-video" && isVideoRecord(value as Record<string, unknown>)) ||
-      (mode === "model-visible-media" &&
-        isModelVisibleMediaRecord(value as Record<string, unknown>)))
-  ) {
-    return {
-      changed: true,
-      value: mode === "model-visible-media" ? REDACTED_INLINE_MEDIA : REDACTED_INLINE_VIDEO,
-    };
+  const ownProperties = inspectOwnProperties(value);
+  if (!ownProperties) {
+    return MEDIA_PAYLOAD_UNREADABLE_OMISSION;
   }
-  if (mode === "model-visible-media") {
-    const customJsonValue = projectCustomJsonValue(value);
-    if (customJsonValue !== value) {
-      return projectMediaPayload(customJsonValue, state, key, depth + 1, enforceLimits, mode);
+  let arrayLength: number | undefined;
+  if (Array.isArray(value)) {
+    const lengthDescriptor = ownProperties.descriptors.get("length");
+    if (
+      !lengthDescriptor ||
+      !("value" in lengthDescriptor) ||
+      typeof lengthDescriptor.value !== "number"
+    ) {
+      return MEDIA_PAYLOAD_UNREADABLE_OMISSION;
     }
-  }
-  if (mode === "durable-video" && !Array.isArray(value) && !isPlainRecord(value)) {
-    return { changed: false, value };
+    arrayLength = lengthDescriptor.value;
   }
   if (
     enforceLimits &&
-    ((Array.isArray(value) && value.length > MEDIA_PAYLOAD_MAX_VALUES - state.values) ||
+    ((arrayLength !== undefined && arrayLength > MEDIA_PAYLOAD_MAX_VALUES - state.values) ||
       (!Array.isArray(value) &&
-        hasTooManyEnumerableKeys(value, MEDIA_PAYLOAD_MAX_VALUES - state.values)))
+        ownProperties.enumerableKeys.length > MEDIA_PAYLOAD_MAX_VALUES - state.values))
   ) {
-    return { changed: true, value: MEDIA_PAYLOAD_LIMIT_OMISSION };
+    return MEDIA_PAYLOAD_LIMIT_OMISSION;
   }
   state.seen.add(value);
   if (Array.isArray(value)) {
-    let changed = false;
-    const projected = value.map((entry) => {
-      const result = projectMediaPayload(entry, state, undefined, depth + 1, enforceLimits, mode);
-      changed ||= result.changed;
-      return result.value;
-    });
-    state.seen.delete(value);
-    if (!changed) {
-      return { changed: false, value };
+    const length = arrayLength ?? 0;
+    const projected: unknown[] = [];
+    projected.length = length;
+    for (let index = 0; index < length; index += 1) {
+      const descriptor = ownProperties.descriptors.get(String(index));
+      if (!descriptor) {
+        continue;
+      }
+      const property = readOwnProperty(value, descriptor);
+      if (!property.readable) {
+        projected[index] = MEDIA_PAYLOAD_UNREADABLE_OMISSION;
+        continue;
+      }
+      projected[index] = projectMediaPayload(
+        property.value,
+        state,
+        String(index),
+        depth + 1,
+        enforceLimits,
+        mode,
+      );
     }
-    return { changed: true, value: projected };
+    state.seen.delete(value);
+    return projected;
   }
   const source = value as Record<string, unknown>;
-  let changed = false;
-  const projected: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(source)) {
-    const result = projectMediaPayload(entry, state, key, depth + 1, enforceLimits, mode);
-    changed ||= result.changed;
-    projected[key] = result.value;
+  const projectedEntries: Array<[string, unknown]> = [];
+  const classificationEntries: Array<[string, unknown]> = [];
+  for (const propertyKey of ownProperties.enumerableKeys) {
+    if (propertyKey === "toJSON") {
+      continue;
+    }
+    const property = readOwnProperty(source, ownProperties.descriptors.get(propertyKey));
+    const rawValue = property.readable ? property.value : MEDIA_PAYLOAD_UNREADABLE_OMISSION;
+    classificationEntries.push([propertyKey, rawValue]);
+    projectedEntries.push([
+      propertyKey,
+      property.readable
+        ? projectMediaPayload(rawValue, state, propertyKey, depth + 1, enforceLimits, mode)
+        : MEDIA_PAYLOAD_UNREADABLE_OMISSION,
+    ]);
+  }
+  const classificationRecord = Object.fromEntries(classificationEntries);
+  if (
+    (mode === "durable-video" && isVideoRecord(classificationRecord)) ||
+    (mode === "model-visible-media" && isModelVisibleMediaRecord(classificationRecord))
+  ) {
+    state.seen.delete(value);
+    return mode === "model-visible-media" ? REDACTED_INLINE_MEDIA : REDACTED_INLINE_VIDEO;
   }
   state.seen.delete(value);
-  return changed ? { changed: true, value: projected } : { changed: false, value };
+  return Object.fromEntries(projectedEntries);
 }
 
-/** Removes durable video bytes/data URLs and breaks cycles into safe text. */
+/** Creates a detached durable snapshot, removing video bytes/data URLs and cycles. */
 export function sanitizeDurableMediaPayload(
   value: unknown,
   options?: { enforceLimits?: boolean },
 ): unknown {
-  return projectMediaPayload(value, undefined, undefined, 0, options?.enforceLimits).value;
+  return projectMediaPayload(value, undefined, undefined, 0, options?.enforceLimits);
 }
 
-/** Removes inline media bytes and data URLs before arbitrary tool output becomes model-visible. */
+/** Creates a detached model-visible snapshot without inline media bytes, URLs, or cycles. */
 export function sanitizeModelVisibleMediaPayload(value: unknown): unknown {
-  if (!containsModelVisibleMediaPayload(value)) {
-    return value;
-  }
-  return projectMediaPayload(value, undefined, undefined, 0, true, "model-visible-media").value;
+  return projectMediaPayload(value, undefined, undefined, 0, true, "model-visible-media");
 }

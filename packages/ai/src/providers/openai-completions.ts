@@ -63,7 +63,10 @@ import { splitSystemPromptCacheBoundary } from "../utils/system-prompt-cache-bou
 import { resolveCacheRetention } from "./cache-retention.js";
 import { isCloudflareProvider, resolveCloudflareBaseUrl } from "./cloudflare.js";
 import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.js";
-import { enforceOpenAICompatibleChatVideoRequestLimits } from "./openai-compatible-video-content.js";
+import {
+  captureOpenAICompatibleChatVideoProvenance,
+  enforceOpenAICompatibleChatVideoRequestLimits,
+} from "./openai-compatible-video-content.js";
 import {
   createOpenAICompletionsToolCallDeltaNormalizer,
   finalizeOpenAICompletionsToolCalls,
@@ -176,11 +179,18 @@ export const streamOpenAICompletions: StreamFunction<
       const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
       const client = createClient(model, context, apiKey, options?.headers, cacheSessionId, compat);
       let params = buildParams(model, context, options, compat, cacheRetention);
+      const videoProvenance = captureOpenAICompatibleChatVideoProvenance(
+        params as Record<string, unknown>,
+      );
       const nextParams = await options?.onPayload?.(params, model);
       if (nextParams !== undefined) {
         params = nextParams as typeof params;
       }
-      enforceOpenAICompatibleChatVideoRequestLimits(params as Record<string, unknown>, model);
+      enforceOpenAICompatibleChatVideoRequestLimits(
+        params as Record<string, unknown>,
+        model,
+        videoProvenance,
+      );
       firstEventAbort = createFirstStreamEventAbortController(options?.signal);
       const requestOptions = {
         signal: firstEventAbort.signal,

@@ -384,4 +384,71 @@ describe("provider and transport observable parity fixtures", () => {
       path.join(import.meta.dirname, "../test/fixtures/provider-transport-parity", snapshot),
     );
   });
+
+  it.each(["provider", "transport"] as const)(
+    "binds %s OpenAI-compatible video admission to the pre-hook payload",
+    async (implementation) => {
+      resetOpenAiMock("success");
+      const [{ streamOpenAICompletions }, { createOpenAICompletionsTransportStreamFn }] =
+        await Promise.all([
+          import("./providers/openai-completions.js"),
+          import("./transports/openai-completions-transport.js"),
+        ]);
+      const videoModel = {
+        ...openAiModel,
+        id: "kimi-video",
+        provider: "moonshot",
+        baseUrl: "https://api.moonshot.example/v1",
+        reasoning: false,
+        input: ["text", "image", "video"],
+        nativeVideoInput: {
+          wireFamily: "openai-chat-video-url",
+          mimeTypes: { "video/mp4": "video/mp4" },
+          maxDecodedBytesPerItem: 16,
+          maxItems: 2,
+          maxAggregateDecodedBytes: 32,
+          aggregateScope: "video",
+          maxSerializedRequestBytesExclusive: 10_000,
+        },
+      } satisfies Model<"openai-completions">;
+      const videoContext = {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: "b3JpZw==" }],
+            timestamp: 1,
+          },
+        ],
+      } satisfies Context;
+      const onPayload = (payload: unknown) => {
+        const replacement = JSON.parse(JSON.stringify(payload)) as {
+          messages: Array<{ content: unknown[]; role: string }>;
+        };
+        replacement.messages[0]!.content.push({
+          type: "video_url",
+          video_url: { url: "data:video/mp4;base64,aG9vaw==" },
+        });
+        return replacement;
+      };
+      const stream =
+        implementation === "provider"
+          ? streamOpenAICompletions(videoModel, videoContext, {
+              apiKey: "sk-test",
+              onPayload,
+            })
+          : await Promise.resolve(
+              createOpenAICompletionsTransportStreamFn()(videoModel, videoContext, {
+                apiKey: "sk-test",
+                onPayload,
+              } as never),
+            );
+
+      await observeStream(stream);
+
+      const serialized = JSON.stringify(openAiMockState.payloads[0]);
+      expect(serialized).toContain("b3JpZw==");
+      expect(serialized).not.toContain("aG9vaw==");
+      expect(serialized).toContain("video omitted");
+    },
+  );
 });

@@ -2910,11 +2910,18 @@ describe("google transport stream", () => {
 
 describe("google provider-owned native video request limits", () => {
   type MutableGoogleTestPart = {
+    functionResponse?: {
+      name: string;
+      parts?: MutableGoogleTestPart[];
+      response: Record<string, unknown>;
+    };
     inlineData?: { data: string; mimeType: string };
     text?: string;
   };
   type MutableGoogleTestRequest = {
     contents: Array<{ parts: MutableGoogleTestPart[]; role?: string }>;
+    systemInstruction?: { parts: MutableGoogleTestPart[] };
+    tools?: Array<Record<string, unknown>>;
   };
   const oldVideoData = "b2xkISE=";
   const currentVideoData = "bmV3ISE=";
@@ -2928,7 +2935,7 @@ describe("google provider-owned native video request limits", () => {
     context: Record<string, unknown>;
     model?: Model<"google-generative-ai">;
     onPayload: (request: MutableGoogleTestRequest) => unknown;
-  }): Promise<{ contents: Array<{ role: string; parts: Array<Record<string, unknown>> }> }> {
+  }): Promise<MutableGoogleTestRequest> {
     guardedFetchMock
       .mockReset()
       .mockResolvedValueOnce(buildSseResponse([{ candidates: [{ finishReason: "STOP" }] }]));
@@ -2945,9 +2952,9 @@ describe("google provider-owned native video request limits", () => {
     );
     await stream.result();
     const guardedCall = requireMockCall(guardedFetchMock, 0, "guarded fetch");
-    return parseRequestJsonBody(requireRequestInit(guardedCall, "guarded fetch")) as {
-      contents: Array<{ role: string; parts: Array<Record<string, unknown>> }>;
-    };
+    return parseRequestJsonBody(
+      requireRequestInit(guardedCall, "guarded fetch"),
+    ) as MutableGoogleTestRequest;
   }
 
   it("omits budget-exhausting historical images so the current video survives", () => {
@@ -3639,6 +3646,108 @@ describe("google provider-owned native video request limits", () => {
     expect(serialized).not.toContain(hookDeferredImageData);
     expect(serialized).not.toContain(hookNestedImageData);
     expect(serialized).not.toContain(hookNestedVideoData);
+  });
+
+  it("projects every schema-valid non-user content container before serialization", async () => {
+    const systemImage = Buffer.alloc(128, 1).toString("base64");
+    const systemVideo = Buffer.alloc(128, 2).toString("base64");
+    const nestedImage = Buffer.alloc(128, 3).toString("base64");
+    const nestedVideo = Buffer.alloc(128, 4).toString("base64");
+    const currentVideo = "Y3VycmVudA==";
+    const tool = {
+      functionDeclarations: [{ name: "lookup", parameters: { type: "OBJECT" } }],
+    };
+    const projectedRequest = {
+      contents: [
+        {
+          role: "user",
+          parts: [{ inlineData: { mimeType: "video/mp4", data: currentVideo } }],
+        },
+      ],
+      systemInstruction: {
+        parts: [
+          { text: "(media omitted: exceeds provider limits)" },
+          { text: "(video omitted: unsupported or exceeds provider limits)" },
+          {
+            functionResponse: {
+              name: "camera",
+              response: { output: "captured" },
+              parts: [
+                { text: "(media omitted: exceeds provider limits)" },
+                { text: "(video omitted: unsupported or exceeds provider limits)" },
+              ],
+            },
+          },
+        ],
+      },
+      tools: [tool],
+    };
+    const projectedRequestBytes = new TextEncoder().encode(JSON.stringify(projectedRequest)).length;
+    const params = await captureHookedNativeRequest({
+      context: {
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "video", mimeType: "video/mp4", data: currentVideo }],
+            timestamp: 0,
+          },
+        ],
+      },
+      model: buildGeminiModel({
+        input: ["text", "image", "video"],
+        nativeVideoInput: {
+          ...GOOGLE_TEST_VIDEO_CONTRACT,
+          maxDecodedBytesPerItem: 64,
+          maxItems: 4,
+          maxAggregateDecodedBytes: 256,
+          maxSerializedRequestBytesExclusive: projectedRequestBytes + 1,
+        },
+      }),
+      onPayload: (request) => {
+        request.systemInstruction = {
+          parts: [
+            { inlineData: { mimeType: "image/png", data: systemImage } },
+            { inlineData: { mimeType: "video/mp4", data: systemVideo } },
+            {
+              functionResponse: {
+                name: "camera",
+                response: { output: "captured" },
+                parts: [
+                  { inlineData: { mimeType: "image/webp", data: nestedImage } },
+                  { inlineData: { mimeType: "video/mp4", data: nestedVideo } },
+                ],
+              },
+            },
+          ],
+        };
+        request.tools = [tool];
+        return request;
+      },
+    });
+
+    expect(params.systemInstruction?.parts).toEqual([
+      { text: "(media omitted: exceeds provider limits)" },
+      { text: "(video omitted: unsupported or exceeds provider limits)" },
+      {
+        functionResponse: {
+          name: "camera",
+          response: { output: "captured" },
+          parts: [
+            { text: "(media omitted: exceeds provider limits)" },
+            { text: "(video omitted: unsupported or exceeds provider limits)" },
+          ],
+        },
+      },
+    ]);
+    expect(params.contents[0]?.parts).toEqual([
+      { inlineData: { mimeType: "video/mp4", data: currentVideo } },
+    ]);
+    expect(params.tools).toEqual([tool]);
+    expect(new TextEncoder().encode(JSON.stringify(params)).length).toBe(projectedRequestBytes);
+    const serialized = JSON.stringify(params);
+    for (const payload of [systemImage, systemVideo, nestedImage, nestedVideo]) {
+      expect(serialized).not.toContain(payload);
+    }
   });
 
   it("evicts the oldest historical media before current media at the serialized cap", async () => {

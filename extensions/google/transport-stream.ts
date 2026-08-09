@@ -567,6 +567,7 @@ type GoogleInlineMediaAdmissionCandidate = GoogleInlineMediaPartData & {
   partIndex: number;
   contentIndex: number;
   wireOrder: number;
+  inputAdmissible: boolean;
   videoAdmissible: boolean;
   priorityTier: GoogleInlineMediaPriorityTier;
 };
@@ -631,6 +632,56 @@ function collectGoogleContentPartLists(request: GoogleGenerateContentRequest) {
     }
   }
   return contentPartLists;
+}
+
+function collectGoogleRequestPartLists(request: GoogleGenerateContentRequest) {
+  const partLists: Array<{
+    contentIndex: number;
+    parts: MutableGooglePart[];
+    provenanceEligible: boolean;
+    role: unknown;
+  }> = [];
+  const activePartLists = new WeakSet<object>();
+  const visitPartList = (params: {
+    contentIndex: number;
+    parts: MutableGooglePart[];
+    provenanceEligible: boolean;
+    role: unknown;
+  }) => {
+    if (activePartLists.has(params.parts)) {
+      return;
+    }
+    activePartLists.add(params.parts);
+    partLists.push(params);
+    for (const part of params.parts) {
+      const functionResponse = isRecord(part?.functionResponse) ? part.functionResponse : undefined;
+      const nestedParts = Array.isArray(functionResponse?.parts)
+        ? (functionResponse.parts as MutableGooglePart[])
+        : undefined;
+      if (nestedParts) {
+        visitPartList({
+          contentIndex: params.contentIndex,
+          parts: nestedParts,
+          provenanceEligible: false,
+          role: params.role,
+        });
+      }
+    }
+    activePartLists.delete(params.parts);
+  };
+  for (const content of collectGoogleContentPartLists(request)) {
+    visitPartList({ ...content, provenanceEligible: true });
+  }
+  const systemParts = isRecord(request.systemInstruction) && request.systemInstruction.parts;
+  if (Array.isArray(systemParts)) {
+    visitPartList({
+      contentIndex: -1,
+      parts: systemParts as MutableGooglePart[],
+      provenanceEligible: false,
+      role: "system",
+    });
+  }
+  return partLists;
 }
 
 function googleInlineMediaLocationKey(contentIndex: number, partIndex: number): string {
@@ -783,8 +834,9 @@ function planGoogleInlineMediaAdmission(
     if (candidate.kind === "image") {
       const decodedBytes = decodedBase64Bytes(candidate.data) ?? 0;
       const accepted =
-        googleContract?.aggregateScope !== "all-inline-media" ||
-        aggregateDecodedBytes + decodedBytes <= googleContract.maxAggregateDecodedBytes;
+        candidate.inputAdmissible &&
+        (googleContract?.aggregateScope !== "all-inline-media" ||
+          aggregateDecodedBytes + decodedBytes <= googleContract.maxAggregateDecodedBytes);
       decisions[candidateIndex] = accepted
         ? { accepted: true, wireMimeType: candidate.mimeType }
         : { accepted: false };
@@ -842,7 +894,7 @@ function enforceGoogleNativeVideoRequestLimits(
     partIndex: number;
     contentIndex: number;
     role: unknown;
-    topLevel: boolean;
+    provenanceEligible: boolean;
   }) => {
     const mimeType =
       typeof params.inlineData.mimeType === "string" ? params.inlineData.mimeType : "";
@@ -852,7 +904,7 @@ function enforceGoogleNativeVideoRequestLimits(
       data: typeof params.inlineData.data === "string" ? params.inlineData.data : "",
     } satisfies GoogleInlineMediaPartData;
     const provenanceEntry =
-      params.topLevel && provenance
+      params.provenanceEligible && provenance
         ? matchGoogleInlineMediaProvenance({
             candidate: candidateData,
             contentIndex: params.contentIndex,
@@ -865,7 +917,7 @@ function enforceGoogleNativeVideoRequestLimits(
         : undefined;
     const ordinaryUserInput = provenance
       ? provenanceEntry !== undefined
-      : params.topLevel &&
+      : params.provenanceEligible &&
         params.role === "user" &&
         !toolResultContentIndexes.has(params.contentIndex);
     candidates.push({
@@ -875,6 +927,9 @@ function enforceGoogleNativeVideoRequestLimits(
       partIndex: params.partIndex,
       contentIndex: params.contentIndex,
       wireOrder: wireOrder++,
+      // The pre-hook builder retains supported tool-result images. The final
+      // provenance guard admits bytes only from captured ordinary-user input.
+      inputAdmissible: provenance ? ordinaryUserInput : true,
       videoAdmissible:
         ordinaryUserInput &&
         candidateData.kind === "video" &&
@@ -886,29 +941,21 @@ function enforceGoogleNativeVideoRequestLimits(
           : "historical"),
     });
   };
-  for (const { contentIndex, parts, role } of contentPartLists) {
+  for (const { contentIndex, parts, provenanceEligible, role } of collectGoogleRequestPartLists(
+    request,
+  )) {
     for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
       const part = parts[partIndex] ?? {};
       const inlineData = inlineDataFromGooglePart(part);
       if (inlineData) {
-        appendCandidate({ inlineData, parts, partIndex, contentIndex, role, topLevel: true });
-      }
-      const functionResponse = isRecord(part.functionResponse) ? part.functionResponse : undefined;
-      const nestedParts = Array.isArray(functionResponse?.parts)
-        ? (functionResponse.parts as MutableGooglePart[])
-        : [];
-      for (let nestedIndex = 0; nestedIndex < nestedParts.length; nestedIndex += 1) {
-        const nestedInlineData = inlineDataFromGooglePart(nestedParts[nestedIndex] ?? {});
-        if (nestedInlineData) {
-          appendCandidate({
-            inlineData: nestedInlineData,
-            parts: nestedParts,
-            partIndex: nestedIndex,
-            contentIndex,
-            role,
-            topLevel: false,
-          });
-        }
+        appendCandidate({
+          inlineData,
+          parts,
+          partIndex,
+          contentIndex,
+          role,
+          provenanceEligible,
+        });
       }
     }
   }
