@@ -3,6 +3,7 @@ import type {
   InternalSessionEntry as SessionEntry,
   MainRestartRecoveryState,
 } from "../config/sessions.js";
+import { abortMainSessionRecoveryOwnerEntry } from "./main-session-recovery-owner-abort-entry.js";
 import { transitionMainSessionRecovery } from "./main-session-recovery-state.js";
 
 const sessionKey = "agent:main:main";
@@ -67,12 +68,12 @@ describe("main session recovery user abort", () => {
     };
 
     expect(
-      transitionMainSessionRecovery(entry, {
-        kind: "abort_foreground",
+      abortMainSessionRecoveryOwnerEntry({
+        entry,
         claim,
         now: 300,
       }),
-    ).toEqual({ kind: "applied" });
+    ).toBe(true);
     expect(entry).toMatchObject({
       status: "killed",
       abortedLastRun: true,
@@ -106,8 +107,8 @@ describe("main session recovery user abort", () => {
     const before = structuredClone(entry);
 
     expect(
-      transitionMainSessionRecovery(entry, {
-        kind: "abort_foreground",
+      abortMainSessionRecoveryOwnerEntry({
+        entry,
         claim: {
           cycleId: "cycle-1",
           lifecycleGeneration: "generation-1",
@@ -118,7 +119,7 @@ describe("main session recovery user abort", () => {
         now: 300,
         runId: "recovery-1",
       }),
-    ).toEqual({ kind: "no_change" });
+    ).toBe(false);
     expect(entry).toEqual(before);
   });
 
@@ -142,8 +143,8 @@ describe("main session recovery user abort", () => {
     });
 
     expect(
-      transitionMainSessionRecovery(entry, {
-        kind: "abort_foreground",
+      abortMainSessionRecoveryOwnerEntry({
+        entry,
         claim: {
           cycleId: "cycle-1",
           lifecycleGeneration: "generation-1",
@@ -154,7 +155,7 @@ describe("main session recovery user abort", () => {
         },
         now: 300,
       }),
-    ).toEqual({ kind: "applied" });
+    ).toBe(true);
     expect(entry.restartRecoveryTerminalRunIds).toEqual(["recovery-1"]);
     expect(entry.restartRecoveryRuns).toEqual([
       { runId: "recovery-2", lifecycleGeneration: "generation-1" },
@@ -181,8 +182,8 @@ describe("main session recovery user abort", () => {
     });
 
     expect(
-      transitionMainSessionRecovery(entry, {
-        kind: "abort_foreground",
+      abortMainSessionRecoveryOwnerEntry({
+        entry,
         claim: {
           cycleId: "cycle-1",
           lifecycleGeneration: "generation-1",
@@ -192,7 +193,7 @@ describe("main session recovery user abort", () => {
         },
         now: 300,
       }),
-    ).toEqual({ kind: "applied" });
+    ).toBe(true);
     expect(entry.restartRecoveryTerminalRunIds).toBeUndefined();
     expect(entry.restartRecoveryRuns).toEqual([
       { runId: "recovery-2", lifecycleGeneration: "generation-1" },
@@ -232,8 +233,8 @@ describe("main session recovery user abort", () => {
       }),
     ).toEqual({ kind: "applied" });
     expect(
-      transitionMainSessionRecovery(entry, {
-        kind: "abort_foreground",
+      abortMainSessionRecoveryOwnerEntry({
+        entry,
         claim: {
           cycleId: "cycle-1",
           lifecycleGeneration: "generation-1",
@@ -243,7 +244,7 @@ describe("main session recovery user abort", () => {
         },
         now: 300,
       }),
-    ).toEqual({ kind: "applied" });
+    ).toBe(true);
     expect(entry).toMatchObject({
       status: "killed",
       abortedLastRun: true,

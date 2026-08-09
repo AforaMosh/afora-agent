@@ -44,7 +44,7 @@ import { resolveEffectiveResetTargetSessionKey } from "./acp-reset-target.js";
 import { resolveConversationBindingContextFromMessage } from "./conversation-binding-input.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
 import { clearSessionQueues } from "./queue.js";
-import { prepareReplyRecoveryUserAbort } from "./reply-recovery-owner.js";
+import { runReplyRecoveryUserAbort } from "./reply-recovery-owner.js";
 import { replyRunRegistry } from "./reply-run-registry.js";
 
 export { isAbortRequestText, isAbortTrigger, setAbortMemory };
@@ -102,7 +102,7 @@ if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.abortTestApi")] = abortTestApi;
 }
 
-function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: string }): {
+export function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: string }): {
   active: boolean;
   aborted: boolean;
 } {
@@ -128,56 +128,13 @@ function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: st
   return { active, aborted };
 }
 
-export async function abortSessionRunTarget(params: { key?: string; sessionId?: string }): Promise<{
-  active: boolean;
-  aborted: boolean;
-  recovery?: {
-    entry: SessionAbortTargetIdentity["entry"];
-    sessionKey: string;
-  };
-}> {
+async function abortSessionRunTarget(params: { key?: string; sessionId?: string }) {
   const operation = params.key ? replyRunRegistry.get(params.key) : undefined;
-  const recoveryAbort = operation ? prepareReplyRecoveryUserAbort(operation) : undefined;
-  const settleRecoveryAbort = async (accepted: boolean) => {
-    if (!recoveryAbort) {
-      return undefined;
-    }
-    if (accepted) {
-      recoveryAbort.commit();
-    } else {
-      recoveryAbort.reject();
-    }
-    const recovery = await recoveryAbort.result;
-    if (recovery.kind === "persistence_failed") {
-      logVerbose(
-        `abort: failed to persist recovery abort for ${params.key ?? "unknown session"}: ${recovery.error}`,
-      );
-    }
-    return recovery;
-  };
-  let outcome: ReturnType<typeof abortSessionRunTargetWithOutcome>;
-  try {
-    outcome = abortSessionRunTargetWithOutcome(params);
-  } catch (error) {
-    const operationResult = operation?.result;
-    await settleRecoveryAbort(
-      operationResult?.kind === "aborted" && operationResult.code === "aborted_by_user",
-    );
-    throw error;
-  }
-  const recovery = await settleRecoveryAbort(outcome.aborted);
-  if (!recovery) {
-    return outcome;
-  }
-  return recovery.kind === "applied"
-    ? {
-        ...outcome,
-        recovery: {
-          entry: recovery.entry,
-          sessionKey: recovery.sessionKey,
-        },
-      }
-    : outcome;
+  return await runReplyRecoveryUserAbort({
+    operation,
+    abort: () => abortSessionRunTargetWithOutcome(params),
+    logLabel: params.key ?? "unknown session",
+  });
 }
 
 export function formatAbortReplyText(

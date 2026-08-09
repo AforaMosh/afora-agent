@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MainSessionRecoveryOwnerLease } from "../../agents/main-session-recovery-store.js";
 import type { InternalSessionEntry } from "../../config/sessions.js";
-import { abortSessionRunTarget } from "./abort.js";
+import { abortSessionRunTargetWithOutcome } from "./abort.js";
 import {
-  prepareReplyRecoveryUserAbort,
+  runReplyRecoveryUserAbort,
   setReplyRecoveryOwner,
   waitForReplyRecoveryAbortPersistence,
 } from "./reply-recovery-owner.js";
@@ -15,15 +15,12 @@ const recoveryMocks = vi.hoisted(() => ({
   repair: vi.fn(),
 }));
 
-type PreparedRecoveryAbort = NonNullable<ReturnType<typeof prepareReplyRecoveryUserAbort>>;
-type ReplyRecoveryAbortResult = Awaited<PreparedRecoveryAbort["result"]>;
-
 vi.mock("../../agents/main-session-recovery-lifecycle.js", () => ({
   repairMainSessionRecoveryMutation: recoveryMocks.repair,
 }));
 
-vi.mock("../../agents/main-session-recovery-store.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../agents/main-session-recovery-store.js")>()),
+vi.mock("../../agents/main-session-recovery-owner-abort.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../agents/main-session-recovery-owner-abort.js")>()),
   abortMainSessionRecoveryOwner: recoveryMocks.abortOwner,
 }));
 
@@ -36,7 +33,7 @@ afterEach(() => {
 describe("reply recovery owner", () => {
   it("keeps owner release fenced until deferred abort persistence succeeds", async () => {
     let deferredSuccess:
-      | ((result: Exclude<ReplyRecoveryAbortResult, { kind: "persistence_failed" }>) => void)
+      | ((result: { kind: "applied"; entry: InternalSessionEntry; sessionKey: string }) => void)
       | undefined;
     recoveryMocks.repair.mockImplementation(async (params) => {
       deferredSuccess = params.onDeferredSuccess;
@@ -63,16 +60,13 @@ describe("reply recovery owner", () => {
     };
     setReplyRecoveryOwner(operation, lease);
 
-    const prepared = prepareReplyRecoveryUserAbort(operation);
-    if (!prepared) {
-      throw new Error("expected recovery abort preparation");
-    }
-    prepared.commit();
-
-    await expect(prepared.result).resolves.toEqual({
-      kind: "persistence_failed",
-      error: "temporary writer outage",
-    });
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation,
+        abort: () => ({ active: true, aborted: true }),
+        logLabel: operation.key,
+      }),
+    ).resolves.toEqual({ active: true, aborted: true });
     let released = false;
     const releaseWait = waitForReplyRecoveryAbortPersistence(operation).then(() => {
       released = true;
@@ -93,6 +87,79 @@ describe("reply recovery owner", () => {
     });
     await releaseWait;
     expect(released).toBe(true);
+  });
+
+  it("terminalizes every recovery owner attached to one operation", async () => {
+    const operation = createReplyOperation({
+      sessionKey: "agent:main:telegram:topic:multi-owner",
+      sessionId: "session-multi-owner",
+      resetTriggered: false,
+    });
+    operation.attachBackend({
+      kind: "embedded",
+      runId: "run-multi-owner",
+      cancel: () => {},
+    });
+    operation.setPhase("running");
+    const leases: MainSessionRecoveryOwnerLease[] = [
+      {
+        cycleId: "cycle-source",
+        lifecycleGeneration: "generation-source",
+        claimId: "claim-source",
+        sessionId: "session-source",
+        sessionKey: "agent:main:telegram:slash:multi-owner-source",
+        storePath: "/tmp/multi-owner.sessions.json",
+      },
+      {
+        cycleId: "cycle-target",
+        lifecycleGeneration: "generation-target",
+        claimId: "claim-target",
+        sessionId: "session-target",
+        sessionKey: "agent:main:telegram:group:multi-owner-target",
+        storePath: "/tmp/multi-owner.sessions.json",
+      },
+    ];
+    for (const lease of leases) {
+      setReplyRecoveryOwner(operation, lease);
+    }
+    recoveryMocks.abortOwner.mockImplementation(async (lease) => ({
+      kind: "applied",
+      entry: {
+        sessionId: lease.sessionId,
+        status: "killed",
+        abortedLastRun: true,
+        updatedAt: 10,
+      },
+      sessionKey: lease.sessionKey,
+    }));
+    recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation,
+        abort: () =>
+          abortSessionRunTargetWithOutcome({
+            key: operation.key,
+            sessionId: operation.sessionId,
+          }),
+        logLabel: operation.key,
+      }),
+    ).resolves.toMatchObject({
+      active: true,
+      aborted: true,
+      recoveries: leases.map((lease) => ({
+        entry: {
+          sessionId: lease.sessionId,
+          status: "killed",
+          abortedLastRun: true,
+        },
+        sessionKey: lease.sessionKey,
+      })),
+    });
+    expect(recoveryMocks.abortOwner.mock.calls).toEqual(
+      leases.map((lease) => [lease, "run-multi-owner"]),
+    );
+    await expect(waitForReplyRecoveryAbortPersistence(operation)).resolves.toBeUndefined();
   });
 
   it("settles accepted abort persistence when backend cancellation throws", async () => {
@@ -132,9 +199,14 @@ describe("reply recovery owner", () => {
     recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
 
     await expect(
-      abortSessionRunTarget({
-        key: operation.key,
-        sessionId: operation.sessionId,
+      runReplyRecoveryUserAbort({
+        operation,
+        abort: () =>
+          abortSessionRunTargetWithOutcome({
+            key: operation.key,
+            sessionId: operation.sessionId,
+          }),
+        logLabel: operation.key,
       }),
     ).rejects.toThrow("cancel failed");
     expect(recoveryMocks.abortOwner).toHaveBeenCalledWith(lease, "run-abort-cancel-throws");

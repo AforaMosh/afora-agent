@@ -9,7 +9,7 @@ import {
   type AbortCutoff,
 } from "./abort-cutoff.js";
 import {
-  abortSessionRunTarget,
+  abortSessionRunTargetWithOutcome,
   formatAbortReplyText,
   isAbortTrigger,
   setAbortMemory,
@@ -22,6 +22,7 @@ import {
 } from "./commands-session-store.js";
 import type { CommandHandler } from "./commands-types.js";
 import { clearSessionQueues } from "./queue.js";
+import { runReplyRecoveryUserAbort } from "./reply-recovery-owner.js";
 import { replyRunRegistry } from "./reply-run-registry.js";
 
 type AbortTarget = {
@@ -89,14 +90,27 @@ async function applyAbortTarget(params: {
   abortCutoff?: AbortCutoff;
 }) {
   const { abortTarget } = params;
-  const abortOutcome = await abortSessionRunTarget({
-    key: abortTarget.key,
-    sessionId: abortTarget.sessionId,
+  const operation = abortTarget.key ? replyRunRegistry.get(abortTarget.key) : undefined;
+  const abortOutcome = await runReplyRecoveryUserAbort({
+    operation,
+    abort: () =>
+      abortSessionRunTargetWithOutcome({
+        key: abortTarget.key,
+        sessionId: abortTarget.sessionId,
+      }),
+    logLabel: abortTarget.key ?? "unknown session",
   });
-  if (abortOutcome.recovery && abortTarget.entry) {
-    Object.assign(abortTarget.entry, abortOutcome.recovery.entry);
+  for (const recovery of abortOutcome.recoveries ?? []) {
+    if (abortTarget.key === recovery.sessionKey && abortTarget.entry) {
+      Object.assign(abortTarget.entry, recovery.entry);
+    }
     if (params.sessionStore) {
-      params.sessionStore[abortOutcome.recovery.sessionKey] = abortTarget.entry;
+      const storedEntry = params.sessionStore[recovery.sessionKey];
+      if (storedEntry) {
+        Object.assign(storedEntry, recovery.entry);
+      } else {
+        params.sessionStore[recovery.sessionKey] = recovery.entry;
+      }
     }
   }
   if (abortOutcome.active && !abortOutcome.aborted) {

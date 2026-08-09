@@ -71,9 +71,7 @@ export async function commitMainSessionRecovery(params: {
       : undefined;
   const ownerClaim = params.command.kind === "claim_foreground" ? params.command : undefined;
   const exactOwnerClaim =
-    params.command.kind === "validate_foreground" ||
-    params.command.kind === "release_foreground" ||
-    params.command.kind === "abort_foreground"
+    params.command.kind === "validate_foreground" || params.command.kind === "release_foreground"
       ? params.command.claim
       : undefined;
   const scansAliases = Boolean(
@@ -200,27 +198,6 @@ export async function refreshMainSessionRecoveryOwner(
         sessionKey: result.sessionKey,
       }
     : undefined;
-}
-
-export async function abortMainSessionRecoveryOwner(
-  lease: MainSessionRecoveryOwnerLease,
-  runId?: string,
-): Promise<
-  { kind: "applied"; entry: SessionEntry; sessionKey: string } | { kind: "owner_changed" }
-> {
-  const result = await commitMainSessionRecovery({
-    command: {
-      kind: "abort_foreground",
-      claim: lease,
-      now: Date.now(),
-      ...(runId ? { runId } : {}),
-    },
-    requireWriteSuccess: true,
-    target: lease,
-  });
-  return result.transition.kind === "applied" && result.entry && result.sessionKey
-    ? { kind: "applied", entry: result.entry, sessionKey: result.sessionKey }
-    : { kind: "owner_changed" };
 }
 
 export async function claimMainSessionRecoveryOwner(params: {
@@ -362,23 +339,35 @@ async function releaseMainSessionRecoveryOwnerWithRetries(
   return { sessionId: entry.sessionId, sessionKey, storePath: lease.storePath };
 }
 
-function scheduleMainSessionRecoveryOwnerRelease(lease: MainSessionRecoveryOwnerLease): void {
+function scheduleMainSessionRecoveryOwnerRelease(
+  lease: MainSessionRecoveryOwnerLease,
+  onDeferredSuccess?: (
+    pending: MainSessionRecoveryPendingTarget | undefined,
+  ) => void | Promise<void>,
+): void {
   // A token is process-owned but durably blocks recovery. Keep exact-token
   // cleanup alive through transient writer outages until release or restart.
   scheduleMainSessionRecoveryMutation({
     mutation: () => releaseMainSessionRecoveryOwnerWithRetries(lease),
-    onSuccess: async (pending) => {
-      if (pending) {
-        const { scheduleMainSessionRecoveryPendingTarget } =
-          await import("./main-session-recovery-owner-release.js");
-        scheduleMainSessionRecoveryPendingTarget(pending);
-      }
-    },
+    onSuccess:
+      onDeferredSuccess ??
+      (async (pending) => {
+        if (pending) {
+          const { scheduleMainSessionRecoveryPendingTarget } =
+            await import("./main-session-recovery-owner-release.js");
+          scheduleMainSessionRecoveryPendingTarget(pending);
+        }
+      }),
   });
 }
 
 export async function releaseMainSessionRecoveryOwner(
   lease: MainSessionRecoveryOwnerLease | undefined,
+  options?: {
+    onDeferredSuccess?: (
+      pending: MainSessionRecoveryPendingTarget | undefined,
+    ) => void | Promise<void>;
+  },
 ): Promise<MainSessionRecoveryPendingTarget | undefined> {
   if (!lease) {
     return undefined;
@@ -386,7 +375,7 @@ export async function releaseMainSessionRecoveryOwner(
   try {
     return await releaseMainSessionRecoveryOwnerWithRetries(lease);
   } catch (error) {
-    scheduleMainSessionRecoveryOwnerRelease(lease);
+    scheduleMainSessionRecoveryOwnerRelease(lease, options?.onDeferredSuccess);
     throw error;
   }
 }
