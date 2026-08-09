@@ -10,6 +10,19 @@ import { preparePluginHarnessPromptImages } from "./plugin-harness-prompt-images
 
 const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGP4////KwAJ5gPoxLp9owAAAABJRU5ErkJggg==";
+const PRIVATE_MEDIA_KEYS = [
+  "sourceId",
+  "sourceIndex",
+  "path",
+  "url",
+  "workspaceDir",
+  "fileName",
+  "staged",
+  "width",
+  "height",
+  "sizeBytes",
+  "durationMs",
+] as const;
 describe("plugin harness prompt media", () => {
   it("keeps handled video pairs exact at the plugin transport boundary", async () => {
     const result = await preparePluginHarnessPromptImages({
@@ -34,6 +47,8 @@ describe("plugin harness prompt media", () => {
       "(video omitted: model does not support videos)",
       "(video omitted: model does not support videos)",
     ]);
+    expect(result.media).toMatchObject([{ kind: "video" }, { kind: "video" }, { kind: "video" }]);
+    expect(JSON.stringify(result.media)).not.toContain("sourceId");
   });
 
   it("does not forward video even when a prepared model contract is present", async () => {
@@ -163,9 +178,8 @@ describe("plugin harness prompt media", () => {
       expect(result.images ?? []).toHaveLength(testCase.expectedImages);
       if (testCase.expectedImages > 0) {
         expect(result.images?.[0]?.mimeType).toBe("image/png");
-      } else {
-        expect(result.media).toMatchObject(media);
       }
+      expect(JSON.stringify(result)).not.toContain(imagePath);
     } finally {
       envSnapshot.restore();
       await fs.rm(stateDir, { recursive: true, force: true });
@@ -183,10 +197,33 @@ describe("plugin harness prompt media", () => {
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
     setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const signedUrl = "https://cdn.example.test/private.pdf?signature=signed-secret";
+    const sourceIdPath = path.join(workspaceDir, "source-identities", "private-source.png");
+    const imageFact = {
+      sourceId: sourceIdPath,
+      sourceIndex: 4,
+      path: imagePath,
+      contentType: "image/png",
+      fileName: "private-image-name.png",
+      sizeBytes: 123,
+      width: 1,
+      height: 1,
+      durationMs: 456,
+      messageId: "image-message",
+      transcribed: true,
+      workspaceDir,
+      staged: true,
+    };
     const documentFact = {
-      path: path.join(workspaceDir, "misleading.png"),
+      url: signedUrl,
       contentType: "application/pdf",
       kind: "document" as const,
+      messageId: "document-message",
+    };
+    const videoFact = {
+      contentType: "video/mp4",
+      kind: "video" as const,
+      messageId: "video-message",
     };
     const input = {
       runParams: {
@@ -200,7 +237,7 @@ describe("plugin harness prompt media", () => {
             role: "user",
             content: "inspect",
             __openclaw: {
-              media: [{ path: imagePath, contentType: "image/png" }, documentFact],
+              media: [imageFact, documentFact, videoFact],
               mediaImageLayout: { slots: [{ kind: "offloaded", factIndex: 0 }] },
             },
           },
@@ -222,11 +259,36 @@ describe("plugin harness prompt media", () => {
       ]);
       expect(readRuntimePromptImageFactIndexes(result.images ?? [])).toEqual([0]);
       expect(result.imageOrder).toEqual(["inline"]);
-      expect(result.media?.[0]).toMatchObject({ path: imagePath, contentType: "image/png" });
-      expect(result.media?.[1]).toMatchObject(documentFact);
+      expect(result.videoOmissions).toEqual(["(video omitted: model does not support videos)"]);
 
       const serialized = JSON.stringify(result);
       const restored = JSON.parse(serialized) as typeof result;
+      expect(restored.media).toEqual([
+        {
+          contentType: "image/png",
+          kind: "image",
+          messageId: "image-message",
+          transcribed: true,
+        },
+        {
+          contentType: "application/pdf",
+          kind: "document",
+          messageId: "document-message",
+          transcribed: false,
+        },
+        {
+          contentType: "video/mp4",
+          kind: "video",
+          messageId: "video-message",
+          transcribed: false,
+        },
+      ]);
+      for (const privateKey of PRIVATE_MEDIA_KEYS) {
+        expect(serialized).not.toContain(`"${privateKey}"`);
+      }
+      for (const privateValue of [workspaceDir, signedUrl, "private-image-name.png"]) {
+        expect(serialized).not.toContain(privateValue);
+      }
       const replay = await detectAndLoadPromptImages({
         prompt: "",
         media: restored.media,
@@ -383,8 +445,9 @@ describe("plugin harness prompt media", () => {
     expect(result.images).toEqual([]);
     expect(result.media?.[0]).toMatchObject({
       contentType: "image/png",
-      url: "https://example.com/described.png",
+      kind: "image",
     });
+    expect(JSON.stringify(result)).not.toContain("https://example.com/described.png");
   });
 
   it("retains layout-derived suppression after plugin host materialization", async () => {
@@ -428,15 +491,18 @@ describe("plugin harness prompt media", () => {
     expect(result.images).toEqual([inlineImage]);
     expect(result.imageOrder).toEqual(["inline"]);
     expect(result.media).toMatchObject([
-      { path: "/tmp/described.png", contentType: "image/png" },
-      { path: "/tmp/inline.png", contentType: "image/png" },
+      { contentType: "image/png", kind: "image" },
+      { contentType: "image/png", kind: "image" },
     ]);
+    expect(JSON.stringify(result)).not.toContain("/tmp/described.png");
+    expect(JSON.stringify(result)).not.toContain("/tmp/inline.png");
   });
 
   it("keeps unsupported native images as aligned type-only facts", async () => {
     const media = [
       { path: "/tmp/photo.png", contentType: "image/png" },
       { path: "/tmp/inferred.png", kind: "unknown" as const },
+      { privateLocator: "/tmp/empty-placeholder" },
     ];
     const result = await preparePluginHarnessPromptImages({
       runParams: {
@@ -454,9 +520,16 @@ describe("plugin harness prompt media", () => {
     } as unknown as Parameters<typeof preparePluginHarnessPromptImages>[0]);
 
     expect(result.images).toEqual([]);
-    expect(result.media?.[0]).toMatchObject({ contentType: "image/png" });
-    expect(result.media?.[0]).toHaveProperty("path", "/tmp/photo.png");
-    expect(result.media?.[1]).toMatchObject({ kind: "unknown", path: "/tmp/inferred.png" });
+    const serialized = JSON.stringify(result);
+    expect((JSON.parse(serialized) as typeof result).media).toEqual([
+      { contentType: "image/png", kind: "image" },
+      { kind: "image" },
+      {},
+    ]);
+    for (const privateValue of ["/tmp/photo.png", "/tmp/inferred.png", "empty-placeholder"]) {
+      expect(serialized).not.toContain(privateValue);
+    }
+    expect(serialized).not.toContain("privateLocator");
   });
 
   it("leaves facts untouched when the native harness owns transport", async () => {

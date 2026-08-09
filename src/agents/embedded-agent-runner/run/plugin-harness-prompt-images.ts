@@ -7,6 +7,18 @@ import type { RunEmbeddedAgentParams } from "./params.js";
 import { readPersistedMediaImageLayout } from "./prompt-image-metadata.js";
 import type { EmbeddedRunAttemptParams } from "./types.js";
 
+/** Removes host-private locators after their permitted bytes have been materialized. */
+function toPluginHarnessMediaFact(
+  fact: NonNullable<RunEmbeddedAgentParams["media"]>[number],
+): NonNullable<RunEmbeddedAgentParams["media"]>[number] {
+  return {
+    contentType: fact.contentType,
+    kind: isImageMediaFact(fact) ? (fact.kind === "sticker" ? "sticker" : "image") : fact.kind,
+    messageId: fact.messageId,
+    transcribed: fact.transcribed,
+  };
+}
+
 /** Materializes fact-carried native media before a plugin harness owns transport. */
 export async function preparePluginHarnessPromptImages(params: {
   runParams: RunEmbeddedAgentParams;
@@ -94,13 +106,14 @@ export async function preparePluginHarnessPromptImages(params: {
       `failed to hydrate ${failedImageCount} structured image attachment(s) for plugin harness input`,
     );
   }
+  const pluginMedia = hydrationMedia?.map(toPluginHarnessMediaFact);
   return {
     ...(runParams.inputMedia || result.media.some((part) => part.type === "video")
       ? { inputMedia: result.media }
       : {}),
     images: result.images,
     imageOrder: result.images.length > 0 ? result.images.map(() => "inline" as const) : undefined,
-    media: hydrationMedia?.length ? hydrationMedia : undefined,
+    media: pluginMedia?.length ? pluginMedia : undefined,
     videoOmissions: result.videoOmissions.map((omission) => omission.text),
   };
 }
