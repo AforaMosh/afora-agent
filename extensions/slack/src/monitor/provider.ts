@@ -168,12 +168,14 @@ function adoptSlackIdentity(params: {
     return false;
   }
   if (params.installationIdentity?.kind === "enterprise") {
+    const botUserId = normalizeOptionalString(params.botUserId) ?? "";
+    const botId = normalizeOptionalString(params.botId);
     params.ctx.setInstallationIdentity(params.installationIdentity);
-    params.ctx.botUserId = "";
-    params.ctx.botId = undefined;
+    params.ctx.botUserId = botUserId;
+    params.ctx.botId = botId;
     params.ctx.identityHealth = resolveSlackIdentityHealth({
       installationIdentity: params.installationIdentity,
-      botUserId: "",
+      botUserId,
     });
     return true;
   }

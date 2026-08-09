@@ -729,9 +729,20 @@ describe("connected identity health", () => {
   });
 
   it("promotes recovered Enterprise identity before dispatching its first event", async () => {
+    resetSlackTestState({
+      channels: {
+        slack: {
+          dmPolicy: "disabled",
+          groupPolicy: "open",
+          channels: { C12345678: { allow: true, requireMention: true } },
+        },
+      },
+    });
     const client = getSlackClient();
     client.auth.test.mockRejectedValueOnce(new Error("request_timeout")).mockResolvedValue({
       app_id: "A_ENTERPRISE",
+      user_id: "UENTERPRISE",
+      bot_id: "BENTERPRISE",
       enterprise_id: "E_ENTERPRISE",
       is_enterprise_install: true,
     });
@@ -742,7 +753,7 @@ describe("connected identity health", () => {
     replyMock.mockResolvedValue({ text: "identity restored" });
     const setStatus = vi.fn();
     const monitor = startSlackMonitor(monitorSlackProvider, { setStatus });
-    const handler = await getSlackHandlerOrThrow("app_mention");
+    const handler = await getSlackHandlerOrThrow("message");
 
     await vi.waitFor(() => expect(client.auth.test).toHaveBeenCalledTimes(2));
     expect(setStatus).toHaveBeenCalledWith({
@@ -757,11 +768,12 @@ describe("connected identity health", () => {
 
     await handler({
       event: {
-        type: "app_mention",
-        user: "U_OTHER",
-        text: "<@U_APP> status",
+        type: "message",
+        user: "UOTHER123",
+        text: "<@UENTERPRISE> status",
         ts: "999999.123",
         channel: "C12345678",
+        channel_type: "channel",
       },
       context: {
         isEnterpriseInstall: true,
