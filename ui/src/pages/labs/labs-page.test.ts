@@ -69,7 +69,8 @@ function labToggle(page: LabsPageElement, index: number, label: string) {
 }
 
 function codeModeToggle(page: LabsPageElement) {
-  return labToggle(page, 0, "Code Mode");
+  const codeModeIndex = LAB_FEATURES.findIndex((feature) => feature.id === "codeMode");
+  return labToggle(page, codeModeIndex, "Code Mode");
 }
 
 function labRow(page: LabsPageElement, title: string) {
@@ -146,15 +147,15 @@ describe("LabsPage", () => {
     {
       // The on position restores the shipped "auto" tier, never `true`: Labs
       // offers Auto/Off, and force-on stays a config-only power-user state.
+      id: "codeMode",
       label: "Code Mode",
-      index: 0,
       sourceConfig: { tools: { codeMode: { enabled: false } } },
       expectedPatch: { tools: { codeMode: { enabled: null } } },
       note: "labs: update codeMode",
     },
     {
+      id: "swarm",
       label: "Swarm",
-      index: 1,
       sourceConfig: { tools: { swarm: { enabled: false } } },
       expectedPatch: { tools: { swarm: { enabled: true } } },
       note: "labs: update swarm",
@@ -163,29 +164,29 @@ describe("LabsPage", () => {
       // Enabling must pin the mode: resolveToolSearchConfig defaults an unset
       // mode to "code", so a bare `enabled: true` would select the surface with
       // the weakest recall rather than the one this row advertises.
+      id: "toolSearch",
       label: "Tool Search",
-      index: 2,
       sourceConfig: { tools: { toolSearch: { enabled: false } } },
       expectedPatch: { tools: { toolSearch: { enabled: true, mode: "directory" } } },
       note: "labs: update toolSearch",
     },
     {
+      id: "loopDetection",
       label: "Tool-loop detection",
-      index: 3,
       sourceConfig: { tools: { loopDetection: { enabled: false } } },
       expectedPatch: { tools: { loopDetection: { enabled: true } } },
       note: "labs: update loopDetection",
     },
     {
+      id: "localModelLean",
       label: "Lean tools for local models",
-      index: 4,
       sourceConfig: {},
       expectedPatch: { agents: { defaults: { experimental: { localModelLean: true } } } },
       note: "labs: update localModelLean",
     },
     {
+      id: "cliAgents",
       label: "CLI agents",
-      index: 5,
       sourceConfig: {},
       expectedPatch: { gateway: { cliAgents: { enabled: true } } },
       note: "labs: update cliAgents",
@@ -193,22 +194,23 @@ describe("LabsPage", () => {
     {
       // Not a boolean gate: the on state is the conservative `direct` mode, so
       // enabling here cannot start recording group or unknown conversations.
+      id: "auditMessages",
       label: "Message audit metadata",
-      index: 6,
       sourceConfig: { logging: { audit: { messages: "off" } } },
       expectedPatch: { logging: { audit: { messages: "direct" } } },
       note: "labs: update auditMessages",
     },
     {
+      id: "workerDesktop",
       label: "Cloud Worker Desktop",
-      index: 7,
       sourceConfig: { cloudWorkers: { desktop: false } },
       expectedPatch: { cloudWorkers: { desktop: true } },
       note: "labs: update workerDesktop",
     },
   ])("writes the on value at the registered config path when enabling $label", async (testCase) => {
     const { page, runtimeConfig } = await mountPage(testCase.sourceConfig);
-    const toggle = labToggle(page, testCase.index, testCase.label);
+    const featureIndex = LAB_FEATURES.findIndex((feature) => feature.id === testCase.id);
+    const toggle = labToggle(page, featureIndex, testCase.label);
 
     toggle.checked = true;
     toggle.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
