@@ -2598,7 +2598,7 @@ docker_e2e_docker_run_cmd run demo
     }
   });
 
-  it("kills timed Docker scenario runners after the grace period", () => {
+  it("pins the trusted upgrade survivor harness and kills timed Docker runners", () => {
     const multiNode = readFileSync(MULTI_NODE_UPDATE_DOCKER_E2E_PATH, "utf8");
     const upgradeSurvivor = readFileSync(UPGRADE_SURVIVOR_DOCKER_E2E_PATH, "utf8");
 
@@ -2609,6 +2609,9 @@ docker_e2e_docker_run_cmd run demo
     expect(upgradeSurvivor).toContain('DOCKER_E2E_HARNESS_ROOT_DIR="$HARNESS_ROOT_DIR"');
     expect(upgradeSurvivor).toContain(
       '-v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/run.sh:/tmp/openclaw-upgrade-survivor-run.sh:ro"',
+    );
+    expect(upgradeSurvivor).toContain(
+      '-v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/assertions.mjs:/app/scripts/e2e/lib/upgrade-survivor/assertions.mjs:ro"',
     );
     expect(upgradeSurvivor).toContain(
       'timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash /tmp/openclaw-upgrade-survivor-run.sh',
