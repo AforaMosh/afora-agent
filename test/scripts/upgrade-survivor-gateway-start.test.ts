@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const gatewayHelper = path.resolve("scripts/e2e/lib/upgrade-survivor/gateway-start.sh");
+const instanceHelper = path.resolve("scripts/lib/openclaw-e2e-instance.sh");
 const refusalPrefix = "OpenClaw plugin migration inputs changed during startup convergence;";
 const retryMarker = "[upgrade-survivor] retrying gateway startup after convergence input change";
 
@@ -127,6 +128,161 @@ exit "$status"
 
 function launches(traceText: string): string[] {
   return traceText.split("---\n").filter(Boolean);
+}
+
+function reserveLoopbackPort(): number {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `import net from "node:net";
+const server = net.createServer();
+server.listen(0, "127.0.0.1", () => {
+  console.log(server.address().port);
+  server.close();
+});`,
+    ],
+    { encoding: "utf8" },
+  );
+  const port = Number(result.stdout.trim());
+  if (result.status !== 0 || !Number.isInteger(port) || port < 1) {
+    throw new Error(`failed to reserve loopback port: ${result.stderr}`);
+  }
+  return port;
+}
+
+function linuxProcessIsLive(pid: number): boolean {
+  try {
+    const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8");
+    const fields = stat.slice(stat.lastIndexOf(") ") + 2).split(" ");
+    return fields[0] !== "Z" && fields[0] !== "X";
+  } catch {
+    return false;
+  }
+}
+
+function runOwnedProcessGroupRetry(options: { deadlineOffset: number; killDelay: number }) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-upgrade-pgid-"));
+  const executable = path.join(root, "openclaw");
+  const listener = path.join(root, "listener.mjs");
+  const log = path.join(root, "gateway.log");
+  const count = path.join(root, "count");
+  const trace = path.join(root, "trace");
+  const firstBound = path.join(root, "first-bound");
+  const secondBound = path.join(root, "second-bound");
+  const descendant = path.join(root, "descendant.pid");
+  const port = reserveLoopbackPort();
+  fs.writeFileSync(
+    listener,
+    `import fs from "node:fs";
+import net from "node:net";
+
+const [mode, portText, boundPath, pidPath] = process.argv.slice(2);
+const server = net.createServer();
+if (mode === "resistant") {
+  process.on("SIGTERM", () => {});
+} else {
+  process.on("SIGTERM", () => server.close(() => process.exit(0)));
+}
+server.on("error", (error) => {
+  console.error(error.code ?? error.message);
+  process.exit(1);
+});
+server.listen(Number(portText), "127.0.0.1", () => {
+  if (pidPath) fs.writeFileSync(pidPath, String(process.pid));
+  fs.writeFileSync(boundPath, "bound");
+  if (mode === "ready") {
+    console.error(\`[gateway] ready ws://127.0.0.1:\${portText}\`);
+  }
+});
+`,
+  );
+  fs.writeFileSync(
+    executable,
+    `#!/usr/bin/env bash
+set -euo pipefail
+attempt=0
+[ ! -f "$FAKE_COUNT" ] || attempt="$(cat "$FAKE_COUNT")"
+attempt=$((attempt + 1))
+printf '%s\n' "$attempt" >"$FAKE_COUNT"
+printf 'attempt=%s pid=%s\n---\n' "$attempt" "$$" >>"$FAKE_TRACE"
+if [ "$attempt" -eq 1 ]; then
+  node "$FAKE_LISTENER" resistant "$FAKE_PORT" "$FAKE_FIRST_BOUND" "$FAKE_DESCENDANT" \
+    >/dev/null 2>&1 </dev/null &
+  for _ in {1..200}; do
+    [ -s "$FAKE_FIRST_BOUND" ] && break
+    command sleep 0.01
+  done
+  [ -s "$FAKE_FIRST_BOUND" ] || exit 65
+  printf '%s port owner survived TERM\n' ${quote(refusalPrefix)} >&2
+  exit 1
+fi
+exec node "$FAKE_LISTENER" ready "$FAKE_PORT" "$FAKE_SECOND_BOUND" ""
+`,
+    { mode: 0o755 },
+  );
+
+  const result = spawnSync(
+    "/bin/bash",
+    [
+      "-c",
+      `
+set -uo pipefail
+source ${quote(instanceHelper)}
+source ${quote(gatewayHelper)}
+kill_delay=${quote(String(options.killDelay))}
+sleep() {
+  case "\${1:-}" in
+    0.1 | 0.25) command sleep 0.01 ;;
+    *) command sleep "$@" ;;
+  esac
+}
+kill() {
+  if [ "\${1:-}" = "-KILL" ] && [ "\${2:-}" = "--" ] && [[ "\${3:-}" = -* ]]; then
+    (command sleep "$kill_delay"; builtin kill "$@") >/dev/null 2>&1 &
+    return 0
+  fi
+  builtin kill "$@"
+}
+gateway_pid=""
+cleanup() {
+  [ -z "$gateway_pid" ] || builtin kill -KILL -- "-$gateway_pid" >/dev/null 2>&1 || true
+  if [ -s ${quote(descendant)} ]; then
+    builtin kill -KILL "$(cat ${quote(descendant)})" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+export FAKE_COUNT=${quote(count)}
+export FAKE_TRACE=${quote(trace)}
+export FAKE_LISTENER=${quote(listener)}
+export FAKE_PORT=${quote(String(port))}
+export FAKE_FIRST_BOUND=${quote(firstBound)}
+export FAKE_SECOND_BOUND=${quote(secondBound)}
+export FAKE_DESCENDANT=${quote(descendant)}
+upgrade_survivor_start_gateway_with_convergence_retry \
+  gateway_pid ${quote(log)} 80 "$FAKE_PORT" legacy-ready-log-ok \
+  "$((SECONDS+${options.deadlineOffset}))" -- ${quote(executable)}
+status=$?
+printf 'gateway_pid=%s\n' "$gateway_pid"
+if [ "$status" -eq 0 ]; then
+  openclaw_e2e_stop_process "$gateway_pid"
+  gateway_pid=""
+fi
+exit "$status"
+`,
+    ],
+    { encoding: "utf8", timeout: 10_000 },
+  );
+  const traceText = fs.existsSync(trace) ? fs.readFileSync(trace, "utf8") : "";
+  const logText = fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "";
+  const descendantPid = fs.existsSync(descendant)
+    ? Number(fs.readFileSync(descendant, "utf8").trim())
+    : 0;
+  const secondBindSucceeded = fs.existsSync(secondBound);
+  const descendantLive = descendantPid > 0 && linuxProcessIsLive(descendantPid);
+  fs.rmSync(root, { force: true, recursive: true });
+  return { descendantLive, logText, result, secondBindSucceeded, traceText };
 }
 
 describe("upgrade survivor gateway convergence launcher", () => {
@@ -280,6 +436,37 @@ exit 99
       fs.rmSync(root, { force: true, recursive: true });
 
       expect(result.status, result.stderr).toBe(1);
+    },
+  );
+
+  it.runIf(process.platform === "linux")(
+    "drains the owned process group before retrying a converged startup",
+    () => {
+      const { descendantLive, logText, result, secondBindSucceeded, traceText } =
+        runOwnedProcessGroupRetry({ deadlineOffset: 5, killDelay: 0.2 });
+      const diagnostic = `${result.stderr}\n${result.stdout}\n${logText}`;
+
+      expect(launches(traceText), diagnostic).toHaveLength(2);
+      expect(logText.split(retryMarker).length - 1, diagnostic).toBe(1);
+      expect(secondBindSucceeded, diagnostic).toBe(true);
+      expect(result.status, diagnostic).toBe(0);
+      expect(logText, diagnostic).not.toContain("EADDRINUSE");
+      expect(descendantLive, diagnostic).toBe(false);
+    },
+  );
+
+  it.runIf(process.platform === "linux")(
+    "does not retry when the owned process group outlives the shared deadline",
+    () => {
+      const { descendantLive, logText, result, secondBindSucceeded, traceText } =
+        runOwnedProcessGroupRetry({ deadlineOffset: 1, killDelay: 2 });
+      const diagnostic = `${result.stderr}\n${result.stdout}\n${logText}`;
+
+      expect(result.status, diagnostic).toBe(1);
+      expect(launches(traceText), diagnostic).toHaveLength(1);
+      expect(logText, diagnostic).not.toContain(retryMarker);
+      expect(secondBindSucceeded, diagnostic).toBe(false);
+      expect(descendantLive, diagnostic).toBe(false);
     },
   );
 });
