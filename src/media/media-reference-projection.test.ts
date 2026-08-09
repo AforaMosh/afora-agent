@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeDurableMediaReference,
+  sanitizeDurableMediaContentBlock,
   sanitizeDurableMediaPayload,
   sanitizeMediaReferenceForProjection,
   sanitizeModelVisibleMediaPayload,
@@ -106,6 +107,79 @@ describe("sanitizeDurableMediaPayload", () => {
       expect(JSON.stringify(projected)).not.toContain(payload);
     },
   );
+
+  it("preserves remote video wrappers while sanitizing their references", () => {
+    expect(
+      sanitizeDurableMediaPayload({
+        type: "video",
+        source: {
+          type: "url",
+          url: "https://user" + ":password@example.test/video.mp4?signature=private#preview",
+        },
+        label: "keep",
+      }),
+    ).toEqual({
+      type: "video",
+      source: { type: "url", url: "https://example.test/video.mp4" },
+      label: "keep",
+    });
+  });
+
+  it("reads a changing video carrier once before projecting it", () => {
+    const payload = "private-changing-video-source";
+    const value = { type: "video" } as Record<string, unknown>;
+    let reads = 0;
+    Object.defineProperty(value, "source", {
+      enumerable: true,
+      get() {
+        reads += 1;
+        return reads === 1
+          ? { type: "base64", data: payload }
+          : { type: "url", url: "https://example.test/video.mp4" };
+      },
+    });
+
+    const projected = sanitizeDurableMediaPayload(value);
+
+    expect(projected).toBe("[video data omitted]");
+    expect(reads).toBe(1);
+    expect(JSON.stringify(projected)).not.toContain(payload);
+  });
+
+  it("projects stateful provider content through one detached pass", () => {
+    const payload = "private-stateful-provider-video";
+    const value = { type: "image", text: "keep" } as Record<string, unknown>;
+    let mimeReads = 0;
+    let sourceReads = 0;
+    Object.defineProperty(value, "mimeType", {
+      enumerable: true,
+      get() {
+        mimeReads += 1;
+        return mimeReads === 1 ? "video/mp4" : "image/png";
+      },
+    });
+    Object.defineProperty(value, "source", {
+      enumerable: true,
+      get() {
+        sourceReads += 1;
+        return sourceReads === 1
+          ? { type: "url", url: "https://example.test/video.mp4" }
+          : { type: "base64", data: payload };
+      },
+    });
+
+    const projected = sanitizeDurableMediaContentBlock(value);
+
+    expect(projected).toEqual({
+      type: "image",
+      text: "keep",
+      mimeType: "video/mp4",
+      source: { type: "url", url: "https://example.test/video.mp4" },
+    });
+    expect(mimeReads).toBe(1);
+    expect(sourceReads).toBe(1);
+    expect(JSON.stringify(projected)).not.toContain(payload);
+  });
 
   it("materializes prototype-custom objects without invoking inherited serializers", () => {
     const payload = "private-durable-prototype-video";
@@ -255,7 +329,7 @@ describe("sanitizeDurableMediaPayload", () => {
     }
     const value = new CyclicCarrier();
 
-    const projected = sanitizeDurableMediaPayload(value, { enforceLimits: false });
+    const projected = sanitizeDurableMediaPayload(value);
 
     expect(projected).toEqual({ safe: "keep", self: "[Circular]" });
     expect(projected).not.toBe(value);

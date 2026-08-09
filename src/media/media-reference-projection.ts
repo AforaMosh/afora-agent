@@ -74,18 +74,114 @@ const MEDIA_PAYLOAD_MAX_STRING_CHARS = 1_000_000;
 const MEDIA_PAYLOAD_LIMIT_OMISSION = "[media details omitted: limit exceeded]";
 const MEDIA_PAYLOAD_UNREADABLE_OMISSION = "[media details omitted: unreadable property]";
 const MEDIA_PAYLOAD_BINARY_OMISSION = "[binary data omitted]";
+const INLINE_VIDEO_PAYLOAD = Symbol("inline-video-payload");
+const INLINE_VIDEO_PAYLOAD_MAX_NESTING = 4;
+const INLINE_VIDEO_CARRIER_FIELDS = [
+  "source",
+  "video_url",
+  "image_url",
+  "data",
+  "blob",
+  "url",
+] as const;
+const VIDEO_PAYLOAD_TYPES = new Set(["video", "input_video", "video_url"]);
+const VIDEO_MIME_FIELDS = [
+  "mimeType",
+  "mime_type",
+  "mediaType",
+  "media_type",
+  "contentType",
+  "content_type",
+] as const;
+const VIDEO_CLASSIFICATION_FIELDS = new Set<string>(["type", ...VIDEO_MIME_FIELDS]);
 
-function isVideoRecord(record: Record<string, unknown>): boolean {
-  const type = typeof record.type === "string" ? record.type.toLowerCase() : "";
-  const hasVideoMime = [
-    record.mimeType,
-    record.mime_type,
-    record.mediaType,
-    record.media_type,
-    record.contentType,
-    record.content_type,
-  ].some((value) => typeof value === "string" && /^video\//iu.test(value.trim()));
-  return type === "video" || hasVideoMime;
+function readInlineVideoCarrier(record: object, key: string): PropertyRead | undefined {
+  let descriptor: PropertyDescriptor | undefined;
+  try {
+    descriptor = Object.getOwnPropertyDescriptor(record, key);
+  } catch {
+    return undefined;
+  }
+  return descriptor ? readOwnProperty(record, descriptor) : undefined;
+}
+
+function hasVideoPayloadTypeOrMime(record: Record<string, unknown>): boolean {
+  const typeValue = readInlineVideoCarrier(record, "type");
+  const type =
+    typeValue?.readable && typeof typeValue.value === "string"
+      ? typeValue.value.trim().toLowerCase()
+      : "";
+  return (
+    VIDEO_PAYLOAD_TYPES.has(type) ||
+    VIDEO_MIME_FIELDS.some((field) => {
+      const property = readInlineVideoCarrier(record, field);
+      return (
+        property?.readable === true &&
+        typeof property.value === "string" &&
+        /^video\//iu.test(property.value.trim())
+      );
+    })
+  );
+}
+
+function isInlineVideoDataUrl(value: unknown): boolean {
+  return typeof value === "string" && /^data:video\//iu.test(value.trimStart());
+}
+
+function isInlineVideoCarrierField(key: string): boolean {
+  return (INLINE_VIDEO_CARRIER_FIELDS as readonly string[]).includes(key);
+}
+
+function containsInlineVideoPayload(
+  value: unknown,
+  enclosingVideo = false,
+  depth = 0,
+  seen: WeakSet<object> = new WeakSet<object>(),
+): boolean {
+  if (!value || (typeof value !== "object" && typeof value !== "function")) {
+    return isInlineVideoDataUrl(value);
+  }
+  if (seen.has(value) || depth > INLINE_VIDEO_PAYLOAD_MAX_NESTING) {
+    return false;
+  }
+  seen.add(value);
+  const record = value as Record<string, unknown>;
+  const videoContext = enclosingVideo || hasVideoPayloadTypeOrMime(record);
+  for (const key of INLINE_VIDEO_CARRIER_FIELDS) {
+    const property = readInlineVideoCarrier(value, key);
+    if (!property?.readable) {
+      continue;
+    }
+    const carrier = property.value;
+    if (isInlineVideoDataUrl(carrier)) {
+      seen.delete(value);
+      return true;
+    }
+    if (videoContext && (key === "data" || key === "blob") && carrier !== undefined) {
+      seen.delete(value);
+      return true;
+    }
+    if (
+      depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING &&
+      carrier &&
+      (typeof carrier === "object" || typeof carrier === "function") &&
+      containsInlineVideoPayload(carrier, videoContext, depth + 1, seen)
+    ) {
+      seen.delete(value);
+      return true;
+    }
+  }
+  seen.delete(value);
+  return false;
+}
+
+/** Projects supported inline-video content wrappers to one valid durable text block. */
+export function projectInlineVideoContentBlock(
+  value: unknown,
+): { type: "text"; text: string } | undefined {
+  return value === REDACTED_INLINE_VIDEO || containsInlineVideoPayload(value)
+    ? { type: "text", text: REDACTED_INLINE_VIDEO }
+    : undefined;
 }
 
 function isModelVisibleMediaRecord(record: Record<string, unknown>): boolean {
@@ -151,7 +247,7 @@ function readOwnProperty(value: object, descriptor: PropertyDescriptor | undefin
   try {
     return {
       readable: true,
-      value: descriptor.get ? Reflect.apply(descriptor.get, value, []) : undefined,
+      value: descriptor.get?.call(value),
     };
   } catch {
     return { readable: false };
@@ -167,19 +263,16 @@ function projectMediaPayload(
   },
   key?: string,
   depth = 0,
-  enforceLimits = true,
   mode: "durable-video" | "model-visible-media" = "durable-video",
+  enclosingVideo = false,
 ): unknown {
   state.values += 1;
-  if (
-    enforceLimits &&
-    (depth > MEDIA_PAYLOAD_MAX_DEPTH || state.values > MEDIA_PAYLOAD_MAX_VALUES)
-  ) {
+  if (depth > MEDIA_PAYLOAD_MAX_DEPTH || state.values > MEDIA_PAYLOAD_MAX_VALUES) {
     return MEDIA_PAYLOAD_LIMIT_OMISSION;
   }
   if (typeof value === "string") {
     state.stringChars += value.length;
-    if (enforceLimits && state.stringChars > MEDIA_PAYLOAD_MAX_STRING_CHARS) {
+    if (state.stringChars > MEDIA_PAYLOAD_MAX_STRING_CHARS) {
       return MEDIA_PAYLOAD_LIMIT_OMISSION;
     }
     const dataUrlIndex = value.search(
@@ -221,10 +314,9 @@ function projectMediaPayload(
     arrayLength = lengthDescriptor.value;
   }
   if (
-    enforceLimits &&
-    ((arrayLength !== undefined && arrayLength > MEDIA_PAYLOAD_MAX_VALUES - state.values) ||
-      (!Array.isArray(value) &&
-        ownProperties.enumerableKeys.length > MEDIA_PAYLOAD_MAX_VALUES - state.values))
+    (arrayLength !== undefined && arrayLength > MEDIA_PAYLOAD_MAX_VALUES - state.values) ||
+    (!Array.isArray(value) &&
+      ownProperties.enumerableKeys.length > MEDIA_PAYLOAD_MAX_VALUES - state.values)
   ) {
     return MEDIA_PAYLOAD_LIMIT_OMISSION;
   }
@@ -243,14 +335,8 @@ function projectMediaPayload(
         projected[index] = MEDIA_PAYLOAD_UNREADABLE_OMISSION;
         continue;
       }
-      projected[index] = projectMediaPayload(
-        property.value,
-        state,
-        String(index),
-        depth + 1,
-        enforceLimits,
-        mode,
-      );
+      const item = projectMediaPayload(property.value, state, String(index), depth + 1, mode);
+      projected[index] = item === INLINE_VIDEO_PAYLOAD ? REDACTED_INLINE_VIDEO : item;
     }
     state.seen.delete(value);
     return projected;
@@ -258,41 +344,86 @@ function projectMediaPayload(
   const source = value as Record<string, unknown>;
   const projectedEntries: Array<[string, unknown]> = [];
   const classificationEntries: Array<[string, unknown]> = [];
+  const videoClassificationEntries: Array<[string, unknown]> = [];
+  const videoClassificationReads = new Map<string, PropertyRead>();
+  for (const propertyKey of ownProperties.enumerableKeys) {
+    if (!VIDEO_CLASSIFICATION_FIELDS.has(propertyKey)) {
+      continue;
+    }
+    const property = readOwnProperty(source, ownProperties.descriptors.get(propertyKey));
+    videoClassificationReads.set(propertyKey, property);
+    if (property.readable) {
+      videoClassificationEntries.push([propertyKey, property.value]);
+    }
+  }
+  const videoContext =
+    enclosingVideo || hasVideoPayloadTypeOrMime(Object.fromEntries(videoClassificationEntries));
   for (const propertyKey of ownProperties.enumerableKeys) {
     if (propertyKey === "toJSON") {
       continue;
     }
-    const property = readOwnProperty(source, ownProperties.descriptors.get(propertyKey));
+    const property =
+      videoClassificationReads.get(propertyKey) ??
+      readOwnProperty(source, ownProperties.descriptors.get(propertyKey));
     const rawValue = property.readable ? property.value : MEDIA_PAYLOAD_UNREADABLE_OMISSION;
     classificationEntries.push([propertyKey, rawValue]);
-    projectedEntries.push([
-      propertyKey,
-      property.readable
-        ? projectMediaPayload(rawValue, state, propertyKey, depth + 1, enforceLimits, mode)
-        : MEDIA_PAYLOAD_UNREADABLE_OMISSION,
-    ]);
+    const carrierField = isInlineVideoCarrierField(propertyKey);
+    const boundedVideoCarrier = carrierField && depth <= INLINE_VIDEO_PAYLOAD_MAX_NESTING;
+    if (
+      mode === "durable-video" &&
+      property.readable &&
+      ((videoContext &&
+        (propertyKey === "data" || propertyKey === "blob") &&
+        rawValue !== undefined) ||
+        (boundedVideoCarrier && isInlineVideoDataUrl(rawValue)))
+    ) {
+      state.seen.delete(value);
+      return INLINE_VIDEO_PAYLOAD;
+    }
+    const projectedValue = property.readable
+      ? projectMediaPayload(
+          rawValue,
+          state,
+          propertyKey,
+          depth + 1,
+          mode,
+          carrierField && depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING ? videoContext : false,
+        )
+      : MEDIA_PAYLOAD_UNREADABLE_OMISSION;
+    if (projectedValue === INLINE_VIDEO_PAYLOAD) {
+      if (carrierField && depth < INLINE_VIDEO_PAYLOAD_MAX_NESTING) {
+        state.seen.delete(value);
+        return INLINE_VIDEO_PAYLOAD;
+      }
+      projectedEntries.push([propertyKey, REDACTED_INLINE_VIDEO]);
+      continue;
+    }
+    projectedEntries.push([propertyKey, projectedValue]);
   }
   const classificationRecord = Object.fromEntries(classificationEntries);
-  if (
-    (mode === "durable-video" && isVideoRecord(classificationRecord)) ||
-    (mode === "model-visible-media" && isModelVisibleMediaRecord(classificationRecord))
-  ) {
+  if (mode === "model-visible-media" && isModelVisibleMediaRecord(classificationRecord)) {
     state.seen.delete(value);
-    return mode === "model-visible-media" ? REDACTED_INLINE_MEDIA : REDACTED_INLINE_VIDEO;
+    return REDACTED_INLINE_MEDIA;
   }
   state.seen.delete(value);
   return Object.fromEntries(projectedEntries);
 }
 
 /** Creates a detached durable snapshot, removing video bytes/data URLs and cycles. */
-export function sanitizeDurableMediaPayload(
-  value: unknown,
-  options?: { enforceLimits?: boolean },
-): unknown {
-  return projectMediaPayload(value, undefined, undefined, 0, options?.enforceLimits);
+export function sanitizeDurableMediaPayload(value: unknown): unknown {
+  const projected = projectMediaPayload(value);
+  return projected === INLINE_VIDEO_PAYLOAD ? REDACTED_INLINE_VIDEO : projected;
+}
+
+/** Sanitizes a durable content-array entry while retaining a valid block shape. */
+export function sanitizeDurableMediaContentBlock(value: unknown): unknown {
+  const projected = projectMediaPayload(value);
+  return projected === INLINE_VIDEO_PAYLOAD || projected === REDACTED_INLINE_VIDEO
+    ? { type: "text", text: REDACTED_INLINE_VIDEO }
+    : projected;
 }
 
 /** Creates a detached model-visible snapshot without inline media bytes, URLs, or cycles. */
 export function sanitizeModelVisibleMediaPayload(value: unknown): unknown {
-  return projectMediaPayload(value, undefined, undefined, 0, true, "model-visible-media");
+  return projectMediaPayload(value, undefined, undefined, 0, "model-visible-media");
 }

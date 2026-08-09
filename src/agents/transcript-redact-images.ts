@@ -3,16 +3,20 @@ import {
   sanitizeInlineImageBase64,
   sanitizeInlineImageDataUrlForStorage,
 } from "@openclaw/media-core/inline-image-data-url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   readPersistedMediaBlockFactIndexes,
   readRuntimePromptMediaFacts,
 } from "../media/media-facts.js";
+import { projectInlineVideoContentBlock } from "../media/media-reference-projection.js";
 
 const OMITTED_TRANSCRIPT_VIDEO_DATA = "[video data omitted]";
-const INLINE_VIDEO_PAYLOAD_MAX_NESTING = 4;
-const INLINE_VIDEO_URL_FIELDS = ["url", "video_url", "data"] as const;
-const INLINE_VIDEO_CONTAINER_FIELDS = ["source", "video_url"] as const;
+const TRANSCRIPT_MEDIA_WRAPPER_CARRIERS = [
+  "data",
+  "blob",
+  "source",
+  "image_url",
+  "video_url",
+] as const;
 
 const isMediaMimeType = (value: unknown): value is string =>
   typeof value === "string" && /^(?:image|video)\//iu.test(value.trim());
@@ -30,55 +34,6 @@ function mediaMimeTypeForRecord(value: Record<string, unknown>): string | undefi
 
 function mediaMimeTypeFieldsForRecord(value: Record<string, unknown>): string[] {
   return ["mimeType", "mediaType", "media_type"].filter((key) => isMediaMimeType(value[key]));
-}
-
-function hasVideoPayloadTypeOrMime(value: Record<string, unknown>): boolean {
-  const hasVideoMime = [
-    value.mimeType,
-    value.mime_type,
-    value.mediaType,
-    value.media_type,
-    value.contentType,
-    value.content_type,
-  ].some((candidate) =>
-    typeof candidate === "string" ? /^video\//iu.test(candidate.trim()) : false,
-  );
-  const hasVideoType =
-    value.type === "video" || value.type === "input_video" || value.type === "video_url";
-  return hasVideoType || hasVideoMime;
-}
-
-function isInlineVideoDataUrl(value: unknown): boolean {
-  return typeof value === "string" && /^data:video\//iu.test(value.trimStart());
-}
-
-function containsInlineVideoPayload(
-  value: Record<string, unknown>,
-  depth = 0,
-  seen: WeakSet<object> = new WeakSet<object>(),
-): boolean {
-  // Provider media envelopes nest through only these carrier fields. Keep hostile
-  // transcript input cycle-safe and bounded instead of walking arbitrary metadata.
-  if (seen.has(value)) {
-    return false;
-  }
-  seen.add(value);
-  const hasInlineBytes = typeof value.data === "string" || typeof value.blob === "string";
-  const hasInlineUrl = INLINE_VIDEO_URL_FIELDS.some((key) => isInlineVideoDataUrl(value[key]));
-  if ((hasVideoPayloadTypeOrMime(value) && hasInlineBytes) || hasInlineUrl) {
-    seen.delete(value);
-    return true;
-  }
-  if (depth >= INLINE_VIDEO_PAYLOAD_MAX_NESTING) {
-    seen.delete(value);
-    return false;
-  }
-  const nested = INLINE_VIDEO_CONTAINER_FIELDS.some((key) => {
-    const child = value[key];
-    return isRecord(child) && containsInlineVideoPayload(child, depth + 1, seen);
-  });
-  seen.delete(value);
-  return nested;
 }
 
 function sanitizeOpaqueMediaBase64(
@@ -107,35 +62,65 @@ function isOpaqueMediaDataBlock(value: Record<string, unknown>, trustedVideo: bo
   );
 }
 
+function isTranscriptMediaWrapper(source: Record<string, unknown>): boolean {
+  return (
+    Object.hasOwn(source, "type") ||
+    TRANSCRIPT_MEDIA_WRAPPER_CARRIERS.some((key) => Object.hasOwn(source, key))
+  );
+}
+
+function stripBareInlineVideoReferences(
+  source: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  let projected: Record<string, unknown> | undefined;
+  for (const key of ["url", "path"] as const) {
+    const value = source[key];
+    if (typeof value !== "string" || !/^data:video\//iu.test(value.trimStart())) {
+      continue;
+    }
+    projected ??= { ...source };
+    delete projected[key];
+  }
+  return projected;
+}
+
 export function sanitizeTranscriptMediaRecord(
   source: Record<string, unknown>,
   trustedVideo = false,
 ): Record<string, unknown> | undefined {
-  if (!trustedVideo && containsInlineVideoPayload(source)) {
-    return { type: "text", text: OMITTED_TRANSCRIPT_VIDEO_DATA };
+  if (!trustedVideo && isTranscriptMediaWrapper(source)) {
+    const videoOmission = projectInlineVideoContentBlock(source);
+    if (videoOmission) {
+      return videoOmission;
+    }
   }
-  const isMediaBlock = source.type === "image" || source.type === "video";
-  const isBase64SourceBlock = source.type === "base64";
-  if ((!isMediaBlock && !isBase64SourceBlock) || typeof source.data !== "string") {
-    return undefined;
+  const sanitizedSource = trustedVideo
+    ? source
+    : (stripBareInlineVideoReferences(source) ?? source);
+  const isMediaBlock = sanitizedSource.type === "image" || sanitizedSource.type === "video";
+  const isBase64SourceBlock = sanitizedSource.type === "base64";
+  if ((!isMediaBlock && !isBase64SourceBlock) || typeof sanitizedSource.data !== "string") {
+    return sanitizedSource === source ? undefined : sanitizedSource;
   }
-  const mimeTypeFields = mediaMimeTypeFieldsForRecord(source);
+  const mimeTypeFields = mediaMimeTypeFieldsForRecord(sanitizedSource);
   if (mimeTypeFields.length === 0) {
-    return undefined;
+    return sanitizedSource === source ? undefined : sanitizedSource;
   }
   const sanitized = sanitizeOpaqueMediaBase64(
-    source.data,
-    mediaMimeTypeForRecord(source),
+    sanitizedSource.data,
+    mediaMimeTypeForRecord(sanitizedSource),
     trustedVideo,
   );
   if (!sanitized) {
-    return undefined;
+    return sanitizedSource === source ? undefined : sanitizedSource;
   }
-  const hasCanonicalMimeTypes = mimeTypeFields.every((key) => source[key] === sanitized.mimeType);
-  if (source.data === sanitized.base64 && hasCanonicalMimeTypes) {
-    return source;
+  const hasCanonicalMimeTypes = mimeTypeFields.every(
+    (key) => sanitizedSource[key] === sanitized.mimeType,
+  );
+  if (sanitizedSource.data === sanitized.base64 && hasCanonicalMimeTypes) {
+    return sanitizedSource;
   }
-  const next: Record<string, unknown> = { ...source, data: sanitized.base64 };
+  const next: Record<string, unknown> = { ...sanitizedSource, data: sanitized.base64 };
   for (const field of mimeTypeFields) {
     next[field] = sanitized.mimeType;
   }

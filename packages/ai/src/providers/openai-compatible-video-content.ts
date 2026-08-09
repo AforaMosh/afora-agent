@@ -54,11 +54,16 @@ function parseVideoDataUrl(value: unknown): { mimeType: string; data: string } |
   }
   const marker = ";base64,";
   const markerIndex = value.indexOf(marker, 5);
-  if (markerIndex <= 5 || value.indexOf(marker, markerIndex + marker.length) !== -1) {
+  const mimeType = value.slice(5, markerIndex);
+  if (
+    markerIndex <= 5 ||
+    value.includes(marker, markerIndex + marker.length) ||
+    !/^video\//iu.test(mimeType)
+  ) {
     return undefined;
   }
   return {
-    mimeType: value.slice(5, markerIndex),
+    mimeType,
     data: value.slice(markerIndex + marker.length),
   };
 }
@@ -80,6 +85,79 @@ function openAICompatibleChatVideoFingerprint(candidate: {
 
 function openAICompatibleChatVideoLocationKey(messageIndex: number, contentIndex: number): string {
   return `${messageIndex}:${contentIndex}`;
+}
+
+const OPENAI_INLINE_VIDEO_MAX_NESTING = 4;
+const OPENAI_INLINE_VIDEO_CARRIERS = [
+  "source",
+  "video_url",
+  "image_url",
+  "data",
+  "blob",
+  "url",
+] as const;
+const OPENAI_VIDEO_TYPES = new Set(["video", "input_video", "video_url"]);
+const OPENAI_VIDEO_MIME_FIELDS = [
+  "mimeType",
+  "mime_type",
+  "mediaType",
+  "media_type",
+  "contentType",
+  "content_type",
+] as const;
+
+function isOpenAIInlineVideoDataUrl(value: unknown): boolean {
+  return typeof value === "string" && /^data:video\//iu.test(value.trimStart());
+}
+
+function hasOpenAIVideoTypeOrMime(record: Record<string, unknown>): boolean {
+  const type = typeof record.type === "string" ? record.type.trim().toLowerCase() : "";
+  return (
+    OPENAI_VIDEO_TYPES.has(type) ||
+    OPENAI_VIDEO_MIME_FIELDS.some((field) => {
+      const value = record[field];
+      return typeof value === "string" && /^video\//iu.test(value.trim());
+    })
+  );
+}
+
+function containsOpenAIInlineVideoPayload(
+  value: unknown,
+  enclosingVideo = false,
+  depth = 0,
+  seen: WeakSet<object> = new WeakSet<object>(),
+): boolean {
+  if (!value || typeof value !== "object") {
+    return isOpenAIInlineVideoDataUrl(value);
+  }
+  if (seen.has(value) || depth > OPENAI_INLINE_VIDEO_MAX_NESTING) {
+    return false;
+  }
+  seen.add(value);
+  const record = value as Record<string, unknown>;
+  const videoContext = enclosingVideo || hasOpenAIVideoTypeOrMime(record);
+  for (const key of OPENAI_INLINE_VIDEO_CARRIERS) {
+    const carrier = record[key];
+    if (isOpenAIInlineVideoDataUrl(carrier)) {
+      seen.delete(value);
+      return true;
+    }
+    if (videoContext && (key === "data" || key === "blob") && carrier !== undefined) {
+      seen.delete(value);
+      return true;
+    }
+    if (
+      depth < OPENAI_INLINE_VIDEO_MAX_NESTING &&
+      carrier &&
+      typeof carrier === "object" &&
+      containsOpenAIInlineVideoPayload(carrier, videoContext, depth + 1, seen)
+    ) {
+      seen.delete(value);
+      return true;
+    }
+  }
+  seen.delete(value);
+  return false;
 }
 
 /** Captures transport-produced ordinary-user video without retaining another base64 copy. */
@@ -235,7 +313,6 @@ export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<s
     contentIndex: number;
     entry: OpenAICompatibleChatVideoProvenanceEntry;
     parsed: { data: string; mimeType: string };
-    part: object;
   }> = [];
   for (let messageIndex = 0; messageIndex < messages.length; messageIndex += 1) {
     const message = messages[messageIndex];
@@ -248,10 +325,19 @@ export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<s
     }
     for (let contentIndex = 0; contentIndex < record.content.length; contentIndex += 1) {
       const part = record.content[contentIndex];
-      if (!part || typeof part !== "object" || (part as { type?: unknown }).type !== "video_url") {
+      if (!part || typeof part !== "object") {
         continue;
       }
-      const parsed = parseVideoDataUrl((part as { video_url?: { url?: unknown } }).video_url?.url);
+      const parsed =
+        (part as { type?: unknown }).type === "video_url"
+          ? parseVideoDataUrl((part as { video_url?: { url?: unknown } }).video_url?.url)
+          : undefined;
+      if (!parsed) {
+        if (containsOpenAIInlineVideoPayload(part)) {
+          record.content[contentIndex] = omissionPart;
+        }
+        continue;
+      }
       const entry = parsed
         ? matchOpenAICompatibleChatVideoProvenance({
             candidate: parsed,
@@ -264,7 +350,7 @@ export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<s
             used: usedProvenance,
           })
         : undefined;
-      if (!parsed || !entry) {
+      if (!entry) {
         record.content[contentIndex] = omissionPart;
         continue;
       }
@@ -273,7 +359,6 @@ export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<s
         contentIndex,
         entry,
         parsed,
-        part,
       });
     }
   }
@@ -291,8 +376,13 @@ export function enforceOpenAICompatibleChatVideoRequestLimits<T extends Record<s
       candidate.content[candidate.contentIndex] = omissionPart;
       continue;
     }
-    const part = candidate.part as OpenAICompatibleChatVideoContentPart;
-    part.video_url.url = `data:${result.wireMimeType};base64,${candidate.parsed.data}`;
+    const part: OpenAICompatibleChatVideoContentPart = {
+      type: "video_url",
+      video_url: {
+        url: `data:${result.wireMimeType};base64,${candidate.parsed.data}`,
+      },
+    };
+    candidate.content[candidate.contentIndex] = part;
     accepted.push({
       content: candidate.content,
       entry: candidate.entry,

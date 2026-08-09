@@ -1,12 +1,6 @@
-import path from "node:path";
-import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
 import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
 import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
-import {
-  normalizeCanonicalInboundMediaUri,
-  normalizeDurableMediaReference,
-  sanitizeMediaReferenceForProjection,
-} from "../media/media-reference-projection.js";
+import { normalizeCanonicalInboundMediaUri } from "../media/media-reference-projection.js";
 import {
   parseAssistantTextSignature,
   resolveAssistantMessagePhase,
@@ -28,6 +22,10 @@ import {
   truncateChatHistoryText,
 } from "./chat-display-projection.helpers.js";
 import {
+  projectChatHistoryMediaReference,
+  sanitizeChatHistoryMediaContentBlock,
+} from "./chat-display-projection.media.js";
+import {
   isSuppressedControlReplyText,
   stripSuppressedControlReplyToken,
 } from "./control-reply-text.js";
@@ -35,68 +33,6 @@ import {
   projectWorkspaceResultConflict,
   WORKSPACE_CONFLICT_TRANSCRIPT_TYPE,
 } from "./worker-environments/workspace-conflicts.js";
-
-const AUDIO_LOCAL_PATH_FIELDS = ["path", "file", "filePath", "localPath"] as const;
-
-function isInlineOrLocalAudioReference(value: unknown): boolean {
-  if (typeof value !== "string") {
-    return false;
-  }
-  const reference = value.trim();
-  const isManagedRoute = /^\/(?:api\/chat\/media\/outgoing|media|__openclaw__)\//u.test(reference);
-  return (
-    /^data:audio\//iu.test(reference) ||
-    /^file:/iu.test(reference) ||
-    /^~[\\/]/u.test(reference) ||
-    (!isManagedRoute &&
-      (reference.startsWith("/") ||
-        /^[A-Za-z]:[\\/]/u.test(reference) ||
-        reference.startsWith("\\\\")))
-  );
-}
-
-function omitAudioHistoryContent(
-  entry: Record<string, unknown>,
-  referenceFields: readonly string[],
-): boolean {
-  let removed = false;
-  if (Object.hasOwn(entry, "data")) {
-    const data = entry.data;
-    delete entry.data;
-    if (typeof data === "string") {
-      entry.bytes = estimateBase64DecodedBytes(data);
-    }
-    removed = true;
-  }
-  for (const field of AUDIO_LOCAL_PATH_FIELDS) {
-    if (Object.hasOwn(entry, field)) {
-      delete entry[field];
-      removed = true;
-    }
-  }
-  for (const field of referenceFields) {
-    if (isInlineOrLocalAudioReference(entry[field])) {
-      delete entry[field];
-      removed = true;
-    }
-  }
-  if (removed) {
-    entry.omitted = true;
-  }
-  return removed;
-}
-
-function isAbsoluteStoragePath(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    (path.isAbsolute(value) || path.win32.isAbsolute(value) || /^file:/iu.test(value))
-  );
-}
-
-function projectChatHistoryMediaReference(value: unknown): string | undefined {
-  const normalized = normalizeDurableMediaReference(value);
-  return normalized && !isAbsoluteStoragePath(normalized) ? normalized : undefined;
-}
 
 function projectChatHistoryMediaFacts(value: unknown): unknown[] | undefined {
   if (!Array.isArray(value)) {
@@ -259,92 +195,10 @@ export function sanitizeChatHistoryContentBlock(
     delete entry.openclawReasoningReplay;
     changed = true;
   }
-  const type = typeof entry.type === "string" ? entry.type : "";
-  if (type === "image" || type === "video") {
-    let mediaData = typeof entry.data === "string" ? entry.data : undefined;
-    const source = readRecord(entry.source);
-    if (source && Object.hasOwn(source, "data")) {
-      if (typeof source.data === "string") {
-        mediaData ??= source.data;
-      }
-      const projectedSource = { ...source };
-      delete projectedSource.data;
-      entry.source = projectedSource;
-      entry.omitted = true;
-      changed = true;
-    }
-    if (Object.hasOwn(entry, "data")) {
-      delete entry.data;
-      entry.omitted = true;
-      changed = true;
-    }
-    if (mediaData !== undefined) {
-      entry.bytes = estimateBase64DecodedBytes(mediaData);
-    }
-    const managedUri =
-      normalizeCanonicalInboundMediaUri(entry.url) ?? normalizeCanonicalInboundMediaUri(entry.path);
-    if (managedUri) {
-      entry.url = managedUri;
-    }
-    for (const key of ["path", "filePath", "localPath"] as const) {
-      if (key in entry) {
-        delete entry[key];
-        changed = true;
-      }
-    }
-    if (typeof entry.url === "string") {
-      if (/^data:/iu.test(entry.url) || isAbsoluteStoragePath(entry.url)) {
-        delete entry.url;
-      } else {
-        entry.url = sanitizeMediaReferenceForProjection(entry.url);
-      }
-      changed = true;
-    }
-    if (typeof entry.source === "string") {
-      const sourceUri = normalizeCanonicalInboundMediaUri(entry.source);
-      if (sourceUri) {
-        entry.source = sourceUri;
-      } else if (/^data:/iu.test(entry.source) || isAbsoluteStoragePath(entry.source)) {
-        delete entry.source;
-      } else {
-        entry.source = sanitizeMediaReferenceForProjection(entry.source);
-      }
-      changed = true;
-    } else if (source) {
-      const projectedSource = { ...(readRecord(entry.source) ?? source) };
-      const sourceManagedUri =
-        normalizeCanonicalInboundMediaUri(projectedSource.url) ??
-        normalizeCanonicalInboundMediaUri(projectedSource.path);
-      if (sourceManagedUri) {
-        projectedSource.url = sourceManagedUri;
-      }
-      for (const key of ["path", "filePath", "localPath"] as const) {
-        delete projectedSource[key];
-      }
-      if (typeof projectedSource.url === "string") {
-        if (/^data:/iu.test(projectedSource.url) || isAbsoluteStoragePath(projectedSource.url)) {
-          delete projectedSource.url;
-        } else {
-          projectedSource.url = sanitizeMediaReferenceForProjection(projectedSource.url);
-        }
-      }
-      entry.source = projectedSource;
-      changed = true;
-    }
-  }
-  if (type === "audio") {
-    // Audio transcripts can retain model-input bytes and host-local references.
-    // Strip them at the shared display boundary while preserving safe metadata.
-    const blockChanged = omitAudioHistoryContent(entry, ["url", "openUrl", "audio_url"]);
-    changed ||= blockChanged;
-    const source = readRecord(entry.source);
-    if (source) {
-      const projectedSource = { ...source };
-      if (omitAudioHistoryContent(projectedSource, ["url"])) {
-        entry.source = projectedSource;
-        changed = true;
-      }
-    }
+  const sanitizedMedia = sanitizeChatHistoryMediaContentBlock(entry);
+  if (sanitizedMedia) {
+    const mediaChanged = changed || sanitizedMedia.changed;
+    return { block: mediaChanged ? sanitizedMedia.block : block, changed: mediaChanged };
   }
   return { block: changed ? entry : block, changed };
 }

@@ -1547,23 +1547,77 @@ describe("redactTranscriptMessage", () => {
     }
   });
 
+  it("preserves canonical media facts without trusting their field name", () => {
+    const msg = {
+      role: "user",
+      content: "inspect the managed clip",
+      __openclaw: {
+        media: [
+          {
+            sourceId: "managed-clip",
+            sourceIndex: 0,
+            kind: "video",
+            contentType: "video/mp4",
+            url: "media://inbound/managed-clip",
+          },
+        ],
+      },
+    } as unknown as AgentMessage;
+
+    expect(redactTranscriptMessage(msg, cfg("tools"))).toEqual(msg);
+  });
+
+  it("omits provider video nested under an arbitrary details.media key", () => {
+    const payload = "private-details-media-video";
+    const msg = {
+      role: "toolResult",
+      toolCallId: "call-details-media",
+      toolName: "camera",
+      content: [{ type: "text", text: "captured" }],
+      details: {
+        media: {
+          type: "input_video",
+          data: payload,
+        },
+      },
+      isError: false,
+      timestamp: 1,
+    } as unknown as AgentMessage;
+
+    const result = redactTranscriptMessage(msg, cfg("tools")) as AgentMessage & {
+      details: { media: unknown };
+    };
+    expect(result.details.media).toEqual({ type: "text", text: "[video data omitted]" });
+    expect(JSON.stringify(result)).not.toContain(payload);
+  });
+
   it("omits an enclosing provider media block with a nested video source", () => {
     const msg = {
       role: "assistant",
       content: [
         {
-          type: "image",
+          type: "video",
           source: {
             type: "base64",
-            media_type: " VIDEO/MP4 ",
             data: ` ${SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING}\n`,
+          },
+        },
+        {
+          type: "image",
+          content_type: " VIDEO/MP4 ",
+          source: {
+            type: "base64",
+            data: SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING,
           },
         },
       ],
     } as unknown as AgentMessage;
 
     const content = msgContent(redactTranscriptMessage(msg, cfg("tools")));
-    expect(content).toEqual([{ type: "text", text: "[video data omitted]" }]);
+    expect(content).toEqual([
+      { type: "text", text: "[video data omitted]" },
+      { type: "text", text: "[video data omitted]" },
+    ]);
     const serialized = JSON.stringify(content);
     expect(serialized).not.toContain(SPOOFED_MP4_BASE64_WITH_SECRET_TOKEN_SUBSTRING);
     expect(serialized).not.toContain('"type":"image"');
@@ -1577,7 +1631,12 @@ describe("redactTranscriptMessage", () => {
     const msg = {
       role: "assistant",
       content: [
-        { type: "input_video", video_url: dataUrl, data: "AKIDABCDEFGHIJKLMNOP" },
+        {
+          type: "input_video",
+          video_url: dataUrl,
+          data: "AKIDABCDEFGHIJKLMNOP",
+          sourceIndex: 0,
+        },
         { type: "video_url", video_url: { url: dataUrl, apiKey: "plainsecretvalue123" } },
         { type: "url", url: dataUrl },
         { type: "image", source: { type: "url", url: dataUrl } },

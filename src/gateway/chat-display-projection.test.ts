@@ -204,6 +204,58 @@ describe("oversized multimodal chat history", () => {
     expect(JSON.stringify(appended?.message)).not.toContain(encoded);
   });
 
+  it("projects provider-wrapped inline video to valid bounded history blocks", () => {
+    const payload = "private-provider-wrapped-video";
+    const dataUrl = `data:video/mp4;base64,${payload}`;
+    const wrapped = [
+      { type: "input_video", video_url: dataUrl },
+      { type: "image_url", image_url: { url: dataUrl } },
+      { type: "video_url", video_url: { url: { url: dataUrl } } },
+      {
+        type: "image",
+        contentType: "video/mp4",
+        source: { type: "base64", data: payload },
+      },
+      ...["mimeType", "mime_type", "mediaType", "media_type", "contentType", "content_type"].map(
+        (mimeField, index) => ({
+          type: "image",
+          [mimeField]: " VIDEO/MP4 ",
+          [index % 2 === 0 ? "data" : "blob"]: payload,
+        }),
+      ),
+    ];
+
+    const projected = projectChatDisplayMessages([{ role: "assistant", content: wrapped }]);
+
+    expect(projected).toEqual([
+      {
+        role: "assistant",
+        content: wrapped.map(() => ({ type: "text", text: "[video data omitted]" })),
+      },
+    ]);
+    expect(JSON.stringify(projected)).not.toContain(payload);
+    expect(Buffer.byteLength(JSON.stringify(projected))).toBeLessThan(1_024);
+  });
+
+  it("preserves remote provider video wrappers and safe metadata", () => {
+    const content = [
+      {
+        type: "input_video",
+        video_url: "https://example.test/video.mp4",
+        label: "keep",
+      },
+      {
+        type: "video_url",
+        video_url: { url: { url: "https://example.test/nested.mp4" } },
+        label: "keep nested",
+      },
+    ];
+
+    expect(projectChatDisplayMessages([{ role: "assistant", content }])).toEqual([
+      { role: "assistant", content },
+    ]);
+  });
+
   it.each([
     {
       mediaType: "image",

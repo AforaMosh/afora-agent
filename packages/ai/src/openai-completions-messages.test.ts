@@ -497,6 +497,136 @@ describe("convertMessages provider-owned native video", () => {
     ]);
   });
 
+  it("rebuilds a provenance-matched part without hook-added video carriers", () => {
+    const original = {
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+        },
+      ],
+    };
+    const provenance = captureOpenAICompatibleChatVideoProvenance(original);
+    const augmented = original.messages[0]!.content[0]! as Record<string, unknown>;
+    augmented.blob = "private-hook-blob";
+    augmented.image_url = {
+      url: "data:video/mp4;base64,private-hook-image-url",
+    };
+
+    enforceOpenAICompatibleChatVideoRequestLimits(original, videoModel, provenance);
+
+    expect(original.messages[0]?.content).toEqual([
+      { type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } },
+    ]);
+    expect(JSON.stringify(original)).not.toContain("private-hook");
+  });
+
+  const providerWrappedVideos: Array<{
+    name: string;
+    block: (dataUrl: string, data: string) => Record<string, unknown>;
+  }> = [
+    {
+      name: "input_video URL",
+      block: (dataUrl: string) => ({ type: "input_video", video_url: dataUrl }),
+    },
+    {
+      name: "video source inheriting its enclosing type",
+      block: (_dataUrl: string, data: string) => ({
+        type: "video",
+        source: { type: "base64", data },
+      }),
+    },
+    {
+      name: "image_url carrying video data",
+      block: (dataUrl: string) => ({ type: "image_url", image_url: { url: dataUrl } }),
+    },
+    {
+      name: "nested URL object",
+      block: (dataUrl: string) => ({
+        type: "video_url",
+        video_url: { url: { url: dataUrl } },
+      }),
+    },
+    ...["mimeType", "mime_type", "mediaType", "media_type", "contentType", "content_type"].map(
+      (mimeField, index) => ({
+        name: `${mimeField} ${index % 2 === 0 ? "data" : "blob"}`,
+        block: (_dataUrl: string, data: string) => ({
+          type: "image",
+          [mimeField]: " VIDEO/MP4 ",
+          [index % 2 === 0 ? "data" : "blob"]: data,
+        }),
+      }),
+    ),
+  ];
+
+  it.each(providerWrappedVideos)("omits a hook-relabeled $name payload", ({ block }) => {
+    const data = "private-relabeled-video";
+    const original = {
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "video_url", video_url: { url: `data:video/mp4;base64,${data}` } }],
+        },
+      ],
+    };
+    const provenance = captureOpenAICompatibleChatVideoProvenance(original);
+    const request: { messages: Array<{ role: string; content: unknown[] }> } = original;
+    request.messages[0]!.content[0] = block(`data:video/mp4;base64,${data}`, data);
+
+    enforceOpenAICompatibleChatVideoRequestLimits(request, videoModel, provenance);
+
+    expect(request.messages[0]?.content).toEqual([
+      { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+    expect(JSON.stringify(request)).not.toContain(data);
+  });
+
+  it.each(providerWrappedVideos)("omits a hook-injected $name payload", ({ block }) => {
+    const injectedData = "private-injected-video";
+    const original = {
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+        },
+      ],
+    };
+    const provenance = captureOpenAICompatibleChatVideoProvenance(original);
+    const request: { messages: Array<{ role: string; content: unknown[] }> } = original;
+    request.messages[0]!.content.push(block(`data:video/mp4;base64,${injectedData}`, injectedData));
+
+    enforceOpenAICompatibleChatVideoRequestLimits(request, videoModel, provenance);
+
+    expect(request.messages[0]?.content).toEqual([
+      { type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } },
+      { type: "text", text: "(video omitted: unsupported or exceeds provider limits)" },
+    ]);
+    expect(JSON.stringify(request)).not.toContain(injectedData);
+  });
+
+  it("leaves remote provider video wrappers unchanged", () => {
+    const request = {
+      messages: [
+        {
+          role: "assistant",
+          content: [
+            { type: "input_video", video_url: "https://example.test/video.mp4" },
+            { type: "video_url", video_url: { url: "https://example.test/other.mp4" } },
+          ],
+        },
+      ],
+    };
+    const original = structuredClone(request);
+
+    enforceOpenAICompatibleChatVideoRequestLimits(
+      request,
+      videoModel,
+      captureOpenAICompatibleChatVideoProvenance(request),
+    );
+
+    expect(request).toEqual(original);
+  });
+
   it.each([
     [
       "reordered",

@@ -138,9 +138,8 @@ function projectWorkerInputContent(part: ModelInputContent) {
 }
 
 function sanitizeWorkerPayload(value: unknown): unknown {
-  // Worker inference and transcript frames own their byte budgets. Preserve
-  // non-media size here so those owner boundaries can trim, retry, or reject.
-  return sanitizeDurableMediaPayload(value, { enforceLimits: false });
+  // Bound hostile traversal before worker frame owners apply their byte budgets.
+  return sanitizeDurableMediaPayload(value);
 }
 
 function toWorkerAssistantMessage(message: AssistantMessage): WorkerTranscriptAssistantMessage {

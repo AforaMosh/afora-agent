@@ -387,6 +387,98 @@ describe("SQLite transcript native video claim checks", () => {
     expect(stored.event_json).not.toContain('"type":"video"');
   });
 
+  it("persists provider-wrapped video only as canonical text blocks", async () => {
+    await persistMessage({ role: "user", content: "before provider wrappers" }, "before-wrappers");
+    const database = openOpenClawAgentDatabase({ agentId: scope.agentId, env: scope.env });
+    const header = database.db
+      .prepare("SELECT event_json FROM transcript_events WHERE session_id = ? ORDER BY seq LIMIT 1")
+      .get(scope.sessionId) as { event_json: string };
+    const payload = "private-sqlite-provider-video";
+    const dataUrl = `data:video/mp4;base64,${payload}`;
+    const stateful = { type: "image", text: "keep" } as Record<string, unknown>;
+    let mimeReads = 0;
+    let sourceReads = 0;
+    Object.defineProperty(stateful, "mimeType", {
+      enumerable: true,
+      get() {
+        mimeReads += 1;
+        return mimeReads === 1 ? "video/mp4" : "image/png";
+      },
+    });
+    Object.defineProperty(stateful, "source", {
+      enumerable: true,
+      get() {
+        sourceReads += 1;
+        return sourceReads === 1
+          ? { type: "url", url: "https://example.test/video.mp4" }
+          : { type: "base64", data: payload };
+      },
+    });
+    const unsafeBlocks = [
+      { type: "input_video", video_url: dataUrl },
+      { type: "image_url", image_url: { url: dataUrl } },
+      { type: "video_url", video_url: { url: { url: dataUrl } } },
+      {
+        type: "image",
+        mediaType: "video/mp4",
+        source: { type: "base64", data: payload },
+      },
+      ...["mimeType", "mime_type", "mediaType", "media_type", "contentType", "content_type"].map(
+        (mimeField, index) => ({
+          type: "image",
+          [mimeField]: " VIDEO/MP4 ",
+          [index % 2 === 0 ? "data" : "blob"]: payload,
+        }),
+      ),
+    ];
+    const remote = {
+      type: "input_video",
+      video_url: "https://example.test/video.mp4",
+      label: "keep",
+    };
+    const event = {
+      type: "message",
+      id: "provider-wrapped-video",
+      parentId: null,
+      timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: [...unsafeBlocks, stateful, remote] },
+    };
+
+    runOpenClawAgentWriteTransaction(
+      (writeDatabase) =>
+        replaceSqliteTranscriptEventsInTransaction(writeDatabase, scope, [
+          JSON.parse(header.event_json),
+          event,
+        ]),
+      { agentId: scope.agentId, env: scope.env },
+    );
+
+    const stored = database.db
+      .prepare(
+        "SELECT event_json FROM transcript_events WHERE session_id = ? ORDER BY seq DESC LIMIT 1",
+      )
+      .get(scope.sessionId) as { event_json: string };
+    const persisted = JSON.parse(stored.event_json) as {
+      message: { content: Array<Record<string, unknown>> };
+    };
+    expect(persisted.message.content).toEqual([
+      ...unsafeBlocks.map(() => ({ type: "text", text: "[video data omitted]" })),
+      {
+        type: "image",
+        text: "keep",
+        mimeType: "video/mp4",
+        source: { type: "url", url: "https://example.test/video.mp4" },
+      },
+      remote,
+    ]);
+    expect(persisted.message.content.every((block) => typeof block === "object")).toBe(true);
+    expect(mimeReads).toBe(1);
+    expect(sourceReads).toBe(1);
+    expect(stored.event_json).not.toContain(payload);
+    expect(stored.event_json).not.toContain("data:video");
+    expect(stored.event_json).not.toContain('["[video data omitted]"]');
+  });
+
   it("sanitizes durable media URLs and nested tool detail video", async () => {
     const privateData = "cHJpdmF0ZS12aWRlbw==";
     const wrappedFragments = ["cHJpdmF0ZS", "12aWRlby1w", "YXlsb2Fk"];

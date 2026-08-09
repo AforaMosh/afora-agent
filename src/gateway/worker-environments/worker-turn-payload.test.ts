@@ -228,6 +228,13 @@ describe("windowInitialMessages", () => {
 });
 
 describe("fitLaunchDescriptor", () => {
+  const boundedLargeToolResults = (startTimestamp: number) => {
+    const payload = "x".repeat(999_000);
+    return Array.from({ length: 27 }, (_, index) =>
+      toolResultMessage({ payload }, startTimestamp + index),
+    );
+  };
+
   it("drops complete old turns while retaining the replay anchor", () => {
     const large = "x".repeat(13 * 1024 * 1024);
     const projected = windowInitialMessages([
@@ -254,8 +261,8 @@ describe("fitLaunchDescriptor", () => {
 
   it("drops a non-user prefix directly to the replay owner", () => {
     const projected = windowInitialMessages([
-      toolResultMessage({ payload: "x".repeat(WORKER_PROTOCOL_MAX_INFERENCE_PAYLOAD_BYTES) }, 1),
-      assistantMessage(2, true),
+      ...boundedLargeToolResults(1),
+      assistantMessage(28, true),
     ]);
     if (projected.kind !== "complete") {
       throw new Error("expected complete projection");
@@ -275,7 +282,7 @@ describe("fitLaunchDescriptor", () => {
   it("requires local fallback when the replay unit cannot fit the descriptor", () => {
     const projected = windowInitialMessages([
       assistantMessage(1, true),
-      toolResultMessage({ payload: "x".repeat(WORKER_PROTOCOL_MAX_INFERENCE_PAYLOAD_BYTES) }, 2),
+      ...boundedLargeToolResults(2),
     ]);
     if (projected.kind !== "complete") {
       throw new Error("expected complete projection");

@@ -424,10 +424,22 @@ describe("provider and transport observable parity fixtures", () => {
         const replacement = JSON.parse(JSON.stringify(payload)) as {
           messages: Array<{ content: unknown[]; role: string }>;
         };
-        replacement.messages[0]!.content.push({
-          type: "video_url",
-          video_url: { url: "data:video/mp4;base64,aG9vaw==" },
-        });
+        replacement.messages[0]!.content.push(
+          { type: "input_video", video_url: "data:video/mp4;base64,aG9vay0x" },
+          {
+            type: "video",
+            source: { type: "base64", data: "hook-2" },
+          },
+          {
+            type: "image_url",
+            image_url: { url: "data:video/mp4;base64,aG9vay0z" },
+          },
+          {
+            type: "video_url",
+            video_url: { url: { url: "data:video/mp4;base64,aG9vay00" } },
+          },
+          { type: "image", mime_type: "video/mp4", blob: "hook-5" },
+        );
         return replacement;
       };
       const stream =
@@ -447,7 +459,9 @@ describe("provider and transport observable parity fixtures", () => {
 
       const serialized = JSON.stringify(openAiMockState.payloads[0]);
       expect(serialized).toContain("b3JpZw==");
-      expect(serialized).not.toContain("aG9vaw==");
+      for (const injected of ["aG9vay0x", "hook-2", "aG9vay0z", "aG9vay00", "hook-5"]) {
+        expect(serialized).not.toContain(injected);
+      }
       expect(serialized).toContain("video omitted");
     },
   );

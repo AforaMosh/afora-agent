@@ -13,6 +13,7 @@ import {
 } from "../../media/media-facts.js";
 import {
   normalizeCanonicalInboundMediaUri,
+  sanitizeDurableMediaContentBlock,
   sanitizeDurableMediaPayload,
 } from "../../media/media-reference-projection.js";
 import { parseInboundMediaUri } from "../../media/media-reference.js";
@@ -647,7 +648,7 @@ function sanitizeTranscriptMessagePayload(message: object): object {
   const projected: Record<string, unknown> = { ...record };
   const originalContent = record.content;
   if (Array.isArray(originalContent)) {
-    const content = originalContent.map((block) => sanitizeDurableMediaPayload(block));
+    const content = originalContent.map(sanitizeDurableMediaContentBlock);
     changed ||= content.some((block, index) => block !== originalContent[index]);
     projected.content = content;
   }

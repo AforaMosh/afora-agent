@@ -299,4 +299,84 @@ describe("worker transcript durable media projection", () => {
     expect(isWorkerTranscriptMessageFrameSafe(result.message)).toBe(true);
     expect(JSON.stringify(result)).not.toContain(payload);
   });
+
+  it("bounds deep worker details before cloning or frame serialization", () => {
+    let details: Record<string, unknown> = { leaf: "safe" };
+    for (let depth = 0; depth < 10_000; depth += 1) {
+      details = { nested: details };
+    }
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-deep-details",
+      toolName: "deep",
+      content: [{ type: "text", text: "captured" }],
+      details,
+      isError: false,
+      timestamp: 1,
+    };
+
+    let result: ReturnType<typeof toWorkerTranscriptMessage> = undefined;
+    expect(() => {
+      result = toWorkerTranscriptMessage(message, "transcript");
+    }).not.toThrow();
+    expect(JSON.stringify(result)).toContain("[media details omitted: limit exceeded]");
+  });
+
+  it("bounds worker detail value counts before cloning the full collection", () => {
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-wide-details",
+      toolName: "wide",
+      content: [{ type: "text", text: "captured" }],
+      details: { values: Array.from({ length: 2_001 }, (_, index) => index) },
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+    expect(result).toMatchObject({
+      kind: "complete",
+      message: { details: { values: "[media details omitted: limit exceeded]" } },
+    });
+  });
+
+  it("bounds aggregate worker detail strings before frame serialization", () => {
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-long-details",
+      toolName: "long",
+      content: [{ type: "text", text: "captured" }],
+      details: { payload: "x".repeat(1_000_001) },
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+    expect(result).toMatchObject({
+      kind: "complete",
+      message: { details: { payload: "[media details omitted: limit exceeded]" } },
+    });
+    if (!result || result.kind !== "complete") {
+      throw new Error("expected complete worker projection");
+    }
+    expect(isWorkerTranscriptMessageFrameSafe(result.message)).toBe(true);
+  });
+
+  it("reports a bounded but oversized worker transcript frame without crashing", () => {
+    const message: AgentMessage = {
+      role: "toolResult",
+      toolCallId: "call-frame-details",
+      toolName: "frame",
+      content: [{ type: "text", text: "captured" }],
+      details: { payload: "x".repeat(128 * 1_024) },
+      isError: false,
+      timestamp: 1,
+    };
+
+    const result = toWorkerTranscriptMessage(message, "transcript");
+    if (!result || result.kind !== "complete") {
+      throw new Error("expected complete worker projection");
+    }
+    expect(isWorkerTranscriptMessageFrameSafe(result.message)).toBe(false);
+  });
 });
