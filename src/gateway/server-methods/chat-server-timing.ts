@@ -7,7 +7,7 @@ type ChatSendAckServerTiming = {
   prepareAttachmentsMs?: number;
 };
 
-export type ChatSendServerTimingPhase =
+type ChatSendServerTimingPhase =
   | "dispatch-started"
   | "model-selected"
   | "agent-run-started"
@@ -61,7 +61,7 @@ export function resolveControlUiReconnectResumeParams(
   return { params: validatedParams, resumeRequested: true };
 }
 
-export function emitOperatorChatSendServerTiming(params: {
+function emitOperatorChatSendServerTiming(params: {
   context: Pick<GatewayRequestContext, "broadcastToConnIds">;
   client?: GatewayClient | null;
   phase: ChatSendServerTimingPhase;
