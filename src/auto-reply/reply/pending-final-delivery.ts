@@ -151,7 +151,8 @@ export function buildPendingFinalReplyDispatchRuntimeInfo(
   info.bindPendingFinalDelivery = (nextPayload) =>
     setReplyPayloadMetadata(nextPayload, { pendingFinalDeliveryCompletion: identity });
   info.onPlatformSendDispatch = async () => {
-    if (!(await claimPendingFinalReplyDispatch(info))) {
+    const claim = claimPendingFinalReplyDispatch(info);
+    if (claim && !(await claim)) {
       throw new PlatformMessageNotDispatchedError(
         "Pending final delivery ownership changed before platform dispatch",
         { cause: new Error("pending final delivery is no longer prepared") },
@@ -162,17 +163,17 @@ export function buildPendingFinalReplyDispatchRuntimeInfo(
   return info;
 }
 
-export async function claimPendingFinalReplyDispatch(
+export function claimPendingFinalReplyDispatch(
   info: ReplyDispatchRuntimeInfo,
-): Promise<boolean> {
+): Promise<boolean> | undefined {
   const custody = pendingFinalCustodyByInfo.get(info);
   if (!custody) {
-    return true;
+    return undefined;
   }
   custody.claim ??= settlePendingFinalDelivery(custody.completion, "queued", "prepared").then(
     ({ state }) => state === "queued",
   );
-  return await custody.claim;
+  return custody.claim;
 }
 
 export async function settlePendingFinalReplyDispatchOutcome(

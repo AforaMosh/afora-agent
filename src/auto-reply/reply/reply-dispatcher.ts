@@ -461,7 +461,8 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         }
         deliverPayload = copyReplyPayloadMetadata(payload, deliverPayload);
       }
-      if (!(await claimPendingFinalReplyDispatch(info))) {
+      const custodyClaim = claimPendingFinalReplyDispatch(info);
+      if (custodyClaim && !(await custodyClaim)) {
         await notifyBeforeDeliverCancelled(deliverPayload, info);
         return "cancelled";
       }
