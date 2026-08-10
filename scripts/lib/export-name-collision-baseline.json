@@ -670,13 +670,6 @@
     "sdk": true
   },
   {
-    "name": "killProcessTree",
-    "files": [
-      "src/agents/shell-utils.ts",
-      "src/daemon/test-helpers/schtasks-fixtures.ts"
-    ]
-  },
-  {
     "name": "listDescendantRunsForRequester",
     "files": [
       "src/agents/subagent-registry-read.ts",
