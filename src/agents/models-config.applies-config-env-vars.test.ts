@@ -9,6 +9,7 @@ import {
   clearRuntimeAuthProfileStoreSnapshots,
   replaceRuntimeAuthProfileStoreSnapshots,
 } from "./auth-profiles/store.js";
+import type { AuthProfileStore } from "./auth-profiles/types.js";
 import { unsetEnv, withTempEnv } from "./models-config.e2e-harness.js";
 import {
   planOpenClawModelsJsonWithDeps,
@@ -567,8 +568,8 @@ describe("models-config", () => {
         ],
         pluginMetadataSnapshot,
       });
-      process.env._CUSTOM_API_KEY = "custom-test-secret";
-      process.env._PLUGIN_CUSTOM_KEY = "plugin-test-secret";
+      process.env["_CUSTOM_API_KEY"] = "custom-test-secret";
+      process.env["_PLUGIN_CUSTOM_KEY"] = "plugin-test-secret";
       await expect(registry.getApiKeyForProvider("custom")).resolves.toBe("custom-test-secret");
       await expect(registry.getApiKeyForProvider("zai")).resolves.toBe("plugin-test-secret");
       await expect(
@@ -586,8 +587,8 @@ describe("models-config", () => {
       await expect(
         credentialFree.getApiKeyAndHeaders(credentialFree.find("zai", "gpt-5.5")!),
       ).resolves.toEqual({ ok: true, apiKey: undefined, headers: undefined });
-      delete process.env._CUSTOM_API_KEY;
-      delete process.env._PLUGIN_CUSTOM_KEY;
+      delete process.env["_CUSTOM_API_KEY"];
+      delete process.env["_PLUGIN_CUSTOM_KEY"];
       await expect(registry.getApiKeyForProvider("custom")).resolves.toBeUndefined();
       await expect(registry.getApiKeyForProvider("zai")).resolves.toBeUndefined();
     });
@@ -595,19 +596,11 @@ describe("models-config", () => {
 
   it("serializes verified profile references instead of root or plugin secrets", async () => {
     const agentDir = "/tmp/openclaw-models-config-profile-persistence-test";
-    const canonicalStore = {
+    const canonicalStore: AuthProfileStore = {
       version: 1,
       profiles: {
-        "custom:models-json": {
-          type: "api_key" as const,
-          provider: "custom",
-          key: "ABCDEF123456",
-        },
-        "zai:default": {
-          type: "api_key" as const,
-          provider: "zai",
-          key: "zai-profile-secret",
-        },
+        "custom:models-json": { type: "api_key", provider: "custom", key: "ABCDEF123456" },
+        "zai:default": { type: "api_key", provider: "zai", key: "zai-profile-secret" },
       },
     };
     replaceRuntimeAuthProfileStoreSnapshots([
@@ -651,7 +644,6 @@ describe("models-config", () => {
         },
       );
 
-      expect(plan.action).toBe("write");
       if (plan.action !== "write") {
         throw new Error("Expected models.json write plan");
       }
@@ -669,7 +661,6 @@ describe("models-config", () => {
       const authStorage = AuthStorage.inMemory();
       attachAuthStorageProfiles(authStorage, canonicalStore);
       const registry = ModelRegistry.create(authStorage, "/virtual/models.json", {
-        includePluginCatalogs: true,
         modelsJsonContents: plan.contents,
         pluginCatalogs: [{ pluginId: "zai", contents: pluginContents }],
         pluginMetadataSnapshot,
