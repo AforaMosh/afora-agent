@@ -612,12 +612,12 @@ describe("createVerifiedSqliteSnapshot", () => {
         linked = true;
       }
     });
-    vi.spyOn(fs, "lstat").mockImplementation(async (filePath) => {
+    vi.spyOn(fs, "lstat").mockImplementation(async (filePath, options) => {
       if (linked && !failedInspection && path.resolve(String(filePath)) === targetPath) {
         failedInspection = true;
         throw Object.assign(new Error("target inspection failed"), { code: "EIO" });
       }
-      return await originalLstat(filePath);
+      return await originalLstat(filePath, options as never);
     });
 
     await expectSnapshotFailureWithoutTarget(
