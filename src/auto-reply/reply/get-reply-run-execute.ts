@@ -312,8 +312,12 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
     ...(opts?.onFollowupQueueDisposition
       ? { onQueueDisposition: opts.onFollowupQueueDisposition }
       : {}),
-    ...(opts?.onQueuedFollowupReplyBatch
-      ? { onQueuedFollowupReplyBatch: opts.onQueuedFollowupReplyBatch }
+    ...(opts && "onQueuedFollowupReplyBatch" in opts
+      ? {
+          queuedFollowupReplyDisposition: opts.onQueuedFollowupReplyBatch
+            ? { kind: "deliver" as const, deliver: opts.onQueuedFollowupReplyBatch }
+            : { kind: "drop" as const, reason: "source-unavailable" as const },
+        }
       : {}),
     messageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
     summaryLine: baseBodyTrimmedRaw,

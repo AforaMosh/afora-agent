@@ -6,6 +6,7 @@ import type { GatewayRequestContext } from "./types.js";
 type TerminalDisposition =
   | { kind: "pending" }
   | { kind: "deliver" }
+  | { kind: "delivering" }
   | { kind: "drop"; reason: "non-webchat-origin" }
   | { kind: "settled" };
 
@@ -14,6 +15,7 @@ type DropReason =
   | "origin-mismatch"
   | "terminal-not-recorded"
   | "already-settled"
+  | "delivery-in-flight"
   | "no-visible-content"
   | "delivery-failed";
 
@@ -32,14 +34,17 @@ export function createChatSendLateFollowupDisposition(params: {
   }) => Promise<LateFollowupDeliveryResult>;
 }) {
   let terminal: TerminalDisposition = { kind: "pending" };
-  const recordDrop = (batch: QueuedFollowupReplyBatch, reason: DropReason) => {
-    terminal = { kind: "settled" };
+  const logDrop = (batch: QueuedFollowupReplyBatch, reason: DropReason) => {
     params.logGateway.info("webchat late reply disposition", {
       runId: params.runId,
       followupRunId: batch.runId,
       outcome: "late-and-dropped",
       reason,
     });
+  };
+  const recordDrop = (batch: QueuedFollowupReplyBatch, reason: DropReason) => {
+    terminal = { kind: "settled" };
+    logDrop(batch, reason);
   };
 
   return {
@@ -60,6 +65,10 @@ export function createChatSendLateFollowupDisposition(params: {
         recordDrop(batch, "already-settled");
         return;
       }
+      if (terminal.kind === "delivering") {
+        logDrop(batch, "delivery-in-flight");
+        return;
+      }
       if (terminal.kind === "drop") {
         recordDrop(batch, terminal.reason);
         return;
@@ -68,6 +77,7 @@ export function createChatSendLateFollowupDisposition(params: {
         recordDrop(batch, "origin-mismatch");
         return;
       }
+      terminal = { kind: "delivering" };
       try {
         const result = await params.deliver({ runId: batch.runId, payloads: batch.payloads });
         if (result.kind === "dropped") {

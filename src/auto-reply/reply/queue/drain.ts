@@ -323,7 +323,7 @@ type FollowupRuntimeMetadata = Pick<
   | "deliveryCorrelations"
   | "turnAdoptionLifecycle"
   | "onReplyAdmissionWaitChange"
-  | "onQueuedFollowupReplyBatch"
+  | "queuedFollowupReplyDisposition"
 >;
 
 function hasCurrentTurnRuntimeMetadata(item: FollowupRun): boolean {
@@ -563,9 +563,9 @@ function collectRuntimeMetadata(
     queueAbortSignal: items.find((item) => item.queueAbortSignal)?.queueAbortSignal,
     deliveryCorrelations: deliveryCorrelations.length > 0 ? deliveryCorrelations : undefined,
     turnAdoptionLifecycle: items.length === 1 ? items[0]?.turnAdoptionLifecycle : undefined,
-    // Collect output belongs to the latest source in this route-isolated group,
-    // including when that source intentionally has no late-delivery callback.
-    onQueuedFollowupReplyBatch: items.at(-1)?.onQueuedFollowupReplyBatch,
+    // Collect output belongs to the latest source in this route-isolated group.
+    // Preserve an explicit drop so mutable runner defaults cannot replace it.
+    queuedFollowupReplyDisposition: items.at(-1)?.queuedFollowupReplyDisposition,
     onReplyAdmissionWaitChange:
       admissionWaitCallbacks.size > 0
         ? (waiting) => {

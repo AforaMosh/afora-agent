@@ -819,7 +819,7 @@ describe("deliverFollowupDecision", () => {
             ...baseTurn.queued,
             originatingChannel: "webchat",
             originatingTo: undefined,
-            onQueuedFollowupReplyBatch: sourceCallback,
+            queuedFollowupReplyDisposition: { kind: "deliver", deliver: sourceCallback },
           },
         },
         defaults: createDefaults(onBlockReply, laterNonWebChatCallback),
@@ -836,6 +836,37 @@ describe("deliverFollowupDecision", () => {
         originatingChannel: "webchat",
         payloads: [{ text: "dispatcher one" }, { text: "dispatcher two" }],
       });
+      expect(deliveryState.routeReply).not.toHaveBeenCalled();
+    } finally {
+      deliveryState.followupRoute = undefined;
+    }
+  });
+
+  it("preserves an explicit source drop instead of using later session defaults", async () => {
+    const onBlockReply = vi.fn(async (_payload: ReplyPayload) => {});
+    const laterSourceCallback = vi.fn(async (_batch: QueuedFollowupReplyBatch) => {});
+    const baseTurn = createTurn();
+    deliveryState.followupRoute = { route: "dispatcher" };
+
+    try {
+      await deliverFollowupDecision({
+        decision: { kind: "deliver", payloads: [{ text: "must stay dropped" }] },
+        turn: {
+          ...baseTurn,
+          queued: {
+            ...baseTurn.queued,
+            originatingChannel: "webchat",
+            originatingTo: undefined,
+            queuedFollowupReplyDisposition: { kind: "drop", reason: "source-unavailable" },
+          },
+        },
+        defaults: createDefaults(onBlockReply, laterSourceCallback),
+        runId: "followup-run-dropped",
+        runFollowup: vi.fn(async () => {}),
+      });
+
+      expect(onBlockReply).not.toHaveBeenCalled();
+      expect(laterSourceCallback).not.toHaveBeenCalled();
       expect(deliveryState.routeReply).not.toHaveBeenCalled();
     } finally {
       deliveryState.followupRoute = undefined;

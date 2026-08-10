@@ -309,8 +309,14 @@ async function sendFollowupPayloads(params: {
   if (payloads.length === 0) {
     return;
   }
-  const onQueuedFollowupReplyBatch = turn.queued.onQueuedFollowupReplyBatch;
-  const dispatcherAvailable = Boolean(onQueuedFollowupReplyBatch || defaults.opts?.onBlockReply);
+  const sourceDisposition = turn.queued.queuedFollowupReplyDisposition;
+  if (sourceDisposition?.kind === "drop") {
+    logVerbose(`followup queue: source delivery dropped (${sourceDisposition.reason})`);
+    return;
+  }
+  const deliverQueuedFollowupReplyBatch = sourceDisposition?.deliver;
+  const fallbackDispatcher = sourceDisposition ? undefined : defaults.opts?.onBlockReply;
+  const dispatcherAvailable = Boolean(deliverQueuedFollowupReplyBatch || fallbackDispatcher);
   if (!originRoutable && !dispatcherAvailable) {
     defaultRuntime.error?.(
       "followup queue: completed with payloads but no origin route or visible dispatcher is available",
@@ -326,11 +332,11 @@ async function sendFollowupPayloads(params: {
   let deliveredCrossChannelOrigin = false;
   const queuedDispatcherPayloads: ReplyPayload[] = [];
   const dispatchFollowupPayload = async (payload: ReplyPayload) => {
-    if (onQueuedFollowupReplyBatch) {
+    if (deliverQueuedFollowupReplyBatch) {
       queuedDispatcherPayloads.push(payload);
       return;
     }
-    await defaults.opts?.onBlockReply?.(payload);
+    await fallbackDispatcher?.(payload);
   };
   for (const payload of payloads) {
     const providerRoute = deliveryPlan.resolveFollowupRoute({
@@ -415,7 +421,7 @@ async function sendFollowupPayloads(params: {
     });
   }
   if (queuedDispatcherPayloads.length > 0) {
-    await onQueuedFollowupReplyBatch?.({
+    await deliverQueuedFollowupReplyBatch?.({
       kind: "queued-followup",
       runId: params.runId,
       originatingChannel,

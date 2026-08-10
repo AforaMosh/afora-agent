@@ -68,6 +68,13 @@ export type QueuedFollowupReplyBatch = {
   payloads: ReplyPayload[];
 };
 
+export type QueuedFollowupReplyDisposition =
+  | {
+      kind: "deliver";
+      deliver: (batch: QueuedFollowupReplyBatch) => Promise<void> | void;
+    }
+  | { kind: "drop"; reason: "source-unavailable" };
+
 export class FollowupRunDeferredError extends Error {
   constructor(message = "Follow-up run deferred") {
     super(message);
@@ -103,8 +110,8 @@ export type FollowupRun = {
   onReplyAdmissionWaitChange?: (waiting: boolean) => void;
   /** Records terminal queue-cap outcomes at the queue owner before lifecycle cleanup. */
   onQueueDisposition?: (disposition: FollowupQueueDisposition) => void;
-  /** Source-owned late delivery callback; never substitute mutable drain defaults. */
-  onQueuedFollowupReplyBatch?: (batch: QueuedFollowupReplyBatch) => Promise<void> | void;
+  /** Source-owned late-delivery fact; never substitute mutable drain defaults for a drop. */
+  queuedFollowupReplyDisposition?: QueuedFollowupReplyDisposition;
   /** Provider message ID, when available (for deduplication). */
   messageId?: string;
   summaryLine?: string;

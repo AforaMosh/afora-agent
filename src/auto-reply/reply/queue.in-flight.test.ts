@@ -175,22 +175,27 @@ describe("followup queue in-flight ownership", () => {
         prompt: "webchat reply",
         originatingChannel: "webchat",
       }),
-      onQueuedFollowupReplyBatch: webChatDelivery,
+      queuedFollowupReplyDisposition: { kind: "deliver" as const, deliver: webChatDelivery },
     };
     const discordRun = {
       ...createRun({
         prompt: "discord reply",
         originatingChannel: "discord",
       }),
-      onQueuedFollowupReplyBatch: laterDiscordDelivery,
+      queuedFollowupReplyDisposition: {
+        kind: "deliver" as const,
+        deliver: laterDiscordDelivery,
+      },
     };
     const latestRunner = async (run: FollowupRun) => {
-      await run.onQueuedFollowupReplyBatch?.({
-        kind: "queued-followup",
-        runId: `${run.prompt}-run`,
-        originatingChannel: run.originatingChannel,
-        payloads: [{ text: run.prompt }],
-      });
+      if (run.queuedFollowupReplyDisposition?.kind === "deliver") {
+        await run.queuedFollowupReplyDisposition.deliver({
+          kind: "queued-followup",
+          runId: `${run.prompt}-run`,
+          originatingChannel: run.originatingChannel,
+          payloads: [{ text: run.prompt }],
+        });
+      }
       completeFollowupRunLifecycle(run);
     };
 
@@ -239,7 +244,9 @@ describe("followup queue in-flight ownership", () => {
         originatingChatType: "channel",
       }),
       turnAdoptionLifecycle: { onAdopted: async () => {}, onSettled: onComplete },
-      onQueuedFollowupReplyBatch: groupDeliveryCallbacks[index],
+      queuedFollowupReplyDisposition: groupDeliveryCallbacks[index]
+        ? { kind: "deliver" as const, deliver: groupDeliveryCallbacks[index] }
+        : { kind: "drop" as const, reason: "source-unavailable" as const },
     }));
     const runFollowup = async (run: FollowupRun) => {
       if (!aggregate) {
@@ -260,7 +267,10 @@ describe("followup queue in-flight ownership", () => {
       const queue = getExistingFollowupQueue(key);
       expect(queue?.inFlight.size).toBe(2);
       expect(getFollowupQueueDepth(key)).toBe(0);
-      expect(aggregate?.onQueuedFollowupReplyBatch).toBeUndefined();
+      expect(aggregate?.queuedFollowupReplyDisposition).toEqual({
+        kind: "drop",
+        reason: "source-unavailable",
+      });
 
       const oldSettings: QueueSettings = { ...initialSettings, cap: 1, dropPolicy: "old" };
       expect(
