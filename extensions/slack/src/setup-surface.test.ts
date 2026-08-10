@@ -376,7 +376,7 @@ describe("slackSetupWizard.prepare", () => {
       queued.select.mock.calls.map(([params]) => (params as { message: string }).message),
     ).toEqual([
       "How should OpenClaw appear in Slack?",
-      "How do you want to provide this Slack bot token?",
+      "How do you want to provide these credentials?",
     ]);
     expect(
       queued.text.mock.calls.map(([params]) => (params as { message: string }).message),

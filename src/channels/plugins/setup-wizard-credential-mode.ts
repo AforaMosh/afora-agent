@@ -1,19 +1,31 @@
-import { resolveSecretInputModeForEnvSelection } from "../../plugins/provider-auth-mode.js";
 import type { SecretInputMode } from "../../plugins/provider-auth-types.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
 
+export type ChannelCredentialInputModePolicy = SecretInputMode | "per-credential";
+
 export async function resolveSharedChannelCredentialInputMode(params: {
   prompter: Pick<WizardPrompter, "select">;
-  credentialLabel: string;
-}): Promise<SecretInputMode> {
-  return await resolveSecretInputModeForEnvSelection({
-    prompter: params.prompter,
-    copy: {
-      modeMessage: `How do you want to provide this ${params.credentialLabel}?`,
-      plaintextLabel: `Enter ${params.credentialLabel}`,
-      plaintextHint: "Stores the credential directly in OpenClaw config",
-      refLabel: "Use external secret provider",
-      refHint: "Stores a reference to env or configured external secret providers",
-    },
+}): Promise<ChannelCredentialInputModePolicy> {
+  const selected = await params.prompter.select<ChannelCredentialInputModePolicy>({
+    message: "How do you want to provide these credentials?",
+    initialValue: "plaintext",
+    options: [
+      {
+        value: "plaintext",
+        label: "Enter credentials",
+        hint: "Stores the credentials directly in OpenClaw config",
+      },
+      {
+        value: "ref",
+        label: "Use external secret provider",
+        hint: "Stores references to env or configured external secret providers",
+      },
+      {
+        value: "per-credential",
+        label: "Choose separately",
+        hint: "Select a storage mode for each credential",
+      },
+    ],
   });
+  return selected === "ref" || selected === "per-credential" ? selected : "plaintext";
 }

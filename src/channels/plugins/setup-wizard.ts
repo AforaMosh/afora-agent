@@ -379,6 +379,8 @@ export function buildChannelSetupWizardAdapterFromSetupWizard(params: {
           return;
         }
         let secretInputMode = options?.secretInputMode;
+        let credentialInputModePolicySelected = Boolean(secretInputMode);
+        let chooseCredentialInputModesSeparately = false;
         for (const credential of wizard.credentials) {
           let credentialState = credential.inspect({ cfg: next, accountId });
           let resolvedCredentialValue = normalizeOptionalString(credentialState.resolvedValue);
@@ -403,11 +405,14 @@ export function buildChannelSetupWizardAdapterFromSetupWizard(params: {
           }
           const allowEnv = credential.allowEnv?.({ cfg: next, accountId }) ?? false;
 
-          if (!secretInputMode && wizard.credentials.length > 1) {
-            secretInputMode = await resolveSharedChannelCredentialInputMode({
-              prompter,
-              credentialLabel: credential.credentialLabel,
-            });
+          if (!credentialInputModePolicySelected && wizard.credentials.length > 1) {
+            const policy = await resolveSharedChannelCredentialInputMode({ prompter });
+            credentialInputModePolicySelected = true;
+            if (policy === "per-credential") {
+              chooseCredentialInputModesSeparately = true;
+            } else {
+              secretInputMode = policy;
+            }
           }
 
           const credentialResult = await runSingleChannelSecretStep({
@@ -415,7 +420,7 @@ export function buildChannelSetupWizardAdapterFromSetupWizard(params: {
             prompter,
             providerHint: credential.providerHint,
             credentialLabel: credential.credentialLabel,
-            secretInputMode,
+            secretInputMode: chooseCredentialInputModesSeparately ? undefined : secretInputMode,
             accountConfigured: credentialState.accountConfigured,
             hasConfigToken: credentialState.hasConfiguredValue,
             allowEnv,
