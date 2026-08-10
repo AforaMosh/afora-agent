@@ -541,7 +541,7 @@ describe("openai transport stream", () => {
     }
   });
 
-  it("keeps tool calls fail-closed through fetch wrapper when stream ends without [DONE] and without finish_reason", async () => {
+  it("rejects tool calls through fetch wrapper when stream ends without terminal evidence", async () => {
     const server = createServer((req, res) => {
       let body = "";
       req.setEncoding("utf8");
@@ -601,25 +601,32 @@ describe("openai transport stream", () => {
       );
 
       let doneReason: string | undefined;
-      const doneMessage: { content?: Array<{ type?: string }> } = {};
+      let errorMessage: string | undefined;
+      let terminalContent: Array<{ type?: string }> = [];
+      let toolCallEnded = false;
       for await (const event of stream as AsyncIterable<{
         type: string;
         reason?: string;
         message?: { content?: Array<{ type?: string }> };
+        error?: { content?: Array<{ type?: string }>; errorMessage?: string };
       }>) {
         if (event.type === "done") {
           doneReason = event.reason;
-          if (event.message) {
-            Object.assign(doneMessage, event.message);
-          }
+        }
+        if (event.type === "error") {
+          errorMessage = event.error?.errorMessage;
+          terminalContent = event.error?.content ?? [];
+        }
+        if (event.type === "toolcall_end") {
+          toolCallEnded = true;
         }
       }
 
-      // EOF without [DONE] → sawStreamDONE stays false → fail-closed
-      expect(doneReason).toBe("stop");
-      const toolCallBlocks =
-        doneMessage.content?.filter((block) => block.type === "toolCall") ?? [];
+      expect(doneReason).toBeUndefined();
+      expect(errorMessage).toContain("Provider stream ended without finish_reason or [DONE]");
+      const toolCallBlocks = terminalContent.filter((block) => block.type === "toolCall");
       expect(toolCallBlocks).toStrictEqual([]);
+      expect(toolCallEnded).toBe(false);
     } finally {
       await new Promise<void>((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));

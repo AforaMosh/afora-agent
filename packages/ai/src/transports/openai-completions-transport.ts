@@ -438,6 +438,7 @@ async function processOpenAICompletionsStream(
   const toolCallBlockIndices = new WeakMap<ToolCallBlock, number>();
   const normalizeToolCallDeltas = createOpenAICompletionsToolCallDeltaNormalizer();
   let sawStopFinishReason = false;
+  let sawFinishReason = false;
   let sawNativeToolCallDelta = false;
   const blockIndex = () => output.content.length - 1;
   const measureUtf8Bytes = (text: string) => Buffer.byteLength(text, "utf8");
@@ -687,6 +688,7 @@ async function processOpenAICompletionsStream(
       hasReasoningUsageActivity = hasOpenAICompletionsReasoningUsageActivity(choiceUsage);
     }
     if (choice.finish_reason) {
+      sawFinishReason = true;
       const finishReasonResult = mapOpenAIStopReason(choice.finish_reason, {
         allowSingularToolCall: true,
       });
@@ -838,17 +840,19 @@ async function processOpenAICompletionsStream(
   flushDeepSeekTextFilterAtEnd();
   currentBlock = null;
   flushPendingPostToolCallDeltas();
+  const sawStreamDONE = options?.sawStreamDONE?.() ?? false;
+  // Tool-call finalization is irreversible. Reject a dropped managed stream
+  // before it can publish partial tool state as a successful completion.
+  if (options?.sawStreamDONE && !sawFinishReason && !sawStreamDONE) {
+    throw new Error("Provider stream ended without finish_reason or [DONE]; retry the request");
+  }
   // Promote complete silent tool-call-only responses when the stream finished
-  // cleanly (reached post-loop). Two paths:
+  // with explicit terminal evidence. Two paths:
   //   sawStopFinishReason: explicit provider terminal (legacy DSML / #88791)
   //   sawNativeToolCallDelta + sawStreamDONE: structured delta.tool_calls with
-  //     a clean SSE [DONE] terminal but no finish_reason (e.g. Evolink
-  //     DeepSeek V4). [DONE] tracking distinguishes clean termination from
-  //     connection drops (EOF without [DONE] remains fail-closed).
-  // Truncated streams throw before reaching this code.
+  //     a clean SSE [DONE] terminal but no finish_reason (e.g. Evolink DeepSeek V4).
   finalizeOpenAICompletionsToolCalls(output, {
-    allowSilentToolCallPromotion:
-      sawStopFinishReason || (sawNativeToolCallDelta && (options?.sawStreamDONE?.() ?? false)),
+    allowSilentToolCallPromotion: sawStopFinishReason || (sawNativeToolCallDelta && sawStreamDONE),
     onConfirmedToolCall(block, contentIndex) {
       pushStreamEvent({
         type: "toolcall_end",
