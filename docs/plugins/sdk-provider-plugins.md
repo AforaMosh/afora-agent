@@ -262,6 +262,12 @@ catalog, API-key auth, and dynamic model resolution.
     `requireBaseUrl` check is the credential-isolation boundary for providers
     whose model-list host differs from their inference host.
 
+    Provider runtimes that need OAuth metadata should call
+    `resolveProviderOAuthAccess` from `openclaw/plugin-sdk/provider-auth`.
+    It resolves the first usable OAuth profile and returns the authoritative,
+    refreshed access token plus its optional account id. Do not read stored
+    profile fields directly; refresh can replace the token before use.
+
     If the provider needs custom model semantics rather than the conservative
     OpenAI-compatible projection, keep only that projection in the plugin. Pass
     it as `projectRows`; the shared runtime still owns guarded fetches,

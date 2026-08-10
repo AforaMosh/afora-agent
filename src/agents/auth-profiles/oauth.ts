@@ -570,3 +570,15 @@ export async function resolveApiKeyForProfile(
     });
   }
 }
+
+/** Resolve a selected OAuth profile to its authoritative refreshed credential. */
+export async function resolveOAuthCredentialForProfile(
+  params: ResolveApiKeyForProfileParams,
+): Promise<OAuthCredential | null> {
+  const credential = params.store.profiles[params.profileId];
+  if (!credential || credential.type !== "oauth") {
+    return null;
+  }
+  const resolved = await resolveApiKeyForProfile(params);
+  return resolved?.credential?.type === "oauth" ? resolved.credential : null;
+}
