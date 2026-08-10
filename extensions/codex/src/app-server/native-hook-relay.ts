@@ -35,6 +35,7 @@ const CODEX_NATIVE_HOOK_RELAY_MIN_TTL_MS = 30 * 60_000;
 export const CODEX_NATIVE_HOOK_RELAY_TTL_GRACE_MS = 5 * 60_000;
 const CODEX_NATIVE_HOOK_RELAY_UNREGISTER_GRACE_MS = 10_000;
 const CODEX_NATIVE_HOOK_RELAY_UNREGISTER_EXTRA_GRACE_MS = 5_000;
+const CODEX_NATIVE_HOOK_RELAY_RENEW_RETRY_MS = 1_000;
 
 export type CodexNativePreToolUseFailure = {
   toolName: string;
@@ -50,6 +51,14 @@ export type CodexNativeHookRelayLease = Omit<
   acquireChild: (childThreadId: string) => (() => void) | undefined;
   releaseParent: (options?: { delay?: boolean }) => void;
 };
+
+export type CodexNativeHookRelayAcquisition =
+  | { status: "disabled" }
+  | { status: "active"; lease: CodexNativeHookRelayLease }
+  | {
+      status: "unavailable";
+      reason: "dead" | "foreign-owner" | "route-released" | "unknown";
+    };
 
 type CodexNativeHookRelayParams = {
   options:
@@ -161,9 +170,9 @@ export function emitCodexNativePreToolUseFailureDiagnostic(params: {
 
 export function createCodexNativeHookRelay(
   params: CodexNativeHookRelayParams,
-): CodexNativeHookRelayLease | undefined {
+): CodexNativeHookRelayAcquisition {
   if (params.options?.enabled === false) {
-    return undefined;
+    return { status: "disabled" };
   }
   const generation = params.generation?.trim() || randomUUID();
   const attempt: CodexNativeHookRelayAttempt = { ...params, generation };
@@ -174,12 +183,15 @@ export function createCodexNativeHookRelay(
     generation,
   });
   const liveRoute = codexNativeHookRelayOwners.get(relayId);
-  return liveRoute
-    ? liveRoute.adoptAttempt(attempt)
-    : new CodexNativeHookRelayRoute(attempt, relayId).attemptLease;
+  const route = liveRoute ?? new CodexNativeHookRelayRoute(attempt, relayId);
+  const lease = liveRoute ? route.adoptAttempt(attempt) : route.attemptLease;
+  return lease
+    ? { status: "active", lease }
+    : { status: "unavailable", reason: route.unavailableReason ?? "route-released" };
 }
 
-type CodexNativeHookRelayRenewal = ReturnType<NativeHookRelayRegistrationHandle["renew"]>;
+type CodexNativeHookRelayHandle = ReturnType<typeof registerNativeHookRelay>;
+type CodexNativeHookRelayRenewal = ReturnType<CodexNativeHookRelayHandle["renewStatus"]>;
 
 type CodexNativeHookRelayAttempt = CodexNativeHookRelayParams & { generation: string };
 
@@ -216,16 +228,18 @@ function resolveCodexNativeHookRelayAttemptTtlMs(attempt: CodexNativeHookRelayAt
 
 class CodexNativeHookRelayRoute {
   readonly attemptLease: CodexNativeHookRelayLease | undefined;
+  unavailableReason: "dead" | "foreign-owner" | "unknown" | undefined;
 
   private readonly childThreadIds = new Set<string>();
   private readonly relayId: string;
   private readonly lifetimeAbortController = new AbortController();
   private attempt: CodexNativeHookRelayAttempt;
-  private relay: NativeHookRelayRegistrationHandle;
+  private relay: CodexNativeHookRelayHandle;
   private attemptClaim: CodexNativeHookRelayAttemptClaim | undefined;
   private ttlMs: number;
   private hookTimeoutSec: number | undefined;
   private renewalTimer: ReturnType<typeof setTimeout> | undefined;
+  private renewalRetryTimer: ReturnType<typeof setTimeout> | undefined;
   private cancelPendingUnregister: (() => void) | undefined;
   private released = false;
 
@@ -235,6 +249,16 @@ class CodexNativeHookRelayRoute {
     this.ttlMs = resolveCodexNativeHookRelayAttemptTtlMs(attempt);
     this.hookTimeoutSec = attempt.options?.hookTimeoutSec;
     this.relay = this.registerRoute(this.retiredBinding(attempt));
+    const initialRenewal = this.relay.renewStatus(this.ttlMs);
+    if (initialRenewal !== "live") {
+      this.unavailableReason = initialRenewal;
+      this.lifetimeAbortController.abort("codex_native_hook_relay_initial_claim_failed");
+      this.relay.unregister();
+      this.released = true;
+      this.attemptLease = undefined;
+      return;
+    }
+    this.unavailableReason = undefined;
     codexNativeHookRelayOwners.set(relayId, this);
     this.attemptLease = this.bindAttempt(attempt);
     embeddedAgentLog.debug("Codex native hook relay route registered", {
@@ -248,6 +272,15 @@ class CodexNativeHookRelayRoute {
     if (this.released) {
       return undefined;
     }
+    const candidateTtlMs = resolveCodexNativeHookRelayAttemptTtlMs(attempt);
+    // Prove the candidate lease before replacing the binding. Otherwise a
+    // transient store failure can move surviving workers to an unowned attempt.
+    const renewal = this.renewRegistration(candidateTtlMs, this.ttlMs);
+    if (renewal !== "live") {
+      this.unavailableReason = renewal;
+      return undefined;
+    }
+    this.unavailableReason = undefined;
     this.cancelPendingUnregister?.();
     this.cancelPendingUnregister = undefined;
     this.retireAttemptClaim();
@@ -260,11 +293,10 @@ class CodexNativeHookRelayRoute {
       runId: attempt.runId,
       childCount: this.childThreadIds.size,
     });
-    this.renew(this.ttlMs);
     return lease;
   }
 
-  private registerRoute(binding: CodexNativeHookRelayBinding): NativeHookRelayRegistrationHandle {
+  private registerRoute(binding: CodexNativeHookRelayBinding): CodexNativeHookRelayHandle {
     const attempt = this.attempt;
     return registerNativeHookRelay({
       provider: "codex",
@@ -285,12 +317,29 @@ class CodexNativeHookRelayRoute {
     });
   }
 
-  private reregisterRoute(binding: CodexNativeHookRelayBinding): void {
+  private reregisterRoute(
+    binding: CodexNativeHookRelayBinding,
+    ttlMs = this.ttlMs,
+    unknownRetryTtlMs = ttlMs,
+  ): CodexNativeHookRelayRenewal {
     embeddedAgentLog.debug("Codex native hook relay registration re-registered", {
       relayId: this.relayId,
       runId: this.attempt.runId,
     });
+    this.clearRenewalRetry();
     this.relay = this.registerRoute(binding);
+    // Registration can synchronously discover another bridge owner. Classify
+    // it before returning a lease or Codex could snapshot an unusable route.
+    const renewal = this.relay.renewStatus(ttlMs);
+    this.unavailableReason = renewal === "live" ? undefined : renewal;
+    if (renewal === "unknown") {
+      // Keep existing worker claims attached while the replacement handle's
+      // ownership fence recovers. Candidate adoption remains blocked until live.
+      this.scheduleRenewalRetry(this.relay, unknownRetryTtlMs);
+    } else if (renewal !== "live") {
+      this.releaseNow(`codex_native_hook_relay_replacement_${renewal}`);
+    }
+    return renewal;
   }
 
   private bindAttempt(attempt: CodexNativeHookRelayAttempt): CodexNativeHookRelayLease | undefined {
@@ -301,21 +350,36 @@ class CodexNativeHookRelayRoute {
     this.attemptClaim = claim;
     const binding = this.claimBinding(claim);
     if (!this.relay.rebindAttempt?.(binding)) {
-      this.reregisterRoute(binding);
+      const renewal = this.reregisterRoute(binding);
+      if (renewal !== "live") {
+        return undefined;
+      }
     }
     this.attachAttemptAbort(claim);
     if (this.released) {
       return undefined;
     }
     const readExpiresAtMs = () => this.relay.expiresAtMs;
-    const { unregister: _unregister, rebindAttempt: _rebindAttempt, ...fields } = this.relay;
+    const {
+      unregister: _unregister,
+      rebindAttempt: _rebindAttempt,
+      renew: _renew,
+      renewStatus: _renewStatus,
+      ...fields
+    } = this.relay;
     return {
       ...fields,
       allowedEvents: attempt.events,
       get expiresAtMs() {
         return readExpiresAtMs();
       },
-      renew: (ttlMs?: number) => this.renew(ttlMs),
+      renew: (ttlMs?: number) => {
+        // Attempts can overlap while one route is adopted. Only the current
+        // attempt may change its TTL; descendant renewal remains route-owned.
+        if (this.attemptClaim === claim) {
+          this.renew(ttlMs);
+        }
+      },
       acquireChild: (childThreadId: string) => this.acquireChild(childThreadId),
       releaseParent: (options?: { delay?: boolean }) => this.releaseAttempt(claim, options),
     };
@@ -366,17 +430,34 @@ class CodexNativeHookRelayRoute {
     if (this.released || !this.hasClaims()) {
       return "dead";
     }
-    const renewal = this.relay.renew(ttlMs);
+    const resolvedTtlMs = ttlMs ?? this.ttlMs;
+    return this.renewRegistration(resolvedTtlMs, resolvedTtlMs);
+  }
+
+  private renewRegistration(ttlMs: number, unknownRetryTtlMs: number): CodexNativeHookRelayRenewal {
+    const renewal = this.relay.renewStatus(ttlMs);
+    if (renewal === "unknown") {
+      // The caller selects the still-authoritative TTL: normal renewal uses
+      // its latest value, while rejected adoption preserves the existing one.
+      this.clearRenewalRetry();
+      this.scheduleRenewalRetry(this.relay, unknownRetryTtlMs);
+      return "unknown";
+    }
     if (renewal === "live") {
+      this.clearRenewalRetry();
+      this.unavailableReason = undefined;
       return "live";
     }
     if (renewal === "foreign-owner") {
-      this.finalizeState("codex_native_hook_relay_foreign_owner");
+      this.releaseNow("codex_native_hook_relay_foreign_owner");
       return "foreign-owner";
     }
     const claim = this.attemptClaim;
-    this.reregisterRoute(claim ? this.claimBinding(claim) : this.retiredBinding(this.attempt));
-    return "live";
+    return this.reregisterRoute(
+      claim ? this.claimBinding(claim) : this.retiredBinding(this.attempt),
+      ttlMs,
+      unknownRetryTtlMs,
+    );
   }
 
   private acquireChild(childThreadIdInput: string): (() => void) | undefined {
@@ -468,12 +549,41 @@ class CodexNativeHookRelayRoute {
     this.renewalTimer.unref();
   }
 
-  private clearRenewal(): void {
-    if (!this.renewalTimer) {
+  private scheduleRenewalRetry(expectedRelay: CodexNativeHookRelayHandle, ttlMs: number): void {
+    if (this.renewalRetryTimer || this.released || !this.hasClaims()) {
       return;
     }
-    clearTimeout(this.renewalTimer);
-    this.renewalTimer = undefined;
+    const expectedGeneration = expectedRelay.generation;
+    this.renewalRetryTimer = setTimeout(() => {
+      this.renewalRetryTimer = undefined;
+      if (
+        this.released ||
+        !this.hasClaims() ||
+        this.relay !== expectedRelay ||
+        this.relay.generation !== expectedGeneration
+      ) {
+        return;
+      }
+      this.renew(ttlMs);
+      this.scheduleRenewal();
+    }, CODEX_NATIVE_HOOK_RELAY_RENEW_RETRY_MS);
+    this.renewalRetryTimer.unref();
+  }
+
+  private clearRenewal(): void {
+    if (this.renewalTimer) {
+      clearTimeout(this.renewalTimer);
+      this.renewalTimer = undefined;
+    }
+    this.clearRenewalRetry();
+  }
+
+  private clearRenewalRetry(): void {
+    if (!this.renewalRetryTimer) {
+      return;
+    }
+    clearTimeout(this.renewalRetryTimer);
+    this.renewalRetryTimer = undefined;
   }
 
   private releaseNow(reason: string): void {

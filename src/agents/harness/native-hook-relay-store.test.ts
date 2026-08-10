@@ -2,14 +2,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
+import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
 import {
+  closeOpenClawStateDatabaseForTest,
+  runOpenClawStateWriteTransaction,
+} from "../../state/openclaw-state-db.js";
+import {
+  claimNativeHookRelayBridgeRecord,
   deleteNativeHookRelayBridgeRecordIfOwned,
   pruneNativeHookRelayBridgeRecords,
   readNativeHookRelayBridgeRecord,
-  renewOrRestoreNativeHookRelayBridgeRecord,
   type NativeHookRelayBridgeRecord,
-  writeNativeHookRelayBridgeRecord,
 } from "./native-hook-relay-store.js";
 
 let testRoot = "";
@@ -42,8 +46,159 @@ function bridgeRecord(
   };
 }
 
+function seedBridgeRecord(params: {
+  record: NativeHookRelayBridgeRecord;
+  stateDbPath: string;
+  updatedAtMs?: number;
+}): void {
+  const { record } = params;
+  const updatedAtMs = params.updatedAtMs ?? Date.now();
+  runOpenClawStateWriteTransaction(
+    (database) => {
+      const db = getNodeSqliteKysely<
+        Pick<OpenClawStateKyselyDatabase, "native_hook_relay_bridges">
+      >(database.db);
+      executeSqliteQuerySync(
+        database.db,
+        db
+          .insertInto("native_hook_relay_bridges")
+          .values({
+            relay_id: record.relayId,
+            pid: record.pid,
+            hostname: record.hostname,
+            port: record.port,
+            token: record.token,
+            expires_at_ms: record.expiresAtMs,
+            updated_at_ms: updatedAtMs,
+          })
+          .onConflict((conflict) =>
+            conflict.column("relay_id").doUpdateSet({
+              pid: record.pid,
+              hostname: record.hostname,
+              port: record.port,
+              token: record.token,
+              expires_at_ms: record.expiresAtMs,
+              updated_at_ms: updatedAtMs,
+            }),
+          ),
+      );
+    },
+    { path: params.stateDbPath },
+  );
+}
+
 describe("native hook relay store", () => {
-  it("upserts and reads bridge records", () => {
+  it("claims a missing bridge record", () => {
+    const record = bridgeRecord("relay-claim-missing");
+
+    expect(
+      claimNativeHookRelayBridgeRecord({
+        record,
+        updatedAtMs: 1_000,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toBe("renewed");
+    expect(
+      readNativeHookRelayBridgeRecord({
+        relayId: record.relayId,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toStrictEqual(record);
+  });
+
+  it("keeps a pending claim authoritative without exposing it as a locator", () => {
+    const pending = bridgeRecord("relay-claim-pending", { port: 0 });
+    expect(
+      claimNativeHookRelayBridgeRecord({
+        record: pending,
+        updatedAtMs: 1_000,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toBe("renewed");
+    expect(
+      readNativeHookRelayBridgeRecord({
+        relayId: pending.relayId,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toBeUndefined();
+    expect(
+      claimNativeHookRelayBridgeRecord({
+        record: { ...pending, pid: pending.pid + 1, port: 18_790, token: "foreign-token" },
+        updatedAtMs: 2_000,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toBe("foreign-owner");
+  });
+
+  it("claims a live bridge through its exact same-process predecessor", () => {
+    const predecessor = bridgeRecord("relay-claim-predecessor", {
+      pid: process.pid,
+      token: "predecessor-token",
+    });
+    const replacement = { ...predecessor, port: predecessor.port + 1, token: "replacement-token" };
+    seedBridgeRecord({
+      record: predecessor,
+      updatedAtMs: 1_000,
+      stateDbPath: primaryStateDbPath,
+    });
+
+    expect(
+      claimNativeHookRelayBridgeRecord({
+        record: replacement,
+        predecessor,
+        updatedAtMs: 2_000,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toBe("renewed");
+    expect(
+      readNativeHookRelayBridgeRecord({
+        relayId: replacement.relayId,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toStrictEqual(replacement);
+  });
+
+  it("preserves a live foreign claim through the expiry instant and reclaims it afterward", () => {
+    const foreign = bridgeRecord("relay-claim-foreign", { expiresAtMs: 5_000 });
+    const claimant = { ...foreign, pid: foreign.pid + 1, token: "claimant-token" };
+    seedBridgeRecord({
+      record: foreign,
+      updatedAtMs: 1_000,
+      stateDbPath: primaryStateDbPath,
+    });
+
+    for (const predecessor of [undefined, { pid: foreign.pid, token: "wrong-token" }]) {
+      expect(
+        claimNativeHookRelayBridgeRecord({
+          record: claimant,
+          predecessor,
+          updatedAtMs: foreign.expiresAtMs,
+          stateDbPath: primaryStateDbPath,
+        }),
+      ).toBe("foreign-owner");
+    }
+    expect(
+      readNativeHookRelayBridgeRecord({
+        relayId: foreign.relayId,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toStrictEqual(foreign);
+    expect(
+      claimNativeHookRelayBridgeRecord({
+        record: claimant,
+        updatedAtMs: foreign.expiresAtMs + 1,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toBe("renewed");
+    expect(
+      readNativeHookRelayBridgeRecord({
+        relayId: claimant.relayId,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toStrictEqual(claimant);
+  });
+
+  it("reads bridge records from the state database", () => {
     const first = bridgeRecord("relay-upsert");
     const replacement = bridgeRecord("relay-upsert", {
       pid: 101,
@@ -52,7 +207,7 @@ describe("native hook relay store", () => {
       expiresAtMs: 30_000,
     });
 
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: first,
       updatedAtMs: 1_000,
       stateDbPath: primaryStateDbPath,
@@ -64,7 +219,7 @@ describe("native hook relay store", () => {
       }),
     ).toStrictEqual(first);
 
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: replacement,
       updatedAtMs: 2_000,
       stateDbPath: primaryStateDbPath,
@@ -79,28 +234,28 @@ describe("native hook relay store", () => {
 
   it("requires matching token and pid to renew or delete a bridge", () => {
     const record = bridgeRecord("relay-owned");
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record,
       updatedAtMs: 1_000,
       stateDbPath: primaryStateDbPath,
     });
 
     expect(
-      renewOrRestoreNativeHookRelayBridgeRecord({
+      claimNativeHookRelayBridgeRecord({
         record: { ...record, pid: record.pid + 1, expiresAtMs: 30_000 },
         updatedAtMs: 1_500,
         stateDbPath: primaryStateDbPath,
       }),
     ).toBe("foreign-owner");
     expect(
-      renewOrRestoreNativeHookRelayBridgeRecord({
+      claimNativeHookRelayBridgeRecord({
         record: { ...record, token: "decoy-token", expiresAtMs: 30_000 },
         updatedAtMs: 1_500,
         stateDbPath: primaryStateDbPath,
       }),
     ).toBe("foreign-owner");
     expect(
-      renewOrRestoreNativeHookRelayBridgeRecord({
+      claimNativeHookRelayBridgeRecord({
         record: { ...record, expiresAtMs: 30_000 },
         updatedAtMs: 2_000,
         stateDbPath: primaryStateDbPath,
@@ -141,27 +296,39 @@ describe("native hook relay store", () => {
     ).toBeUndefined();
   });
 
-  it("reclaims an expired foreign record instead of yielding ownership", () => {
+  it("atomically reclaims an expired foreign record", () => {
     const record = bridgeRecord("relay-expired-foreign", { expiresAtMs: 5_000 });
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record,
       updatedAtMs: 1_000,
       stateDbPath: primaryStateDbPath,
     });
 
+    const replacement = {
+      ...record,
+      pid: record.pid + 1,
+      token: "test-auth-token",
+      expiresAtMs: 30_000,
+    };
     expect(
-      renewOrRestoreNativeHookRelayBridgeRecord({
-        record: { ...record, pid: record.pid + 1, token: "test-auth-token", expiresAtMs: 30_000 },
+      claimNativeHookRelayBridgeRecord({
+        record: replacement,
         updatedAtMs: 6_000,
         stateDbPath: primaryStateDbPath,
       }),
-    ).toBe("reclaimable");
+    ).toBe("renewed");
+    expect(
+      readNativeHookRelayBridgeRecord({
+        relayId: record.relayId,
+        stateDbPath: primaryStateDbPath,
+      }),
+    ).toStrictEqual(replacement);
   });
 
   it("restores a missing record without overwriting another owner", () => {
     const record = bridgeRecord("relay-restored");
     expect(
-      renewOrRestoreNativeHookRelayBridgeRecord({
+      claimNativeHookRelayBridgeRecord({
         record,
         updatedAtMs: 1_000,
         stateDbPath: primaryStateDbPath,
@@ -178,13 +345,13 @@ describe("native hook relay store", () => {
       pid: record.pid + 1,
       token: "test-auth-token",
     });
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: otherOwner,
       updatedAtMs: 2_000,
       stateDbPath: primaryStateDbPath,
     });
     expect(
-      renewOrRestoreNativeHookRelayBridgeRecord({
+      claimNativeHookRelayBridgeRecord({
         record,
         updatedAtMs: 3_000,
         stateDbPath: primaryStateDbPath,
@@ -209,12 +376,12 @@ describe("native hook relay store", () => {
       token: "test-auth-token",
       expiresAtMs: 30_000,
     });
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: oldOwner,
       updatedAtMs: 1_000,
       stateDbPath: primaryStateDbPath,
     });
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: replacement,
       updatedAtMs: 2_000,
       stateDbPath: primaryStateDbPath,
@@ -240,7 +407,7 @@ describe("native hook relay store", () => {
     const live = bridgeRecord("relay-live", { pid: 202 });
     const unknown = bridgeRecord("relay-unknown", { pid: 203 });
     for (const [index, record] of [expired, dead, live, unknown].entries()) {
-      writeNativeHookRelayBridgeRecord({
+      seedBridgeRecord({
         record,
         updatedAtMs: 1_000 + index,
         stateDbPath: primaryStateDbPath,
@@ -302,7 +469,7 @@ describe("native hook relay store", () => {
       token: "test-auth-token",
       expiresAtMs: 30_000,
     });
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: stale,
       updatedAtMs: 1_000,
       stateDbPath: primaryStateDbPath,
@@ -312,7 +479,7 @@ describe("native hook relay store", () => {
       currentPid: 100,
       isPidDead: (pid) => {
         expect(pid).toBe(stale.pid);
-        writeNativeHookRelayBridgeRecord({
+        seedBridgeRecord({
           record: replacement,
           updatedAtMs: 2_000,
           stateDbPath: primaryStateDbPath,
@@ -342,11 +509,11 @@ describe("native hook relay store", () => {
       port: 18_790,
       token: "gateway-token",
     });
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: primary,
       stateDbPath: primaryStateDbPath,
     });
-    writeNativeHookRelayBridgeRecord({
+    seedBridgeRecord({
       record: secondary,
       stateDbPath: secondaryStateDbPath,
     });

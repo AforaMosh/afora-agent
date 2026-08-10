@@ -54,7 +54,7 @@ function createDirectRelayResult(ttlMs: number, options: DirectRelayOptions = {}
     path.join(tempDir, "direct-relay-session.jsonl"),
     path.join(tempDir, "direct-relay-workspace"),
   );
-  return createCodexNativeHookRelay({
+  const acquisition = createCodexNativeHookRelay({
     options: { enabled: true, ttlMs },
     ...(options.generation ? { generation: options.generation } : {}),
     events: ["pre_tool_use"],
@@ -70,6 +70,7 @@ function createDirectRelayResult(ttlMs: number, options: DirectRelayOptions = {}
     signal: options.signal ?? new AbortController().signal,
     onPreToolUseFailure: options.onPreToolUseFailure ?? vi.fn(),
   });
+  return acquisition.status === "active" ? acquisition.lease : undefined;
 }
 
 function createDirectRelay(ttlMs: number, options: DirectRelayOptions = {}) {
@@ -188,6 +189,21 @@ async function startRelayAttempt(name: string, relayOptions: { ttlMs?: number } 
 }
 
 describe("Codex native hook relay lifecycle", () => {
+  it("keeps the canonical route generation strict", async () => {
+    const relay = createDirectRelay(60_000, { generation: "canonical-generation" });
+
+    await expect(
+      invokeChildTool({
+        relayId: relay.relayId,
+        generation: "legacy-generation",
+        toolCallId: "legacy-generation-tool",
+      }),
+    ).rejects.toThrow("native hook relay bridge stale registration");
+
+    relay.releaseParent();
+    expect(codexNativeHookRelayOwnerCount()).toBe(0);
+  });
+
   it("renews child ownership and cancels cleanup for a late child claim", async () => {
     vi.useFakeTimers({ now: 1_800_000_000_000 });
     const relay = createDirectRelay(100);

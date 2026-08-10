@@ -10,13 +10,15 @@ import {
   runOpenClawStateWriteTransaction,
 } from "../../state/openclaw-state-db.js";
 import {
-  readNativeHookRelayBridgeRecordRow,
+  readNativeHookRelayBridgeClaimRow,
   type NativeHookRelayBridgeRecord,
 } from "./native-hook-relay-bridge-record.js";
 
 export type { NativeHookRelayBridgeRecord } from "./native-hook-relay-bridge-record.js";
 
-export type NativeHookRelayBridgeRecordRenewal = "renewed" | "reclaimable" | "foreign-owner";
+export type NativeHookRelayBridgeRecordRenewal = "renewed" | "foreign-owner" | "unknown";
+
+export type NativeHookRelayBridgeRecordOwner = Pick<NativeHookRelayBridgeRecord, "pid" | "token">;
 
 type NativeHookRelayBridgePruneResult = {
   relayId: string;
@@ -45,7 +47,7 @@ type NativeHookRelayBridgeStoreOptions = {
 function readNativeHookRelayBridgeSnapshot(
   row: NativeHookRelayBridgeRow | undefined,
 ): NativeHookRelayBridgeSnapshot | undefined {
-  const record = readNativeHookRelayBridgeRecordRow(row);
+  const record = readNativeHookRelayBridgeClaimRow(row);
   if (!record || !row || !Number.isSafeInteger(row.updated_at_ms)) {
     return undefined;
   }
@@ -87,64 +89,25 @@ export function readNativeHookRelayBridgeRecord(
   params: { relayId: string } & NativeHookRelayBridgeStoreOptions,
 ): NativeHookRelayBridgeRecord | undefined {
   return withOpenClawStateDatabaseReadOnly(
-    (database) =>
-      readNativeHookRelayBridgeSnapshotFromDatabase({
+    (database) => {
+      const record = readNativeHookRelayBridgeSnapshotFromDatabase({
         database,
         relayId: params.relayId,
-      })?.record,
-    { path: params.stateDbPath },
-  );
-}
-
-export function writeNativeHookRelayBridgeRecord(
-  params: {
-    record: NativeHookRelayBridgeRecord;
-    updatedAtMs?: number;
-  } & NativeHookRelayBridgeStoreOptions,
-): void {
-  const updatedAtMs = params.updatedAtMs ?? Date.now();
-  const record = params.record;
-  const { token } = record;
-  runOpenClawStateWriteTransaction(
-    (database) => {
-      const db = getNodeSqliteKysely<NativeHookRelayBridgeDatabase>(database.db);
-      executeSqliteQuerySync(
-        database.db,
-        db
-          .insertInto("native_hook_relay_bridges")
-          .values({
-            relay_id: record.relayId,
-            pid: record.pid,
-            hostname: record.hostname,
-            port: record.port,
-            token,
-            expires_at_ms: record.expiresAtMs,
-            updated_at_ms: updatedAtMs,
-          })
-          .onConflict((conflict) =>
-            conflict.column("relay_id").doUpdateSet({
-              pid: record.pid,
-              hostname: record.hostname,
-              port: record.port,
-              token,
-              expires_at_ms: record.expiresAtMs,
-              updated_at_ms: updatedAtMs,
-            }),
-          ),
-      );
+      })?.record;
+      return record && record.port > 0 ? record : undefined;
     },
     { path: params.stateDbPath },
   );
 }
 
-export function renewOrRestoreNativeHookRelayBridgeRecord(
+export function claimNativeHookRelayBridgeRecord(
   params: {
     record: NativeHookRelayBridgeRecord;
+    predecessor?: NativeHookRelayBridgeRecordOwner;
     updatedAtMs?: number;
   } & NativeHookRelayBridgeStoreOptions,
 ): NativeHookRelayBridgeRecordRenewal {
   const { record } = params;
-  const { token } = record;
   const updatedAtMs = params.updatedAtMs ?? Date.now();
   return runOpenClawStateWriteTransaction<NativeHookRelayBridgeRecordRenewal>(
     (database) => {
@@ -163,33 +126,46 @@ export function renewOrRestoreNativeHookRelayBridgeRecord(
               pid: record.pid,
               hostname: record.hostname,
               port: record.port,
-              token,
+              token: record.token,
               expires_at_ms: record.expiresAtMs,
               updated_at_ms: updatedAtMs,
             })
             .onConflict((conflict) => conflict.column("relay_id").doNothing()),
         );
-        return result.numAffectedRows === 1n ? "renewed" : "foreign-owner";
+        return result.numAffectedRows === 1n ? "renewed" : "unknown";
       }
-      if (current.record.pid !== record.pid || current.record.token !== token) {
-        return current.record.expiresAtMs > updatedAtMs ? "foreign-owner" : "reclaimable";
+      const sameOwner = current.record.pid === record.pid && current.record.token === record.token;
+      const replacesPredecessor =
+        params.predecessor?.pid === record.pid &&
+        current.record.pid === params.predecessor.pid &&
+        current.record.token === params.predecessor.token;
+      if (!sameOwner && !replacesPredecessor && updatedAtMs <= current.record.expiresAtMs) {
+        return "foreign-owner";
       }
+      // Publication may replace only its exact same-process predecessor or a
+      // strictly expired lease. The full snapshot fence prevents a lost CAS
+      // from overwriting an owner that won after this authoritative read.
       const result = executeSqliteQuerySync(
         database.db,
         db
           .updateTable("native_hook_relay_bridges")
           .set({
+            pid: record.pid,
             hostname: record.hostname,
             port: record.port,
+            token: record.token,
             expires_at_ms: record.expiresAtMs,
             updated_at_ms: updatedAtMs,
           })
           .where("relay_id", "=", record.relayId)
-          .where("pid", "=", record.pid)
-          .where("token", "=", token)
+          .where("pid", "=", current.record.pid)
+          .where("hostname", "=", current.record.hostname)
+          .where("port", "=", current.record.port)
+          .where("token", "=", current.record.token)
+          .where("expires_at_ms", "=", current.record.expiresAtMs)
           .where("updated_at_ms", "=", current.updatedAtMs),
       );
-      return result.numAffectedRows === 1n ? "renewed" : "reclaimable";
+      return result.numAffectedRows === 1n ? "renewed" : "unknown";
     },
     { path: params.stateDbPath },
   );

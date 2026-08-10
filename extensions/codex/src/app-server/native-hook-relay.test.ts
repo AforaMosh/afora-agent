@@ -463,7 +463,7 @@ function createRelay(options?: {
           ? " --pre-tool-use-unavailable noop"
           : ""
       }${commandOptions?.timeoutMs ? ` --timeout ${commandOptions.timeoutMs}` : ""}`,
-    renew: () => "live",
+    renew: () => undefined,
     rebindAttempt: () => true,
     unregister: () => undefined,
   };

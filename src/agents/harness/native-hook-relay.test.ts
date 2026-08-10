@@ -18,13 +18,16 @@ import { patchPluginSessionExtension } from "../../plugins/host-hook-state.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry-empty.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
+import * as nativeHookRelayBridge from "./native-hook-relay-bridge.js";
 import { invokeNativeHookRelayBridge } from "./native-hook-relay-client.js";
+import * as nativeHookRelayStore from "./native-hook-relay-store.js";
 import {
+  claimNativeHookRelayBridgeRecord,
   deleteNativeHookRelayBridgeRecordIfOwned,
   readNativeHookRelayBridgeRecord,
-  writeNativeHookRelayBridgeRecord,
   type NativeHookRelayBridgeRecord,
 } from "./native-hook-relay-store.js";
+import type { NativeHookRelayBridgeRegistration } from "./native-hook-relay-types.js";
 import {
   testing,
   buildNativeHookRelayCommand,
@@ -96,17 +99,43 @@ async function writeForeignNativeHookRelayBridgeRecordForTests(
     expiresAtMs: number;
   },
 ): Promise<string> {
-  writeNativeHookRelayBridgeRecord({
-    record: {
-      relayId,
-      pid: record.pid,
-      hostname: "127.0.0.1",
-      port: 9,
-      token: "test-token-placeholder",
-      expiresAtMs: record.expiresAtMs,
-    },
-  });
+  const current = readNativeHookRelayBridgeRecord({ relayId });
+  if (current) {
+    expect(
+      deleteNativeHookRelayBridgeRecordIfOwned({
+        relayId,
+        pid: current.pid,
+        token: current.token,
+      }),
+    ).toBe(true);
+  }
+  expect(
+    claimNativeHookRelayBridgeRecord({
+      record: {
+        relayId,
+        pid: record.pid,
+        hostname: "127.0.0.1",
+        port: 9,
+        token: "test-token-placeholder",
+        expiresAtMs: record.expiresAtMs,
+      },
+    }),
+  ).toBe("renewed");
   return relayId;
+}
+
+function replaceNativeHookRelayBridgeRecordForTests(
+  current: NativeHookRelayBridgeRecord,
+  replacement: NativeHookRelayBridgeRecord,
+): void {
+  expect(
+    deleteNativeHookRelayBridgeRecordIfOwned({
+      relayId: current.relayId,
+      pid: current.pid,
+      token: current.token,
+    }),
+  ).toBe(true);
+  expect(claimNativeHookRelayBridgeRecord({ record: replacement })).toBe("renewed");
 }
 
 function uniqueNativeHookRelayIdForTests(prefix: string): string {
@@ -187,7 +216,7 @@ function openDeferredNativeHookRelayBridgeRequest(
 
 type NativeHookRelaySharedStateForTests = {
   relays: Map<string, unknown>;
-  relayBridges: Map<string, unknown>;
+  relayBridges: Map<string, NativeHookRelayBridgeRegistration>;
   invocations: unknown[];
   pendingPermissionApprovals: Map<string, unknown>;
   permissionApprovalWindows: Map<string, unknown[]>;
@@ -994,6 +1023,90 @@ describe("native hook relay registry", () => {
     ).toBe(false);
   });
 
+  it("pins the first grace generation without extending the original deadline", async () => {
+    const startedAtMs = 1_800_000_000_000;
+    vi.useFakeTimers({ now: startedAtMs });
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: "codex-pinned-bootstrap-generation",
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      generationMismatchGraceMs: 1_000,
+    });
+    let toolCallId = 0;
+    const invokeGeneration = (generation: string) =>
+      invokeNativeHookRelay({
+        provider: "codex",
+        relayId: relay.relayId,
+        generation,
+        requireGeneration: true,
+        event: "pre_tool_use",
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_use_id: `bootstrap-generation-${toolCallId++}`,
+          tool_input: { command: "pnpm test" },
+        },
+      });
+
+    await expect(invokeGeneration("legacy-generation-1")).resolves.toEqual({
+      stdout: "",
+      stderr: "",
+      exitCode: 0,
+    });
+    expect(testing.getNativeHookRelayRegistrationForTests(relay.relayId)).toMatchObject({
+      generationMismatchGraceAcceptedGeneration: "legacy-generation-1",
+      generationMismatchGraceExpiresAtMs: startedAtMs + 1_000,
+    });
+
+    vi.setSystemTime(startedAtMs + 500);
+    relay.renew(60_000);
+    expect(relay.rebindAttempt?.({ runId: "run-2" })).toBe(true);
+    await expect(invokeGeneration("legacy-generation-1")).resolves.toMatchObject({ exitCode: 0 });
+    expect(testing.getNativeHookRelayInvocationsForTests().at(-1)).toMatchObject({
+      runId: "run-2",
+    });
+    await expect(invokeGeneration("legacy-generation-2")).rejects.toThrow(
+      "native hook relay bridge stale registration",
+    );
+
+    vi.setSystemTime(startedAtMs + 1_000);
+    await expect(invokeGeneration("legacy-generation-1")).resolves.toMatchObject({ exitCode: 0 });
+    vi.setSystemTime(startedAtMs + 1_001);
+    await expect(invokeGeneration("legacy-generation-1")).rejects.toThrow(
+      "native hook relay bridge stale registration",
+    );
+    expect(testing.getNativeHookRelayRegistrationForTests(relay.relayId)).toMatchObject({
+      generationMismatchGraceAcceptedGeneration: "legacy-generation-1",
+      generationMismatchGraceExpiresAtMs: startedAtMs + 1_000,
+    });
+  });
+
+  it("rejects generation mismatches unless a positive grace is explicit", async () => {
+    for (const [index, generationMismatchGraceMs] of [undefined, 0, -1, Number.NaN].entries()) {
+      const relay = registerNativeHookRelay({
+        provider: "codex",
+        relayId: `codex-no-bootstrap-grace-${index}`,
+        sessionId: "session-1",
+        runId: "run-1",
+        allowedEvents: ["pre_tool_use"],
+        generationMismatchGraceMs,
+      });
+      await expect(
+        invokeNativeHookRelay({
+          provider: "codex",
+          relayId: relay.relayId,
+          generation: "legacy-generation",
+          requireGeneration: true,
+          event: "pre_tool_use",
+          rawPayload: { hook_event_name: "PreToolUse" },
+        }),
+      ).rejects.toThrow("native hook relay bridge stale registration");
+    }
+    expect(testing.getNativeHookRelayInvocationsForTests()).toStrictEqual([]);
+  });
+
   it("renews relay ttl without rotating the direct hook bridge", async () => {
     const relay = registerNativeHookRelay({
       provider: "codex",
@@ -1031,6 +1144,183 @@ describe("native hook relay registry", () => {
     expect(response).toEqual({ stdout: "", stderr: "", exitCode: 0 });
   });
 
+  it("persists an immediate renewal before the bridge listener becomes routable", async () => {
+    const claim = vi.spyOn(nativeHookRelayStore, "claimNativeHookRelayBridgeRecord");
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-pre-listen-renewal"),
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 1_000,
+    });
+    const originalExpiry = relay.expiresAtMs;
+
+    expect(relay.renewStatus(20_000)).toBe("live");
+    expect(relay.expiresAtMs).toBeGreaterThan(originalExpiry);
+    expect(claim).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        record: expect.objectContaining({
+          relayId: relay.relayId,
+          port: 0,
+          expiresAtMs: relay.expiresAtMs,
+        }),
+      }),
+    );
+
+    const published = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    expect(published.expiresAtMs).toBe(relay.expiresAtMs);
+    expect(relay.renewStatus(20_000)).toBe("live");
+  });
+
+  it("replaces a failed listener under the same ownership fence", async () => {
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-listener-recovery"),
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 10_000,
+    });
+    const before = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    const bridge = getNativeHookRelaySharedStateForTests().relayBridges.get(relay.relayId);
+    if (!bridge) {
+      throw new Error("expected native hook relay bridge");
+    }
+    const failedServer = bridge.server;
+
+    failedServer.emit("error", new Error("injected listener failure"));
+    expect(bridge.listenerStatus).toBe("failed");
+    expect(bridge.ownershipStatus).toBe("unknown");
+
+    await vi.waitFor(() => {
+      expect(bridge.server).not.toBe(failedServer);
+      expect(bridge.listenerStatus).toBe("listening");
+    });
+    const recovered = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    expect(recovered.token).toBe(before.token);
+    expect(recovered.expiresAtMs).toBe(relay.expiresAtMs);
+    expect(relay.renewStatus(20_000)).toBe("live");
+
+    await expect(
+      invokeNativeHookRelayBridge({
+        provider: "codex",
+        relayId: relay.relayId,
+        generation: relay.generation,
+        event: "pre_tool_use",
+        timeoutMs: 2_000,
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
+  });
+
+  it("recovers when the initial listener fails before becoming routable", async () => {
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-starting-listener-recovery"),
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 10_000,
+    });
+    const bridge = getNativeHookRelaySharedStateForTests().relayBridges.get(relay.relayId);
+    if (!bridge) {
+      throw new Error("expected native hook relay bridge");
+    }
+    expect(bridge.listenerStatus).toBe("starting");
+    const failedServer = bridge.server;
+
+    failedServer.emit("error", new Error("injected startup listener failure"));
+
+    await vi.waitFor(() => {
+      expect(bridge.server).not.toBe(failedServer);
+      expect(bridge.listenerStatus).toBe("listening");
+    });
+    const recovered = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    expect(recovered.token).toBe(bridge.token);
+    expect(relay.renewStatus()).toBe("live");
+  });
+
+  it("recovers autonomously when listener publication fails", async () => {
+    const claimBridgeRecord = nativeHookRelayStore.claimNativeHookRelayBridgeRecord;
+    let publicationFailed = false;
+    vi.spyOn(nativeHookRelayStore, "claimNativeHookRelayBridgeRecord").mockImplementation(
+      (params) => {
+        if (!publicationFailed && params.record.port > 0) {
+          publicationFailed = true;
+          throw new Error("injected listener publication failure");
+        }
+        return claimBridgeRecord(params);
+      },
+    );
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-listener-publication-recovery"),
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 10_000,
+    });
+    const bridge = getNativeHookRelaySharedStateForTests().relayBridges.get(relay.relayId);
+    if (!bridge) {
+      throw new Error("expected native hook relay bridge");
+    }
+    const initialServer = bridge.server;
+
+    const recovered = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+
+    expect(publicationFailed).toBe(true);
+    expect(bridge.server).not.toBe(initialServer);
+    expect(bridge.listenerStatus).toBe("listening");
+    expect(recovered.token).toBe(bridge.token);
+    expect(relay.renewStatus()).toBe("live");
+  });
+
+  it("cancels failed-listener recovery when a relay unregisters or is replaced", async () => {
+    const relayId = uniqueNativeHookRelayIdForTests("codex-cancel-listener-recovery");
+    const first = registerNativeHookRelay({
+      provider: "codex",
+      relayId,
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+    });
+    await waitForNativeHookRelayBridgeRecord(relayId);
+    const state = getNativeHookRelaySharedStateForTests();
+    const firstBridge = state.relayBridges.get(relayId);
+    if (!firstBridge) {
+      throw new Error("expected first native hook relay bridge");
+    }
+    firstBridge.server.emit("error", new Error("injected replaced-listener failure"));
+    expect(firstBridge.recoveryTimer).toBeDefined();
+
+    const replacement = registerNativeHookRelay({
+      provider: "codex",
+      relayId,
+      sessionId: "session-1",
+      runId: "run-2",
+      allowedEvents: ["pre_tool_use"],
+    });
+    expect(firstBridge.recoveryTimer).toBeUndefined();
+    expect(state.relayBridges.get(relayId)).not.toBe(firstBridge);
+    await waitForNativeHookRelayBridgeRecord(relayId);
+
+    const replacementBridge = state.relayBridges.get(relayId);
+    if (!replacementBridge) {
+      throw new Error("expected replacement native hook relay bridge");
+    }
+    replacementBridge.server.emit("error", new Error("injected unregistered-listener failure"));
+    expect(replacementBridge.recoveryTimer).toBeDefined();
+    replacement.unregister();
+    expect(replacementBridge.recoveryTimer).toBeUndefined();
+    expect(state.relayBridges.get(relayId)).toBeUndefined();
+    expect(first.renewStatus()).toBe("dead");
+  });
+
   it("restores a missing direct bridge record during renewal", async () => {
     const relay = registerNativeHookRelay({
       provider: "codex",
@@ -1049,12 +1339,206 @@ describe("native hook relay registry", () => {
     ).toBe(true);
     expect(testing.getNativeHookRelayBridgeRecordForTests(relay.relayId)).toBeUndefined();
 
-    expect(relay.renew(20_000)).toBe("live");
+    expect(relay.renewStatus(20_000)).toBe("live");
 
     const after = await waitForNativeHookRelayBridgeRecord(relay.relayId);
     expect(after.port).toBe(before.port);
     expect(after.token).toBe(before.token);
     expect(after.expiresAtMs).toBeGreaterThan(before.expiresAtMs);
+  });
+
+  it("reports renewal uncertainty without advancing expiry, then recovers the same bridge", async () => {
+    const startedAtMs = 1_800_000_000_000;
+    vi.useFakeTimers({ now: startedAtMs });
+    const beforeToolCall = vi.fn();
+    initializeGlobalHookRunner(
+      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
+    );
+    const claimBridgeRecord = nativeHookRelayStore.claimNativeHookRelayBridgeRecord;
+    let failNextClaim = false;
+    const claim = vi
+      .spyOn(nativeHookRelayStore, "claimNativeHookRelayBridgeRecord")
+      .mockImplementation((params) => {
+        if (failNextClaim) {
+          failNextClaim = false;
+          throw new Error("injected SQLite renewal failure");
+        }
+        return claimBridgeRecord(params);
+      });
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-uncertain-renewal"),
+      generation: "uncertain-generation",
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 1_000,
+    });
+    const before = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    const bridge = getNativeHookRelaySharedStateForTests().relayBridges.get(relay.relayId);
+    failNextClaim = true;
+
+    expect(relay.renewStatus(20_000)).toBe("unknown");
+    expect(relay.expiresAtMs).toBe(before.expiresAtMs);
+    expect(testing.getNativeHookRelayBridgeRecordForTests(relay.relayId)).toEqual(before);
+    expect(bridge?.ownershipStatus).toBe("unknown");
+    await expect(
+      invokeNativeHookRelay({
+        provider: "codex",
+        relayId: relay.relayId,
+        event: "pre_tool_use",
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).rejects.toThrow("native hook relay bridge ownership is not authoritative");
+    expect(beforeToolCall).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(25);
+    expect(bridge?.ownershipStatus).toBe("renewed");
+    expect(relay.renewStatus(20_000)).toBe("live");
+    const after = testing.getNativeHookRelayBridgeRecordForTests(relay.relayId);
+    expect(after).toMatchObject({
+      port: before.port,
+      token: before.token,
+    });
+    expect(after?.expiresAtMs).toBeGreaterThan(before.expiresAtMs);
+    expect(relay.generation).toBe("uncertain-generation");
+    expect(claim.mock.calls.length).toBeGreaterThanOrEqual(4);
+
+    await expect(
+      invokeNativeHookRelayBridge({
+        provider: "codex",
+        relayId: relay.relayId,
+        generation: relay.generation,
+        event: "pre_tool_use",
+        timeoutMs: 2_000,
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
+    expect(beforeToolCall).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves a one-shot void renewal through uncertain autonomous recovery", async () => {
+    const startedAtMs = 1_800_000_000_000;
+    vi.useFakeTimers({ now: startedAtMs });
+    const beforeToolCall = vi.fn();
+    initializeGlobalHookRunner(
+      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
+    );
+    const claimBridgeRecord = nativeHookRelayStore.claimNativeHookRelayBridgeRecord;
+    let failNextClaim = false;
+    vi.spyOn(nativeHookRelayStore, "claimNativeHookRelayBridgeRecord").mockImplementation(
+      (params) => {
+        if (failNextClaim) {
+          failNextClaim = false;
+          throw new Error("injected one-shot renewal failure");
+        }
+        return claimBridgeRecord(params);
+      },
+    );
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-void-renewal-recovery"),
+      generation: "void-renewal-generation",
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 100,
+    });
+    const before = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    const state = getNativeHookRelaySharedStateForTests();
+    const bridge = state.relayBridges.get(relay.relayId);
+    const registration = testing.getNativeHookRelayRegistrationForTests(relay.relayId);
+    const originalServer = bridge?.server;
+    const requestedExpiresAtMs = Date.now() + 20_000;
+    failNextClaim = true;
+
+    relay.renew(20_000);
+
+    expect(bridge?.ownershipStatus).toBe("unknown");
+    expect(bridge?.desiredExpiresAtMs).toBe(requestedExpiresAtMs);
+    expect(relay.expiresAtMs).toBe(before.expiresAtMs);
+    vi.setSystemTime(before.expiresAtMs + 1);
+    await expect(
+      invokeNativeHookRelay({
+        provider: "codex",
+        relayId: relay.relayId,
+        event: "pre_tool_use",
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).rejects.toThrow("native hook relay bridge ownership is not authoritative");
+    expect(beforeToolCall).not.toHaveBeenCalled();
+    expect(testing.getNativeHookRelayRegistrationForTests(relay.relayId)).toBe(registration);
+
+    await vi.advanceTimersByTimeAsync(25);
+
+    const recovered = testing.getNativeHookRelayBridgeRecordForTests(relay.relayId);
+    expect(state.relayBridges.get(relay.relayId)).toBe(bridge);
+    expect(bridge?.server).toBe(originalServer);
+    expect(bridge?.token).toBe(before.token);
+    expect(bridge?.ownershipStatus).toBe("renewed");
+    expect(relay.expiresAtMs).toBe(requestedExpiresAtMs);
+    expect(registration?.expiresAtMs).toBe(requestedExpiresAtMs);
+    expect(recovered?.expiresAtMs).toBe(requestedExpiresAtMs);
+
+    await expect(
+      invokeNativeHookRelayBridge({
+        provider: "codex",
+        relayId: relay.relayId,
+        generation: relay.generation,
+        event: "pre_tool_use",
+        timeoutMs: 2_000,
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
+    expect(beforeToolCall).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not overwrite a live foreign owner after an uncertain renewal", async () => {
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-uncertain-foreign-owner"),
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 10_000,
+    });
+    const before = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    vi.spyOn(nativeHookRelayBridge, "renewNativeHookRelayBridgeRecord").mockImplementationOnce(
+      () => {
+        throw new Error("injected SQLite renewal failure");
+      },
+    );
+    expect(relay.renewStatus(20_000)).toBe("unknown");
+
+    const foreignPid = process.pid + 1;
+    await writeForeignNativeHookRelayBridgeRecordForTests(relay.relayId, {
+      pid: foreignPid,
+      expiresAtMs: Date.now() + 60_000,
+    });
+    expect(relay.renewStatus(20_000)).toBe("foreign-owner");
+    expect(testing.getNativeHookRelayRegistrationForTests(relay.relayId)).toBeUndefined();
+    expect(testing.getNativeHookRelayBridgeRecordForTests(relay.relayId)).toMatchObject({
+      pid: foreignPid,
+    });
+    expect(testing.getNativeHookRelayBridgeRecordForTests(relay.relayId)?.token).not.toBe(
+      before.token,
+    );
   });
 
   it("mirrors rebound loop detection onto the registration and its handle", () => {
@@ -1092,16 +1576,169 @@ describe("native hook relay registry", () => {
       expiresAtMs: Date.now() + 60_000,
     });
 
-    expect(relay.renew(20_000)).toBe("foreign-owner");
+    expect(relay.renewStatus(20_000)).toBe("foreign-owner");
     expect(testing.getNativeHookRelayRegistrationForTests(relay.relayId)).toBeUndefined();
     expect(testing.getNativeHookRelayBridgeRecordForTests(relay.relayId)).toMatchObject({
       pid: foreignPid,
     });
 
-    expect(relay.renew(20_000)).toBe("dead");
+    expect(relay.renewStatus(20_000)).toBe("dead");
     expect(testing.getNativeHookRelayBridgeRecordForTests(relay.relayId)).toMatchObject({
       pid: foreignPid,
     });
+  });
+
+  it("does not invoke policy after initial bridge publication loses to a foreign owner", async () => {
+    const relayId = uniqueNativeHookRelayIdForTests("codex-publication-foreign-owner");
+    const beforeToolCall = vi.fn();
+    initializeGlobalHookRunner(
+      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
+    );
+    await writeForeignNativeHookRelayBridgeRecordForTests(relayId, {
+      pid: process.pid + 1,
+      expiresAtMs: Date.now() + 60_000,
+    });
+    vi.spyOn(process, "kill").mockReturnValue(true);
+
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId,
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+    });
+    const bridge = getNativeHookRelaySharedStateForTests().relayBridges.get(relayId) as
+      | {
+          ownershipStatus: string;
+        }
+      | undefined;
+    expect(bridge?.ownershipStatus).toBe("foreign-owner");
+    expect(testing.getNativeHookRelayRegistrationForTests(relayId)).toBeDefined();
+
+    await expect(
+      invokeNativeHookRelay({
+        provider: "codex",
+        relayId,
+        generation: relay.generation,
+        event: "pre_tool_use",
+        requireGeneration: true,
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_use_id: "publication-lost",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).rejects.toThrow("native hook relay bridge stale registration");
+    expect(beforeToolCall).not.toHaveBeenCalled();
+    expect(testing.getNativeHookRelayInvocationsForTests()).toHaveLength(0);
+    expect(testing.getNativeHookRelayRegistrationForTests(relayId)).toBeUndefined();
+  });
+
+  it("recovers an uncertain initial claim autonomously without invoking policy", async () => {
+    const beforeToolCall = vi.fn();
+    initializeGlobalHookRunner(
+      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
+    );
+    const claimBridgeRecord = nativeHookRelayStore.claimNativeHookRelayBridgeRecord;
+    let storeAvailable = false;
+    const claim = vi
+      .spyOn(nativeHookRelayStore, "claimNativeHookRelayBridgeRecord")
+      .mockImplementation((params) => {
+        if (storeAvailable) {
+          return claimBridgeRecord(params);
+        }
+        throw new Error("injected initial claim failure");
+      });
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-initial-claim-retry"),
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+    });
+    const state = getNativeHookRelaySharedStateForTests();
+    const bridge = state.relayBridges.get(relay.relayId);
+    expect(bridge?.listenerStatus).toBe("idle");
+    expect(testing.getNativeHookRelayBridgeRecordForTests(relay.relayId)).toBeUndefined();
+
+    await expect(
+      invokeNativeHookRelay({
+        provider: "codex",
+        relayId: relay.relayId,
+        event: "pre_tool_use",
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).rejects.toThrow("native hook relay bridge ownership is not authoritative");
+    expect(beforeToolCall).not.toHaveBeenCalled();
+    expect(bridge?.recoveryTimer).toBeDefined();
+
+    storeAvailable = true;
+    const published = await waitForNativeHookRelayBridgeRecord(relay.relayId);
+    expect(state.relayBridges.get(relay.relayId)).toBe(bridge);
+    expect(bridge?.listenerStatus).toBe("listening");
+    expect(relay.renewStatus()).toBe("live");
+    expect(published.token).toBe(bridge?.token);
+    expect(claim.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+    await expect(
+      invokeNativeHookRelay({
+        provider: "codex",
+        relayId: relay.relayId,
+        event: "pre_tool_use",
+        rawPayload: {
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "pnpm test" },
+        },
+      }),
+    ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
+    expect(beforeToolCall).toHaveBeenCalledTimes(1);
+  });
+
+  it("backs off persistent bridge recovery and cancels it on unregister", async () => {
+    const startedAtMs = 1_800_000_000_000;
+    vi.useFakeTimers({ now: startedAtMs });
+    const claimTimes: number[] = [];
+    vi.spyOn(nativeHookRelayStore, "claimNativeHookRelayBridgeRecord").mockImplementation(() => {
+      claimTimes.push(Date.now());
+      throw new Error("injected persistent SQLite failure");
+    });
+    const relay = registerNativeHookRelay({
+      provider: "codex",
+      relayId: uniqueNativeHookRelayIdForTests("codex-persistent-claim-retry"),
+      sessionId: "session-1",
+      runId: "run-1",
+      allowedEvents: ["pre_tool_use"],
+      ttlMs: 60_000,
+    });
+    const bridge = getNativeHookRelaySharedStateForTests().relayBridges.get(relay.relayId);
+
+    await vi.advanceTimersByTimeAsync(2_575);
+
+    expect(claimTimes).toEqual([
+      startedAtMs,
+      startedAtMs + 25,
+      startedAtMs + 75,
+      startedAtMs + 175,
+      startedAtMs + 375,
+      startedAtMs + 775,
+      startedAtMs + 1_575,
+      startedAtMs + 2_575,
+    ]);
+    expect(bridge?.recoveryAttempt).toBe(6);
+    relay.unregister();
+    const attemptsAtUnregister = claimTimes.length;
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(claimTimes).toHaveLength(attemptsAtUnregister);
+    expect(bridge?.recoveryTimer).toBeUndefined();
+    expect(bridge?.recoveryAttempt).toBe(0);
   });
 
   it("prunes dead foreign direct bridge records during registration", async () => {
@@ -1231,14 +1868,12 @@ describe("native hook relay registry", () => {
     });
 
     const record = await waitForNativeHookRelayBridgeRecord(relay.relayId);
-    writeNativeHookRelayBridgeRecord({
+    replaceNativeHookRelayBridgeRecordForTests(record, {
       // Simulate a hostile/corrupt database row outside the typed store contract.
-      record: {
-        ...record,
-        hostname: "192.0.2.1",
-        expiresAtMs: Date.now() + 10_000,
-      } as unknown as NativeHookRelayBridgeRecord,
-    });
+      ...record,
+      hostname: "192.0.2.1",
+      expiresAtMs: Date.now() + 10_000,
+    } as unknown as NativeHookRelayBridgeRecord);
 
     await expect(
       invokeNativeHookRelayBridge({
@@ -1274,13 +1909,11 @@ describe("native hook relay registry", () => {
     });
 
     const firstRecord = await waitForNativeHookRelayBridgeRecord(first.relayId);
-    await waitForNativeHookRelayBridgeRecord(second.relayId);
-    writeNativeHookRelayBridgeRecord({
-      record: {
-        ...firstRecord,
-        relayId: second.relayId,
-        expiresAtMs: Date.now() + 10_000,
-      },
+    const secondRecord = await waitForNativeHookRelayBridgeRecord(second.relayId);
+    replaceNativeHookRelayBridgeRecordForTests(secondRecord, {
+      ...firstRecord,
+      relayId: second.relayId,
+      expiresAtMs: Date.now() + 10_000,
     });
 
     await expect(
@@ -1321,13 +1954,11 @@ describe("native hook relay registry", () => {
       if (!address || typeof address === "string") {
         throw new Error("test bridge server address unavailable");
       }
-      writeNativeHookRelayBridgeRecord({
-        record: {
-          ...record,
-          port: address.port,
-          token: "test-token",
-          expiresAtMs: Date.now() + 10_000,
-        },
+      replaceNativeHookRelayBridgeRecordForTests(record, {
+        ...record,
+        port: address.port,
+        token: "test-token",
+        expiresAtMs: Date.now() + 10_000,
       });
 
       await expect(

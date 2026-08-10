@@ -213,7 +213,7 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
         nativeHookRelayGeneration: undefined,
       };
     }
-    state.nativeHookRelay = createCodexNativeHookRelay({
+    const relayAcquisition = createCodexNativeHookRelay({
       options: options.nativeHookRelay,
       generation:
         decision.action === "resume" ? decision.binding.nativeHookRelayGeneration : undefined,
@@ -250,15 +250,29 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
         }
       },
     });
+    // An enabled relay is the policy-enforcement path inherited by native
+    // workers. Ownership failure must stop before Codex snapshots thread hooks.
+    if (relayAcquisition.status === "unavailable") {
+      const recovery =
+        relayAcquisition.reason === "foreign-owner"
+          ? "Stop the competing Gateway process or wait for its relay lease to expire, then retry."
+          : "Restart the Gateway or retry the turn after relay recovery.";
+      throw new Error(
+        `Codex native hook relay is unavailable (${relayAcquisition.reason}); refusing to start or resume a thread without OpenClaw policy hooks. ${recovery}`,
+      );
+    }
+    state.nativeHookRelay =
+      relayAcquisition.status === "active" ? relayAcquisition.lease : undefined;
     return {
-      configPatch: state.nativeHookRelay
-        ? buildCodexNativeHookRelayConfig({
-            relay: state.nativeHookRelay,
-            events: nativeHookRelayEvents,
-            hookTimeoutSec: options.nativeHookRelay?.hookTimeoutSec,
-            loopDetectionPreToolUseRelay: appServer.loopDetectionPreToolUseRelay,
-          })
-        : buildCodexNativeHookRelayDisabledConfig(),
+      configPatch:
+        relayAcquisition.status === "active"
+          ? buildCodexNativeHookRelayConfig({
+              relay: relayAcquisition.lease,
+              events: nativeHookRelayEvents,
+              hookTimeoutSec: options.nativeHookRelay?.hookTimeoutSec,
+              loopDetectionPreToolUseRelay: appServer.loopDetectionPreToolUseRelay,
+            })
+          : buildCodexNativeHookRelayDisabledConfig(),
       nativeHookRelayGeneration: state.nativeHookRelay?.generation,
     };
   };

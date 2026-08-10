@@ -7,6 +7,7 @@ import type {
   HookContext,
 } from "../agent-tools.before-tool-call.js";
 import type { AgentHarnessHostCapabilities } from "./host-capability-types.js";
+import type { NativeHookRelayBridgeRecordOwner } from "./native-hook-relay-store.js";
 
 type NativeHookRelayApprovalContext = Pick<
   HookContext,
@@ -70,6 +71,8 @@ export type NativeHookRelayProcessResponse = {
 export type NativeHookRelayRegistration = {
   relayId: string;
   provider: NativeHookRelayProvider;
+  generationMismatchGraceExpiresAtMs?: number;
+  generationMismatchGraceAcceptedGeneration?: string;
   agentId?: string;
   sessionId: string;
   sessionKey?: string;
@@ -109,7 +112,7 @@ export type NativeHookRelayAttemptBinding = Pick<
 
 export type NativeHookRelayInvocationBinding = Readonly<NativeHookRelayRegistration>;
 
-type NativeHookRelayRenewal = "live" | "dead" | "foreign-owner";
+export type NativeHookRelayRenewalStatus = "live" | "dead" | "foreign-owner" | "unknown";
 
 export type NativeHookRelayRegistrationHandle = NativeHookRelayRegistration & {
   generation?: string;
@@ -119,7 +122,9 @@ export type NativeHookRelayRegistrationHandle = NativeHookRelayRegistration & {
     event: NativeHookRelayEvent,
     options?: NativeHookRelayCommandForEventOptions,
   ) => string;
-  renew: (ttlMs?: number) => NativeHookRelayRenewal;
+  renew: (ttlMs?: number) => void;
+  /** Reports authoritative liveness when the relay implementation supports it. */
+  renewStatus?: (ttlMs?: number) => NativeHookRelayRenewalStatus;
   rebindAttempt?: (binding: NativeHookRelayAttemptBinding) => boolean;
   unregister: () => void;
 };
@@ -222,6 +227,7 @@ export type ActiveNativeHookRelayRegistration = NativeHookRelayRegistration & {
 
 export type ActiveNativeHookRelayRegistrationHandle = NativeHookRelayRegistrationHandle & {
   generation: string;
+  renewStatus: (ttlMs?: number) => NativeHookRelayRenewalStatus;
 };
 
 export type NativeHookRelayPermissionApprovalRequest = {
@@ -265,7 +271,19 @@ export type NativeHookRelayBridgeRegistration = {
   stateDbPath: string;
   token: string;
   server: Server;
+  // SQLite ownership is synchronous; listener publication is asynchronous.
+  // Keep both facts explicit so a claimed port-zero row is never called routable.
+  ownershipStatus: NativeHookRelayBridgeOwnershipStatus;
+  predecessor?: NativeHookRelayBridgeRecordOwner;
+  listenerStatus: "idle" | "starting" | "listening" | "failed";
+  // A void renew can outlive a transient store failure. Recovery must publish
+  // its requested deadline rather than reviving the last committed lease.
+  desiredExpiresAtMs: number;
+  recoveryAttempt: number;
+  recoveryTimer?: ReturnType<typeof setTimeout>;
 };
+
+type NativeHookRelayBridgeOwnershipStatus = "renewed" | "foreign-owner" | "unknown";
 
 export type NativeHookRelaySharedState = {
   relays: Map<string, ActiveNativeHookRelayRegistration>;

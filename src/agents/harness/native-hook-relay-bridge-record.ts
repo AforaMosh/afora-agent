@@ -16,8 +16,8 @@ type NativeHookRelayBridgeRow = {
   expires_at_ms: unknown;
 };
 
-/** Validate and convert a persisted native relay locator row. */
-export function readNativeHookRelayBridgeRecordRow(
+/** Validate an authoritative relay claim, including its non-routable pending locator. */
+export function readNativeHookRelayBridgeClaimRow(
   row: NativeHookRelayBridgeRow | undefined,
 ): NativeHookRelayBridgeRecord | undefined {
   if (
@@ -27,7 +27,7 @@ export function readNativeHookRelayBridgeRecordRow(
     !Number.isSafeInteger(row.pid) ||
     row.hostname !== "127.0.0.1" ||
     !Number.isSafeInteger(row.port) ||
-    Number(row.port) <= 0 ||
+    Number(row.port) < 0 ||
     Number(row.port) > 65_535 ||
     typeof row.token !== "string" ||
     row.token.length === 0 ||
@@ -43,4 +43,12 @@ export function readNativeHookRelayBridgeRecordRow(
     token: row.token,
     expiresAtMs: Number(row.expires_at_ms),
   };
+}
+
+/** Validate and convert a routable persisted native relay locator row. */
+export function readNativeHookRelayBridgeRecordRow(
+  row: NativeHookRelayBridgeRow | undefined,
+): NativeHookRelayBridgeRecord | undefined {
+  const record = readNativeHookRelayBridgeClaimRow(row);
+  return record && record.port > 0 ? record : undefined;
 }
