@@ -1,5 +1,6 @@
 // Slack provider module implements model/runtime integration.
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { type FetchFunction, type WebClientOptions, WebClient } from "@slack/web-api";
 import {
   addAllowlistUserEntriesFromConfigEntry,
   buildAllowlistResolutionSummary,
@@ -33,8 +34,12 @@ import {
   resolveSlackAccountDmPolicy,
 } from "../accounts.js";
 import { isSlackAnyNativeApprovalClientEnabled } from "../approval-native-gates.js";
-import { resolveSlackProxyDispatcher, resolveSlackWebClientOptions } from "../client-options.js";
-import { createSlackStartupAuthClient } from "../client.js";
+import {
+  resolveSlackLookupClientOptions,
+  resolveSlackProxyDispatcher,
+  resolveSlackWebClientOptions,
+} from "../client-options.js";
+import { createSlackStartupAuthClient, createSlackWebClient } from "../client.js";
 import { normalizeSlackWebhookPath, registerSlackHttpHandler } from "../http/index.js";
 import { SLACK_TEXT_LIMIT } from "../limits.js";
 import { resolveSlackChannelAllowlist } from "../resolve-channels.js";
@@ -61,6 +66,7 @@ import {
   resolveSlackIdentityHealth,
   resolveSlackInstallationIdentity,
   type SlackAuthTestIdentity,
+  type SlackInstallationIdentity,
 } from "./enterprise-install.js";
 import { registerSlackMonitorEvents } from "./events.js";
 import { createSlackDurableIngress } from "./ingress.js";
@@ -233,11 +239,6 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
   if (enterpriseOrgInstall && slackMode === "relay") {
     throw new Error(
       `Slack Enterprise Grid org account "${account.accountId}" requires direct socket or HTTP delivery; relay mode is unsupported`,
-    );
-  }
-  if (enterpriseOrgInstall && account.config.execApprovals?.enabled === true) {
-    throw new Error(
-      `Slack Enterprise Grid org account "${account.accountId}" does not support Slack-native exec approvals`,
     );
   }
   if (enterpriseOrgInstall) {
@@ -542,12 +543,17 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     onPrepared: presenceMonitor?.observe,
   });
   if (
-    installationIdentity.kind !== "enterprise" &&
     isSlackAnyNativeApprovalClientEnabled({
       cfg,
       accountId: account.accountId,
     })
   ) {
+    const resolveClient = createSlackApprovalClientResolver({
+      appClient: app.client,
+      token,
+      clientOptions,
+      installationIdentity,
+    });
     registerChannelRuntimeContext({
       channelRuntime: opts.channelRuntime,
       channelId: "slack",
@@ -556,6 +562,15 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
       context: {
         app,
         config: slackCfg.execApprovals ?? {},
+        resolveClient,
+        ...(installationIdentity.kind === "enterprise"
+          ? {
+              enterprise: {
+                apiAppId: installationIdentity.apiAppId,
+                enterpriseId: installationIdentity.enterpriseId,
+              },
+            }
+          : {}),
       },
       abortSignal: opts.abortSignal,
     });
@@ -854,6 +869,34 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     await gracefulStop();
     await slackDispatcher?.close();
   }
+}
+
+function createSlackApprovalClientResolver(params: {
+  appClient: WebClient;
+  token: string;
+  clientOptions: WebClientOptions;
+  installationIdentity: SlackInstallationIdentity;
+}): (teamId?: string) => WebClient {
+  if (params.installationIdentity.kind !== "enterprise") {
+    return () => params.appClient;
+  }
+  const clients = new Map<string, WebClient>();
+  return (rawTeamId?: string) => {
+    const teamId = rawTeamId?.trim().toUpperCase();
+    if (!teamId || !/^T[A-Z0-9]+$/.test(teamId)) {
+      throw new Error("Slack Enterprise Grid approval delivery requires a valid teamId");
+    }
+    const cached = clients.get(teamId);
+    if (cached) {
+      return cached;
+    }
+    const client = createSlackWebClient(params.token, {
+      ...params.clientOptions,
+      teamId,
+    });
+    clients.set(teamId, client);
+    return client;
+  };
 }
 
 export const resolveSlackRuntimeGroupPolicy = resolveOpenProviderRuntimeGroupPolicy;
