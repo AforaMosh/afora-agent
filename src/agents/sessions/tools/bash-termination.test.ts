@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../../test/helpers/promise.js";
 
 const {
@@ -79,6 +79,10 @@ describe("local bash process-tree termination", () => {
       settle: settleTerminationMock,
     });
     spawnMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("does not report a timeout until forced tree cleanup settles", async () => {
