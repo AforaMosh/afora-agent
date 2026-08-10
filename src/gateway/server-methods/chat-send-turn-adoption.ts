@@ -1,5 +1,4 @@
 import type { TurnAdoptionLifecycle } from "../../auto-reply/get-reply-options.types.js";
-import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
 import type { QueuedFollowupReplyBatch } from "../../auto-reply/reply/get-reply.types.js";
 import {
   completeQueuedChatTurn,
@@ -8,11 +7,15 @@ import {
   type QueuedChatTurnMap,
 } from "../chat-queued-turns.js";
 import { createChatSendLateFollowupDisposition } from "./chat-send-late-followup.js";
+import type { PreparedChatSendSession } from "./chat-send-session.js";
+import { createChatSendLateReplyFinalizer } from "./chat-send-source-finalization.js";
 import { normalizeOptionalChatText } from "./chat-text-normalization.js";
 import type { GatewayRequestContext } from "./types.js";
 
 export function createChatSendTurnAdoptionLifecycle(params: {
+  accountId: string | undefined;
   chatQueuedTurns: QueuedChatTurnMap;
+  context: GatewayRequestContext;
   runId: string;
   controller: AbortController;
   sessionId: string;
@@ -23,16 +26,16 @@ export function createChatSendTurnAdoptionLifecycle(params: {
   ownerKey?: string;
   originatingLeafEntryId?: string | null;
   originatingChannel: string;
-  logGateway: GatewayRequestContext["logGateway"];
-  deliverLateReply: (params: {
-    runId: string;
-    payloads: ReplyPayload[];
-  }) => Promise<{ kind: "delivered" } | { kind: "dropped"; reason: "no-visible-content" }>;
+  session: Pick<
+    PreparedChatSendSession,
+    "agentId" | "backingSessionId" | "cfg" | "clientRunId" | "sessionKey" | "sessionLoadOptions"
+  >;
   hasCronCreatorAuthority: boolean;
   retainWorkAdmission: () => () => void;
 }): {
   lifecycle: TurnAdoptionLifecycle;
   isEnqueued: () => boolean;
+  onQueueDisposition: (reason: string) => void;
   onQueuedFollowupReplyBatch: (batch: QueuedFollowupReplyBatch) => Promise<void>;
 } {
   let enqueued = false;
@@ -40,8 +43,12 @@ export function createChatSendTurnAdoptionLifecycle(params: {
   const lateFollowup = createChatSendLateFollowupDisposition({
     runId: params.runId,
     originatingChannel: params.originatingChannel,
-    logGateway: params.logGateway,
-    deliver: params.deliverLateReply,
+    logGateway: params.context.logGateway,
+    deliver: createChatSendLateReplyFinalizer({
+      accountId: params.accountId,
+      context: params.context,
+      session: params.session,
+    }),
   });
   const lifecycle: TurnAdoptionLifecycle = {
     // Gateway cancel identity only — share collect key via ownerKey.
@@ -86,6 +93,14 @@ export function createChatSendTurnAdoptionLifecycle(params: {
   return {
     lifecycle,
     isEnqueued: () => enqueued,
+    onQueueDisposition: (reason: string) => {
+      params.context.logGateway.info("chat queue turn intentionally skipped", {
+        runId: params.runId,
+        sessionKey: params.sessionKey,
+        outcome: "skipped",
+        reason,
+      });
+    },
     onQueuedFollowupReplyBatch: lateFollowup.deliver,
   };
 }

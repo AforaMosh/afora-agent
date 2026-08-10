@@ -44,10 +44,7 @@ import {
 } from "./chat-send-reply-context.js";
 import { createChatSendReplyDispatch } from "./chat-send-reply-dispatch.js";
 import { prepareAndAdmitChatSend } from "./chat-send-setup.js";
-import {
-  finalizeChatSendAgentReplyPayloads,
-  finalizeChatSendSourceReplies,
-} from "./chat-send-source-finalization.js";
+import { finalizeChatSendSourceReplies } from "./chat-send-source-finalization.js";
 import { createChatSendTurnAdoptionLifecycle } from "./chat-send-turn-adoption.js";
 import { applyChatSendManagedMedia, prepareChatSendUserTurn } from "./chat-send-user-turn.js";
 import {
@@ -366,19 +363,10 @@ export async function handleChatSend(
       ownerDeviceId: client?.connect?.device?.id,
       ownerKey: queuedFollowupOwnerKey,
       ...(expectedLeafEntryId !== undefined ? { originatingLeafEntryId: expectedLeafEntryId } : {}),
+      accountId,
+      context,
       originatingChannel: originatingRoute.originatingChannel,
-      logGateway: context.logGateway,
-      deliverLateReply: async ({ runId, payloads }) => {
-        return await finalizeChatSendAgentReplyPayloads({
-          accountId,
-          context,
-          // The originating chat.send already terminalized; do not attribute the
-          // fresh follow-up final to its server-timing stream.
-          emitFirstAssistantServerTiming: () => {},
-          payloads,
-          session: { ...preparedSession.value, clientRunId: runId },
-        });
-      },
+      session: preparedSession.value,
       hasCronCreatorAuthority: cronCreatorAuthority !== undefined,
       retainWorkAdmission: retainGatewayWorkAdmission,
     });
@@ -502,14 +490,7 @@ export async function handleChatSend(
                   abortSignal: activeRunAbort.controller.signal,
                   // Keep a Gateway-owned cancel identity after this chat.send
                   // terminalizes while the prompt waits in followup/collect queue.
-                  onFollowupQueueDisposition: (reason) => {
-                    context.logGateway.info("chat queue turn intentionally skipped", {
-                      runId: clientRunId,
-                      sessionKey,
-                      outcome: "skipped",
-                      reason,
-                    });
-                  },
+                  onFollowupQueueDisposition: queuedFollowup.onQueueDisposition,
                   onQueuedFollowupReplyBatch: queuedFollowup.onQueuedFollowupReplyBatch,
                   turnAdoptionLifecycle: queuedFollowup.lifecycle,
                   images: replyOptionImages,

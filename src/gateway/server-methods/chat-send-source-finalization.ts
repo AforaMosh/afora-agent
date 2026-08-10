@@ -72,6 +72,18 @@ type ChatSendAgentReplyFinalization =
   | { kind: "delivered"; hasSourceReplyTranscriptMirror: boolean }
   | { kind: "dropped"; reason: "no-visible-content" };
 
+export function createChatSendLateReplyFinalizer(
+  params: Omit<FinalizeChatSendAgentRepliesBase, "emitFirstAssistantServerTiming">,
+) {
+  return async ({ runId, payloads }: { runId: string; payloads: ReplyPayload[] }) =>
+    await finalizeChatSendAgentReplyPayloads({
+      ...params,
+      emitFirstAssistantServerTiming: () => {},
+      payloads,
+      session: { ...params.session, clientRunId: runId },
+    });
+}
+
 /** Persist and broadcast agent-run replies that bypass the original live run projection. */
 export async function finalizeChatSendAgentReplyPayloads(
   params: FinalizeChatSendAgentRepliesBase & { payloads: readonly ReplyPayload[] },
