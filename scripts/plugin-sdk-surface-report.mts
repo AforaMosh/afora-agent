@@ -270,9 +270,9 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // including the side-question compatibility split.
       // +1: add the account-aware native approval request selector.
       // +3: add canonical coercion exports while retaining the shipped asString compatibility name.
-      // +56: versioned serializable memory-authorization contract and reusable backend-conformance
+      // +57: versioned serializable memory-authorization contract and reusable backend-conformance
       //      types, capability declarations, and helpers.
-      4922,
+      4923,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
