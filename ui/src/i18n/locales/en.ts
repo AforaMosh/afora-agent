@@ -4629,6 +4629,7 @@ export const en: TranslationMap = {
       openInOpenClaw: "Open in OpenClaw",
       openInTerminal: "Open in terminal",
       terminalUnavailable: "Terminal opening is unavailable for this session.",
+      openSettings: "Open settings",
     },
     taskSuggestions: {
       eyebrow: "Suggested task · in {repo}",

@@ -94,6 +94,7 @@ import {
   toCatalogSession,
   unwrapNodeInvokePayload,
 } from "./session-catalog-parsing.js";
+import { codexSupervisionGate } from "./session-catalog-supervision.js";
 import {
   CODEX_TERMINAL_RESUME_COMMAND,
   codexNodeTerminalCapability,
@@ -1390,6 +1391,7 @@ export function createCodexSessionCatalogNodeInvokePolicies(): OpenClawPluginNod
 function toGenericCatalogHost(
   host: CodexSessionCatalogHost,
   localTerminalAvailable: boolean,
+  supervisionEnabled: boolean,
 ): SessionCatalogHost {
   const local = host.hostId === CODEX_LOCAL_SESSION_HOST_ID;
   return {
@@ -1401,10 +1403,12 @@ function toGenericCatalogHost(
     sessions: host.sessions.map((session) => {
       const continuableStatus =
         !session.archived && (session.status === "idle" || session.status === "notLoaded");
-      const canContinue =
+      const otherwiseContinuable =
         (local || host.canContinueCodex === true) &&
         continuableStatus &&
         isInteractiveThreadSource(session.source);
+      const supervisionDisabled = local && otherwiseContinuable && !supervisionEnabled;
+      const canContinue = otherwiseContinuable && !supervisionDisabled;
       const canArchive = local && continuableStatus && isInteractiveThreadSource(session.source);
       const canOpenTerminal =
         isInteractiveThreadSource(session.source) &&
@@ -1425,6 +1429,12 @@ function toGenericCatalogHost(
         archived: session.archived,
         ...(session.sessionKey ? { sessionKey: session.sessionKey } : {}),
         canContinue,
+        ...(supervisionDisabled
+          ? {
+              continueDisabledReason: codexSupervisionGate.disabledMessage,
+              continueSetupConfigPath: codexSupervisionGate.setupConfigPath,
+            }
+          : {}),
         canArchive,
         canOpenTerminal,
       };
@@ -1451,9 +1461,10 @@ function registerCodexSessionCatalog(params: {
       ),
     list: async (query) => {
       const localTerminalAvailable = resolveLocalCodexTerminalExecutable() !== undefined;
+      const supervisionEnabled = codexSupervisionGate.enabled(params.getPluginConfig());
       const { listNodes, onHost, sessionEntries, ...gatewayQuery } = query;
       const mapHost = (host: CodexSessionCatalogHost) =>
-        toGenericCatalogHost(host, localTerminalAvailable);
+        toGenericCatalogHost(host, localTerminalAvailable, supervisionEnabled);
       return (
         await listCodexSessionCatalog({
           bindingStore: params.bindingStore,
@@ -1495,6 +1506,7 @@ function registerCodexSessionCatalog(params: {
       if (request.hostId !== CODEX_LOCAL_SESSION_HOST_ID) {
         throw new CatalogParamsError("Codex session catalog hostId is invalid");
       }
+      codexSupervisionGate.assertEnabled(params.getPluginConfig());
       let upstreamBaseline: (CodexUpstreamBaseline & { connectionFingerprint: string }) | undefined;
       const continued = await continueLocalCodexSession({
         api: params.api,

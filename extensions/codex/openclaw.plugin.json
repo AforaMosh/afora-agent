@@ -526,7 +526,7 @@
     },
     "supervision.enabled": {
       "label": "Enable Codex Supervision",
-      "help": "Enable agent-facing Codex supervision tools. The operator session catalog remains available whenever the plugin is active."
+      "help": "Enable agent-facing Codex supervision tools and continuation of local native Codex sessions in Chat. Session discovery and read-only transcripts remain available while supervision is disabled."
     },
     "supervision.endpoints": {
       "label": "Legacy Supervisor Endpoints",

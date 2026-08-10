@@ -58,9 +58,10 @@ be the primary backend. Supervision becomes available when that opportunistic
 plugin activation succeeds. App Server availability is checked when
 supervision first connects. An explicit Codex plugin disable or policy block
 prevents opportunistic activation, and an existing explicit
-`supervision.enabled: false` disables agent-facing supervision tools; the
-operator catalog remains registered whenever the Codex plugin is active unless
-`sessionCatalog.enabled: false` disables it. This separate switch leaves the
+`supervision.enabled: false` disables agent-facing supervision tools and local
+native-session continuation in Chat. The operator catalog and read-only
+transcripts remain available whenever the Codex plugin is active unless
+`sessionCatalog.enabled: false` disables them. This separate switch leaves the
 Codex provider, harness, and agent-facing supervision policy unchanged while
 also removing the paired-node catalog list/read commands from this host.
 Existing installations can enable the same capability manually:
@@ -85,7 +86,9 @@ Enable the `codex` plugin and its supervision capability in `openclaw.json`:
 ```
 
 If `plugins.allow` is present, include `codex`. Restart the Gateway after
-changing plugin activation.
+changing plugin activation. When discovery is enabled but supervision is not,
+Chat keeps local native sessions readable, disables their composer, and links
+to the supervision setting instead of creating an unusable adopted session.
 
 With no explicit `appServer` connection settings, supervision uses a separate
 managed stdio supervision connection against the native user Codex home. The

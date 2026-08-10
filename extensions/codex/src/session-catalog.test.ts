@@ -64,7 +64,7 @@ function registerCodexSessionCatalog(
 ) {
   return registerCodexSessionCatalogRuntime({
     ...params,
-    getPluginConfig: params.getPluginConfig ?? (() => undefined),
+    getPluginConfig: params.getPluginConfig ?? (() => ({ supervision: { enabled: true } })),
   });
 }
 
@@ -3969,6 +3969,43 @@ describe("Codex supervision actions", () => {
         ],
       },
     ]);
+  });
+
+  it("keeps native sessions visible but disables continuation when supervision is off", async () => {
+    const { runtime, createSessionEntry } = createRuntime();
+    const { api, getProvider } = createGatewayApi(runtime);
+    registerCodexSessionCatalog({
+      api,
+      bindingStore: createCodexTestBindingStore(),
+      control: createEligibleControl(),
+      getPluginConfig: () => ({ supervision: { enabled: false } }),
+      getRuntimeConfig: () => config,
+    });
+
+    await expect(getProvider()?.list({})).resolves.toMatchObject([
+      {
+        hostId: CODEX_LOCAL_SESSION_HOST_ID,
+        sessions: [
+          {
+            threadId: "thread-1",
+            canContinue: false,
+            continueDisabledReason:
+              "Codex supervision is disabled. Enable it to continue this session.",
+            continueSetupConfigPath: "plugins.entries.codex.config.supervision.enabled",
+          },
+        ],
+      },
+    ]);
+    await expect(
+      getProvider()?.continueSession?.({
+        hostId: CODEX_LOCAL_SESSION_HOST_ID,
+        threadId: "thread-1",
+      }),
+    ).rejects.toMatchObject({
+      code: "CODEX_SUPERVISION_DISABLED",
+      message: "Codex supervision is disabled. Enable it to continue this session.",
+    });
+    expect(createSessionEntry).not.toHaveBeenCalled();
   });
 
   it("reads local transcript turns one bounded App Server page at a time", async () => {

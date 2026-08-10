@@ -20,6 +20,7 @@ import {
   resolveChatPaneObserverRunId,
 } from "../../lib/observer-digest.ts";
 import { buildAgentMainSessionKey } from "../../lib/sessions/session-key.ts";
+import { openCatalogSetup, resolveCatalogComposerGate } from "./chat-catalog-composer-gate.ts";
 import { clearChatHistory } from "./chat-history.ts";
 import { resolveChatMessageAccess } from "./chat-message-access.ts";
 import { createChatModelSetupBanner, requiresChatModelSetup } from "./chat-model-setup.ts";
@@ -198,12 +199,14 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
       );
     // Never flash "view-only" while metadata loads; after loading, anything short
     // of a continuable session (failed lookups too) explains the disabled composer.
-    const catalogDisabledReason =
-      catalogKey && !this.catalogLoading && this.catalogSession?.canContinue !== true
-        ? this.catalogHost?.kind === "node"
-          ? t("chat.catalog.remoteViewOnly")
-          : t("chat.catalog.unsupportedViewOnly")
-        : null;
+    const { disabledReason: catalogDisabledReason, disabledBanner: catalogSetupBanner } =
+      resolveCatalogComposerGate({
+        catalog: catalogKey !== null,
+        loading: this.catalogLoading,
+        session: this.catalogSession,
+        hostKind: this.catalogHost?.kind,
+        onOpenSetup: (configPath) => openCatalogSetup(this.context.navigate, configPath),
+      });
     const sidebarChatColumn = sidebarLayout.columns.find((column) =>
       column.panels.some((panel) => panel.slot === "chat"),
     );
@@ -363,9 +366,10 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
           !selectedSessionArchived &&
           (!sessionParticipationBlocked || suggestionViewer) &&
           !cloudStartupPending,
-      disabledReason: catalogDisabledReason ?? disabledReason,
-      disabledBanner:
-        selectedSessionArchived && !catalogDisabledReason
+      disabledReason: catalogSetupBanner ? null : (catalogDisabledReason ?? disabledReason),
+      disabledBanner: catalogSetupBanner
+        ? catalogSetupBanner
+        : selectedSessionArchived && !catalogDisabledReason
           ? {
               kind: "composer-replacement",
               text: t("chat.archivedSessionDisabled"),

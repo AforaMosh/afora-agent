@@ -63,6 +63,8 @@ export const SessionCatalogSessionSchema = closedObject({
   sessionKey: Type.Optional(NonEmptyString),
   createdActor: Type.Optional(SessionCreatedActorSchema),
   canContinue: Type.Boolean(),
+  continueDisabledReason: Type.Optional(NonEmptyString),
+  continueSetupConfigPath: Type.Optional(NonEmptyString),
   canArchive: Type.Boolean(),
   canOpenTerminal: Type.Optional(Type.Boolean()),
 });
