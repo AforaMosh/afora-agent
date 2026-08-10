@@ -40,6 +40,7 @@ export function buildNativeHookRelayCommand(params: {
   relayId: string;
   generation?: string;
   event: NativeHookRelayEvent;
+  /** @deprecated Accepted only to serialize commands for legacy external callers. */
   preToolUseUnavailable?: "noop";
   timeoutMs?: number;
   executable?: string;
@@ -55,6 +56,7 @@ export function buildNativeHookRelayCommandWithStateDatabase(params: {
   stateDbPath?: string;
   generation?: string;
   event: NativeHookRelayEvent;
+  /** @deprecated Accepted only to serialize commands for legacy external callers. */
   preToolUseUnavailable?: "noop";
   timeoutMs?: number;
   executable?: string;

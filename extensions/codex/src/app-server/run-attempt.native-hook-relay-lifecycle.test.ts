@@ -43,6 +43,7 @@ const flushRelayCleanup = () => nativeHookRelayUnregisterQueue.flush();
 const DESCENDANT_RELAY_QUIET_WINDOW_MS = 5 * 60_000;
 
 type DirectRelayOptions = {
+  enabled?: boolean;
   signal?: AbortSignal;
   generation?: string;
   runId?: string;
@@ -55,7 +56,7 @@ function createDirectRelayResult(ttlMs: number, options: DirectRelayOptions = {}
     path.join(tempDir, "direct-relay-workspace"),
   );
   const acquisition = createCodexNativeHookRelay({
-    options: { enabled: true, ttlMs },
+    options: { enabled: options.enabled ?? true, ttlMs },
     ...(options.generation ? { generation: options.generation } : {}),
     events: ["pre_tool_use"],
     agentId: "main",
@@ -178,8 +179,19 @@ function getRoute(harness: ReturnType<typeof createStartedThreadHarness>) {
   };
 }
 
-async function startRelayAttempt(name: string, relayOptions: { ttlMs?: number } = {}) {
-  const harness = createStartedThreadHarness();
+async function startRelayAttempt(
+  name: string,
+  relayOptions: { ttlMs?: number } = {},
+  censusThreadIds: readonly string[] = [],
+) {
+  const harness = createStartedThreadHarness(async (method) =>
+    method === "thread/list"
+      ? {
+          data: censusThreadIds.map((id) => ({ id, status: { type: "active" } })),
+          nextCursor: null,
+        }
+      : undefined,
+  );
   const run = runCodexAppServerAttempt(
     createParams(path.join(tempDir, `${name}.jsonl`), path.join(tempDir, `${name}-workspace`)),
     { nativeHookRelay: { enabled: true, events: ["pre_tool_use"], ...relayOptions } },
@@ -244,6 +256,30 @@ describe("Codex native hook relay lifecycle", () => {
     expect(codexNativeHookRelayOwnerCount()).toBe(0);
   });
 
+  it("keeps a retired attempt route alive while child discovery is unresolved", async () => {
+    vi.useFakeTimers({ now: 1_800_000_000_000 });
+    const controller = new AbortController();
+    const relay = createDirectRelay(100, { signal: controller.signal });
+    const releaseDiscovery = relay.acquireDiscovery();
+
+    controller.abort("parent-aborted");
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(
+      nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relay.relayId),
+    ).toBeDefined();
+    const releaseChild = relay.acquireChild("child-after-abort");
+    releaseDiscovery?.();
+    await vi.advanceTimersByTimeAsync(15_001);
+    expect(
+      nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relay.relayId),
+    ).toBeDefined();
+
+    releaseChild?.();
+    await vi.advanceTimersByTimeAsync(15_001);
+    expect(codexNativeHookRelayOwnerCount()).toBe(0);
+  });
+
   it("keeps policy enforcement alive after the parent completes", async () => {
     const beforeToolCall = vi
       .fn()
@@ -290,8 +326,9 @@ describe("Codex native hook relay lifecycle", () => {
   });
 
   it("keeps child ownership after parent abort and releases on terminal", async () => {
-    const { harness, run, route } = await startRelayAttempt("abort");
-    await harness.notify(spawned("thread-1", "child-after-abort"));
+    // Codex has persisted this child, but its queued lifecycle notification has
+    // not reached OpenClaw when the parent is aborted.
+    const { harness, run, route } = await startRelayAttempt("abort", {}, ["child-after-abort"]);
     expect(abortAgentHarnessRun("session-1")).toBe(true);
     expect(readAttemptTerminal(await run).aborted).toBe(true);
     await expect(
@@ -426,45 +463,75 @@ describe("Codex native hook relay lifecycle", () => {
     ).toBeUndefined();
   });
 
-  it("returns no lease for a route released inside its own constructor", () => {
+  it("rejects a pre-aborted adoption before mutating a child-owned route", async () => {
+    const generation = "pre-aborted-adoption-generation";
+    const first = createDirectRelay(60_000, { generation, runId: "run-a" });
+    const releaseWorker = first.acquireChild("worker-a");
+    first.releaseParent();
+    const registration = nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(
+      first.relayId,
+    );
+    expect(registration).toBeDefined();
+    const bindingBefore = {
+      runId: registration?.runId,
+      config: registration?.config,
+      channelId: registration?.channelId,
+      requester: registration?.requester,
+      approvalContext: registration?.approvalContext,
+      signal: registration?.signal,
+      onPreToolUseFailure: registration?.onPreToolUseFailure,
+      expiresAtMs: registration?.expiresAtMs,
+    };
     const cancelled = new AbortController();
-    cancelled.abort("cancelled_before_start");
-    expect(
-      createDirectRelayResult(60_000, {
-        signal: cancelled.signal,
-        generation: "poisoned-generation",
-      }),
-    ).toBeUndefined();
-    expect(codexNativeHookRelayOwnerCount()).toBe(0);
+    const abortReason = new Error("cancelled_before_route_adoption");
+    cancelled.abort(abortReason);
 
-    const nextRelay = createDirectRelay(60_000, { generation: "poisoned-generation" });
-    expect(
-      nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(nextRelay.relayId),
-    ).toBeDefined();
+    let thrown: unknown;
+    try {
+      createDirectRelay(120_000, {
+        signal: cancelled.signal,
+        generation,
+        runId: "run-b",
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBe(abortReason);
+    expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(first.relayId)).toBe(
+      registration,
+    );
+    expect(registration).toMatchObject(bindingBefore);
     expect(codexNativeHookRelayOwnerCount()).toBe(1);
-    const releaseWorker = nextRelay.acquireChild("worker-1");
-    nextRelay.releaseParent();
-    expect(
-      nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(nextRelay.relayId),
-    ).toBeDefined();
+    await expect(
+      invokeChildTool({
+        relayId: first.relayId,
+        generation,
+        toolCallId: "worker-after-rejected-adoption",
+      }),
+    ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
+
     releaseWorker?.();
     flushRelayCleanup();
-    expect(codexNativeHookRelayOwnerCount()).toBe(0);
-  });
-
-  it("returns no lease when an adopted route releases while binding", () => {
-    const generation = "adopted-release-generation";
-    const first = createDirectRelay(60_000, { generation });
-    const cancelled = new AbortController();
-    cancelled.abort("cancelled_before_start");
-
-    expect(
-      createDirectRelayResult(60_000, { signal: cancelled.signal, generation }),
-    ).toBeUndefined();
     expect(codexNativeHookRelayOwnerCount()).toBe(0);
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(first.relayId),
     ).toBeUndefined();
+  });
+
+  it("checks abort before disabled relay gating", () => {
+    const cancelled = new AbortController();
+    const abortReason = new Error("cancelled_before_disabled_relay");
+    cancelled.abort(abortReason);
+
+    let thrown: unknown;
+    try {
+      createDirectRelayResult(60_000, { enabled: false, signal: cancelled.signal });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBe(abortReason);
   });
 
   it("re-registers a relay id that died while only a child claim remains", async () => {

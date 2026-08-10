@@ -172,7 +172,7 @@ describe("runCodexAppServerAttempt native hook relay", () => {
     expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toBeUndefined();
   });
 
-  it("omits the loop-detection PreToolUse subprocess when Codex config disables it", async () => {
+  it("keeps a policy standby while disabling live loop detection", async () => {
     const sessionFile = path.join(tempDir, "session.jsonl");
     const workspaceDir = path.join(tempDir, "workspace");
     const harness = createStartedThreadHarness();
@@ -196,7 +196,15 @@ describe("runCodexAppServerAttempt native hook relay", () => {
     const startConfig = (startRequest?.params as { config?: Record<string, unknown> } | undefined)
       ?.config;
     expect(startConfig?.["features.hooks"]).toBe(true);
-    expect(startConfig?.["hooks.PreToolUse"]).toEqual([]);
+    const preToolUseHooks = startConfig?.["hooks.PreToolUse"] as
+      | Array<{ hooks?: Array<{ command?: string }> }>
+      | undefined;
+    expect(preToolUseHooks?.[0]?.hooks?.[0]?.command).toContain("--event pre_tool_use");
+    expect(preToolUseHooks?.[0]?.hooks?.[0]?.command).not.toContain("--pre-tool-use-unavailable");
+    const hookState = startConfig?.["hooks.state"] as
+      | Record<string, { enabled?: unknown }>
+      | undefined;
+    expect(hookState?.["/<session-flags>/config.toml:pre_tool_use:0:0"]?.enabled).toBe(true);
   });
 
   it("forwards command approval requests through the active native hook relay", async () => {
@@ -959,6 +967,10 @@ describe("runCodexAppServerAttempt native hook relay", () => {
     const result = await run;
 
     expect(readAttemptTerminal(result).aborted).toBe(true);
+    await harness.waitForMethod("thread/list");
+    await Promise.resolve();
+    expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toBeDefined();
+    testing.flushPendingCodexNativeHookRelayUnregistersForTests();
     expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toBeUndefined();
     await expect(
       invokeNativeHookRelay({
@@ -972,6 +984,79 @@ describe("runCodexAppServerAttempt native hook relay", () => {
         },
       }),
     ).rejects.toThrow("native hook relay not found");
+  });
+
+  it("treats an empty-id interrupt ack as the ordered start fence until terminal", async () => {
+    const sessionFile = path.join(tempDir, "indeterminate-start-session.jsonl");
+    const workspaceDir = path.join(tempDir, "indeterminate-start-workspace");
+    const harness = createStartedThreadHarness(async (method, _params, options) => {
+      if (method === "turn/start") {
+        return await new Promise<never>((_resolve, reject) => {
+          const rejectIndeterminate = () => {
+            reject(
+              Object.assign(new Error("turn/start aborted"), {
+                code: "CODEX_APP_SERVER_LOCAL_REQUEST_CANCELLED",
+                mayHaveWritten: true,
+              }),
+            );
+          };
+          if (options?.signal?.aborted) {
+            rejectIndeterminate();
+          } else {
+            options?.signal?.addEventListener("abort", rejectIndeterminate, { once: true });
+          }
+        });
+      }
+      if (method === "turn/interrupt") {
+        return {};
+      }
+      if (method === "thread/list") {
+        return {
+          data: [{ id: "child-after-indeterminate-start", status: { type: "active" } }],
+          nextCursor: null,
+        };
+      }
+      if (method === "thread/read") {
+        return {
+          thread: {
+            id: "child-after-indeterminate-start",
+            parentThreadId: "thread-1",
+            status: { type: "active" },
+            turns: [],
+          },
+        };
+      }
+      return undefined;
+    });
+
+    const abort = new AbortController();
+    const params = createParams(sessionFile, workspaceDir);
+    params.abortSignal = abort.signal;
+    const run = runCodexAppServerAttempt(params, {
+      nativeHookRelay: { enabled: true },
+    });
+    await harness.waitForMethod("turn/start");
+    const startRequest = harness.requests.find((request) => request.method === "thread/start");
+    const relayId = extractRelayIdFromThreadRequest(startRequest?.params);
+    abort.abort("cancelled");
+    await expect(run).rejects.toThrow("turn/start aborted");
+
+    expect(harness.requests.map(({ method }) => method)).toContain("turn/interrupt");
+    expect(harness.requests.map(({ method }) => method)).not.toContain("thread/list");
+    expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toBeDefined();
+
+    await harness.notify({
+      method: "turn/completed",
+      params: {
+        threadId: "thread-1",
+        turn: { id: "turn-accepted-after-local-abort", status: "interrupted", items: [] },
+      },
+    });
+    await harness.waitForMethod("thread/list");
+    await harness.waitForMethod("thread/read");
+    expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toBeDefined();
+
+    harness.close();
     testing.flushPendingCodexNativeHookRelayUnregistersForTests();
     expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toBeUndefined();
   });

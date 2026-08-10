@@ -185,18 +185,16 @@ export function isNativeHookRelayBridgeStaleRegistrationError(error: unknown): b
 export function renderNativeHookRelayUnavailableResponse(params: {
   provider: unknown;
   event: unknown;
-  preToolUseUnavailable?: unknown;
   message?: string;
 }): NativeHookRelayProcessResponse {
   readNativeHookRelayProvider(params.provider);
   const event = readNativeHookRelayEvent(params.event);
-  const message = params.message?.trim() || "Native hook relay unavailable";
+  const message =
+    params.message?.trim() ||
+    "Native hook relay unavailable. Retry the tool; if it keeps failing, start a fresh session or restart the OpenClaw Gateway.";
   if (event === "pre_tool_use") {
-    // The cold CLI cannot reconstruct relay policy after lookup fails. Fail
-    // closed unless the generated command recorded that no local policy exists.
-    if (params.preToolUseUnavailable === "noop") {
-      return codexNativeHookRelayResponseCodec.renderNoopResponse();
-    }
+    // Loaded Codex threads can outlive the policy snapshot that built their
+    // command, so unavailable policy state must never authorize a tool call.
     return codexNativeHookRelayResponseCodec.renderPreToolUseBlockResponse(message);
   }
   if (event === "permission_request") {

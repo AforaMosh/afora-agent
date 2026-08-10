@@ -19,6 +19,7 @@ export type NativeHookRelayCliOptions = {
   stateDb?: string;
   generation?: string;
   event?: string;
+  /** @deprecated Accepted for frozen relay commands but intentionally ignored. */
   preToolUseUnavailable?: string;
   timeout?: string;
 };
@@ -121,7 +122,6 @@ export async function runNativeHookRelayCli(
         return writeNativeHookRelayDeadlineResponse({
           stdout,
           stderr,
-          opts,
           provider,
           event,
           error,
@@ -154,7 +154,6 @@ export async function runNativeHookRelayCli(
         return writeNativeHookRelayDeadlineResponse({
           stdout,
           stderr,
-          opts,
           provider,
           event,
           error,
@@ -162,7 +161,7 @@ export async function runNativeHookRelayCli(
       }
       if (isNativeHookRelayBridgeStaleRegistrationError(error)) {
         writeText(stderr, formatRelayCliError("native hook relay unavailable", error));
-        return writeNativeHookRelayUnavailableResponse({ stdout, stderr, opts, provider, event });
+        return writeNativeHookRelayUnavailableResponse({ stdout, stderr, provider, event });
       }
       // Fall through to the gateway path for embedded/local gateway cases and
       // older registrations that predate the direct relay bridge.
@@ -187,14 +186,13 @@ export async function runNativeHookRelayCli(
         return writeNativeHookRelayDeadlineResponse({
           stdout,
           stderr,
-          opts,
           provider,
           event,
           error,
         });
       }
       writeText(stderr, formatRelayCliError("native hook relay unavailable", error));
-      return writeNativeHookRelayUnavailableResponse({ stdout, stderr, opts, provider, event });
+      return writeNativeHookRelayUnavailableResponse({ stdout, stderr, provider, event });
     }
   } finally {
     deadline.dispose();
@@ -344,7 +342,6 @@ async function withNativeHookRelayDeadline<T>(
 function writeNativeHookRelayUnavailableResponse(params: {
   stdout: NodeJS.WritableStream;
   stderr: NodeJS.WritableStream;
-  opts: NativeHookRelayCliOptions;
   provider: string;
   event: string;
   message?: string;
@@ -352,8 +349,7 @@ function writeNativeHookRelayUnavailableResponse(params: {
   const response = renderNativeHookRelayUnavailableResponse({
     provider: params.provider,
     event: params.event,
-    preToolUseUnavailable: params.opts.preToolUseUnavailable,
-    message: params.message ?? "Native hook relay unavailable",
+    ...(params.message ? { message: params.message } : {}),
   });
   writeText(params.stdout, response.stdout);
   writeText(params.stderr, response.stderr);
@@ -363,7 +359,6 @@ function writeNativeHookRelayUnavailableResponse(params: {
 function writeNativeHookRelayDeadlineResponse(params: {
   stdout: NodeJS.WritableStream;
   stderr: NodeJS.WritableStream;
-  opts: NativeHookRelayCliOptions;
   provider: string;
   event: string;
   error: NativeHookRelayDeadlineError;
@@ -372,9 +367,9 @@ function writeNativeHookRelayDeadlineResponse(params: {
   return writeNativeHookRelayUnavailableResponse({
     stdout: params.stdout,
     stderr: params.stderr,
-    opts: params.opts,
     provider: params.provider,
     event: params.event,
-    message: "Native hook relay timed out",
+    message:
+      "Native hook relay timed out. Retry the tool; if it keeps failing, start a fresh session or restart the OpenClaw Gateway.",
   });
 }

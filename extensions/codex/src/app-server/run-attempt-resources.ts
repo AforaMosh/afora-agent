@@ -270,7 +270,6 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
               relay: relayAcquisition.lease,
               events: nativeHookRelayEvents,
               hookTimeoutSec: options.nativeHookRelay?.hookTimeoutSec,
-              loopDetectionPreToolUseRelay: appServer.loopDetectionPreToolUseRelay,
             })
           : buildCodexNativeHookRelayDisabledConfig(),
       nativeHookRelayGeneration: state.nativeHookRelay?.generation,

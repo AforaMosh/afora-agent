@@ -24,6 +24,7 @@ import type {
 } from "./protocol.js";
 
 type CodexThreadReadResponse = CodexAppServerRequestResult<"thread/read">;
+type CodexThreadListResponse = CodexAppServerRequestResult<"thread/list">;
 
 const DESCENDANT_RELAY_QUIET_WINDOW_MS = 5 * 60_000;
 
@@ -41,7 +42,22 @@ function createClient() {
     | ((params: ThreadReadParams) => CodexThreadReadResponse | Promise<CodexThreadReadResponse>)
   >();
   const threadTurns = new Map<string, JsonValue | Error>();
+  const threadListResponses: Array<
+    | CodexThreadListResponse
+    | Error
+    | (() => CodexThreadListResponse | Promise<CodexThreadListResponse>)
+  > = [];
   const fixture = createFakeCodexAppServerClient(async (method: string, params?: unknown) => {
+    if (method === "thread/list") {
+      const response = threadListResponses.shift();
+      if (response instanceof Error) {
+        throw response;
+      }
+      if (response === undefined) {
+        throw new Error("thread list not loaded");
+      }
+      return typeof response === "function" ? await response() : response;
+    }
     if (method === "thread/turns/list") {
       const childThreadId = ((params as ThreadTurnsParams | undefined) ?? {}).threadId ?? "";
       const response = threadTurns.get(childThreadId);
@@ -82,6 +98,9 @@ function createClient() {
     },
     setThreadTurns(childThreadId: string, response: JsonValue | Error) {
       threadTurns.set(childThreadId, response);
+    },
+    setThreadListResponses(...responses: typeof threadListResponses) {
+      threadListResponses.push(...responses);
     },
     addNotificationHandler: fixture.client.addNotificationHandler.bind(fixture.client),
     addRequestHandler: fixture.client.addRequestHandler.bind(fixture.client),
@@ -170,10 +189,14 @@ function createNativeHookRelayLease(
     releases.set(childThreadId, release);
     return release;
   });
+  const releaseDiscovery = vi.fn();
+  const acquireDiscovery = vi.fn(() => (options.released ? undefined : releaseDiscovery));
   return {
     acquireChild,
+    acquireDiscovery,
+    releaseDiscovery,
     releases,
-    lease: { relayId, acquireChild } as unknown as CodexNativeHookRelayLease,
+    lease: { relayId, acquireChild, acquireDiscovery } as unknown as CodexNativeHookRelayLease,
   };
 }
 
@@ -1265,6 +1288,555 @@ describe("CodexNativeSubagentMonitor", () => {
 
     expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual(["child-c"]);
     monitor.dispose();
+  });
+
+  it("keeps relay discovery reserved across parent cleanup until the exact terminal census", async () => {
+    const client = createClient();
+    client.setThreadRead(
+      "child-after-abort",
+      threadRead({ childThreadId: "child-after-abort", threadStatus: "active" }),
+    );
+    client.setThreadListResponses({
+      data: [{ id: "child-after-abort", status: { type: "active" } }],
+      nextCursor: null,
+    });
+    const runtime = createRuntime();
+    const releaseClient = vi.fn();
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
+      retainClient: () => releaseClient,
+    });
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+    registration.setTurnId("turn-parent");
+
+    registration.unregister();
+    expect(relay.releaseDiscovery).not.toHaveBeenCalled();
+    expect(releaseClient).not.toHaveBeenCalled();
+
+    await client.notify({
+      method: "turn/completed",
+      params: {
+        threadId: "parent-thread",
+        turnId: "turn-parent",
+        turn: { id: "turn-parent", status: "interrupted", items: [] },
+      },
+    });
+    await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+
+    expect(client.request).toHaveBeenCalledWith(
+      "thread/list",
+      {
+        limit: 100,
+        parentThreadId: "parent-thread",
+        sourceKinds: ["subAgentThreadSpawn"],
+      },
+      { timeoutMs: 30_000 },
+    );
+    expect(relay.acquireChild).toHaveBeenCalledExactlyOnceWith("child-after-abort");
+    expect(releaseClient).not.toHaveBeenCalled();
+    client.close();
+    expect(releaseClient).toHaveBeenCalledOnce();
+  });
+
+  it("correlates a delayed provisional terminal with only its indeterminate registration", async () => {
+    const client = createClient();
+    client.setThreadListResponses({ data: [], nextCursor: null }, { data: [], nextCursor: null });
+    const firstRelay = createNativeHookRelayLease("first-relay");
+    const secondRelay = createNativeHookRelayLease("second-relay");
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+    const firstRegistration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      firstRelay.lease,
+    );
+    firstRegistration.beginTurnStart();
+    firstRegistration.markTurnStartIndeterminate();
+    firstRegistration.unregister();
+
+    const secondRegistration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      secondRelay.lease,
+    );
+    await client.notify({
+      method: "turn/completed",
+      params: {
+        threadId: "parent-thread",
+        turn: { id: "turn-first", status: "interrupted", items: [] },
+      },
+    });
+    await vi.waitFor(() => expect(firstRelay.releaseDiscovery).toHaveBeenCalledOnce());
+
+    expect(secondRelay.releaseDiscovery).not.toHaveBeenCalled();
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      1,
+    );
+
+    // Learning the second attempt's accepted id must discard any provisional
+    // terminal fact; only its own terminal may close its discovery reservation.
+    secondRegistration.setTurnId("turn-second");
+    secondRegistration.unregister();
+    expect(secondRelay.releaseDiscovery).not.toHaveBeenCalled();
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      1,
+    );
+
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-second",
+        status: "interrupted",
+      }),
+    );
+    await vi.waitFor(() => expect(secondRelay.releaseDiscovery).toHaveBeenCalledOnce());
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      2,
+    );
+    client.close();
+  });
+
+  it("uses the latest provisional terminal when turn/start responds after completion", async () => {
+    const client = createClient();
+    client.setThreadListResponses({ data: [], nextCursor: null });
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+    registration.beginTurnStart();
+
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-old",
+        status: "interrupted",
+      }),
+    );
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-new",
+        status: "completed",
+      }),
+    );
+
+    registration.setTurnId("turn-new");
+    registration.unregister();
+
+    await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      1,
+    );
+    client.close();
+  });
+
+  it("correlates an indeterminate start only with terminals after its request boundary", async () => {
+    const client = createClient();
+    client.setThreadListResponses({ data: [], nextCursor: null });
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-from-prior-attempt",
+        status: "interrupted",
+      }),
+    );
+
+    registration.beginTurnStart();
+    registration.markTurnStartIndeterminate();
+    registration.unregister();
+
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      0,
+    );
+    expect(relay.releaseDiscovery).not.toHaveBeenCalled();
+
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-hidden-after-request",
+        status: "interrupted",
+      }),
+    );
+    await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      1,
+    );
+    client.close();
+  });
+
+  it("releases an unconfirmed start after observing another turn's completion", async () => {
+    const client = createClient();
+    const releaseClient = vi.fn();
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime(), {
+      retainClient: () => releaseClient,
+    });
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+
+    await client.notify({
+      method: "turn/completed",
+      params: {
+        threadId: "parent-thread",
+        turn: { id: "turn-from-prior-attempt", status: "interrupted", items: [] },
+      },
+    });
+    registration.unregister();
+
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      0,
+    );
+    expect(relay.releaseDiscovery).toHaveBeenCalledOnce();
+    expect(releaseClient).toHaveBeenCalledOnce();
+    client.close();
+  });
+
+  it("pages and deduplicates membership while current reads decide child retention", async () => {
+    const client = createClient();
+    client.setThreadRead(
+      "child-active",
+      threadRead({ childThreadId: "child-active", threadStatus: "active" }),
+    );
+    client.setThreadRead(
+      "child-unloaded",
+      threadRead({ childThreadId: "child-unloaded", threadStatus: "notLoaded" }),
+    );
+    client.setThreadRead(
+      "child-idle",
+      threadRead({ childThreadId: "child-idle", threadStatus: "idle" }),
+    );
+    client.setThreadRead(
+      "child-system-error",
+      threadRead({ childThreadId: "child-system-error", threadStatus: "systemError" }),
+    );
+    client.setThreadListResponses(
+      {
+        data: [
+          { id: "child-active", status: { type: "notLoaded" } },
+          { id: "child-unloaded", status: { type: "active" } },
+        ],
+        nextCursor: "page-2",
+      },
+      {
+        data: [
+          { id: "child-active", status: { type: "active" } },
+          { id: "child-idle", status: { type: "idle" } },
+          { id: "child-system-error", status: { type: "systemError" } },
+        ],
+        nextCursor: null,
+      },
+    );
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+    await notifyChildStarted(client, "parent-thread", "child-unloaded");
+    const releaseUnloaded = relay.releases.get("child-unloaded");
+    relay.acquireChild.mockClear();
+    registration.setTurnId("turn-parent");
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-parent",
+        status: "completed",
+      }),
+    );
+    registration.unregister();
+    await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+
+    expect(client.request).toHaveBeenCalledWith(
+      "thread/list",
+      expect.objectContaining({ cursor: "page-2" }),
+      { timeoutMs: 30_000 },
+    );
+    expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "child-active",
+      "child-idle",
+      "child-system-error",
+    ]);
+    expect(releaseUnloaded).toHaveBeenCalledOnce();
+    client.close();
+  });
+
+  it("retains discovery after a census failure and retries without a timeout release", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = createClient();
+      client.setThreadListResponses(new Error("store unavailable"), {
+        data: [],
+        nextCursor: null,
+      });
+      const relay = createNativeHookRelayLease();
+      const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime(), {
+        recoveryPollDelaysMs: [10],
+      });
+      const registration = registerParent(
+        monitor,
+        "parent-thread",
+        "agent:main:discord:channel:C123",
+        relay.lease,
+      );
+      registration.setTurnId("turn-parent");
+      await client.notify(
+        childTurnCompletedNotification({
+          childThreadId: "parent-thread",
+          turnId: "turn-parent",
+          status: "completed",
+        }),
+      );
+      registration.unregister();
+      await vi.waitFor(() => expect(client.request).toHaveBeenCalledTimes(1));
+      expect(relay.releaseDiscovery).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(10);
+      await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+      expect(client.request).toHaveBeenCalledTimes(2);
+      client.close();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("retries the whole census after a child read failure before releasing its provisional claim", async () => {
+    const client = createClient();
+    client.setThreadRead(
+      "child-read-before-failure",
+      threadRead({ childThreadId: "child-read-before-failure", threadStatus: "notLoaded" }),
+    );
+    let readAttempt = 0;
+    client.setThreadReadFactory("child-read-retry", () => {
+      readAttempt += 1;
+      if (readAttempt === 1) {
+        throw new Error("current status unavailable");
+      }
+      return threadRead({ childThreadId: "child-read-retry", threadStatus: "notLoaded" });
+    });
+    client.setThreadListResponses(
+      {
+        data: [
+          { id: "child-read-before-failure", status: { type: "notLoaded" } },
+          { id: "child-read-retry", status: { type: "active" } },
+        ],
+        nextCursor: null,
+      },
+      {
+        data: [
+          { id: "child-read-before-failure", status: { type: "notLoaded" } },
+          { id: "child-read-retry", status: { type: "notLoaded" } },
+        ],
+        nextCursor: null,
+      },
+    );
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime(), {
+      recoveryPollDelaysMs: [1_000],
+    });
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+    registration.setTurnId("turn-parent");
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-parent",
+        status: "completed",
+      }),
+    );
+    registration.unregister();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(readAttempt).toBe(1);
+    expect(relay.releaseDiscovery).not.toHaveBeenCalled();
+    expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "child-read-before-failure",
+      "child-read-retry",
+    ]);
+    expect(relay.releases.get("child-read-before-failure")).not.toHaveBeenCalled();
+    expect(relay.releases.get("child-read-retry")).not.toHaveBeenCalled();
+
+    // Re-observing the same authoritative terminal safely drives the retained
+    // registration immediately; the scheduled retry remains the production fallback.
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-parent",
+        status: "completed",
+      }),
+    );
+    await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+
+    expect(client.request.mock.calls.filter(([method]) => method === "thread/list")).toHaveLength(
+      2,
+    );
+    expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "child-read-before-failure",
+      "child-read-retry",
+    ]);
+    expect(relay.releases.get("child-read-before-failure")).toHaveBeenCalledOnce();
+    expect(relay.releases.get("child-read-retry")).toHaveBeenCalledOnce();
+    client.close();
+  });
+
+  it("fences an in-flight census response after the client closes", async () => {
+    const client = createClient();
+    let resolveList!: (response: CodexThreadListResponse) => void;
+    client.setThreadListResponses(
+      () =>
+        new Promise<CodexThreadListResponse>((resolve) => {
+          resolveList = resolve;
+        }),
+    );
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+    registration.setTurnId("turn-parent");
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-parent",
+        status: "completed",
+      }),
+    );
+    registration.unregister();
+    await vi.waitFor(() => expect(client.request).toHaveBeenCalledOnce());
+
+    client.close();
+    resolveList({ data: [{ id: "stale-child", status: { type: "active" } }], nextCursor: null });
+    await (client.request.mock.results[0]?.value as Promise<unknown>);
+
+    expect(relay.releaseDiscovery).toHaveBeenCalledOnce();
+    expect(relay.acquireChild).not.toHaveBeenCalled();
+  });
+
+  it("does not release a discovered child from a read superseded by turn start", async () => {
+    const client = createClient();
+    let resolveRead!: (response: CodexThreadReadResponse) => void;
+    client.setThreadReadFactory(
+      "child-racing-active",
+      () =>
+        new Promise<CodexThreadReadResponse>((resolve) => {
+          resolveRead = resolve;
+        }),
+    );
+    client.setThreadListResponses({
+      data: [{ id: "child-racing-active", status: { type: "notLoaded" } }],
+      nextCursor: null,
+    });
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+    registration.setTurnId("turn-parent");
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-parent",
+        status: "completed",
+      }),
+    );
+    registration.unregister();
+    await vi.waitFor(() =>
+      expect(client.request).toHaveBeenCalledWith(
+        "thread/read",
+        { threadId: "child-racing-active", includeTurns: false },
+        { timeoutMs: 30_000 },
+      ),
+    );
+
+    await client.notify({
+      method: "turn/started",
+      params: {
+        threadId: "child-racing-active",
+        turn: { id: "child-turn", status: "inProgress", items: [] },
+      },
+    });
+    resolveRead(threadRead({ childThreadId: "child-racing-active", threadStatus: "notLoaded" }));
+    await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+
+    expect(relay.releases.get("child-racing-active")).not.toHaveBeenCalled();
+    client.close();
+  });
+
+  it("does not let a stale active read reacquire after authoritative unload", async () => {
+    const client = createClient();
+    let resolveRead!: (response: CodexThreadReadResponse) => void;
+    client.setThreadReadFactory(
+      "child-racing-unload",
+      () =>
+        new Promise<CodexThreadReadResponse>((resolve) => {
+          resolveRead = resolve;
+        }),
+    );
+    client.setThreadListResponses({
+      data: [{ id: "child-racing-unload", status: { type: "active" } }],
+      nextCursor: null,
+    });
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+    const registration = registerParent(
+      monitor,
+      "parent-thread",
+      "agent:main:discord:channel:C123",
+      relay.lease,
+    );
+    registration.setTurnId("turn-parent");
+    await client.notify(
+      childTurnCompletedNotification({
+        childThreadId: "parent-thread",
+        turnId: "turn-parent",
+        status: "completed",
+      }),
+    );
+    registration.unregister();
+    await vi.waitFor(() => expect(relay.acquireChild).toHaveBeenCalledWith("child-racing-unload"));
+
+    await client.notify(threadStatusChangedNotification("child-racing-unload", "notLoaded"));
+    resolveRead(threadRead({ childThreadId: "child-racing-unload", threadStatus: "active" }));
+    await vi.waitFor(() => expect(relay.releaseDiscovery).toHaveBeenCalledOnce());
+
+    expect(relay.acquireChild).toHaveBeenCalledExactlyOnceWith("child-racing-unload");
+    expect(relay.releases.get("child-racing-unload")).toHaveBeenCalledOnce();
+    client.close();
   });
 
   it("claims each descendant for its own lifetime, past its parent state's prune", async () => {

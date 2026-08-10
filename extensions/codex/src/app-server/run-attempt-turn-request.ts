@@ -133,6 +133,9 @@ export async function prepareCodexAttemptTurnRequest(
     });
     let acceptedTurnId: string | undefined;
     try {
+      // Notifications from a resumed predecessor may arrive while we wait above.
+      // Establish correlation at the request boundary before Codex can answer or notify.
+      resourceState.nativeSubagentMonitor?.beginTurnStart();
       const startedTurn = assertCodexTurnStartResponse(
         await resourceState.client.request("turn/start", turnStartParams, {
           timeoutMs: params.timeoutMs,
@@ -140,18 +143,25 @@ export async function prepareCodexAttemptTurnRequest(
         }),
       );
       acceptedTurnId = startedTurn.turn.id;
+      resourceState.nativeSubagentMonitor?.setTurnId(acceptedTurnId);
       throwIfTurnStartAcceptedAfterAbort();
       return startedTurn;
     } catch (error) {
       if (acceptedTurnId || isCodexAppServerIndeterminateRequestCancellationError(error)) {
-        // Codex serializes start/interrupt per thread; an empty id interrupts
-        // the accepted native turn even when local cancellation hid its response.
+        if (!acceptedTurnId) {
+          resourceState.nativeSubagentMonitor?.markTurnStartIndeterminate();
+        }
+        // Supported transports preserve write order, and Codex serializes both RPCs per thread.
+        // An empty-id interrupt ack therefore proves the hidden start was accepted first.
         try {
           resourceState.startupClientUnsafe = !(await interruptCodexTurnAndWaitBestEffort(
             resourceState.client,
             { threadId: resourceState.thread.threadId, turnId: acceptedTurnId ?? "" },
           ));
           if (resourceState.startupClientUnsafe) {
+            // This client cannot authoritatively report the hidden turn's lifecycle.
+            // Retire its parent monitor so its retention cannot keep the unsafe transport alive.
+            resourceState.nativeSubagentMonitor?.retire();
             await retireUnsafeCodexTurnClientBestEffort(resourceState.client, "startup interrupt");
           }
         } finally {

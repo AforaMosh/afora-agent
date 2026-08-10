@@ -1402,7 +1402,7 @@ describe("runCodexAppServerSideQuestion", () => {
     ).toBeUndefined();
   });
 
-  it("omits the loop-detection PreToolUse subprocess for side threads when disabled", async () => {
+  it("keeps a side-thread policy standby while disabling live loop detection", async () => {
     const client = createFakeClient();
     getSharedCodexAppServerClientMock.mockResolvedValue(client);
 
@@ -1424,11 +1424,15 @@ describe("runCodexAppServerSideQuestion", () => {
     const forkParams = mockCall(client.request)[1] as Record<string, unknown> | undefined;
     const config = forkParams?.config as Record<string, unknown> | undefined;
     expect(config?.["features.hooks"]).toBe(true);
-    expect(config?.["hooks.PreToolUse"]).toEqual([]);
+    const preToolUseHooks = config?.["hooks.PreToolUse"] as
+      | Array<{ hooks?: Array<{ command?: string }> }>
+      | undefined;
+    expect(preToolUseHooks?.[0]?.hooks?.[0]?.command).toContain("--event pre_tool_use");
+    expect(preToolUseHooks?.[0]?.hooks?.[0]?.command).not.toContain("--pre-tool-use-unavailable");
     const hookState = config?.["hooks.state"] as
       | Record<string, { enabled?: unknown; trusted_hash?: unknown }>
       | undefined;
-    expect(codexHookStateForEvent(hookState, "pre_tool_use")).toEqual({ enabled: false });
+    expect(codexHookStateForEvent(hookState, "pre_tool_use")?.enabled).toBe(true);
   });
 
   it("forwards side-thread command approvals through the active native hook relay", async () => {

@@ -615,7 +615,7 @@ export function registerHooksCli(program: Command): void {
     .requiredOption("--event <event>", "Native hook event")
     .option(
       "--pre-tool-use-unavailable <mode>",
-      "PreToolUse fallback mode when the originating relay is unavailable",
+      "Deprecated compatibility input for frozen native hook commands; ignored",
     )
     .option("--timeout <ms>", "Gateway timeout in ms", "5000")
     .action(async (opts: NativeHookRelayCliOptions) =>

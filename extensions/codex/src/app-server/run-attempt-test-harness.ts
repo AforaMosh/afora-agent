@@ -567,6 +567,9 @@ export function createStartedThreadHarness(
     if (method === "turn/start") {
       return turnStartResult();
     }
+    if (method === "thread/list") {
+      return { data: [], nextCursor: null };
+    }
     return {};
   }, options);
 }

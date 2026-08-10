@@ -1,7 +1,13 @@
 // Native hook relay CLI tests cover relay command registration and runtime delegation.
 import { PassThrough, Readable, Writable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
+import { buildNativeHookRelayCommand } from "../agents/harness/native-hook-relay-command.js";
 import { runNativeHookRelayCli, runNativeHookRelayCliFromArgv } from "./native-hook-relay-cli.js";
+
+const UNAVAILABLE_REASON =
+  "Native hook relay unavailable. Retry the tool; if it keeps failing, start a fresh session or restart the OpenClaw Gateway.";
+const TIMEOUT_REASON =
+  "Native hook relay timed out. Retry the tool; if it keeps failing, start a fresh session or restart the OpenClaw Gateway.";
 
 function createReadableTextStream(text: string): NodeJS.ReadableStream {
   return Readable.from([text]);
@@ -253,7 +259,7 @@ describe("native hook relay CLI", () => {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
-        permissionDecisionReason: "Native hook relay unavailable",
+        permissionDecisionReason: UNAVAILABLE_REASON,
       },
     });
     expect(stderr.text()).toContain("native hook relay unavailable");
@@ -269,11 +275,12 @@ describe("native hook relay CLI", () => {
   it.each([
     {
       event: "pre_tool_use",
+      preToolUseUnavailable: "noop",
       stdout: {
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
           permissionDecision: "deny",
-          permissionDecisionReason: "Native hook relay unavailable",
+          permissionDecisionReason: UNAVAILABLE_REASON,
         },
       },
     },
@@ -284,7 +291,7 @@ describe("native hook relay CLI", () => {
           hookEventName: "PermissionRequest",
           decision: {
             behavior: "deny",
-            message: "Native hook relay unavailable",
+            message: UNAVAILABLE_REASON,
           },
         },
       },
@@ -309,6 +316,7 @@ describe("native hook relay CLI", () => {
           relayId: "relay-1",
           generation: "generation-1",
           event: testCase.event,
+          preToolUseUnavailable: testCase.preToolUseUnavailable,
         },
         {
           stdin: createReadableTextStream("{}"),
@@ -353,7 +361,13 @@ describe("native hook relay CLI", () => {
     {
       event: "pre_tool_use",
       preToolUseUnavailable: "noop",
-      stdout: null,
+      stdout: {
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: "deny",
+          permissionDecisionReason: TIMEOUT_REASON,
+        },
+      },
     },
     {
       event: "pre_tool_use",
@@ -361,7 +375,7 @@ describe("native hook relay CLI", () => {
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
           permissionDecision: "deny",
-          permissionDecisionReason: "Native hook relay timed out",
+          permissionDecisionReason: TIMEOUT_REASON,
         },
       },
     },
@@ -372,7 +386,7 @@ describe("native hook relay CLI", () => {
           hookEventName: "PermissionRequest",
           decision: {
             behavior: "deny",
-            message: "Native hook relay timed out",
+            message: TIMEOUT_REASON,
           },
         },
       },
@@ -492,7 +506,7 @@ describe("native hook relay CLI", () => {
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
           permissionDecision: "deny",
-          permissionDecisionReason: "Native hook relay timed out",
+          permissionDecisionReason: TIMEOUT_REASON,
         },
       });
       expect(stderr.text()).toContain("native hook relay timed out");
@@ -543,27 +557,33 @@ describe("native hook relay CLI", () => {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
-        permissionDecisionReason: "Native hook relay unavailable",
+        permissionDecisionReason: UNAVAILABLE_REASON,
       },
     });
     expect(stderr.text()).toContain("native hook relay unavailable");
   });
 
-  it("keeps PreToolUse unavailable handling observational only with an explicit no-policy marker", async () => {
+  it("ignores a frozen no-policy marker and denies when the gateway relay is unavailable", async () => {
     const callGateway = vi.fn(async () => {
       throw new Error("gateway closed");
     });
     const stdout = createWritableTextBuffer();
     const stderr = createWritableTextBuffer();
+    const frozenCommand = buildNativeHookRelayCommand({
+      provider: "codex",
+      relayId: "relay-1",
+      generation: "generation-1",
+      event: "pre_tool_use",
+      preToolUseUnavailable: "noop",
+      executable: "openclaw",
+    });
+    expect(frozenCommand).toContain("--pre-tool-use-unavailable noop");
+    const commandArgv = frozenCommand.split(" ");
+    const hooksArgIndex = commandArgv.indexOf("hooks");
+    expect(hooksArgIndex).toBeGreaterThanOrEqual(0);
 
-    const exitCode = await runNativeHookRelayCli(
-      {
-        provider: "codex",
-        relayId: "relay-1",
-        generation: "generation-1",
-        event: "pre_tool_use",
-        preToolUseUnavailable: "noop",
-      },
+    const exitCode = await runNativeHookRelayCliFromArgv(
+      ["node", "openclaw.mjs", ...commandArgv.slice(hooksArgIndex)],
       {
         stdin: createReadableTextStream("{}"),
         stdout,
@@ -573,7 +593,13 @@ describe("native hook relay CLI", () => {
     );
 
     expect(exitCode).toBe(0);
-    expect(stdout.text()).toBe("");
+    expect(JSON.parse(stdout.text())).toEqual({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: UNAVAILABLE_REASON,
+      },
+    });
     expect(stderr.text()).toContain("native hook relay unavailable");
   });
 
@@ -605,7 +631,7 @@ describe("native hook relay CLI", () => {
         hookEventName: "PermissionRequest",
         decision: {
           behavior: "deny",
-          message: "Native hook relay unavailable",
+          message: UNAVAILABLE_REASON,
         },
       },
     });

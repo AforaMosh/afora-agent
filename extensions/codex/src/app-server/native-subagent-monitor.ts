@@ -44,7 +44,12 @@ import {
   codexNativeSubagentRunId,
   CodexNativeSubagentTaskMirror,
 } from "./native-subagent-task-mirror.js";
-import type { CodexServerNotification, JsonObject, JsonValue } from "./protocol.js";
+import type {
+  CodexAppServerRequestResult,
+  CodexServerNotification,
+  JsonObject,
+  JsonValue,
+} from "./protocol.js";
 import { isJsonObject } from "./protocol.js";
 
 type NativeSubagentMonitorRuntime = {
@@ -68,6 +73,21 @@ type ParentState = {
   taskRuntime?: AgentHarnessTaskRuntime;
   mirror?: CodexNativeSubagentTaskMirror;
   nativeHookRelay?: CodexNativeHookRelayLease;
+};
+
+type ParentDiscoveryRegistration = {
+  parentState: ParentState;
+  nativeHookRelay?: CodexNativeHookRelayLease;
+  releaseRelayDiscovery?: () => void;
+  turnId?: string;
+  provisionalTerminalTurnId?: string;
+  turnStartBegun: boolean;
+  turnCorrelation: "pending" | "indeterminate" | "known";
+  terminal: boolean;
+  unregistered: boolean;
+  retryAttempt: number;
+  retryTimer?: ReturnType<typeof setTimeout>;
+  censusInFlight?: Promise<void>;
 };
 
 type ChildState = {
@@ -152,8 +172,10 @@ const DEFAULT_COMPLETION_DELIVERY_RETRY_DELAYS_MS = [
 const RECENT_TERMINAL_TASK_RECONCILE_GRACE_MS = 60_000;
 const DESCENDANT_RELAY_QUIET_WINDOW_MS = 5 * 60_000;
 const THREAD_READ_TIMEOUT_MS = 30_000;
+const THREAD_LIST_PAGE_LIMIT = 100;
 const NATIVE_SUBAGENT_NOTIFICATION_METHODS = new Set([
   "thread/started",
+  "thread/closed",
   "thread/status/changed",
   "turn/started",
   "turn/completed",
@@ -167,6 +189,7 @@ const NATIVE_SUBAGENT_NOTIFICATION_METHODS = new Set([
 ]);
 const RECOVERY_REVISION_NOTIFICATION_METHODS = new Set([
   "thread/started",
+  "thread/closed",
   "thread/status/changed",
   "turn/started",
   "turn/completed",
@@ -190,7 +213,13 @@ function registerMonitor(params: {
   retainClient?: () => (() => void) | undefined;
   retainParentThread?: (threadId: string) => (() => void) | undefined;
   nativeHookRelay?: CodexNativeHookRelayLease;
-}): { unregister: () => void } {
+}): {
+  beginTurnStart: () => void;
+  setTurnId: (turnId: string) => void;
+  markTurnStartIndeterminate: () => void;
+  retire: () => void;
+  unregister: () => void;
+} {
   let monitor = monitors.get(params.client);
   if (!monitor) {
     // Native start/completion can race; serialize each child so only its
@@ -266,6 +295,7 @@ class Monitor {
   private readonly taskReconciliations = new Map<string, Promise<void>>();
   private readonly taskReconciliationTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly threadStatusRevisions = new Map<string, ThreadStatusRevision>();
+  private readonly discoveryRegistrations = new Set<ParentDiscoveryRegistration>();
   private readonly recoveryPollDelaysMs: readonly number[];
   private readonly completionDeliveryRetryDelaysMs: readonly number[];
   private readonly completionDeliveryMaxRetries: number;
@@ -317,6 +347,9 @@ class Monitor {
       clearTimeout(timer);
     }
     this.taskReconciliationTimers.clear();
+    for (const registration of this.discoveryRegistrations) {
+      this.releaseDiscoveryRegistration(registration);
+    }
     for (const claim of this.descendantRelayClaims.values()) {
       clearDescendantRelayQuietTimer(claim);
       claim.release();
@@ -356,7 +389,13 @@ class Monitor {
     taskRuntimeScope?: AgentHarnessTaskRuntimeScope;
     agentId?: string;
     nativeHookRelay?: CodexNativeHookRelayLease;
-  }): { unregister: () => void } {
+  }): {
+    beginTurnStart: () => void;
+    setTurnId: (turnId: string) => void;
+    markTurnStartIndeterminate: () => void;
+    retire: () => void;
+    unregister: () => void;
+  } {
     const parentThreadId = params.parentThreadId.trim();
     if (!parentThreadId) {
       throw new Error("Codex native subagent monitor requires a parent thread id");
@@ -389,6 +428,22 @@ class Monitor {
     }
     let registered = true;
     const registeredState = state;
+    const discoveryRegistration: ParentDiscoveryRegistration = {
+      parentState: registeredState,
+      nativeHookRelay: params.nativeHookRelay,
+      releaseRelayDiscovery: params.nativeHookRelay?.acquireDiscovery(),
+      turnStartBegun: false,
+      turnCorrelation: "pending",
+      terminal: false,
+      unregistered: false,
+      retryAttempt: 0,
+    };
+    this.discoveryRegistrations.add(discoveryRegistration);
+    if (discoveryRegistration.releaseRelayDiscovery) {
+      // A child can be persisted before its lifecycle notification is observed.
+      // Keep the relay and client alive until an exact terminal census closes that gap.
+      this.releaseClientRetention ??= this.retainClient?.();
+    }
     // Recovery may perform several bounded history reads. It must never delay
     // the foreground parent turn that established this registration.
     void this.reconcileTaskRowsForParent(registeredState).catch((error: unknown) => {
@@ -398,6 +453,52 @@ class Monitor {
       });
     });
     return {
+      beginTurnStart: () => {
+        if (
+          !this.discoveryRegistrations.has(discoveryRegistration) ||
+          discoveryRegistration.turnCorrelation !== "pending"
+        ) {
+          return;
+        }
+        // The registration may observe the preceding turn while its caller waits.
+        // Only terminals after the actual turn/start request can identify this attempt.
+        discoveryRegistration.provisionalTerminalTurnId = undefined;
+        discoveryRegistration.turnStartBegun = true;
+      },
+      setTurnId: (turnIdInput: string) => {
+        const turnId = turnIdInput.trim();
+        if (!turnId || !this.discoveryRegistrations.has(discoveryRegistration)) {
+          return;
+        }
+        if (discoveryRegistration.turnCorrelation === "pending") {
+          // Notifications can overtake the turn/start response. Only the latest
+          // terminal belongs to this accepted turn when their ids agree.
+          discoveryRegistration.terminal =
+            discoveryRegistration.provisionalTerminalTurnId === turnId;
+          discoveryRegistration.provisionalTerminalTurnId = undefined;
+        }
+        discoveryRegistration.turnId = turnId;
+        discoveryRegistration.turnCorrelation = "known";
+        this.maybeStartDiscoveryCensus(discoveryRegistration);
+      },
+      markTurnStartIndeterminate: () => {
+        if (
+          this.discoveryRegistrations.has(discoveryRegistration) &&
+          discoveryRegistration.turnCorrelation === "pending" &&
+          discoveryRegistration.turnStartBegun
+        ) {
+          if (discoveryRegistration.provisionalTerminalTurnId) {
+            discoveryRegistration.turnId = discoveryRegistration.provisionalTerminalTurnId;
+            discoveryRegistration.provisionalTerminalTurnId = undefined;
+            discoveryRegistration.turnCorrelation = "known";
+            discoveryRegistration.terminal = true;
+            this.maybeStartDiscoveryCensus(discoveryRegistration);
+            return;
+          }
+          discoveryRegistration.turnCorrelation = "indeterminate";
+        }
+      },
+      retire: () => this.retireParent(parentThreadId),
       unregister: () => {
         if (!registered) {
           return;
@@ -408,6 +509,14 @@ class Monitor {
           current.ownerCount -= 1;
           this.pruneParentIfUnused(current);
         }
+        discoveryRegistration.unregistered = true;
+        if (discoveryRegistration.turnCorrelation === "pending") {
+          // Another turn can complete while this start is awaiting acceptance. Only an
+          // accepted or explicitly indeterminate start may retain discovery ownership.
+          this.releaseDiscoveryRegistration(discoveryRegistration);
+          return;
+        }
+        this.maybeStartDiscoveryCensus(discoveryRegistration);
       },
     };
   }
@@ -422,6 +531,11 @@ class Monitor {
     // must not recreate its parent or deliver old children into a replacement.
     this.retiredParentStates.add(state);
     state.ownerCount = 0;
+    for (const registration of this.discoveryRegistrations) {
+      if (registration.parentState === state) {
+        this.releaseDiscoveryRegistration(registration);
+      }
+    }
     for (const childState of Array.from(this.childStates.values())) {
       if (childState.parentThreadId === parentThreadId) {
         this.retireChild(state, childState, "Codex native subagent parent session ended.");
@@ -430,6 +544,245 @@ class Monitor {
     if (this.parentStates.get(parentThreadId) === state) {
       this.parentStates.delete(parentThreadId);
     }
+  }
+
+  private noteParentTurnTerminal(parentThreadId: string, turnId: string): void {
+    let indeterminateRegistration: ParentDiscoveryRegistration | undefined;
+    let pendingRegistration: ParentDiscoveryRegistration | undefined;
+    for (const registration of this.discoveryRegistrations) {
+      if (registration.parentState.parentThreadId !== parentThreadId) {
+        continue;
+      }
+      if (registration.turnId === turnId) {
+        registration.terminal = true;
+        this.maybeStartDiscoveryCensus(registration);
+        return;
+      }
+      if (
+        !indeterminateRegistration &&
+        registration.turnId === undefined &&
+        registration.turnCorrelation === "indeterminate"
+      ) {
+        indeterminateRegistration = registration;
+      } else if (
+        !pendingRegistration &&
+        registration.turnId === undefined &&
+        registration.turnCorrelation === "pending"
+      ) {
+        pendingRegistration = registration;
+      }
+    }
+    if (indeterminateRegistration) {
+      // A locally-cancelled turn/start can hide the accepted id. The matching
+      // next terminal is its identity because Codex serializes starts and interrupts per thread.
+      indeterminateRegistration.turnId = turnId;
+      indeterminateRegistration.turnCorrelation = "known";
+      indeterminateRegistration.terminal = true;
+      this.maybeStartDiscoveryCensus(indeterminateRegistration);
+      return;
+    }
+    if (pendingRegistration) {
+      // A fast turn can complete before the turn/start response continuation records its id.
+      // Keep only the latest terminal provisional until setTurnId confirms the correlation.
+      pendingRegistration.provisionalTerminalTurnId = turnId;
+    }
+  }
+
+  private maybeStartDiscoveryCensus(registration: ParentDiscoveryRegistration): void {
+    if (
+      !registration.unregistered ||
+      !registration.terminal ||
+      registration.turnCorrelation === "pending" ||
+      registration.censusInFlight ||
+      !this.discoveryRegistrations.has(registration) ||
+      this.disposed
+    ) {
+      return;
+    }
+    if (!registration.releaseRelayDiscovery) {
+      this.releaseDiscoveryRegistration(registration);
+      return;
+    }
+    const censusTurnId = registration.turnId;
+    if (!censusTurnId) {
+      return;
+    }
+    const census = this.runDiscoveryCensus(registration, censusTurnId);
+    registration.censusInFlight = census;
+    void census.finally(() => {
+      if (registration.censusInFlight === census) {
+        registration.censusInFlight = undefined;
+      }
+    });
+  }
+
+  private async runDiscoveryCensus(
+    registration: ParentDiscoveryRegistration,
+    censusTurnId: string,
+  ): Promise<void> {
+    const parentThreadId = registration.parentState.parentThreadId;
+    const seenThreadIds = new Set<string>();
+    const seenCursors = new Set<string>();
+    const discoveredChildren: ChildState[] = [];
+    let cursor: string | undefined;
+    try {
+      do {
+        const response = await this.client.request(
+          "thread/list",
+          {
+            ...(cursor ? { cursor } : {}),
+            limit: THREAD_LIST_PAGE_LIMIT,
+            parentThreadId,
+            sourceKinds: ["subAgentThreadSpawn"],
+          },
+          { timeoutMs: THREAD_READ_TIMEOUT_MS },
+        );
+        if (!this.isCurrentDiscoveryRegistration(registration, censusTurnId)) {
+          return;
+        }
+        for (const thread of response.data) {
+          const childThreadId = thread.id.trim();
+          if (!childThreadId || seenThreadIds.has(childThreadId)) {
+            continue;
+          }
+          seenThreadIds.add(childThreadId);
+          const childState = this.registerChildThread(parentThreadId, childThreadId, {
+            nativeHookRelay: registration.nativeHookRelay,
+          });
+          if (childState) {
+            discoveredChildren.push(childState);
+          }
+        }
+        const nextCursor = response.nextCursor?.trim() || undefined;
+        if (nextCursor && seenCursors.has(nextCursor)) {
+          throw new Error("Codex thread/list repeated a pagination cursor");
+        }
+        cursor = nextCursor;
+        if (cursor) {
+          seenCursors.add(cursor);
+        }
+      } while (cursor);
+      // Claim the complete membership snapshot before status reads. A slow read
+      // must not delay pagination long enough to leave later children unprotected.
+      const settleDiscoveredChildren: Array<() => void> = [];
+      for (const childState of discoveredChildren) {
+        const settle = await this.reconcileDiscoveredChild(registration, censusTurnId, childState);
+        if (settle) {
+          settleDiscoveredChildren.push(settle);
+        }
+      }
+      if (!this.isCurrentDiscoveryRegistration(registration, censusTurnId)) {
+        return;
+      }
+      for (const settle of settleDiscoveredChildren) {
+        settle();
+      }
+      this.releaseDiscoveryRegistration(registration);
+    } catch (error) {
+      if (!this.isCurrentDiscoveryRegistration(registration, censusTurnId)) {
+        return;
+      }
+      embeddedAgentLog.warn("Failed to census Codex native subagent children", {
+        parentThreadId,
+        error: formatErrorMessage(error),
+      });
+      this.scheduleDiscoveryCensusRetry(registration);
+    }
+  }
+
+  private isCurrentDiscoveryRegistration(
+    registration: ParentDiscoveryRegistration,
+    censusTurnId?: string,
+  ): boolean {
+    return (
+      !this.disposed &&
+      this.discoveryRegistrations.has(registration) &&
+      this.parentStates.get(registration.parentState.parentThreadId) === registration.parentState &&
+      (censusTurnId === undefined ||
+        (registration.terminal && registration.turnId === censusTurnId))
+    );
+  }
+
+  private async reconcileDiscoveredChild(
+    registration: ParentDiscoveryRegistration,
+    censusTurnId: string,
+    childState: ChildState,
+  ): Promise<(() => void) | undefined> {
+    const statusRead = this.retainThreadStatusRevision(childState.childThreadId);
+    try {
+      const response: CodexAppServerRequestResult<"thread/read"> = await this.requestThreadRead(
+        childState.childThreadId,
+        false,
+      );
+      if (
+        !this.isCurrentDiscoveryRegistration(registration, censusTurnId) ||
+        this.childStates.get(childState.childThreadId) !== childState ||
+        childState.nativeHookRelay !== registration.nativeHookRelay ||
+        !statusRead.isCurrent()
+      ) {
+        return;
+      }
+      const thread = isJsonObject(response.thread) ? response.thread : undefined;
+      if (
+        readString(thread, "id")?.trim() !== childState.childThreadId ||
+        readThreadParentThreadId(thread) !== childState.parentThreadId
+      ) {
+        return;
+      }
+      const status = isJsonObject(thread.status)
+        ? normalizeIdentifier(readString(thread.status, "type"))
+        : undefined;
+      if (status !== "notloaded" && status !== "closed" && status !== "unloaded") {
+        return;
+      }
+      return () => {
+        if (
+          !this.isCurrentDiscoveryRegistration(registration, censusTurnId) ||
+          this.childStates.get(childState.childThreadId) !== childState ||
+          childState.nativeHookRelay !== registration.nativeHookRelay ||
+          !statusRead.isCurrent()
+        ) {
+          return;
+        }
+        this.releaseChildNativeHookRelay(childState);
+        this.settleResumableChild(childState);
+      };
+    } finally {
+      statusRead.release();
+    }
+  }
+
+  private scheduleDiscoveryCensusRetry(registration: ParentDiscoveryRegistration): void {
+    if (
+      registration.retryTimer ||
+      this.recoveryPollDelaysMs.length === 0 ||
+      !this.isCurrentDiscoveryRegistration(registration)
+    ) {
+      return;
+    }
+    // A failed census leaves child existence unknown, so only owner/client teardown may stop
+    // retries. A timeout here could drop an undiscovered child's inherited relay.
+    const delayMs = delayForAttempt(this.recoveryPollDelaysMs, registration.retryAttempt++);
+    registration.retryTimer = setTimeout(() => {
+      registration.retryTimer = undefined;
+      this.maybeStartDiscoveryCensus(registration);
+    }, delayMs);
+    unrefTimer(registration.retryTimer);
+  }
+
+  private releaseDiscoveryRegistration(registration: ParentDiscoveryRegistration): void {
+    if (!this.discoveryRegistrations.delete(registration)) {
+      return;
+    }
+    if (registration.retryTimer) {
+      clearTimeout(registration.retryTimer);
+      registration.retryTimer = undefined;
+    }
+    const release = registration.releaseRelayDiscovery;
+    registration.releaseRelayDiscovery = undefined;
+    release?.();
+    this.releaseClientRetentionIfIdle();
+    this.pruneParentIfUnused(registration.parentState);
   }
 
   private prepareParentTaskRuntime(state: ParentState): void {
@@ -462,6 +815,13 @@ class Monitor {
     const startedThread = isJsonObject(params?.thread) ? params.thread : undefined;
     const threadId =
       readString(params, "threadId")?.trim() ?? readString(startedThread, "id")?.trim();
+    if (notification.method === "turn/completed" && threadId) {
+      const turn = isJsonObject(params?.turn) ? params.turn : undefined;
+      const turnId = (readString(params, "turnId") ?? readString(turn, "id"))?.trim();
+      if (turnId) {
+        this.noteParentTurnTerminal(threadId, turnId);
+      }
+    }
     const threadStatus = isJsonObject(params?.status)
       ? normalizeIdentifier(readString(params.status, "type"))
       : undefined;
@@ -497,6 +857,10 @@ class Monitor {
       this.handleClosedChild(notification, state);
     }
     const childState = threadId ? this.childStates.get(threadId) : undefined;
+    if (childState && (notification.method === "thread/closed" || threadStatus === "notloaded")) {
+      this.releaseChildNativeHookRelay(childState);
+      this.settleResumableChild(childState);
+    }
     if (notification.method === "turn/started" && childState) {
       this.resumeChild(childState);
     }
@@ -1225,7 +1589,7 @@ class Monitor {
   private registerChildThread(
     parentThreadIdInput: string,
     childThreadIdInput: string,
-    options: { agentPath?: string } = {},
+    options: { agentPath?: string; nativeHookRelay?: CodexNativeHookRelayLease } = {},
   ): ChildState | undefined {
     const parentThreadId = parentThreadIdInput.trim();
     const childThreadId = childThreadIdInput.trim();
@@ -1264,15 +1628,15 @@ class Monitor {
         deliveringCompletion: false,
       };
       this.childStates.set(childThreadId, childState);
-      this.attachChildNativeHookRelay(
-        childState,
-        this.parentStates.get(parentThreadId)?.nativeHookRelay,
-      );
       this.threadStatusRevisions.set(
         childThreadId,
         this.threadStatusRevisions.get(childThreadId) ?? { value: 0, readers: 0 },
       );
     }
+    this.attachChildNativeHookRelay(
+      childState,
+      options.nativeHookRelay ?? this.parentStates.get(parentThreadId)?.nativeHookRelay,
+    );
     this.registerAgentPath(childState, childThreadId);
     this.parentStates
       .get(parentThreadId)
@@ -1479,6 +1843,11 @@ class Monitor {
 
   private releaseClientRetentionIfIdle(): void {
     if (
+      [...this.discoveryRegistrations].some((registration) => registration.releaseRelayDiscovery)
+    ) {
+      return;
+    }
+    if (
       [...this.childStates.values()].some(
         (childState) => !childState.terminal && !childState.settledWithoutCompletion,
       )
@@ -1522,6 +1891,11 @@ class Monitor {
   private pruneParentIfUnused(state: ParentState): void {
     if (state.ownerCount > 0) {
       return;
+    }
+    for (const registration of this.discoveryRegistrations) {
+      if (registration.parentState === state) {
+        return;
+      }
     }
     for (const childState of this.childStates.values()) {
       if (childState.parentThreadId === state.parentThreadId) {

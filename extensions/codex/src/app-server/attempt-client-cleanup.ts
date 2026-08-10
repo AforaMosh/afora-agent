@@ -116,8 +116,9 @@ export async function interruptCodexTurnAndWaitBestEffort(
   const requestParams = { threadId: params.threadId, turnId: params.turnId };
   let completion: { completion: Promise<boolean>; cancel: () => void } | undefined;
   try {
-    // Codex acknowledges interruption before publishing turn/completed. Register
-    // first so an immediate exact-turn terminal cannot race past its owner.
+    // Codex acknowledges interruption before publishing turn/completed. For an empty id,
+    // the ack is also the ordered fence proving the earlier turn/start reached its handler.
+    // Register known turns first so an immediate exact terminal cannot race past its owner.
     completion = params.turnId
       ? getCodexAppServerTurnRouter(client).watchNativeTurnCompletion({
           threadId: params.threadId,

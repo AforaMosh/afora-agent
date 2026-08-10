@@ -1328,11 +1328,13 @@ prompt into a fresh session after restarting the Codex app-server or
 OpenClaw Gateway so old threads are dropped and native hook registrations
 are recreated.
 
-**Codex tool calls create too many short-lived hook processes:** set
+**Disable OpenClaw loop detection for Codex tool calls:** set
 `plugins.entries.codex.config.appServer.loopDetectionPreToolUseRelay: false`
-and restart the gateway. This disables only the Codex `PreToolUse` subprocess
-used for OpenClaw loop detection and its no-policy marker. Required
-`before_tool_call` and trusted-tool policy relays remain enabled.
+and restart the gateway. This skips loop-detection evaluation inside the Codex
+`PreToolUse` relay; it does not reduce hook process fan-out. A policy-free
+standby subprocess remains installed because loaded Codex threads keep their
+original hook configuration. The standby can enforce `before_tool_call` and
+trusted-tool policy adopted on a later turn.
 
 **A non-Codex model uses the built-in harness:** expected unless provider
 or model runtime policy routes it to another harness. Plain non-OpenAI

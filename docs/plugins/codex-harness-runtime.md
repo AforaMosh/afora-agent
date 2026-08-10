@@ -165,6 +165,15 @@ plugin behavior. For the native tool and permission bridge, OpenClaw injects
 per-thread Codex config for `PreToolUse`, `PostToolUse`, `PermissionRequest`,
 and `Stop`.
 
+Native `PreToolUse` fails closed when OpenClaw cannot reach the relay because a
+loaded Codex thread can outlive the policy state that created its hook command.
+Retry the tool first. If the relay stays unavailable, start a fresh session or
+restart the OpenClaw Gateway. A reachable relay with no active before-tool
+policy returns no decision. OpenClaw therefore installs a policy-free standby
+`PreToolUse` command even when loop detection is disabled, so a loaded thread
+can enforce policy adopted on a later turn. Observational hooks such as
+`PostToolUse` stay nonblocking when the relay is unavailable.
+
 When Codex app-server approvals are enabled (`approvalPolicy` is not
 `"never"`), the default injected native hook config omits `PermissionRequest`
 so Codex's app-server reviewer and OpenClaw's approval bridge handle real

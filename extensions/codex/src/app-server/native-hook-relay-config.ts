@@ -56,7 +56,6 @@ export function buildCodexNativeHookRelayConfig(params: {
   events: readonly NativeHookRelayEvent[];
   hookTimeoutSec?: number;
   clearOmittedEvents?: boolean;
-  loopDetectionPreToolUseRelay: boolean;
 }): JsonObject {
   if (params.events.length === 0) {
     return buildCodexNativeHookRelayDisabledConfig();
@@ -70,11 +69,10 @@ export function buildCodexNativeHookRelayConfig(params: {
     const codexEvent = CODEX_HOOK_EVENT_BY_NATIVE_EVENT[event];
     const selected = selectedEvents.has(event);
     const shouldRelay = params.relay.shouldRelayEvent(event);
-    // The no-policy marker is part of the shipped Codex fallback contract.
-    // Only the Codex-owned loop relay opt-out may omit it.
-    const selectedNoopPreToolUse =
-      selected && event === "pre_tool_use" && !shouldRelay && params.loopDetectionPreToolUseRelay;
-    if (!selected || (!shouldRelay && !selectedNoopPreToolUse)) {
+    // Keep a match-all standby hook so a loaded thread can enforce policy that
+    // becomes active on a later turn without replacing its frozen config.
+    const selectedStandbyPreToolUse = selected && event === "pre_tool_use" && !shouldRelay;
+    if (!selected || (!shouldRelay && !selectedStandbyPreToolUse)) {
       if (selected || params.clearOmittedEvents) {
         config[`hooks.${codexEvent}`] = [] satisfies JsonValue;
       }
@@ -91,7 +89,7 @@ export function buildCodexNativeHookRelayConfig(params: {
     const command = params.relay.commandForEvent(event, {
       timeoutMs: resolveCodexNativeHookRelayCommandTimeoutMs(timeout),
     });
-    const matcher = selectedNoopPreToolUse
+    const matcher = selectedStandbyPreToolUse
       ? undefined
       : buildCodexNativeToolMatcher(params.relay.toolMatcherForEvent(event));
     config[`hooks.${codexEvent}`] = [

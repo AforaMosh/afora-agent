@@ -123,6 +123,9 @@ describe("Codex app-server main thread cleanup", () => {
       if (method === "turn/start") {
         return turnStartResult();
       }
+      if (method === "thread/list") {
+        return { data: [], nextCursor: null };
+      }
       return {};
     });
 
@@ -177,7 +180,11 @@ describe("Codex app-server main thread cleanup", () => {
       pluginAppsFingerprint: expect.any(String),
     });
 
-    expect(requests.map((entry) => entry.method)).toEqual(["thread/start", "turn/start"]);
+    expect(requests.map((entry) => entry.method)).toEqual([
+      "thread/start",
+      "turn/start",
+      "thread/list",
+    ]);
   });
 
   it("keeps alternating conversations subscribed on their shared physical Codex client", async () => {
@@ -221,6 +228,8 @@ describe("Codex app-server main thread cleanup", () => {
         method: "turn/completed",
         params: { threadId, turnId, turn: { id: turnId, status: "completed" } },
       });
+      const census = await waitForHarnessRequest(harness, "thread/list", requestStart);
+      harness.send({ id: census.id, result: { data: [], nextCursor: null } });
       expect(readAttemptTerminal(await run).aborted).toBe(false);
     }
 
@@ -231,10 +240,14 @@ describe("Codex app-server main thread cleanup", () => {
     expect(userRequestMethods()).toEqual([
       "thread/start",
       "turn/start",
+      "thread/list",
       "thread/start",
       "turn/start",
+      "thread/list",
       "turn/start",
+      "thread/list",
       "turn/start",
+      "thread/list",
     ]);
     await expect(readCodexAppServerBinding(sessionFiles.a)).resolves.toMatchObject({
       threadId: "thread-a",
@@ -277,8 +290,14 @@ describe("Codex app-server main thread cleanup", () => {
         turn: { id: "turn-5", status: "completed" },
       },
     });
+    const siblingCensus = await waitForHarnessRequest(harness, "thread/list", siblingRequestStart);
+    harness.send({ id: siblingCensus.id, result: { data: [], nextCursor: null } });
     expect(readAttemptTerminal(await siblingRun).aborted).toBe(false);
-    expect(userRequestMethods().slice(-2)).toEqual(["thread/unsubscribe", "turn/start"]);
+    expect(userRequestMethods().slice(-3)).toEqual([
+      "thread/unsubscribe",
+      "turn/start",
+      "thread/list",
+    ]);
   });
 
   it("keeps an incognito thread subscribed for live in-process reuse", async () => {

@@ -607,7 +607,7 @@
     },
     "appServer.loopDetectionPreToolUseRelay": {
       "label": "Loop Detection Pre-tool Relay",
-      "help": "Install the Codex PreToolUse subprocess used only for OpenClaw loop detection and its no-policy marker. Disable to reduce per-tool process fan-out; before-tool and trusted policy relays remain enforced.",
+      "help": "Run OpenClaw loop detection in the Codex PreToolUse relay. Disable to skip loop detection; the standby subprocess remains installed so policy adopted by a loaded thread can still be enforced.",
       "advanced": true
     },
     "appServer.requestTimeoutMs": {

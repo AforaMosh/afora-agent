@@ -49,6 +49,7 @@ export type CodexNativeHookRelayLease = Omit<
   "unregister" | "rebindAttempt"
 > & {
   acquireChild: (childThreadId: string) => (() => void) | undefined;
+  acquireDiscovery: () => (() => void) | undefined;
   releaseParent: (options?: { delay?: boolean }) => void;
 };
 
@@ -171,6 +172,7 @@ export function emitCodexNativePreToolUseFailureDiagnostic(params: {
 export function createCodexNativeHookRelay(
   params: CodexNativeHookRelayParams,
 ): CodexNativeHookRelayAcquisition {
+  params.signal.throwIfAborted();
   if (params.options?.enabled === false) {
     return { status: "disabled" };
   }
@@ -231,6 +233,7 @@ class CodexNativeHookRelayRoute {
   unavailableReason: "dead" | "foreign-owner" | "unknown" | undefined;
 
   private readonly childThreadIds = new Set<string>();
+  private discoveryClaimCount = 0;
   private readonly relayId: string;
   private readonly lifetimeAbortController = new AbortController();
   private attempt: CodexNativeHookRelayAttempt;
@@ -356,9 +359,6 @@ class CodexNativeHookRelayRoute {
       }
     }
     this.attachAttemptAbort(claim);
-    if (this.released) {
-      return undefined;
-    }
     const readExpiresAtMs = () => this.relay.expiresAtMs;
     const {
       unregister: _unregister,
@@ -381,6 +381,7 @@ class CodexNativeHookRelayRoute {
         }
       },
       acquireChild: (childThreadId: string) => this.acquireChild(childThreadId),
+      acquireDiscovery: () => this.acquireDiscovery(),
       releaseParent: (options?: { delay?: boolean }) => this.releaseAttempt(claim, options),
     };
   }
@@ -417,13 +418,14 @@ class CodexNativeHookRelayRoute {
     const onAbort = () => this.releaseAttempt(claim);
     signal.addEventListener("abort", onAbort, { once: true });
     claim.detachAbort = () => signal.removeEventListener("abort", onAbort);
-    if (signal.aborted) {
-      onAbort();
-    }
   }
 
   private hasClaims(): boolean {
-    return this.attemptClaim !== undefined || this.childThreadIds.size > 0;
+    return (
+      this.attemptClaim !== undefined ||
+      this.childThreadIds.size > 0 ||
+      this.discoveryClaimCount > 0
+    );
   }
 
   private renew(ttlMs?: number): CodexNativeHookRelayRenewal {
@@ -476,7 +478,31 @@ class CodexNativeHookRelayRoute {
       }
       acquired = false;
       this.childThreadIds.delete(childThreadId);
-      if (this.childThreadIds.size === 0) {
+      if (this.childThreadIds.size === 0 && this.discoveryClaimCount === 0) {
+        this.clearRenewal();
+        if (!this.attemptClaim) {
+          this.requestFinalRelease(true);
+        }
+      }
+    };
+  }
+
+  private acquireDiscovery(): (() => void) | undefined {
+    if (this.released) {
+      return undefined;
+    }
+    this.cancelPendingUnregister?.();
+    this.cancelPendingUnregister = undefined;
+    this.discoveryClaimCount += 1;
+    this.scheduleRenewal();
+    let acquired = true;
+    return () => {
+      if (!acquired) {
+        return;
+      }
+      acquired = false;
+      this.discoveryClaimCount = Math.max(0, this.discoveryClaimCount - 1);
+      if (this.childThreadIds.size === 0 && this.discoveryClaimCount === 0) {
         this.clearRenewal();
         if (!this.attemptClaim) {
           this.requestFinalRelease(true);
@@ -534,13 +560,17 @@ class CodexNativeHookRelayRoute {
   }
 
   private scheduleRenewal(): void {
-    if (this.renewalTimer || this.released || this.childThreadIds.size === 0) {
+    if (
+      this.renewalTimer ||
+      this.released ||
+      (this.childThreadIds.size === 0 && this.discoveryClaimCount === 0)
+    ) {
       return;
     }
     const delayMs = Math.max(1, Math.min(5 * 60_000, Math.floor(this.ttlMs / 2)));
     this.renewalTimer = setTimeout(() => {
       this.renewalTimer = undefined;
-      if (this.released || this.childThreadIds.size === 0) {
+      if (this.released || (this.childThreadIds.size === 0 && this.discoveryClaimCount === 0)) {
         return;
       }
       this.renew(this.ttlMs);
@@ -607,6 +637,7 @@ class CodexNativeHookRelayRoute {
     this.attemptClaim?.detachAbort();
     this.attemptClaim = undefined;
     this.childThreadIds.clear();
+    this.discoveryClaimCount = 0;
     if (codexNativeHookRelayOwners.get(this.relayId) === this) {
       codexNativeHookRelayOwners.delete(this.relayId);
     }
