@@ -406,6 +406,7 @@ describe("openclaw.setup", () => {
     });
     await session.answer(first.step.id, null);
     await expect(session.next()).resolves.toMatchObject({ done: true, status: "done" });
+    await session.whenSettled();
   });
   it("runs the selected provider method in a shared wizard session and commits its config", async () => {
     const preparedConfig: OpenClawConfig = {
@@ -464,6 +465,7 @@ describe("openclaw.setup", () => {
       baseSnapshot: expect.objectContaining({ hash: "prepare-base-hash" }),
       baseHash: "prepare-base-hash",
     });
+    await session.whenSettled();
   });
 });
 
