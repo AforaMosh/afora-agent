@@ -18,7 +18,12 @@ export * from "./types.js";
 
 import { anthropicOAuthProvider } from "./anthropic.js";
 import { openaiCodexOAuthProvider } from "./openai-chatgpt.js";
-import type { OAuthCredentials, OAuthProviderId, OAuthProviderInterface } from "./types.js";
+import type {
+  OAuthCredentials,
+  OAuthProviderId,
+  OAuthProviderInterface,
+  OAuthRefreshContext,
+} from "./types.js";
 
 const BUILT_IN_OAUTH_PROVIDERS: OAuthProviderInterface[] = [
   anthropicOAuthProvider,
@@ -26,25 +31,33 @@ const BUILT_IN_OAUTH_PROVIDERS: OAuthProviderInterface[] = [
 ];
 
 type OAuthApiKeyResult = { newCredentials: OAuthCredentials; apiKey: string } | null;
+type PreparedOAuthApiKey = (
+  credentials: OAuthCredentials,
+  context?: OAuthRefreshContext,
+) => Promise<OAuthApiKeyResult>;
 
 async function resolveOAuthApiKey(
   provider: OAuthProviderInterface,
-  credentials: Record<string, OAuthCredentials>,
+  credentials: OAuthCredentials,
+  refresh: OAuthProviderInterface["refreshToken"],
+  context?: OAuthRefreshContext,
 ): Promise<OAuthApiKeyResult> {
-  let creds = credentials[provider.id];
-  if (!creds) {
-    return null;
-  }
-
+  let creds = credentials;
   if (Date.now() >= creds.expires) {
     try {
-      creds = await provider.refreshToken(creds);
+      creds = await refresh(creds, context);
     } catch (error) {
       throw new Error(`Failed to refresh OAuth token for ${provider.id}`, { cause: error });
     }
   }
 
   return { newCredentials: creds, apiKey: provider.getApiKey(creds) };
+}
+
+function prepareOAuthApiKeyForProvider(provider: OAuthProviderInterface): PreparedOAuthApiKey {
+  const refresh = provider.prepareRefreshToken?.() ?? provider.refreshToken.bind(provider);
+  return (credentials: OAuthCredentials, context?: OAuthRefreshContext) =>
+    resolveOAuthApiKey(provider, credentials, refresh, context);
 }
 
 /** Mutable OAuth provider registrations owned by one auth/session runtime. */
@@ -78,11 +91,17 @@ export class OAuthProviderRegistry {
     providerId: OAuthProviderId,
     credentials: Record<string, OAuthCredentials>,
   ): Promise<OAuthApiKeyResult> {
-    const provider = this.get(providerId);
-    if (!provider) {
+    const resolveApiKey = this.prepareApiKey(providerId);
+    if (!resolveApiKey) {
       throw new Error(`Unknown OAuth provider: ${providerId}`);
     }
-    return resolveOAuthApiKey(provider, credentials);
+    const credential = credentials[providerId];
+    return credential ? resolveApiKey(credential) : null;
+  }
+
+  prepareApiKey(providerId: OAuthProviderId): PreparedOAuthApiKey | null {
+    const provider = this.get(providerId);
+    return provider ? prepareOAuthApiKeyForProvider(provider) : null;
   }
 }
 
@@ -111,13 +130,7 @@ export function getOAuthProviders(): OAuthProviderInterface[] {
  * @returns API key string and updated credentials, or null if no credentials
  * @throws Error if refresh fails
  */
-export async function getOAuthApiKey(
-  providerId: OAuthProviderId,
-  credentials: Record<string, OAuthCredentials>,
-): Promise<{ newCredentials: OAuthCredentials; apiKey: string } | null> {
+export function prepareOAuthApiKey(providerId: OAuthProviderId): PreparedOAuthApiKey | null {
   const provider = getOAuthProvider(providerId);
-  if (!provider) {
-    throw new Error(`Unknown OAuth provider: ${providerId}`);
-  }
-  return resolveOAuthApiKey(provider, credentials);
+  return provider ? prepareOAuthApiKeyForProvider(provider) : null;
 }

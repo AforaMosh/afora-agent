@@ -22,6 +22,7 @@ vi.mock("../cli-credentials.js", () => ({
 }));
 
 vi.mock("../../plugins/provider-runtime.runtime.js", () => ({
+  resolveProviderRuntimePluginHandle: async (params: object) => ({ ...params, plugin: {} }),
   buildProviderAuthDoctorHintWithPlugin: async () => undefined,
   formatProviderAuthProfileApiKeyWithPlugin: async (params: { context?: { access?: string } }) =>
     params.context?.access,

@@ -1,5 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 
+const providerOAuthMocks = vi.hoisted(() => ({
+  resolveCredential: vi.fn(),
+  resolveHandle: vi.fn(),
+}));
+
+vi.mock("../../plugins/provider-runtime.runtime.js", async () => {
+  const actual = await vi.importActual<typeof import("../../plugins/provider-runtime.runtime.js")>(
+    "../../plugins/provider-runtime.runtime.js",
+  );
+  return {
+    ...actual,
+    resolveProviderOAuthCredentialWithPlugin: providerOAuthMocks.resolveCredential,
+    resolveProviderRuntimePluginHandle: providerOAuthMocks.resolveHandle,
+  };
+});
+
 vi.mock("../auth-profiles/constants.js", async () => {
   const actual = await vi.importActual<typeof import("../auth-profiles/constants.js")>(
     "../auth-profiles/constants.js",
@@ -12,32 +28,36 @@ import { AuthStorage } from "./auth-storage.js";
 
 function registerRaceProvider(
   storage: AuthStorage,
-  refreshToken: (credentials: {
-    access: string;
-    refresh: string;
-    expires: number;
-  }) => Promise<{ access: string; refresh: string; expires: number }>,
+  refreshToken: (
+    credentials: { access: string; refresh: string; expires: number },
+    context?: { signal?: AbortSignal },
+  ) => Promise<{ access: string; refresh: string; expires: number }>,
 ) {
+  const prepareRefreshToken = vi.fn(() => refreshToken);
   getAuthStorageOAuthProviderRegistry(storage).register({
     id: "test-oauth",
     name: "Test OAuth",
     async login() {
       throw new Error("not used");
     },
-    refreshToken,
+    async refreshToken(credentials, context) {
+      return await refreshToken(credentials, context);
+    },
+    prepareRefreshToken,
     getApiKey(credentials) {
       return credentials.access;
     },
   });
+  return prepareRefreshToken;
 }
 
-describe("AuthStorage OAuth refresh ownership", () => {
-  it("bounds callers while retaining late success and queue ownership", async () => {
+describe("AuthStorage OAuth refresh deadline", () => {
+  it("bounds the caller, aborts the prepared plugin refresh, and persists late success", async () => {
     const storage = AuthStorage.inMemory({
-      "test-oauth": {
+      "plugin-oauth": {
         type: "oauth",
-        access: "expired-access",
-        refresh: "expired-refresh",
+        access: "fake-expired-access",
+        refresh: "fake-refresh",
         expires: 1,
       },
     });
@@ -46,33 +66,44 @@ describe("AuthStorage OAuth refresh ownership", () => {
       refresh: string;
       expires: number;
     }>();
-    const refreshToken = vi.fn(async () => await stalled.promise);
-    registerRaceProvider(storage, refreshToken);
-
-    await expect(storage.getApiKey("test-oauth")).resolves.toBeUndefined();
-    expect(storage.drainErrors()[0]?.message).toContain("exceeded caller deadline");
-    const second = storage.getApiKey("test-oauth");
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 25);
+    const aborted = vi.fn();
+    const plugin = { refreshOAuth: vi.fn() };
+    providerOAuthMocks.resolveHandle.mockResolvedValue({
+      provider: "plugin-oauth",
+      plugin,
     });
-    expect(refreshToken).toHaveBeenCalledOnce();
+    providerOAuthMocks.resolveCredential.mockImplementation(async (params) => {
+      params.signal?.addEventListener("abort", aborted, { once: true });
+      const credential = {
+        type: "oauth" as const,
+        provider: "plugin-oauth",
+        ...(await stalled.promise),
+      };
+      return { status: "available" as const, credential, apiKey: credential.access };
+    });
+
+    await expect(storage.getApiKey("plugin-oauth")).resolves.toBeUndefined();
+    expect(aborted).toHaveBeenCalledOnce();
+    expect(storage.drainErrors()[0]?.message).toContain("exceeded caller deadline");
+    expect(providerOAuthMocks.resolveHandle).toHaveBeenCalledOnce();
 
     stalled.resolve({
-      access: "late-access",
-      refresh: "late-refresh",
-      expires: Date.now() + 10 * 60_000,
+      access: "fake-late-access",
+      refresh: "fake-late-refresh",
+      expires: Date.now() + 60_000,
     });
-    await expect(second).resolves.toBe("late-access");
-    expect(storage.get("test-oauth")).toMatchObject({
-      access: "late-access",
-      refresh: "late-refresh",
+    await vi.waitFor(() => {
+      expect(storage.get("plugin-oauth")).toMatchObject({
+        access: "fake-late-access",
+        refresh: "fake-late-refresh",
+      });
     });
-    expect(refreshToken).toHaveBeenCalledOnce();
+    expect(providerOAuthMocks.resolveHandle).toHaveBeenCalledOnce();
   });
 });
 
 describe("AuthStorage OAuth refresh conflicts", () => {
-  it("rejects an expired rotated credential without persisting it", async () => {
+  it("rejects an expired rotated credential from a registered provider", async () => {
     const original = {
       type: "oauth" as const,
       access: "expired-access",
@@ -95,6 +126,39 @@ describe("AuthStorage OAuth refresh conflicts", () => {
     ]);
   });
 
+  it("rejects an expired rotated credential from a provider plugin", async () => {
+    const original = {
+      type: "oauth" as const,
+      access: "expired-access",
+      refresh: "expired-refresh",
+      expires: 1,
+    };
+    const storage = AuthStorage.inMemory({ "plugin-oauth": original });
+    providerOAuthMocks.resolveHandle.mockResolvedValue({
+      provider: "plugin-oauth",
+      plugin: { refreshOAuth: vi.fn() },
+    });
+    providerOAuthMocks.resolveCredential.mockResolvedValue({
+      status: "available",
+      credential: {
+        type: "oauth",
+        provider: "plugin-oauth",
+        access: "rotated-access",
+        refresh: "rotated-refresh",
+        expires: Date.now(),
+      },
+      apiKey: "rotated-access",
+    });
+
+    await expect(storage.getApiKey("plugin-oauth")).resolves.toBeUndefined();
+    expect(storage.get("plugin-oauth")).toEqual(original);
+    expect(JSON.stringify(storage.getAll())).not.toContain("rotated-access");
+    expect(JSON.stringify(storage.getAll())).not.toContain("rotated-refresh");
+    expect(storage.drainErrors().map((error) => error.message)).toEqual([
+      "OAuth provider returned an expired credential",
+    ]);
+  });
+
   it("persists a same-identity rotation and preserves attempted metadata", async () => {
     const storage = AuthStorage.inMemory({
       "test-oauth": {
@@ -105,7 +169,8 @@ describe("AuthStorage OAuth refresh conflicts", () => {
         accountId: "account-1",
       },
     });
-    registerRaceProvider(storage, async () => {
+    const refreshToken = vi.fn(async (_credentials, context) => {
+      expect(context?.signal).toBeInstanceOf(AbortSignal);
       storage.set("test-oauth", {
         type: "oauth",
         access: "racing-access",
@@ -116,17 +181,20 @@ describe("AuthStorage OAuth refresh conflicts", () => {
       return {
         access: "rotated-access",
         refresh: "rotated-refresh",
-        expires: Date.now() + 10 * 60_000,
+        expires: Date.now() + 60_000,
       };
     });
+    const prepareRefreshToken = registerRaceProvider(storage, refreshToken);
 
     await expect(storage.getApiKey("test-oauth")).resolves.toBe("rotated-access");
     expect(storage.get("test-oauth")).toMatchObject({
+      type: "oauth",
       provider: "test-oauth",
       access: "rotated-access",
       refresh: "rotated-refresh",
       accountId: "account-1",
     });
+    expect(prepareRefreshToken).toHaveBeenCalledOnce();
   });
 
   it("adopts a usable different identity without overwriting it", async () => {
@@ -150,7 +218,7 @@ describe("AuthStorage OAuth refresh conflicts", () => {
       return {
         access: "rotated-access",
         refresh: "rotated-refresh",
-        expires: Date.now() + 10 * 60_000,
+        expires: Date.now() + 60_000,
       };
     });
 
@@ -205,7 +273,7 @@ describe("AuthStorage OAuth refresh conflicts", () => {
       return {
         access: "rotated-access",
         refresh: "rotated-refresh",
-        expires: Date.now() + 10 * 60_000,
+        expires: Date.now() + 60_000,
       };
     });
 

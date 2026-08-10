@@ -28,8 +28,9 @@ const { getOAuthApiKeyMock } = vi.hoisted(() => {
 });
 
 vi.mock("../../llm/oauth.js", () => ({
-  getOAuthApiKey: getOAuthApiKeyMock,
   getOAuthProviders: () => [{ id: "anthropic" }, { id: "openai" }],
+  prepareOAuthApiKey: (provider: string) => (credentials: object) =>
+    getOAuthApiKeyMock(provider, credentials),
 }));
 
 vi.mock("../cli-credentials.js", () => ({
@@ -40,6 +41,7 @@ vi.mock("../cli-credentials.js", () => ({
 }));
 
 vi.mock("../../plugins/provider-runtime.runtime.js", () => ({
+  resolveProviderRuntimePluginHandle: async (params: object) => ({ ...params, plugin: {} }),
   buildProviderAuthDoctorHintWithPlugin: async () => null,
   formatProviderAuthProfileApiKeyWithPlugin: async (params: { context?: { access?: string } }) =>
     params.context?.access,

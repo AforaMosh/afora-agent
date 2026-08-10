@@ -28,13 +28,13 @@ import {
 } from "./store.js";
 
 const {
-  refreshProviderOAuthCredentialWithPluginMock,
+  resolveProviderOAuthCredentialWithPluginMock,
   formatProviderAuthProfileApiKeyWithPluginMock,
 } = getOAuthProviderRuntimeMocks();
 
 vi.mock("../../llm/oauth.js", () => ({
-  getOAuthApiKey: vi.fn(async () => null),
   getOAuthProviders: () => [{ id: "openai" }],
+  prepareOAuthApiKey: () => async () => null,
 }));
 
 describe("OAuth refresh in-process queue", () => {
@@ -50,7 +50,7 @@ describe("OAuth refresh in-process queue", () => {
   beforeEach(async () => {
     resetFileLockStateForTest();
     resetOAuthProviderRuntimeMocks({
-      refreshProviderOAuthCredentialWithPluginMock,
+      resolveProviderOAuthCredentialWithPluginMock,
       formatProviderAuthProfileApiKeyWithPluginMock,
     });
     clearRuntimeAuthProfileStoreSnapshots();
@@ -76,7 +76,7 @@ describe("OAuth refresh in-process queue", () => {
     saveAuthProfileStore(createExpiredOauthStore({ profileId, provider }), agentDir);
 
     let callCount = 0;
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementation(async () => {
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementation(async () => {
       callCount += 1;
       if (callCount === 1) {
         throw new Error("simulated upstream failure");
@@ -88,7 +88,7 @@ describe("OAuth refresh in-process queue", () => {
         provider,
         access: "second-try-access",
         refresh: "second-try-refresh",
-        expires: Date.now() + 60_000,
+        expires: Date.now() + 10 * 60_000,
       } as never;
     });
 
@@ -129,7 +129,7 @@ describe("OAuth refresh in-process queue", () => {
     let inFlight = 0;
     let maxInFlight = 0;
     let seq = 0;
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementation(async () => {
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementation(async () => {
       const n = ++seq;
       startOrder.push(n);
       inFlight += 1;

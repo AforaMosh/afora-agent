@@ -19,13 +19,6 @@ vi.mock("../model-auth-env-vars.js", async (importOriginal) => ({
   }),
 }));
 
-vi.mock("../../llm/oauth.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../llm/oauth.js")>()),
-  getOAuthApiKey: vi.fn(async () => {
-    throw new Error("invalid_grant");
-  }),
-}));
-
 const platformModel = {
   id: "gpt-5.5",
   name: "gpt-5.5",

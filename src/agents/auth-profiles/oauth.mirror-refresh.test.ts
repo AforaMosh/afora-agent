@@ -32,7 +32,7 @@ import {
 import type { AuthProfileStore, OAuthCredential } from "./types.js";
 
 const {
-  refreshProviderOAuthCredentialWithPluginMock,
+  resolveProviderOAuthCredentialWithPluginMock,
   formatProviderAuthProfileApiKeyWithPluginMock,
 } = getOAuthProviderRuntimeMocks();
 
@@ -57,15 +57,10 @@ function requireOAuthCredential(store: AuthProfileStore, profileId: string): OAu
 
 vi.mock("../../llm/oauth.js", () => ({
   getOAuthProviders: () => [{ id: "anthropic" }, { id: "openai" }],
-  getOAuthApiKey: vi.fn(async (provider: string, credentials: Record<string, OAuthCredential>) => {
-    const credential = credentials[provider];
-    return credential
-      ? {
-          apiKey: credential.access,
-          newCredentials: credential,
-        }
-      : null;
-  }),
+  prepareOAuthApiKey: () => async (credentials: Record<string, OAuthCredential>) => {
+    const credential = Object.values(credentials)[0];
+    return credential ? { apiKey: credential.access, newCredentials: credential } : null;
+  },
 }));
 
 describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => {
@@ -81,7 +76,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
   beforeEach(async () => {
     resetFileLockStateForTest();
     resetOAuthProviderRuntimeMocks({
-      refreshProviderOAuthCredentialWithPluginMock,
+      resolveProviderOAuthCredentialWithPluginMock,
       formatProviderAuthProfileApiKeyWithPluginMock,
     });
     externalAuthTesting.setResolveExternalAuthProfilesForTest(() => []);
@@ -115,7 +110,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
     saveAuthProfileStore(createExpiredOauthStore({ profileId, provider, accountId }), subAgentDir);
     saveAuthProfileStore(createExpiredOauthStore({ profileId, provider, accountId }), mainAgentDir);
 
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
       async () =>
         ({
           type: "oauth",
@@ -159,7 +154,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
       mainAgentDir,
     );
 
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
       async () =>
         ({
           type: "oauth",
@@ -189,7 +184,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
         expires: freshExpiry,
       },
     );
-    expect(refreshProviderOAuthCredentialWithPluginMock).toHaveBeenCalledTimes(1);
+    expect(resolveProviderOAuthCredentialWithPluginMock).toHaveBeenCalledTimes(1);
   });
 
   it("inherits main-agent credentials via the pre-refresh adopt path when main is already fresher", async () => {
@@ -234,7 +229,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
 
     expect(result?.apiKey).toBe("main-fresh-access");
     expect(result?.provider).toBe(provider);
-    expect(refreshProviderOAuthCredentialWithPluginMock).not.toHaveBeenCalled();
+    expect(resolveProviderOAuthCredentialWithPluginMock).not.toHaveBeenCalled();
   });
 
   it("answers app-server forced refresh from fresh main credentials when a sub-agent copy is expired", async () => {
@@ -287,7 +282,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
 
     expect(result?.apiKey).toBe("main-fresh-access");
     expect(result?.provider).toBe(provider);
-    expect(refreshProviderOAuthCredentialWithPluginMock).not.toHaveBeenCalled();
+    expect(resolveProviderOAuthCredentialWithPluginMock).not.toHaveBeenCalled();
   });
 
   it("refreshes the main owner when a stale local OAuth clone shadows a newer main credential", async () => {
@@ -332,7 +327,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
       mainAgentDir,
     );
 
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
       async (params?: { context?: unknown }) => {
         const credential = params?.context as OAuthCredential | undefined;
         expect(credential?.refresh).toBe("main-owner-refresh");
@@ -351,7 +346,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
     });
 
     expect(result?.apiKey).toBe("main-owner-refreshed-access");
-    expect(refreshProviderOAuthCredentialWithPluginMock).toHaveBeenCalledTimes(1);
+    expect(resolveProviderOAuthCredentialWithPluginMock).toHaveBeenCalledTimes(1);
 
     const subRaw = readAuthProfileStoreForTest(subAgentDir);
     expectPersistedOpenAICodexProfile(
@@ -404,7 +399,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
       mainAgentDir,
     );
 
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(async () => {
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementationOnce(async () => {
       // Simulate another agent completing its refresh and writing fresh
       // creds to main, concurrent with our attempt.
       saveAuthProfileStore(
@@ -474,7 +469,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
       mainAgentDir,
     );
 
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(async (params) => {
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementationOnce(async (params) => {
       const context = params?.context as OAuthCredential;
       expect(context.access).toBe("main-existing-access");
       throw new Error("upstream 503 service unavailable");
@@ -488,7 +483,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
         forceRefresh: true,
       }),
     ).rejects.toThrow(/OAuth token refresh failed for openai/);
-    expect(refreshProviderOAuthCredentialWithPluginMock).toHaveBeenCalledTimes(1);
+    expect(resolveProviderOAuthCredentialWithPluginMock).toHaveBeenCalledTimes(1);
   });
 
   it("mirrors refreshed credentials produced by the plugin-refresh path", async () => {
@@ -504,9 +499,8 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
     saveAuthProfileStore(createExpiredOauthStore({ profileId, provider, accountId }), subAgentDir);
     saveAuthProfileStore(createExpiredOauthStore({ profileId, provider, accountId }), mainAgentDir);
 
-    // Plugin returns a truthy refreshed credential — this takes the plugin
-    // branch instead of falling through to getOAuthApiKey.
-    refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
+    // Plugin returns a truthy refreshed credential, so built-in OAuth resolution is skipped.
+    resolveProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
       async () =>
         ({
           access: "plugin-refreshed-access",

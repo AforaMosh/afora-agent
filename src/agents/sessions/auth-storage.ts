@@ -53,9 +53,11 @@ import { getAgentDir } from "../config.js";
 import {
   getAuthStorageOAuthProviderRegistry,
   loginAuthStorageOAuthProvider,
-  resolveAuthStoragePluginOAuthCredential,
+  prepareAuthStorageOAuthCredentialResolver,
 } from "./auth-storage-oauth-registry.js";
 import { resolveConfigValue } from "./resolve-config-value.js";
+
+type PreparedOAuthResolver = Awaited<ReturnType<typeof prepareAuthStorageOAuthCredentialResolver>>;
 
 export type ApiKeyCredential = {
   type: "api_key";
@@ -313,11 +315,6 @@ class SqliteAuthStorageBackend implements AuthStorageBackend {
     return current ? [current] : this.preparedStore ? [this.preparedStore] : [];
   }
 
-  private readRaw(): AuthProfileStore {
-    assertAuthProfileMigrationReady(this.agentDir);
-    return loadSqliteAuthStorageStore(this.agentDir);
-  }
-
   withLock<T>(fn: (current: string | undefined) => LockResult<T>): T {
     assertAuthProfileMigrationReady(this.agentDir);
     const snapshots = this.resolveMaterializedRuntimeStores();
@@ -348,35 +345,19 @@ class SqliteAuthStorageBackend implements AuthStorageBackend {
       resolveAuthProfileDatabasePath(this.agentDir),
       OAUTH_REFRESH_LOCK_OPTIONS,
       async () => {
-        const initialRaw = this.readRaw();
-        const initialData = projectAuthoritativeAuthStorageData(
-          initialRaw,
-          this.resolveMaterializedRuntimeStores(),
-        );
-        const { result, next } = await fn(JSON.stringify(initialData));
-        if (next === undefined) {
-          return result;
+        const initial = this.withLock((current) => ({ result: current }));
+        const { result, next } = await fn(initial);
+        if (next !== undefined) {
+          this.withLock((current) => {
+            if (current !== initial) {
+              throw new AuthStoragePersistenceError(
+                "Cannot update auth storage because its SQLite credentials changed concurrently.",
+                undefined,
+              );
+            }
+            return { result: undefined, next };
+          });
         }
-        assertAuthProfileMigrationReady(this.agentDir);
-        runAuthProfileWriteTransaction(this.agentDir, (database) => {
-          const authoritative = loadSqliteAuthStorageStore(this.agentDir, database);
-          if (!isDeepStrictEqual(authoritative.profiles, initialRaw.profiles)) {
-            throw new AuthStoragePersistenceError(
-              "Cannot update auth storage because its SQLite credentials changed concurrently.",
-              undefined,
-            );
-          }
-          saveAuthProfileStore(
-            applyAuthStorageData(authoritative, JSON.parse(next) as AuthStorageData, initialData),
-            this.agentDir,
-            {
-              filterExternalAuthProfiles: false,
-              preserveStateProfileIds: collectStateOnlyAuthProfileIds(authoritative),
-              syncExternalCli: false,
-            },
-            database,
-          );
-        });
         return result;
       },
     );
@@ -446,7 +427,7 @@ export class AuthStorage {
   private errors: Error[] = [];
   private storage: AuthStorageBackend;
   private migrationOwnerAgentDir?: string;
-  private oauthRefreshQueue = new KeyedAsyncQueue();
+  private readonly oauthRefreshQueue = new KeyedAsyncQueue();
 
   private constructor(storage: AuthStorageBackend, migrationOwnerAgentDir?: string) {
     this.storage = storage;
@@ -674,9 +655,6 @@ export class AuthStorage {
     return { configured: false };
   }
 
-  /**
-   * Get all credentials (for passing to getOAuthApiKey).
-   */
   getAll(): AuthStorageData {
     return { ...this.data };
   }
@@ -708,22 +686,8 @@ export class AuthStorage {
    */
   private async refreshOAuthTokenWithLock(
     providerId: OAuthProviderId,
+    resolveCredential: PreparedOAuthResolver,
   ): Promise<{ apiKey: string; newCredentials: OAuthCredentials } | null> {
-    const provider = getAuthStorageOAuthProviderRegistry(this).get(providerId);
-
-    const resolveCredential = async (credential: OAuthCredential, forceRefresh: boolean) => {
-      if (!forceRefresh && provider) {
-        return { apiKey: provider.getApiKey(credential), newCredentials: credential };
-      }
-      if (!provider) {
-        return await resolveAuthStoragePluginOAuthCredential(providerId, credential, forceRefresh);
-      }
-      const refreshed = await getAuthStorageOAuthProviderRegistry(this).getApiKey(providerId, {
-        [providerId]: credential,
-      });
-      return refreshed ?? null;
-    };
-
     const refresh = async (onCallTimeout: (error: Error) => void) => {
       const snapshot = this.storage.withLock((current) => {
         const currentData = this.parseStorageData(current);
@@ -737,31 +701,33 @@ export class AuthStorage {
       }
       const credential = snapshot.credential;
       if (Date.now() < credential.expires) {
-        return await resolveCredential(credential, false);
+        return await resolveCredential(credential);
       }
 
       const refreshed = await runRetainedOAuthRefreshCall({
         timeoutMs: OAUTH_REFRESH_CALL_TIMEOUT_MS,
         onTimeout: onCallTimeout,
-        run: async () => await resolveCredential(credential, true),
+        run: async (signal) => await resolveCredential(credential, { forceRefresh: true, signal }),
       });
       if (!refreshed) {
         return null;
       }
       const refreshedCredential: OAuthCredential = { ...credential, ...refreshed.newCredentials };
+      refreshedCredential.provider = providerId;
       if (Date.now() >= refreshedCredential.expires) {
         throw new Error("OAuth provider returned an expired credential");
       }
 
       const persisted = this.storage.withLock((current) => {
         const data = this.parseStorageData(current);
+        const authoritative = data[providerId];
         const attempted = { ...credential, provider: providerId };
         const decision = resolveOAuthRefreshConflict({
-          authoritative: data[providerId]
-            ? ({ ...data[providerId], provider: providerId } as AuthProfileCredential)
+          authoritative: authoritative
+            ? ({ ...authoritative, provider: providerId } as AuthProfileCredential)
             : undefined,
           attempted,
-          refreshed: { ...refreshedCredential, provider: providerId },
+          refreshed: refreshedCredential,
         });
         if (!decision?.persist) {
           return {
@@ -777,9 +743,12 @@ export class AuthStorage {
       this.data = persisted.data;
       this.loadError = null;
       if (persisted.persisted && persisted.credential) {
-        return { apiKey: refreshed.apiKey, newCredentials: persisted.credential };
+        return {
+          apiKey: refreshed.apiKey,
+          newCredentials: persisted.credential,
+        };
       }
-      return persisted.credential ? await resolveCredential(persisted.credential, false) : null;
+      return persisted.credential ? await resolveCredential(persisted.credential) : null;
     };
 
     return await runRetainedOAuthRefreshOwner((onCallTimeout) =>
@@ -838,15 +807,15 @@ export class AuthStorage {
     }
 
     if (cred?.type === "oauth") {
-      const provider = getAuthStorageOAuthProviderRegistry(this).get(providerId);
-
-      // Check if token needs refresh
-      const needsRefresh = Date.now() >= cred.expires;
-
-      if (needsRefresh) {
+      const resolveCredential = await prepareAuthStorageOAuthCredentialResolver(
+        this,
+        providerId,
+        cred,
+      );
+      if (Date.now() >= cred.expires) {
         // Use locked refresh to prevent race conditions
         try {
-          const result = await this.refreshOAuthTokenWithLock(providerId);
+          const result = await this.refreshOAuthTokenWithLock(providerId, resolveCredential);
           if (result) {
             return result.apiKey;
           }
@@ -869,11 +838,7 @@ export class AuthStorage {
 
           if (updatedCred?.type === "oauth" && Date.now() < updatedCred.expires) {
             // Another instance refreshed successfully, use those credentials
-            if (provider) {
-              return provider.getApiKey(updatedCred);
-            }
-            return (await resolveAuthStoragePluginOAuthCredential(providerId, updatedCred, false))
-              ?.apiKey;
+            return (await resolveCredential(updatedCred))?.apiKey;
           }
 
           // Refresh truly failed - return undefined so model discovery skips this provider
@@ -881,10 +846,7 @@ export class AuthStorage {
           return undefined;
         }
       } else {
-        if (provider) {
-          return provider.getApiKey(cred);
-        }
-        return (await resolveAuthStoragePluginOAuthCredential(providerId, cred, false))?.apiKey;
+        return (await resolveCredential(cred))?.apiKey;
       }
     }
 

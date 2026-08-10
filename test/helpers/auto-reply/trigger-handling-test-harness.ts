@@ -156,7 +156,6 @@ vi.doMock("../../../src/plugins/provider-runtime.runtime.js", () => ({
   buildProviderMissingAuthMessageWithPlugin: () => undefined,
   formatProviderAuthProfileApiKeyWithPlugin: (params: { apiKey?: string }) => params.apiKey,
   prepareProviderRuntimeAuth: async () => undefined,
-  refreshProviderOAuthCredentialWithPlugin: async () => undefined,
 }));
 
 const modelFallbackMocks = getSharedMocks("openclaw.trigger-handling.model-fallback-mocks", () => ({

@@ -263,6 +263,12 @@ describe("Plugin SDK API baseline", () => {
     expect(findDeclaration("OAuthProviderInterface")).toContain(
       "login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials>;",
     );
+    expect(findDeclaration("OAuthProviderInterface")).toContain(
+      "refreshToken(credentials: OAuthCredentials, context?: OAuthRefreshContext): Promise<OAuthCredentials>;",
+    );
+    expect(findDeclaration("OAuthProviderInterface")).toContain(
+      'prepareRefreshToken?(): OAuthProviderInterface["refreshToken"];',
+    );
     expect(findDeclaration("LiveModelCatalogHttpError")).toContain("readonly status: number;");
     expect(findDeclaration("LiveModelCatalogHttpError")).toContain(
       "constructor(providerId: string, status: number);",

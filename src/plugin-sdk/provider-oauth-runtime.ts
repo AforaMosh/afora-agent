@@ -86,6 +86,11 @@ export interface OAuthLoginCallbacks {
   signal?: AbortSignal;
 }
 
+/** Cancellation and deadline context forwarded to provider token refresh I/O. */
+export type OAuthRefreshContext = {
+  signal?: AbortSignal;
+};
+
 /** Provider OAuth contract implemented by provider plugins. */
 export interface OAuthProviderInterface {
   /** Stable provider id used for credential and config routing. */
@@ -100,7 +105,13 @@ export interface OAuthProviderInterface {
   usesCallbackServer?: boolean;
 
   /** Refresh expired credentials and return updated credentials to persist. */
-  refreshToken(credentials: OAuthCredentials): Promise<OAuthCredentials>;
+  refreshToken(
+    credentials: OAuthCredentials,
+    context?: OAuthRefreshContext,
+  ): Promise<OAuthCredentials>;
+
+  /** Bind process-stable provider runtime state before entering refresh locks. */
+  prepareRefreshToken?(): OAuthProviderInterface["refreshToken"];
 
   /** Convert credentials to an API key string for the provider. */
   getApiKey(credentials: OAuthCredentials): string;
