@@ -80,46 +80,6 @@
     "sdk": true
   },
   {
-    "name": "agentCommand",
-    "path": "src/agents/agent-command.ts",
-    "sdk": false
-  },
-  {
-    "name": "agentCommand",
-    "path": "src/gateway/test-helpers.runtime-state.ts",
-    "sdk": false
-  },
-  {
-    "name": "applyExclusiveSlotSelection",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "applyExclusiveSlotSelection",
-    "path": "src/plugins/slots.ts",
-    "sdk": false
-  },
-  {
-    "name": "applyFinalEffectiveToolPolicy",
-    "path": "src/agents/embedded-agent-runner/effective-tool-policy.ts",
-    "sdk": false
-  },
-  {
-    "name": "applyFinalEffectiveToolPolicy",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "applyPluginUninstallDirectoryRemoval",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "applyPluginUninstallDirectoryRemoval",
-    "path": "src/plugins/uninstall.ts",
-    "sdk": false
-  },
-  {
     "name": "asString",
     "path": "src/channels/plugins/status-issues/shared.ts",
     "sdk": true
@@ -145,16 +105,6 @@
     "sdk": true
   },
   {
-    "name": "autoMigrateLegacyStateDir",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "autoMigrateLegacyStateDir",
-    "path": "src/infra/state-migrations.state-dir.ts",
-    "sdk": false
-  },
-  {
     "name": "buildApprovalPresentation",
     "path": "src/infra/approval-presentation.ts",
     "sdk": true
@@ -163,16 +113,6 @@
     "name": "buildApprovalPresentation",
     "path": "src/infra/exec-approval-reply.ts",
     "sdk": true
-  },
-  {
-    "name": "buildBundleMcpToolsFromCatalog",
-    "path": "src/agents/agent-bundle-mcp-materialize.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildBundleMcpToolsFromCatalog",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
   },
   {
     "name": "buildChannelAccountSnapshot",
@@ -195,46 +135,6 @@
     "sdk": false
   },
   {
-    "name": "buildPluginDiagnosticsReport",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildPluginDiagnosticsReport",
-    "path": "src/plugins/status.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildPluginInspectReport",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildPluginInspectReport",
-    "path": "src/plugins/status.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildPluginRegistrySnapshotReport",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildPluginRegistrySnapshotReport",
-    "path": "src/plugins/status-snapshot.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildPluginSnapshotReport",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "buildPluginSnapshotReport",
-    "path": "src/plugins/status.ts",
-    "sdk": false
-  },
-  {
     "name": "buildQaTarget",
     "path": "src/plugin-sdk/qa-channel-protocol.ts",
     "sdk": true
@@ -245,31 +145,6 @@
     "sdk": true
   },
   {
-    "name": "bundledPluginFile",
-    "path": "src/plugin-sdk/test-helpers/bundled-plugin-paths.ts",
-    "sdk": true
-  },
-  {
-    "name": "bundledPluginFile",
-    "path": "src/plugins/contracts/test-helpers/bundled-plugin-roots.ts",
-    "sdk": true
-  },
-  {
-    "name": "callGateway",
-    "path": "src/cli/program.test-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "callGateway",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "callGateway",
-    "path": "src/gateway/call.ts",
-    "sdk": false
-  },
-  {
     "name": "callGatewayCli",
     "path": "src/cli/nodes-cli/rpc.ts",
     "sdk": false
@@ -277,16 +152,6 @@
   {
     "name": "callGatewayCli",
     "path": "src/gateway/call.ts",
-    "sdk": false
-  },
-  {
-    "name": "callGatewayMock",
-    "path": "src/agents/openclaw-tools.subagents.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "callGatewayMock",
-    "path": "src/cron/isolated-agent/run.test-harness.ts",
     "sdk": false
   },
   {
@@ -307,26 +172,6 @@
   {
     "name": "classifySessionKind",
     "path": "src/sessions/classify-session-kind.ts",
-    "sdk": false
-  },
-  {
-    "name": "clearMcpOAuthCredentials",
-    "path": "src/agents/mcp-oauth.ts",
-    "sdk": false
-  },
-  {
-    "name": "clearMcpOAuthCredentials",
-    "path": "src/cli/mcp-cli.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "clearPluginRegistryLoadCache",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "clearPluginRegistryLoadCache",
-    "path": "src/plugins/loader-cache.ts",
     "sdk": false
   },
   {
@@ -420,16 +265,6 @@
     "sdk": false
   },
   {
-    "name": "confirm",
-    "path": "src/commands/configure.shared.ts",
-    "sdk": false
-  },
-  {
-    "name": "confirm",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": false
-  },
-  {
     "name": "containsConfigIncludeDirective",
     "path": "src/config/io.read-helpers.ts",
     "sdk": false
@@ -490,26 +325,6 @@
     "sdk": false
   },
   {
-    "name": "createHarness",
-    "path": "src/gateway/session-observer.test-utils.ts",
-    "sdk": false
-  },
-  {
-    "name": "createHarness",
-    "path": "src/gateway/worker-environments/placement-dispatch-test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "createHookCtx",
-    "path": "src/auto-reply/reply/dispatch-from-config.shared.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "createHookCtx",
-    "path": "src/auto-reply/reply/dispatch-from-config.test-harness.ts",
-    "sdk": false
-  },
-  {
     "name": "createPluginLoaderLogger",
     "path": "src/plugins/loader-shared.ts",
     "sdk": false
@@ -560,16 +375,6 @@
     "sdk": false
   },
   {
-    "name": "createSuiteTempRootTracker",
-    "path": "src/plugins/test-helpers/fs-fixtures.ts",
-    "sdk": false
-  },
-  {
-    "name": "createSuiteTempRootTracker",
-    "path": "src/test-helpers/temp-dir.ts",
-    "sdk": false
-  },
-  {
     "name": "DEFAULT_PROGRESS_DRAFT_LABELS",
     "path": "src/channels/streaming.ts",
     "sdk": true
@@ -587,26 +392,6 @@
   {
     "name": "DEFAULT_TIMEOUT_MS",
     "path": "src/infra/update-runner-command.ts",
-    "sdk": false
-  },
-  {
-    "name": "defaultRuntime",
-    "path": "src/cli/daemon-cli/test-helpers/lifecycle-core-harness.ts",
-    "sdk": true
-  },
-  {
-    "name": "defaultRuntime",
-    "path": "src/runtime.ts",
-    "sdk": true
-  },
-  {
-    "name": "describe1BeforeEach0",
-    "path": "src/auto-reply/reply/dispatch-from-config.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "describe1BeforeEach0",
-    "path": "src/gateway/server-methods/agent.test-harness.ts",
     "sdk": false
   },
   {
@@ -701,27 +486,12 @@
   },
   {
     "name": "enablePluginInConfig",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "enablePluginInConfig",
     "path": "src/plugin-sdk/provider-enable-config.ts",
     "sdk": true
   },
   {
     "name": "enablePluginInConfig",
     "path": "src/plugins/enable.ts",
-    "sdk": true
-  },
-  {
-    "name": "ensureAuthProfileStore",
-    "path": "src/agents/auth-profiles/store.ts",
-    "sdk": true
-  },
-  {
-    "name": "ensureAuthProfileStore",
-    "path": "src/commands/doctor.e2e-harness.ts",
     "sdk": true
   },
   {
@@ -735,16 +505,6 @@
     "sdk": false
   },
   {
-    "name": "ensureConfigReady",
-    "path": "src/cli/program.test-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "ensureConfigReady",
-    "path": "src/cli/program/config-guard.ts",
-    "sdk": false
-  },
-  {
     "name": "ensureRecord",
     "path": "src/commands/doctor/shared/legacy-config-record-shared.ts",
     "sdk": false
@@ -752,21 +512,6 @@
   {
     "name": "ensureRecord",
     "path": "src/config/legacy.shared.ts",
-    "sdk": false
-  },
-  {
-    "name": "expectRecordFields",
-    "path": "src/agents/openai-transport-stream.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "expectRecordFields",
-    "path": "src/gateway/server-methods/agent.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "expectRecordFields",
-    "path": "src/gateway/test-helpers.assertions.ts",
     "sdk": false
   },
   {
@@ -855,16 +600,6 @@
     "sdk": true
   },
   {
-    "name": "formatEnvelopeTimestamp",
-    "path": "src/auto-reply/envelope.ts",
-    "sdk": true
-  },
-  {
-    "name": "formatEnvelopeTimestamp",
-    "path": "src/plugin-sdk/test-helpers/envelope-timestamp.ts",
-    "sdk": true
-  },
-  {
     "name": "formatSkillsForPrompt",
     "path": "src/skills/loading/session.ts",
     "sdk": true
@@ -885,26 +620,6 @@
     "sdk": true
   },
   {
-    "name": "getActivePluginChannelRegistryVersion",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "getActivePluginChannelRegistryVersion",
-    "path": "src/plugins/runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "getActivePluginRegistryVersion",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "getActivePluginRegistryVersion",
-    "path": "src/plugins/runtime.ts",
-    "sdk": false
-  },
-  {
     "name": "getChatChannelMeta",
     "path": "src/channels/chat-meta.ts",
     "sdk": true
@@ -913,26 +628,6 @@
     "name": "getChatChannelMeta",
     "path": "src/plugin-sdk/core.ts",
     "sdk": true
-  },
-  {
-    "name": "getEmbeddingProvider",
-    "path": "src/plugins/embedding-provider-runtime.ts",
-    "sdk": true
-  },
-  {
-    "name": "getEmbeddingProvider",
-    "path": "src/plugins/loader.test-harness.ts",
-    "sdk": true
-  },
-  {
-    "name": "getFreeGatewayPort",
-    "path": "src/gateway/gateway-cli-backend.live-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "getFreeGatewayPort",
-    "path": "src/gateway/test-helpers.e2e.ts",
-    "sdk": false
   },
   {
     "name": "getLatestSubagentRunByChildSessionKey",
@@ -947,11 +642,6 @@
   {
     "name": "getReplyFromConfig",
     "path": "src/auto-reply/reply/get-reply.ts",
-    "sdk": true
-  },
-  {
-    "name": "getReplyFromConfig",
-    "path": "src/gateway/test-helpers.runtime-state.ts",
     "sdk": true
   },
   {
@@ -1000,106 +690,6 @@
     "sdk": true
   },
   {
-    "name": "inspectPluginRegistry",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "inspectPluginRegistry",
-    "path": "src/plugins/plugin-registry-snapshot.ts",
-    "sdk": false
-  },
-  {
-    "name": "inspectPortUsage",
-    "path": "src/daemon/test-helpers/schtasks-fixtures.ts",
-    "sdk": false
-  },
-  {
-    "name": "inspectPortUsage",
-    "path": "src/infra/ports-inspect.ts",
-    "sdk": false
-  },
-  {
-    "name": "installHooksFromNpmSpec",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installHooksFromNpmSpec",
-    "path": "src/hooks/install.ts",
-    "sdk": false
-  },
-  {
-    "name": "installHooksFromPath",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installHooksFromPath",
-    "path": "src/hooks/install.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromClawHub",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromClawHub",
-    "path": "src/plugins/clawhub.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromGitSpec",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromGitSpec",
-    "path": "src/plugins/git-install.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromMarketplace",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromMarketplace",
-    "path": "src/plugins/marketplace.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromNpmPackArchive",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromNpmPackArchive",
-    "path": "src/plugins/install-npm-pack.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromNpmSpec",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromNpmSpec",
-    "path": "src/plugins/install-npm.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromPath",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "installPluginFromPath",
-    "path": "src/plugins/install-package.ts",
-    "sdk": false
-  },
-  {
     "name": "isBundledChannelEnabledByChannelConfig",
     "path": "src/plugins/config-normalization-shared.ts",
     "sdk": false
@@ -1140,16 +730,6 @@
     "sdk": true
   },
   {
-    "name": "killProcessTree",
-    "path": "src/agents/shell-utils.ts",
-    "sdk": false
-  },
-  {
-    "name": "killProcessTree",
-    "path": "src/daemon/test-helpers/schtasks-fixtures.ts",
-    "sdk": false
-  },
-  {
     "name": "listDescendantRunsForRequester",
     "path": "src/agents/subagent-registry-read.ts",
     "sdk": false
@@ -1158,16 +738,6 @@
     "name": "listDescendantRunsForRequester",
     "path": "src/agents/subagent-registry.ts",
     "sdk": false
-  },
-  {
-    "name": "listEmbeddingProviders",
-    "path": "src/plugins/embedding-provider-runtime.ts",
-    "sdk": true
-  },
-  {
-    "name": "listEmbeddingProviders",
-    "path": "src/plugins/loader.test-harness.ts",
-    "sdk": true
   },
   {
     "name": "listManagedPluginNpmRoots",
@@ -1240,16 +810,6 @@
     "sdk": true
   },
   {
-    "name": "loadConfig",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "loadConfig",
-    "path": "src/config/io.runtime.ts",
-    "sdk": true
-  },
-  {
     "name": "loadJsonFile",
     "path": "src/infra/json-file.ts",
     "sdk": true
@@ -1260,29 +820,14 @@
     "sdk": true
   },
   {
-    "name": "loadModelCatalogMock",
-    "path": "src/auto-reply/reply.directive.directive-behavior.e2e-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "loadModelCatalogMock",
-    "path": "src/cron/isolated-agent/run.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "loadPluginManifestRegistry",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": true
-  },
-  {
     "name": "loadPluginManifestRegistry",
     "path": "src/config/doc-baseline.runtime.ts",
-    "sdk": true
+    "sdk": false
   },
   {
     "name": "loadPluginManifestRegistry",
     "path": "src/plugins/manifest-registry.ts",
-    "sdk": true
+    "sdk": false
   },
   {
     "name": "loadQaRuntimeModule",
@@ -1327,16 +872,6 @@
   {
     "name": "log",
     "path": "src/tasks/task-registry-state.ts",
-    "sdk": false
-  },
-  {
-    "name": "makeTempDir",
-    "path": "src/infra/exec-approvals-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "makeTempDir",
-    "path": "src/plugins/loader.test-fixtures.ts",
     "sdk": false
   },
   {
@@ -1495,16 +1030,6 @@
     "sdk": false
   },
   {
-    "name": "notifyGatewayPluginMetadataChanged",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "notifyGatewayPluginMetadataChanged",
-    "path": "src/cli/plugins-update-gateway-signal.ts",
-    "sdk": false
-  },
-  {
     "name": "pad",
     "path": "src/agents/bash-tools.shared.ts",
     "sdk": false
@@ -1513,26 +1038,6 @@
     "name": "pad",
     "path": "src/commands/models/list.format.ts",
     "sdk": false
-  },
-  {
-    "name": "parseClawHubPluginSpec",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "parseClawHubPluginSpec",
-    "path": "src/infra/clawhub-spec.ts",
-    "sdk": false
-  },
-  {
-    "name": "parseCsvFilter",
-    "path": "src/image-generation/live-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "parseCsvFilter",
-    "path": "src/video-generation/live-test-helpers.ts",
-    "sdk": true
   },
   {
     "name": "parseFrontmatter",
@@ -1600,16 +1105,6 @@
     "sdk": false
   },
   {
-    "name": "peekSessionMcpRuntime",
-    "path": "src/agents/agent-bundle-mcp-manager-api.ts",
-    "sdk": false
-  },
-  {
-    "name": "peekSessionMcpRuntime",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
-  },
-  {
     "name": "persistSessionEntry",
     "path": "src/agents/command/attempt-execution.shared.ts",
     "sdk": false
@@ -1617,16 +1112,6 @@
   {
     "name": "persistSessionEntry",
     "path": "src/auto-reply/reply/commands-session-store.ts",
-    "sdk": false
-  },
-  {
-    "name": "planPluginUninstall",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "planPluginUninstall",
-    "path": "src/plugins/uninstall.ts",
     "sdk": false
   },
   {
@@ -1657,11 +1142,6 @@
   {
     "name": "promoteConfigSnapshotToLastKnownGood",
     "path": "src/config/io.runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "promptYesNo",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
     "sdk": false
   },
   {
@@ -1705,31 +1185,6 @@
     "sdk": true
   },
   {
-    "name": "readConfigFileSnapshot",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "readConfigFileSnapshot",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": true
-  },
-  {
-    "name": "readConfigFileSnapshot",
-    "path": "src/config/io.runtime.ts",
-    "sdk": true
-  },
-  {
-    "name": "readConfigFileSnapshotForWrite",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "readConfigFileSnapshotForWrite",
-    "path": "src/config/io.runtime.ts",
-    "sdk": true
-  },
-  {
     "name": "readLatestSessionUsageFromTranscriptAsync",
     "path": "src/gateway/session-transcript-readers.ts",
     "sdk": false
@@ -1737,36 +1192,6 @@
   {
     "name": "readLatestSessionUsageFromTranscriptAsync",
     "path": "src/gateway/session-utils.fs.ts",
-    "sdk": false
-  },
-  {
-    "name": "readMcpOAuthCredentialsStatus",
-    "path": "src/agents/mcp-oauth.ts",
-    "sdk": false
-  },
-  {
-    "name": "readMcpOAuthCredentialsStatus",
-    "path": "src/cli/mcp-cli.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "readPersistedInstalledPluginIndex",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "readPersistedInstalledPluginIndex",
-    "path": "src/plugins/installed-plugin-index-store.ts",
-    "sdk": false
-  },
-  {
-    "name": "readSessionEntry",
-    "path": "src/agents/subagent-announce.runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "readSessionEntry",
-    "path": "src/cron/isolated-agent.turn-test-helpers.ts",
     "sdk": false
   },
   {
@@ -1788,26 +1213,6 @@
     "name": "readStringParam",
     "path": "src/agents/tools/transcripts-tool-runtime.ts",
     "sdk": true
-  },
-  {
-    "name": "recordHookInstall",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "recordHookInstall",
-    "path": "src/hooks/installs.ts",
-    "sdk": false
-  },
-  {
-    "name": "recordPluginInstall",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "recordPluginInstall",
-    "path": "src/plugins/installs.ts",
-    "sdk": false
   },
   {
     "name": "recordTaskRunProgressByRunId",
@@ -1840,26 +1245,6 @@
     "sdk": true
   },
   {
-    "name": "refreshPluginRegistry",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "refreshPluginRegistry",
-    "path": "src/plugins/plugin-registry-snapshot.ts",
-    "sdk": false
-  },
-  {
-    "name": "registerPluginsCli",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "registerPluginsCli",
-    "path": "src/cli/plugins-cli.ts",
-    "sdk": false
-  },
-  {
     "name": "registerSubCliByName",
     "path": "src/cli/program/register.subclis-core.ts",
     "sdk": false
@@ -1878,16 +1263,6 @@
     "name": "registerSubCliCommands",
     "path": "src/cli/program/register.subclis.ts",
     "sdk": false
-  },
-  {
-    "name": "replaceConfigFile",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "replaceConfigFile",
-    "path": "src/config/mutate.ts",
-    "sdk": true
   },
   {
     "name": "replaceRuntimeAuthProfileStoreSnapshots",
@@ -1910,16 +1285,6 @@
     "sdk": false
   },
   {
-    "name": "reportClawHubPluginInstallTelemetry",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "reportClawHubPluginInstallTelemetry",
-    "path": "src/infra/clawhub.ts",
-    "sdk": false
-  },
-  {
     "name": "requestSafeGatewayRestart",
     "path": "src/cli/daemon-cli/lifecycle-safe-restart.ts",
     "sdk": false
@@ -1927,16 +1292,6 @@
   {
     "name": "requestSafeGatewayRestart",
     "path": "src/infra/restart-coordinator.ts",
-    "sdk": false
-  },
-  {
-    "name": "requireRecord",
-    "path": "src/acp/translator.bridge-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "requireRecord",
-    "path": "src/gateway/test-helpers.assertions.ts",
     "sdk": false
   },
   {
@@ -2065,36 +1420,6 @@
     "sdk": false
   },
   {
-    "name": "resolveEffectiveToolInventory",
-    "path": "src/agents/tools-effective-inventory.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveEffectiveToolInventory",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveEffectiveToolInventoryRuntimeModelContextAsync",
-    "path": "src/agents/tools-effective-inventory.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveEffectiveToolInventoryRuntimeModelContextAsync",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveGatewayServiceProbeHosts",
-    "path": "src/daemon/gateway-service-probe-hosts.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveGatewayServiceProbeHosts",
-    "path": "src/daemon/test-helpers/schtasks-fixtures.ts",
-    "sdk": false
-  },
-  {
     "name": "resolveHeartbeatPrompt",
     "path": "src/auto-reply/heartbeat.ts",
     "sdk": true
@@ -2113,16 +1438,6 @@
     "name": "resolveHomeDir",
     "path": "src/utils.ts",
     "sdk": true
-  },
-  {
-    "name": "resolveMarketplaceInstallShortcut",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveMarketplaceInstallShortcut",
-    "path": "src/plugins/marketplace.ts",
-    "sdk": false
   },
   {
     "name": "resolveMemorySlotDecision",
@@ -2185,16 +1500,6 @@
     "sdk": false
   },
   {
-    "name": "resolveOpenClawPackageRoot",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveOpenClawPackageRoot",
-    "path": "src/infra/openclaw-root.ts",
-    "sdk": false
-  },
-  {
     "name": "resolveProviderThinkingProfile",
     "path": "src/plugins/provider-runtime.ts",
     "sdk": false
@@ -2245,16 +1550,6 @@
     "sdk": true
   },
   {
-    "name": "resolveSessionAuthProfileOverrideMock",
-    "path": "src/auto-reply/reply.directive.directive-behavior.e2e-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveSessionAuthProfileOverrideMock",
-    "path": "src/cron/isolated-agent/run.test-harness.ts",
-    "sdk": false
-  },
-  {
     "name": "resolveSessionCatalogCreateTarget",
     "path": "src/gateway/server-methods/session-catalog.ts",
     "sdk": false
@@ -2285,16 +1580,6 @@
     "sdk": true
   },
   {
-    "name": "resolveSessionMcpConfigSummary",
-    "path": "src/agents/agent-bundle-mcp-runtime-config.ts",
-    "sdk": false
-  },
-  {
-    "name": "resolveSessionMcpConfigSummary",
-    "path": "src/gateway/server-methods/__mocks__/tools-effective.runtime.ts",
-    "sdk": false
-  },
-  {
     "name": "resolveStorePath",
     "path": "src/config/sessions/paths.ts",
     "sdk": true
@@ -2315,16 +1600,6 @@
     "sdk": false
   },
   {
-    "name": "restorePersistedInstalledPluginIndexIfCurrent",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "restorePersistedInstalledPluginIndexIfCurrent",
-    "path": "src/plugins/installed-plugin-index-store.ts",
-    "sdk": false
-  },
-  {
     "name": "runChannelInboundEvent",
     "path": "src/channels/message/inbound-reply-dispatch.ts",
     "sdk": true
@@ -2336,11 +1611,6 @@
   },
   {
     "name": "runCommandWithTimeout",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": true
-  },
-  {
-    "name": "runCommandWithTimeout",
     "path": "src/library.ts",
     "sdk": true
   },
@@ -2348,16 +1618,6 @@
     "name": "runCommandWithTimeout",
     "path": "src/process/exec-runner.ts",
     "sdk": true
-  },
-  {
-    "name": "runEmbeddedAgentMock",
-    "path": "src/auto-reply/reply.directive.directive-behavior.e2e-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "runEmbeddedAgentMock",
-    "path": "src/cron/isolated-agent/run.test-harness.ts",
-    "sdk": false
   },
   {
     "name": "runExec",
@@ -2375,16 +1635,6 @@
     "sdk": true
   },
   {
-    "name": "runGatewayUpdate",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "runGatewayUpdate",
-    "path": "src/infra/update-runner.ts",
-    "sdk": false
-  },
-  {
     "name": "runGitUpdate",
     "path": "src/cli/update-cli/update-command-git.ts",
     "sdk": false
@@ -2392,16 +1642,6 @@
   {
     "name": "runGitUpdate",
     "path": "src/infra/update-runner-git.ts",
-    "sdk": false
-  },
-  {
-    "name": "runMcpOAuthLogin",
-    "path": "src/agents/mcp-oauth.ts",
-    "sdk": false
-  },
-  {
-    "name": "runMcpOAuthLogin",
-    "path": "src/cli/mcp-cli.test-harness.ts",
     "sdk": false
   },
   {
@@ -2425,36 +1665,6 @@
     "sdk": true
   },
   {
-    "name": "runSystemAgentWithInference",
-    "path": "src/cli/program.test-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "runSystemAgentWithInference",
-    "path": "src/commands/system-agent-with-inference.ts",
-    "sdk": false
-  },
-  {
-    "name": "runtimeLogs",
-    "path": "src/cli/daemon-cli/test-helpers/lifecycle-core-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "runtimeLogs",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "runTui",
-    "path": "src/cli/program.test-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "runTui",
-    "path": "src/tui/tui.ts",
-    "sdk": false
-  },
-  {
     "name": "safeParseJson",
     "path": "src/gateway/server-json.ts",
     "sdk": true
@@ -2475,26 +1685,6 @@
     "sdk": true
   },
   {
-    "name": "seedSessionStore",
-    "path": "src/agents/embedded-agent-subscribe.compaction-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "seedSessionStore",
-    "path": "src/infra/heartbeat-runner.test-utils.ts",
-    "sdk": false
-  },
-  {
-    "name": "serveOpenClawChannelMcp",
-    "path": "src/cli/mcp-cli.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "serveOpenClawChannelMcp",
-    "path": "src/mcp/channel-server.ts",
-    "sdk": false
-  },
-  {
     "name": "setDetachedTaskDeliveryStatusByRunId",
     "path": "src/tasks/detached-task-runtime.ts",
     "sdk": false
@@ -2502,26 +1692,6 @@
   {
     "name": "setDetachedTaskDeliveryStatusByRunId",
     "path": "src/tasks/task-executor.ts",
-    "sdk": false
-  },
-  {
-    "name": "setupCommand",
-    "path": "src/cli/program.test-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "setupCommand",
-    "path": "src/commands/setup.ts",
-    "sdk": false
-  },
-  {
-    "name": "setupWizardCommand",
-    "path": "src/cli/program.test-mocks.ts",
-    "sdk": false
-  },
-  {
-    "name": "setupWizardCommand",
-    "path": "src/commands/onboard.ts",
     "sdk": false
   },
   {
@@ -2541,23 +1711,8 @@
   },
   {
     "name": "sleep",
-    "path": "src/tui/tui-pty-test-support.ts",
-    "sdk": true
-  },
-  {
-    "name": "sleep",
     "path": "src/utils/sleep.ts",
     "sdk": true
-  },
-  {
-    "name": "startGatewayServer",
-    "path": "src/gateway/server-start.ts",
-    "sdk": false
-  },
-  {
-    "name": "startGatewayServer",
-    "path": "src/gateway/test-helpers.server.ts",
-    "sdk": false
   },
   {
     "name": "startTaskRunByRunId",
@@ -2830,16 +1985,6 @@
     "sdk": false
   },
   {
-    "name": "triggerInternalHook",
-    "path": "src/agents/embedded-agent-runner/compact.hooks.harness.ts",
-    "sdk": true
-  },
-  {
-    "name": "triggerInternalHook",
-    "path": "src/hooks/internal-hooks.ts",
-    "sdk": true
-  },
-  {
     "name": "truncateText",
     "path": "src/agents/harness/native-hook-relay-utils.ts",
     "sdk": true
@@ -2850,26 +1995,6 @@
     "sdk": true
   },
   {
-    "name": "updateNpmInstalledHookPacks",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "updateNpmInstalledHookPacks",
-    "path": "src/hooks/update.ts",
-    "sdk": false
-  },
-  {
-    "name": "updateNpmInstalledPlugins",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "updateNpmInstalledPlugins",
-    "path": "src/plugins/update-installed.ts",
-    "sdk": false
-  },
-  {
     "name": "VERSION",
     "path": "src/agents/config.ts",
     "sdk": true
@@ -2877,51 +2002,6 @@
   {
     "name": "VERSION",
     "path": "src/version.ts",
-    "sdk": true
-  },
-  {
-    "name": "withGatewayServer",
-    "path": "src/gateway/server-http.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "withGatewayServer",
-    "path": "src/gateway/test-helpers.server.ts",
-    "sdk": false
-  },
-  {
-    "name": "withServer",
-    "path": "src/gateway/test-with-server.ts",
-    "sdk": true
-  },
-  {
-    "name": "withServer",
-    "path": "src/plugin-sdk/test-helpers/http-test-server.ts",
-    "sdk": true
-  },
-  {
-    "name": "withTempDir",
-    "path": "src/infra/install-source-utils.ts",
-    "sdk": true
-  },
-  {
-    "name": "withTempDir",
-    "path": "src/test-helpers/temp-dir.ts",
-    "sdk": true
-  },
-  {
-    "name": "withTempHome",
-    "path": "src/config/home-env.test-harness.ts",
-    "sdk": true
-  },
-  {
-    "name": "withTempHome",
-    "path": "src/config/test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "withTempHome",
-    "path": "src/plugin-sdk/test-helpers/temp-home.ts",
     "sdk": true
   },
   {
@@ -2942,51 +2022,6 @@
   {
     "name": "withTrustedEnvProxyGuardedFetchMode",
     "path": "src/plugin-sdk/fetch-runtime.ts",
-    "sdk": true
-  },
-  {
-    "name": "writeConfigFile",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "writeConfigFile",
-    "path": "src/commands/doctor.e2e-harness.ts",
-    "sdk": true
-  },
-  {
-    "name": "writeConfigFile",
-    "path": "src/config/io.runtime.ts",
-    "sdk": true
-  },
-  {
-    "name": "writePersistedInstalledPluginIndexInstallRecordsWithLease",
-    "path": "src/cli/plugins-cli-test-helpers.ts",
-    "sdk": false
-  },
-  {
-    "name": "writePersistedInstalledPluginIndexInstallRecordsWithLease",
-    "path": "src/plugins/installed-plugin-index-records.ts",
-    "sdk": false
-  },
-  {
-    "name": "writeSessionStore",
-    "path": "src/cron/isolated-agent.test-harness.ts",
-    "sdk": false
-  },
-  {
-    "name": "writeSessionStore",
-    "path": "src/gateway/test-helpers.server.ts",
-    "sdk": false
-  },
-  {
-    "name": "writeSkill",
-    "path": "src/skills/test-support/e2e-test-helpers.ts",
-    "sdk": true
-  },
-  {
-    "name": "writeSkill",
-    "path": "src/skills/test-support/test-helpers.ts",
     "sdk": true
   }
 ]

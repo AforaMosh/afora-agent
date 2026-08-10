@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   analyzeShadowNameSources,
   findNewShadowNameDebt,
+  isShadowNameProductionSource,
+  isShadowNameProductionSourcePath,
   toShadowNameDebtEntries,
   type ShadowNameSource,
 } from "../../scripts/check-shadow-name-exports.mts";
@@ -13,6 +15,45 @@ function analyze(sources: Record<string, string>) {
 }
 
 describe("shadow-name export guard", () => {
+  it.each([
+    "src/example.test.ts",
+    "src/example.e2e.test.ts",
+    "src/example.live.test.ts",
+    "src/example.test-utils.ts",
+    "src/example.test-harness.ts",
+    "src/example.e2e-harness.ts",
+    "src/example.test-fixtures.ts",
+    "src/example.test-mocks.ts",
+    "src/example.e2e-mocks.ts",
+    "src/live-test-helpers.ts",
+    "src/gateway/test-helpers.runtime-state.ts",
+    "src/gateway/test-with-server.ts",
+    "src/gateway/gateway-cli-backend.live-helpers.ts",
+    "src/plugins/test-helpers/runtime.ts",
+    "src/gateway/server-methods/__mocks__/runtime.ts",
+    "src/agents/fixtures/runtime.ts",
+    "src/mock-provider/harness/runtime.ts",
+  ])("excludes test-only source %s", (sourcePath) => {
+    expect(isShadowNameProductionSourcePath(sourcePath)).toBe(false);
+  });
+
+  it.each([
+    "src/agents/harness/runtime.ts",
+    "src/plugin-sdk/agent-harness-runtime.ts",
+    "src/runtime.ts",
+  ])("keeps production source %s", (sourcePath) => {
+    expect(isShadowNameProductionSourcePath(sourcePath)).toBe(true);
+  });
+
+  it("excludes a test harness that imports Vitest without a test-marked path", () => {
+    expect(
+      isShadowNameProductionSource(
+        "src/agents/embedded-agent-runner/compact.hooks.harness.ts",
+        'import { vi } from "vitest";',
+      ),
+    ).toBe(false);
+  });
+
   it("finds definition collisions while exempting pure and forwarding wrappers", () => {
     const result = analyze({
       "src/collision-a.ts": "export function collides(value: string) { return value.trim(); }",

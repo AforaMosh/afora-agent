@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import ts from "typescript";
 import { z } from "zod";
+import { isTestRelatedFile } from "./check-file-utils.js";
 import { runWithFailedTrailer } from "./lib/failed-trailer.mts";
 import { resolveRepoRoot } from "./lib/repo-root.mjs";
 import { collectTypeScriptFilesFromRoots, runAsScript } from "./lib/ts-guard-utils.mts";
@@ -62,6 +63,25 @@ type ModuleFacts = {
 
 function normalizePath(filePath: string) {
   return filePath.replaceAll(path.sep, "/");
+}
+
+const testOnlySourceSegmentPattern =
+  /(?:^|\/)(?:__mocks__|__tests__|__fixtures__|fixtures|mock-provider|test-fixtures)(?:\/|$)/u;
+const testOnlySourceNamePattern =
+  /(?:^|[._-])(?:e2e(?:-[a-z0-9-]+)?|fixture|fixtures|live-helpers|mock|mocks|mock-harness|test(?:-[a-z0-9-]+)?)(?:[._-]|$)/u;
+const vitestImportPattern = /\bfrom\s+["'](?:vitest|@vitest\/[^"']+)["']/u;
+
+export function isShadowNameProductionSourcePath(relativePath: string) {
+  const normalizedPath = relativePath.replaceAll("\\", "/");
+  return (
+    !isTestRelatedFile(normalizedPath) &&
+    !testOnlySourceSegmentPattern.test(normalizedPath) &&
+    !testOnlySourceNamePattern.test(path.posix.basename(normalizedPath))
+  );
+}
+
+export function isShadowNameProductionSource(relativePath: string, source: string) {
+  return isShadowNameProductionSourcePath(relativePath) && !vitestImportPattern.test(source);
 }
 
 function hasModifier(node: ts.Node, kind: ts.SyntaxKind) {
@@ -581,23 +601,24 @@ async function loadSourceModules(repoRoot: string) {
   )
     .filter((filePath) => {
       const relativePath = normalizePath(path.relative(repoRoot, filePath));
-      return (
-        !relativePath.startsWith("src/test-utils/") &&
-        !relativePath.endsWith(".test.ts") &&
-        !relativePath.endsWith(".test-support.ts") &&
-        !relativePath.endsWith(".test-helpers.ts")
-      );
+      return isShadowNameProductionSourcePath(relativePath);
     })
     .toSorted();
-  const modules = await Promise.all(
-    files.map(async (filePath) => {
-      const source = await fs.readFile(filePath, "utf8");
-      return {
-        path: normalizePath(path.relative(repoRoot, filePath)),
-        sourceFile: ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true),
-      };
-    }),
-  );
+  const modules = (
+    await Promise.all(
+      files.map(async (filePath) => {
+        const relativePath = normalizePath(path.relative(repoRoot, filePath));
+        const source = await fs.readFile(filePath, "utf8");
+        if (!isShadowNameProductionSource(relativePath, source)) {
+          return null;
+        }
+        return {
+          path: relativePath,
+          sourceFile: ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true),
+        };
+      }),
+    )
+  ).filter((module): module is SourceModule => module !== null);
   return modules;
 }
 

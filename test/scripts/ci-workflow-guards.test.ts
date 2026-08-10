@@ -3798,6 +3798,25 @@ NODE
     );
   });
 
+  it("runs the shadow-name export ratchet as a visible additional check", () => {
+    const workflow = readCiWorkflow();
+    const additionalJob = workflow.jobs["check-additional-shard"];
+    const matrixRows = additionalJob.strategy.matrix.include;
+    expect(matrixRows).toContainEqual({
+      check_name: "check-shadow-name-exports",
+      group: "shadow-name-exports",
+      runner: "blacksmith-4vcpu-ubuntu-2404",
+    });
+
+    const runStep = additionalJob.steps.find(
+      (step: WorkflowStep) => step.name === "Run additional check shard",
+    );
+    expect(runStep.run).toContain("shadow-name-exports)");
+    expect(runStep.run).toContain(
+      'run_check "lint:tmp:shadow-name-exports" pnpm run lint:tmp:shadow-name-exports',
+    );
+  });
+
   it("runs the transcript reader ratchet as a visible additional check", () => {
     const workflow = readCiWorkflow();
     const additionalJob = workflow.jobs["check-additional-shard"];
