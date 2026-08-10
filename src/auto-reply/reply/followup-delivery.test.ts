@@ -7,7 +7,7 @@ import type { AgentTurnExecutionResult } from "./agent-runner-execution.types.js
 import { resolveFollowupDeliveryPayloads } from "./followup-delivery-payloads.js";
 import { deliverFollowupDecision, resolveFollowupDeliveryDecision } from "./followup-delivery.js";
 import type { AdmittedFollowupTurn } from "./followup-turn-admission.js";
-import type { QueuedFollowupReplyBatch } from "./get-reply.types.js";
+import type { QueuedFollowupReplyBatch } from "./queue/types.js";
 
 const deliveryState = vi.hoisted(() => ({
   followupRoute: undefined as { route: "dispatcher" | "origin" | "drop" } | undefined,
