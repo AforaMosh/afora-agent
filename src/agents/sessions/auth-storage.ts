@@ -16,14 +16,24 @@ import type {
   OAuthLoginCallbacks,
   OAuthProviderId,
 } from "../../llm/utils/oauth/types.js";
+import { KeyedAsyncQueue } from "../../plugin-sdk/keyed-async-queue.js";
 import { OAuthProviderConfiguredUnavailableError } from "../../plugins/provider-runtime.errors.js";
 import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
-import { AUTH_STORE_VERSION, OAUTH_REFRESH_LOCK_OPTIONS } from "../auth-profiles/constants.js";
+import {
+  AUTH_STORE_VERSION,
+  OAUTH_REFRESH_CALL_TIMEOUT_MS,
+  OAUTH_REFRESH_LOCK_OPTIONS,
+} from "../auth-profiles/constants.js";
 import {
   assertAuthProfileMigrationReady,
   AuthProfileMigrationRequiredError,
   AuthProfileStoreUnreadableError,
 } from "../auth-profiles/legacy-source-diagnostic.js";
+import {
+  runRetainedOAuthRefreshCall,
+  runRetainedOAuthRefreshOwner,
+} from "../auth-profiles/oauth-manager.js";
+import { resolveOAuthRefreshConflict } from "../auth-profiles/oauth-shared.js";
 import { resolveOAuthRefreshLockPath } from "../auth-profiles/paths.js";
 import { loadPersistedAuthProfileStore } from "../auth-profiles/persisted.js";
 import { getRuntimeAuthProfileStoreSnapshot } from "../auth-profiles/runtime-snapshots.js";
@@ -38,7 +48,7 @@ import {
   loadAuthProfileStoreForSecretsRuntime,
   saveAuthProfileStore,
 } from "../auth-profiles/store.js";
-import type { AuthProfileStore } from "../auth-profiles/types.js";
+import type { AuthProfileCredential, AuthProfileStore } from "../auth-profiles/types.js";
 import { getAgentDir } from "../config.js";
 import {
   getAuthStorageOAuthProviderRegistry,
@@ -436,6 +446,7 @@ export class AuthStorage {
   private errors: Error[] = [];
   private storage: AuthStorageBackend;
   private migrationOwnerAgentDir?: string;
+  private oauthRefreshQueue = new KeyedAsyncQueue();
 
   private constructor(storage: AuthStorageBackend, migrationOwnerAgentDir?: string) {
     this.storage = storage;
@@ -700,60 +711,88 @@ export class AuthStorage {
   ): Promise<{ apiKey: string; newCredentials: OAuthCredentials } | null> {
     const provider = getAuthStorageOAuthProviderRegistry(this).get(providerId);
 
-    const refresh = async () =>
-      await this.storage.withLockAsync(async (current) => {
-        const currentData = this.parseStorageData(current);
-        this.data = currentData;
-        this.loadError = null;
-
-        const cred = currentData[providerId];
-        if (cred?.type !== "oauth") {
-          return { result: null };
-        }
-
-        if (Date.now() < cred.expires) {
-          if (provider) {
-            return { result: { apiKey: provider.getApiKey(cred), newCredentials: cred } };
-          }
-          return { result: await resolveAuthStoragePluginOAuthCredential(providerId, cred, false) };
-        }
-
-        const oauthCreds: Record<string, OAuthCredentials> = {};
-        for (const [key, value] of Object.entries(currentData)) {
-          if (value.type === "oauth") {
-            oauthCreds[key] = value;
-          }
-        }
-
-        const refreshed = provider
-          ? await getAuthStorageOAuthProviderRegistry(this).getApiKey(providerId, oauthCreds)
-          : await resolveAuthStoragePluginOAuthCredential(providerId, cred, true);
-        if (!refreshed) {
-          return { result: null };
-        }
-
-        const refreshedCredential: OAuthCredential = {
-          type: "oauth",
-          ...refreshed.newCredentials,
-        };
-        const merged: AuthStorageData = {
-          ...currentData,
-          [providerId]: refreshedCredential,
-        };
-        this.data = merged;
-        this.loadError = null;
-        return { result: refreshed, next: JSON.stringify(merged, null, 2) };
+    const resolveCredential = async (credential: OAuthCredential, forceRefresh: boolean) => {
+      if (!forceRefresh && provider) {
+        return { apiKey: provider.getApiKey(credential), newCredentials: credential };
+      }
+      if (!provider) {
+        return await resolveAuthStoragePluginOAuthCredential(providerId, credential, forceRefresh);
+      }
+      const refreshed = await getAuthStorageOAuthProviderRegistry(this).getApiKey(providerId, {
+        [providerId]: credential,
       });
+      return refreshed ?? null;
+    };
 
-    const result = this.migrationOwnerAgentDir
-      ? await withFileLock(
-          resolveOAuthRefreshLockPath(providerId, `${providerId}:default`),
-          OAUTH_REFRESH_LOCK_OPTIONS,
-          refresh,
-        )
-      : await refresh();
+    const refresh = async (onCallTimeout: (error: Error) => void) => {
+      const snapshot = this.storage.withLock((current) => {
+        const currentData = this.parseStorageData(current);
+        return { result: { currentData, credential: currentData[providerId] } };
+      });
+      this.data = snapshot.currentData;
+      this.loadError = null;
 
-    return result;
+      if (snapshot.credential?.type !== "oauth") {
+        return null;
+      }
+      const credential = snapshot.credential;
+      if (Date.now() < credential.expires) {
+        return await resolveCredential(credential, false);
+      }
+
+      const refreshed = await runRetainedOAuthRefreshCall({
+        timeoutMs: OAUTH_REFRESH_CALL_TIMEOUT_MS,
+        onTimeout: onCallTimeout,
+        run: async () => await resolveCredential(credential, true),
+      });
+      if (!refreshed) {
+        return null;
+      }
+      const refreshedCredential: OAuthCredential = { ...credential, ...refreshed.newCredentials };
+      if (Date.now() >= refreshedCredential.expires) {
+        throw new Error("OAuth provider returned an expired credential");
+      }
+
+      const persisted = this.storage.withLock((current) => {
+        const data = this.parseStorageData(current);
+        const attempted = { ...credential, provider: providerId };
+        const decision = resolveOAuthRefreshConflict({
+          authoritative: data[providerId]
+            ? ({ ...data[providerId], provider: providerId } as AuthProfileCredential)
+            : undefined,
+          attempted,
+          refreshed: { ...refreshedCredential, provider: providerId },
+        });
+        if (!decision?.persist) {
+          return {
+            result: { data, credential: decision?.credential ?? null, persisted: false },
+          };
+        }
+        const nextData = { ...data, [providerId]: decision.credential };
+        return {
+          result: { data: nextData, credential: decision.credential, persisted: true },
+          next: JSON.stringify(nextData, null, 2),
+        };
+      });
+      this.data = persisted.data;
+      this.loadError = null;
+      if (persisted.persisted && persisted.credential) {
+        return { apiKey: refreshed.apiKey, newCredentials: persisted.credential };
+      }
+      return persisted.credential ? await resolveCredential(persisted.credential, false) : null;
+    };
+
+    return await runRetainedOAuthRefreshOwner((onCallTimeout) =>
+      this.oauthRefreshQueue.enqueue(providerId, async () =>
+        this.migrationOwnerAgentDir
+          ? await withFileLock(
+              resolveOAuthRefreshLockPath(providerId, `${providerId}:default`),
+              OAUTH_REFRESH_LOCK_OPTIONS,
+              () => refresh(onCallTimeout),
+            )
+          : await refresh(onCallTimeout),
+      ),
+    );
   }
 
   /**
