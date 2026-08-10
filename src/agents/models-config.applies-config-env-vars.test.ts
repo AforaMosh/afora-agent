@@ -179,7 +179,18 @@ async function resolveProvidersAndCaptureDiscoveryEnv(cfg: OpenClawConfig) {
   return { discoveryEnv, providers };
 }
 
-let unauthenticatedProviderWritePlan: Awaited<ReturnType<typeof planOpenClawModelsJsonWithDeps>>;
+type ModelsJsonPlan = Awaited<ReturnType<typeof planOpenClawModelsJsonWithDeps>>;
+
+function expectWritePlan(
+  plan: ModelsJsonPlan,
+): asserts plan is Extract<ModelsJsonPlan, { action: "write" }> {
+  expect(plan.action).toBe("write");
+  if (plan.action !== "write") {
+    throw new Error("Expected models.json write plan");
+  }
+}
+
+let unauthenticatedProviderWritePlan: ModelsJsonPlan;
 let unauthenticatedProviderParsed: { providers?: Record<string, unknown> };
 let googleVertexProfileCatalogPlan: Awaited<ReturnType<typeof planGoogleVertexProfileCatalog>>;
 
@@ -258,9 +269,7 @@ beforeAll(async () => {
       }),
     },
   );
-  if (unauthenticatedProviderWritePlan.action !== "write") {
-    throw new Error("Expected models.json write plan");
-  }
+  expectWritePlan(unauthenticatedProviderWritePlan);
   unauthenticatedProviderParsed = JSON.parse(unauthenticatedProviderWritePlan.contents) as {
     providers?: Record<string, unknown>;
   };
@@ -494,10 +503,7 @@ describe("models-config", () => {
       },
     );
 
-    expect(plan.action).toBe("write");
-    if (plan.action !== "write") {
-      throw new Error("Expected models.json write plan");
-    }
+    expectWritePlan(plan);
     expect(JSON.parse(plan.contents)).toEqual({ providers: {} });
     expect(plan.pluginCatalogWrites).toEqual({});
   });
@@ -539,10 +545,7 @@ describe("models-config", () => {
       },
     );
 
-    expect(plan.action).toBe("write");
-    if (plan.action !== "write") {
-      throw new Error("Expected models.json write plan");
-    }
+    expectWritePlan(plan);
     const root = JSON.parse(plan.contents) as {
       providers?: Record<string, { apiKey?: string }>;
     };
@@ -644,9 +647,7 @@ describe("models-config", () => {
         },
       );
 
-      if (plan.action !== "write") {
-        throw new Error("Expected models.json write plan");
-      }
+      expectWritePlan(plan);
       const root = JSON.parse(plan.contents) as {
         providers?: Record<string, { apiKey?: string }>;
       };
@@ -713,10 +714,7 @@ describe("models-config", () => {
       },
     );
 
-    expect(plan.action).toBe("write");
-    if (plan.action !== "write") {
-      throw new Error("Expected models.json write plan");
-    }
+    expectWritePlan(plan);
     const parsed = JSON.parse(plan.contents) as {
       providers?: Record<string, { apiKey?: string }>;
     };
@@ -769,10 +767,7 @@ describe("models-config", () => {
       },
     );
 
-    expect(plan.action).toBe("write");
-    if (plan.action !== "write") {
-      throw new Error("Expected models.json write plan");
-    }
+    expectWritePlan(plan);
     const parsed = JSON.parse(plan.contents) as {
       providers?: Record<string, { models?: Array<{ id?: string }> }>;
     };
@@ -784,10 +779,7 @@ describe("models-config", () => {
   it("keeps google-vertex static catalog rows when an auth profile supplies the API key", () => {
     const plan = googleVertexProfileCatalogPlan;
 
-    expect(plan.action).toBe("write");
-    if (plan.action !== "write") {
-      throw new Error("Expected models.json write plan");
-    }
+    expectWritePlan(plan);
     const parsed = JSON.parse(plan.contents) as {
       providers?: Record<
         string,
@@ -832,10 +824,7 @@ describe("models-config", () => {
       },
     );
 
-    expect(plan.action).toBe("write");
-    if (plan.action !== "write") {
-      throw new Error("Expected models.json write plan");
-    }
+    expectWritePlan(plan);
     const parsed = JSON.parse(plan.contents) as {
       providers?: Record<
         string,
