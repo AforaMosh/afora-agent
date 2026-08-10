@@ -181,6 +181,13 @@ function renderChooser(
   // A secure page cannot open the plaintext LAN candidate, so it cannot verify it.
   const lanProvable =
     inspection.lan.status === "available" && canProvePairingEndpoint(inspection.lan.url);
+  // Two different reasons disable this card; it has to name the one that applies.
+  const lanHint =
+    inspection.lan.status !== "available"
+      ? t("devices.pairing.blockedLanUnavailable")
+      : lanProvable
+        ? t("devices.pairing.routeLanHint")
+        : t("devices.pairing.routeLanInsecurePage");
   return html`
     ${props.wizard.notice === "route-reverted"
       ? html`<div class="callout device-pair-setup__notice" role="status">
@@ -198,11 +205,9 @@ function renderChooser(
         : nothing}
       ${renderRoute({
         label: t("devices.pairing.routeLan"),
-        hint: lanProvable
-          ? t("devices.pairing.routeLanHint")
-          : t("devices.pairing.routeLanInsecurePage"),
+        hint: lanHint,
         ...(inspection.lan.status === "available" ? { detail: inspection.lan.url } : {}),
-        disabled: inspection.lan.status !== "available" || !lanProvable,
+        disabled: !lanProvable,
         onSelect: () => void props.actions.chooseRoute("lan"),
       })}
       ${renderRoute({
