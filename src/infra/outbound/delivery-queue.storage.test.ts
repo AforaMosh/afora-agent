@@ -547,6 +547,30 @@ describe("delivery-queue storage", () => {
       expect(entry.recoveryState).toBe("send_attempt_started");
     });
 
+    it("refreshes a later dispatch without downgrading post-send evidence", async () => {
+      const id = await enqueueTextDelivery({
+        channel: "forum",
+        to: "123",
+        payloads: [{ text: "first" }, { text: "second" }],
+      });
+
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(1_000);
+        await markDeliveryPlatformSendDispatched(id, tmpDir());
+        await markDeliveryPlatformOutcomeUnknown(id, tmpDir());
+        vi.setSystemTime(9_000);
+        await markDeliveryPlatformSendDispatched(id, tmpDir());
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(readQueuedEntry(tmpDir(), id)).toMatchObject({
+        platformSendStartedAt: 9_000,
+        recoveryState: "unknown_after_send",
+      });
+    });
+
     it("increments retryCount, records attempt time, and sets lastError", async () => {
       const id = await enqueueTextDelivery(
         {

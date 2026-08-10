@@ -584,13 +584,14 @@ export async function markDeliveryPlatformSendDispatched(
     stateDir,
     (entry) => ({
       ...entry,
-      // Dispatch still belongs to the promoted producer until provider I/O
-      // settles; clearing its lease lets another process replay an active send.
+      // Dispatch still belongs to the promoted producer until provider I/O settles;
+      // clearing its lease or send evidence lets another process replay a sent payload.
       availableAt: expectedPlatformSendAttemptId ? entry.availableAt : undefined,
       producerClaimId: undefined,
       platformSendStartedAt: Date.now(),
       ...(route && "replyToId" in route ? { effectiveReplyToId: route.replyToId ?? null } : {}),
-      recoveryState: "send_attempt_started",
+      recoveryState:
+        entry.recoveryState === "unknown_after_send" ? entry.recoveryState : "send_attempt_started",
     }),
     expectedPlatformSendAttemptId,
   );
