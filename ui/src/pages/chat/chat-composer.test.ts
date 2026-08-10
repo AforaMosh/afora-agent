@@ -205,15 +205,15 @@ describe("renderChatComposer controls", () => {
       onAbort,
       disabledBanner: {
         kind: "composer-replacement",
-        text: "This session is archived. Unarchive it to continue the conversation.",
-        actionLabel: "Unarchive",
+        text: "This session has been archived.",
+        actionLabel: "Undo",
         onAction,
       },
       typingActors: [{ id: "ayaan", label: "Ayaan" }],
     });
 
     const banner = container.querySelector(".agent-chat__disabled-banner");
-    expect(banner?.textContent).toContain("This session is archived.");
+    expect(banner?.textContent).toContain("This session has been archived.");
     expect(container.querySelector(".agent-chat__input")).toBeNull();
     expect(container.querySelector("textarea")).toBeNull();
     expect(container.querySelector(".agent-chat__typing-indicator--outside")).toBeNull();
