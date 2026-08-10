@@ -1,4 +1,4 @@
-import { listAgentIds } from "openclaw/plugin-sdk/agent-runtime";
+import { listAgentIds } from "openclaw/plugin-sdk/agent-scope-runtime";
 // Workboard API module exposes the plugin public contract.
 import type {
   PluginDoctorStateMigration,
