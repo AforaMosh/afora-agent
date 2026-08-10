@@ -35,6 +35,7 @@ import {
   type SlackReplyBlockSegment,
 } from "./reply-blocks.js";
 import type { SlackSendIdentity } from "./send.js";
+import { parseSlackTarget } from "./target-parsing.js";
 import { resolveSlackThreadTsValue } from "./thread-ts.js";
 
 type SlackSendFn = typeof import("./send.runtime.js").sendMessageSlack;
@@ -372,6 +373,7 @@ export const slackOutbound: ChannelOutboundAdapter = {
     if (!channelId) {
       return;
     }
+    const teamId = parseSlackTarget(target.to, { defaultKind: "channel" })?.teamId;
     questionGatewayRuntime.registerChannelDelivery({
       questionId,
       deliveryId: `slack:${target.accountId ?? "default"}:${channelId}:${result.messageId}`,
@@ -386,6 +388,7 @@ export const slackOutbound: ChannelOutboundAdapter = {
           cfg,
           accountId: target.accountId ?? undefined,
           channelId,
+          teamId,
           messageTs: result.messageId,
           text: `${deliveryMessage.text}\n\n${escapedStatusLine}`,
           blocks,
