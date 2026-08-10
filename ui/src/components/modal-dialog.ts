@@ -103,6 +103,19 @@ export class OpenClawModalDialog extends OpenClawLitElement {
         max-width: var(--openclaw-modal-max-width, calc(100vw - 24px));
         max-height: 90dvh;
       }
+
+      /* Sheet presentation: on phones the panel docks to the bottom edge at
+         full width so it reads as a sheet instead of a floating card. The
+         slotted panel owns its own top-only radius at this width. */
+      :host(.sheet) wa-dialog {
+        --width: 100vw;
+      }
+
+      :host(.sheet) wa-dialog::part(dialog) {
+        max-width: 100vw;
+        max-height: calc(100dvh - 32px);
+        margin: auto 0 0;
+      }
     }
   `;
 
