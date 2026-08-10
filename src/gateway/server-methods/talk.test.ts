@@ -2592,6 +2592,7 @@ describe("talk.client.steer handler", () => {
           },
         ],
       ]),
+      getRuntimeConfig: () => ({}),
     }) as never;
 
   beforeEach(() => {
@@ -2624,6 +2625,7 @@ describe("talk.client.steer handler", () => {
     });
 
     expect(mocks.controlRealtimeVoiceAgentRun).toHaveBeenCalledWith({
+      agentId: "main",
       sessionKey: "agent:main:main",
       text: "use the safer plan",
       mode: "steer",
@@ -3118,6 +3120,7 @@ describe("talk.client.create handler", () => {
       context,
     });
     expect(mocks.controlRealtimeVoiceAgentRun).toHaveBeenCalledWith({
+      agentId: "main",
       sessionKey: "main",
       text: "Use the safer plan",
       mode: "steer",

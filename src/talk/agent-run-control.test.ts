@@ -152,6 +152,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "use the safer path",
         mode: "steer",
@@ -186,6 +187,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "also check the migration",
         mode: "followup",
@@ -208,6 +210,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "stop",
         mode: "cancel",
@@ -226,6 +229,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
       },
     });
     expect(deps.resolveSessionStorePathForScope).toHaveBeenCalledWith({
+      agentId: "main",
       sessionKey: "agent:main:main",
     });
     expect(deps.abortSessionRunTarget).toHaveBeenCalledWith({
@@ -244,6 +248,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "stop",
         mode: "cancel",
@@ -273,6 +278,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "stop",
         mode: "cancel",
@@ -300,6 +306,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "stop",
         mode: "cancel",
@@ -330,6 +337,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "stop",
         mode: "cancel",
@@ -354,6 +362,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "stop",
         mode: "cancel",
@@ -390,6 +399,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "status",
         mode: "status",
@@ -418,6 +428,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:discord:channel:1001",
         text: "what are you doing",
         mode: "status",
@@ -452,6 +463,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "status",
         mode: "status",
@@ -498,6 +510,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "status",
         mode: "status",
@@ -520,6 +533,7 @@ describe("controlRealtimeVoiceAgentRun", () => {
 
     const result = await controlRealtimeVoiceAgentRun(
       {
+        agentId: "main",
         sessionKey: "agent:main:main",
         text: "use the safer path",
         mode: "steer",

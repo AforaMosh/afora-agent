@@ -1333,6 +1333,7 @@ export class DiscordRealtimeVoiceSession implements VoiceRealtimeSession {
     try {
       const parsed = parseRealtimeVoiceAgentControlToolArgs(event.args);
       result = await controlRealtimeVoiceAgentRun({
+        agentId: this.params.entry.route.agentId,
         sessionKey: this.params.entry.route.sessionKey,
         text: parsed.text,
         mode: parsed.mode,

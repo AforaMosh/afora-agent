@@ -25,6 +25,7 @@ export async function maybeControlDiscordVoiceAgentRun(params: {
     return { handled: false };
   }
   const result = await controlRealtimeVoiceAgentRun({
+    agentId: params.entry.route.agentId,
     sessionKey: params.entry.route.sessionKey,
     text: params.text,
   });

@@ -5,6 +5,18 @@ import {
   validateChatAbortParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
+import {
+  abortEmbeddedAgentRun,
+  resolveActiveEmbeddedRunIdentity,
+} from "../../agents/embedded-agent-runner/runs.js";
+import { runReplyRecoveryUserAbort } from "../../auto-reply/reply/reply-recovery-owner.js";
+import {
+  replyRunRegistry,
+  resolveActiveReplyOperationForAbortSignal,
+  resolveActiveReplyOperationForSessionId,
+  resolveReplyOperationRunId,
+  type ReplyOperation,
+} from "../../auto-reply/reply/reply-run-registry.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
 import { abortChatRunById, type ChatAbortControllerEntry } from "../chat-abort.js";
@@ -36,13 +48,87 @@ import { assertValidParams } from "./validation.js";
 
 type ChatAbortLifecycle = {
   onAuthorizedAfterQueuedAbort?: () => boolean;
+  onAuthorizedAfterExactMiss?: () => boolean;
   excludeRunIds?: ReadonlySet<string>;
+  replyRecoveryAbortHandledExternally?: boolean;
 };
 
 type ChatAbortTarget = Pick<
   ChatAbortControllerEntry | QueuedChatTurnEntry,
   "sessionKey" | "agentId" | "ownerConnId" | "ownerDeviceId"
 >;
+
+function resolveChatAbortReplyOperation(params: {
+  active?: ChatAbortControllerEntry;
+  sessionId?: string;
+  sessionKeys: readonly (string | undefined)[];
+}): ReplyOperation | undefined {
+  if (params.active) {
+    return resolveActiveReplyOperationForAbortSignal(params.active.controller.signal);
+  }
+  for (const sessionKey of params.sessionKeys) {
+    const operation = sessionKey ? replyRunRegistry.get(sessionKey) : undefined;
+    if (operation && (!params.sessionId || operation.sessionId === params.sessionId)) {
+      return operation;
+    }
+  }
+  return params.sessionId ? resolveActiveReplyOperationForSessionId(params.sessionId) : undefined;
+}
+
+async function runChatAbortWithReplyRecovery<T extends { aborted: boolean }>(params: {
+  operation: ReplyOperation | undefined;
+  recoveryRun?: Parameters<typeof runReplyRecoveryUserAbort>[0]["recoveryRun"];
+  logLabel: string;
+  handledExternally: boolean;
+  abort: () => T | Promise<T>;
+}): Promise<T & { recoveryPersistenceErrors?: string[] }> {
+  if (params.handledExternally) {
+    return await params.abort();
+  }
+  return await runReplyRecoveryUserAbort({
+    operation: params.operation,
+    recoveryRun: params.recoveryRun,
+    abort: params.abort,
+    logLabel: params.logLabel,
+  });
+}
+
+function resolveChatAbortRecoveryRun(params: {
+  operation: ReplyOperation | undefined;
+  sessionId?: string;
+  sessionKey: string;
+  storePath: string;
+}): Parameters<typeof runReplyRecoveryUserAbort>[0]["recoveryRun"] {
+  const identity = params.sessionId
+    ? resolveActiveEmbeddedRunIdentity(params.sessionId)
+    : undefined;
+  if (
+    identity &&
+    params.operation &&
+    resolveReplyOperationRunId(params.operation) === identity.runId
+  ) {
+    return undefined;
+  }
+  return identity
+    ? {
+        ...identity,
+        sessionKey: params.sessionKey,
+        storePath: params.storePath,
+      }
+    : undefined;
+}
+
+function respondRecoveryPersistenceFailure(respond: GatewayRequestHandlerOptions["respond"]): void {
+  respond(
+    false,
+    undefined,
+    errorShape(
+      ErrorCodes.UNAVAILABLE,
+      "Run cancellation was accepted, but recovery state could not be persisted. Retry chat.abort.",
+      { retryable: true },
+    ),
+  );
+}
 
 export async function handleChatAbortRequestWithLifecycle(
   { params, respond, context, client }: GatewayRequestHandlerOptions,
@@ -97,7 +183,11 @@ export async function handleChatAbortRequestWithLifecycle(
   const requester = resolveChatAbortRequester(client);
 
   const sessionLoadOptions = abortAgentId ? { agentId: abortAgentId } : undefined;
-  const { entry: abortSessionEntry } = loadSessionEntry(rawSessionKey, sessionLoadOptions);
+  const {
+    entry: abortSessionEntry,
+    storePath: abortStorePath,
+    canonicalKey: persistedAbortSessionKey,
+  } = loadSessionEntry(rawSessionKey, sessionLoadOptions);
   const cancelWorkerRun = (sessionId = abortSessionEntry?.sessionId): string[] =>
     requester.isAdmin
       ? cancelWorkerInferenceForSession({ context, sessionId, ...(runId ? { runId } : {}) })
@@ -108,23 +198,62 @@ export async function handleChatAbortRequestWithLifecycle(
   };
 
   if (!runId) {
-    const res = await abortChatRunsForSessionKeyWithPartials({
-      context,
-      ops,
-      sessionKey: canonicalAbortSessionKey,
-      sessionKeyAliases: canonicalAbortSessionKey === rawSessionKey ? undefined : [rawSessionKey],
-      agentId: abortAgentId,
+    const operation = resolveChatAbortReplyOperation({
       sessionId: abortSessionEntry?.sessionId,
-      defaultAgentId,
-      abortOrigin: "rpc",
-      stopReason: "rpc",
-      requester,
-      preserveSideRuns,
-      excludeRunIds: lifecycle.excludeRunIds,
-      onAuthorizedAfterQueuedAbort: lifecycle.onAuthorizedAfterQueuedAbort,
+      sessionKeys: [canonicalAbortSessionKey, rawSessionKey],
+    });
+    const recoveryRun = resolveChatAbortRecoveryRun({
+      operation,
+      sessionId: abortSessionEntry?.sessionId,
+      sessionKey: persistedAbortSessionKey,
+      storePath: abortStorePath,
+    });
+    const recoveryRunId = recoveryRun
+      ? (context.chatRunState.registry.peek(recoveryRun.runId)?.clientRunId ?? recoveryRun.runId)
+      : undefined;
+    let recoveryFallbackAccepted = false;
+    const onAuthorizedAfterQueuedAbort =
+      lifecycle.onAuthorizedAfterQueuedAbort ??
+      (recoveryRun
+        ? () => {
+            recoveryFallbackAccepted = abortEmbeddedAgentRun(recoveryRun.sessionId);
+            return recoveryFallbackAccepted;
+          }
+        : undefined);
+    const res = await runChatAbortWithReplyRecovery({
+      operation,
+      recoveryRun,
+      logLabel: canonicalAbortSessionKey,
+      handledExternally: lifecycle.replyRecoveryAbortHandledExternally === true,
+      abort: async () => {
+        const result = await abortChatRunsForSessionKeyWithPartials({
+          context,
+          ops,
+          sessionKey: canonicalAbortSessionKey,
+          sessionKeyAliases:
+            canonicalAbortSessionKey === rawSessionKey ? undefined : [rawSessionKey],
+          agentId: abortAgentId,
+          sessionId: abortSessionEntry?.sessionId,
+          defaultAgentId,
+          abortOrigin: "rpc",
+          stopReason: "rpc",
+          requester,
+          preserveSideRuns,
+          excludeRunIds: lifecycle.excludeRunIds,
+          onAuthorizedAfterQueuedAbort,
+        });
+        if (recoveryFallbackAccepted && recoveryRunId && !result.runIds.includes(recoveryRunId)) {
+          return { ...result, runIds: [...result.runIds, recoveryRunId] };
+        }
+        return result;
+      },
     });
     if (res.unauthorized) {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unauthorized"));
+      return;
+    }
+    if (res.recoveryPersistenceErrors?.length) {
+      respondRecoveryPersistenceFailure(respond);
       return;
     }
     respond(true, { ok: true, aborted: res.aborted, runIds: res.runIds });
@@ -246,7 +375,12 @@ export async function handleChatAbortRequestWithLifecycle(
         runId,
       )
     ) {
-      respond(true, { ok: true, aborted: false, runIds: [] });
+      const additionalAborted = lifecycle.onAuthorizedAfterExactMiss?.() ?? false;
+      respond(true, {
+        ok: true,
+        aborted: additionalAborted,
+        runIds: additionalAborted ? [runId] : [],
+      });
       return;
     }
     if (!requester.isAdmin) {
@@ -261,10 +395,39 @@ export async function handleChatAbortRequestWithLifecycle(
   }
 
   const partialText = context.chatRunState.resolveBuffer(runId).text;
-  const res = abortChatRunById(ops, {
-    runId,
-    sessionKey: active.sessionKey,
-    stopReason: "rpc",
+  const operation = resolveChatAbortReplyOperation({
+    active,
+    sessionId: active.sessionId,
+    sessionKeys: [active.sessionKey, canonicalAbortSessionKey, rawSessionKey],
+  });
+  const recoveryRun = resolveChatAbortRecoveryRun({
+    operation,
+    sessionId: active.sessionId === abortSessionEntry?.sessionId ? active.sessionId : undefined,
+    sessionKey: persistedAbortSessionKey,
+    storePath: abortStorePath,
+  });
+  const recoveryClientRunId = recoveryRun
+    ? context.chatRunState.registry.peek(recoveryRun.runId)?.clientRunId
+    : undefined;
+  const exactRecoveryRunMatches = Boolean(
+    recoveryRun && (runId === recoveryRun.runId || runId === recoveryClientRunId),
+  );
+  const res = await runChatAbortWithReplyRecovery({
+    operation,
+    recoveryRun,
+    logLabel: active.sessionKey,
+    handledExternally: lifecycle.replyRecoveryAbortHandledExternally === true,
+    abort: () => {
+      const result = abortChatRunById(ops, {
+        runId,
+        sessionKey: active.sessionKey,
+        stopReason: "rpc",
+      });
+      if (!result.aborted && exactRecoveryRunMatches) {
+        return { aborted: abortEmbeddedAgentRun(active.sessionId) };
+      }
+      return result;
+    },
   });
   if (res.aborted && active.controlUiVisible !== false && partialText && partialText.trim()) {
     await persistAbortedPartials({
@@ -280,6 +443,10 @@ export async function handleChatAbortRequestWithLifecycle(
         },
       ],
     });
+  }
+  if (res.recoveryPersistenceErrors?.length) {
+    respondRecoveryPersistenceFailure(respond);
+    return;
   }
   respondWithWorkerRuns(res.aborted ? [runId] : [], active.sessionId);
 }

@@ -307,9 +307,30 @@ test("sessions.abort terminalizes a controller-less recovery run after its reply
 });
 
 test.each([
-  { label: "client run id", requestedRunId: "client", includeKey: true },
-  { label: "backend run id", requestedRunId: "backend", includeKey: true },
-  { label: "backend run id without a key", requestedRunId: "backend", includeKey: false },
+  {
+    label: "client run id",
+    requestedRunId: "client",
+    includeKey: true,
+    attachBackend: true,
+  },
+  {
+    label: "backend run id",
+    requestedRunId: "backend",
+    includeKey: true,
+    attachBackend: true,
+  },
+  {
+    label: "backend run id without a key",
+    requestedRunId: "backend",
+    includeKey: false,
+    attachBackend: true,
+  },
+  {
+    label: "client run id before backend attachment",
+    requestedRunId: "client",
+    includeKey: true,
+    attachBackend: false,
+  },
 ])("sessions.abort terminalizes the recovery owner for an exact $label", async (scenario) => {
   const agentId = "main";
   const sessionKey = "agent:main:openclaw-weixin:direct:exact-recovery-run";
@@ -319,36 +340,37 @@ test.each([
   const lifecycleGeneration = getAgentEventLifecycleGeneration();
   const storePath = path.join(requireStateDir(), "agents", agentId, "sessions", "sessions.json");
   const claimId = "claim-exact-recovery";
-  await replaceSessionEntry(
-    { agentId, sessionKey, storePath },
-    {
-      sessionId,
-      updatedAt: 100,
-      status: "running",
-      abortedLastRun: true,
-      restartRecoveryRuns: [{ runId: backendRunId, lifecycleGeneration }],
-      mainRestartRecovery: {
-        cycleId: "cycle-exact-recovery",
-        revision: 2,
-        chargedAttempts: 1,
-        foregroundClaims: {
-          lifecycleGeneration,
-          tokens: [claimId],
-          runIdsByClaimId: { [claimId]: backendRunId },
-        },
+  await replaceSessionEntry({ agentId, sessionKey, storePath }, {
+    sessionId,
+    updatedAt: 100,
+    status: "running",
+    abortedLastRun: true,
+    restartRecoveryRuns: [{ runId: backendRunId, lifecycleGeneration }],
+    mainRestartRecovery: {
+      cycleId: "cycle-exact-recovery",
+      revision: 2,
+      chargedAttempts: 1,
+      foregroundClaims: {
+        lifecycleGeneration,
+        tokens: [claimId],
+        runIdsByClaimId: { [claimId]: backendRunId },
       },
     },
-  );
+  } as InternalSessionEntry);
+  const activeRun = createActiveRun(sessionKey, { agentId, sessionId });
   const operation = replyRunRegistry.begin({
     sessionKey,
     sessionId,
     resetTriggered: false,
+    upstreamAbortSignal: activeRun.controller.signal,
   });
-  operation.attachBackend({
-    kind: "embedded",
-    runId: backendRunId,
-    cancel: () => {},
-  });
+  if (scenario.attachBackend) {
+    operation.attachBackend({
+      kind: "embedded",
+      runId: backendRunId,
+      cancel: () => {},
+    });
+  }
   operation.setPhase("running");
   setReplyRecoveryOwner(operation, {
     cycleId: "cycle-exact-recovery",
@@ -358,10 +380,6 @@ test.each([
     sessionKey,
     storePath,
     runId: backendRunId,
-  });
-  const activeRun = createActiveRun(sessionKey, { agentId, sessionId });
-  activeRun.controller.signal.addEventListener("abort", () => {
-    operation.abortByUser();
   });
   const { getRuntimeConfig: _getRuntimeConfig, ...abortContext } = createChatAbortContext({
     chatAbortControllers: new Map([[clientRunId, activeRun]]),

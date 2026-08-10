@@ -35,6 +35,7 @@ describe("Talk client Gateway control owner", () => {
     } satisfies RealtimeVoiceBridge;
     const owner = createTalkClientGatewayControlOwner({
       voiceSessionId: "voice-gateway",
+      agentId: "main",
       sessionKey: "agent:main:main",
       connId: "conn-gateway",
       runAgentConsult,
@@ -93,6 +94,7 @@ describe("Talk client Gateway control owner", () => {
     const runAgentConsult = vi.fn(async () => ({ text: "unexpected" }));
     const owner = createTalkClientGatewayControlOwner({
       voiceSessionId: "voice-control",
+      agentId: "main",
       sessionKey: "agent:main:main",
       connId: "conn-control",
       runAgentConsult,
@@ -166,6 +168,7 @@ describe("Talk client Gateway control owner", () => {
     } satisfies RealtimeVoiceBridge;
     const owner = createTalkClientGatewayControlOwner({
       voiceSessionId: "voice-spoken-control",
+      agentId: "work",
       sessionKey: "agent:main:main",
       connId: "conn-spoken-control",
       runAgentConsult,
@@ -199,6 +202,9 @@ describe("Talk client Gateway control owner", () => {
       "use the release branch instead",
       "cancel",
     ]);
+    expect(controlAgentRun).toHaveBeenCalledWith(
+      expect.objectContaining({ agentId: "work", sessionKey: "agent:main:main" }),
+    );
     expect(bridge.sendUserMessage).toHaveBeenCalledTimes(3);
     await vi.waitFor(() =>
       expect(bridge.submitToolResult).toHaveBeenCalledWith(
@@ -214,6 +220,7 @@ describe("Talk client Gateway control owner", () => {
     const closeLogicalSession = vi.fn(async () => undefined);
     const owner = createTalkClientGatewayControlOwner({
       voiceSessionId: "voice-disconnect",
+      agentId: "main",
       sessionKey: "agent:main:main",
       connId: "conn-disconnect",
       runAgentConsult: vi.fn(async () => ({ text: "done" })),
@@ -234,6 +241,7 @@ describe("Talk client Gateway control owner", () => {
     const closeLogicalSession = vi.fn(async () => undefined);
     const owner = createTalkClientGatewayControlOwner({
       voiceSessionId: "voice-close-error",
+      agentId: "main",
       sessionKey: "agent:main:main",
       connId: "conn-close-error",
       runAgentConsult: vi.fn(async () => ({ text: "done" })),
@@ -263,6 +271,7 @@ describe("Talk client Gateway control owner", () => {
     const closeLogicalSession = vi.fn(async () => undefined);
     const common = {
       voiceSessionId: "voice-replacement",
+      agentId: "main",
       sessionKey: "agent:main:main",
       connId: "conn-replacement",
       runAgentConsult,

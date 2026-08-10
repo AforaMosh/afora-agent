@@ -420,7 +420,7 @@ describe("session abort command integration", () => {
                 runIdsByClaimId: { [claimId]: runId },
               },
             },
-          },
+          } as InternalSessionEntry,
         },
       ],
     });

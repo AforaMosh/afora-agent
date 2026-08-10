@@ -11,11 +11,12 @@ import {
   replaceSessionEntry,
   type SessionAbortTargetResult,
 } from "../../config/sessions/session-accessor.js";
+import { getAgentEventLifecycleGeneration } from "../../infra/agent-events.js";
 import { createSuiteTempRootTracker } from "../../test-helpers/temp-dir.js";
 import { resolveAbortCutoffFromContext, shouldSkipMessageByAbortCutoff } from "./abort-cutoff.js";
 import { getAbortMemory } from "./abort-primitives.js";
 import {
-  abortSessionRunTargetWithOutcome,
+  abortSessionRunTarget,
   formatAbortReplyText,
   isAbortRequestText,
   isAbortTrigger,
@@ -1005,7 +1006,52 @@ describe("abort detection", () => {
     operation.complete();
   });
 
-  it("still aborts the embedded run when reply cancellation throws", () => {
+  it("terminalizes an active recovery backend when /stop aborts a same-key successor", async () => {
+    const sessionKey = "agent:main:telegram:direct:recovery-successor";
+    const sessionId = "session-recovery-successor";
+    const runId = "run-recovery-successor";
+    const lifecycleGeneration = getAgentEventLifecycleGeneration();
+    const { storePath } = await createAbortConfig();
+    await replaceSessionEntry(
+      { storePath, sessionKey },
+      {
+        sessionId,
+        updatedAt: 100,
+        status: "running",
+        abortedLastRun: true,
+        restartRecoveryRuns: [{ runId, lifecycleGeneration }],
+        mainRestartRecovery: {
+          cycleId: "cycle-recovery-successor",
+          revision: 2,
+          chargedAttempts: 1,
+        },
+      },
+    );
+    const successor = createReplyOperation({
+      sessionKey,
+      sessionId,
+      resetTriggered: false,
+    });
+    abortTesting.setDepsForTests({
+      resolveActiveEmbeddedRunIdentity: () => ({
+        lifecycleGeneration,
+        runId,
+        sessionId,
+      }),
+    });
+
+    await expect(abortSessionRunTarget({ key: sessionKey, sessionId, storePath })).resolves.toEqual(
+      expect.objectContaining({ aborted: true }),
+    );
+
+    expect(successor.result).toEqual({ kind: "aborted", code: "aborted_by_user" });
+    expect(readAbortSessionEntry(storePath, sessionKey)).toMatchObject({
+      status: "killed",
+      restartRecoveryTerminalRunIds: [runId],
+    });
+  });
+
+  it("still aborts the embedded run when reply cancellation throws", async () => {
     const sessionKey = "agent:main:telegram:direct:cancel-throws";
     const sessionId = "session-cancel-throws";
     const cancellationError = new Error("cancel failed");
@@ -1025,13 +1071,9 @@ describe("abort detection", () => {
       throw new Error("embedded abort failed");
     });
 
-    let thrown: unknown;
-    try {
-      abortSessionRunTargetWithOutcome({ key: sessionKey, sessionId });
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toBe(cancellationError);
+    await expect(abortSessionRunTarget({ key: sessionKey, sessionId })).rejects.toBe(
+      cancellationError,
+    );
     expect(runtimeAbortMocks.abortEmbeddedAgentRun).toHaveBeenCalledWith(sessionId);
     expect(operation.result).toEqual({ kind: "aborted", code: "aborted_by_user" });
     operation.complete();

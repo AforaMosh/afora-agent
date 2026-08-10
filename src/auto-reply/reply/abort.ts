@@ -107,7 +107,7 @@ if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.abortTestApi")] = abortTestApi;
 }
 
-export function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: string }): {
+function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: string }): {
   active: boolean;
   aborted: boolean;
 } {
@@ -141,7 +141,7 @@ export function abortSessionRunTargetWithOutcome(params: { key?: string; session
     }
   }
   if (abortError) {
-    throw abortError;
+    throw abortError instanceof Error ? abortError : new Error(formatErrorMessage(abortError));
   }
   return { active, aborted };
 }
@@ -152,10 +152,9 @@ export async function abortSessionRunTarget(params: {
   storePath?: string;
 }) {
   const operation = params.key ? replyRunRegistry.get(params.key) : undefined;
-  const runIdentity =
-    !operation && params.sessionId
-      ? abortDeps.resolveActiveEmbeddedRunIdentity(params.sessionId)
-      : undefined;
+  const runIdentity = params.sessionId
+    ? abortDeps.resolveActiveEmbeddedRunIdentity(params.sessionId)
+    : undefined;
   const recoveryRun =
     runIdentity && params.key && params.storePath
       ? {

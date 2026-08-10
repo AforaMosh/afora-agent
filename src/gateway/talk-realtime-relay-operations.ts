@@ -457,6 +457,7 @@ export async function steerTalkRealtimeRelayAgentRun(params: {
     throw new Error("Realtime relay steering session key does not match the relay session");
   }
   const result = await controlRealtimeVoiceAgentRun({
+    agentId: resolveRelayAgentId(session, sessionKey),
     sessionKey,
     text: params.text,
     mode: params.mode,

@@ -59,7 +59,7 @@ export type ActiveEmbeddedRunSnapshot = {
   inFlightPrompt?: string;
 };
 
-export type ActiveEmbeddedRunIdentity = {
+type ActiveEmbeddedRunIdentity = {
   lifecycleGeneration: string;
   runId: string;
   sessionId: string;

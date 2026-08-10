@@ -58,6 +58,7 @@ import {
   closeTalkClientGatewayControlSession,
   createTalkClientAgentConsultRunner,
   createTalkClientGatewayControlOwner,
+  hasOwnedActiveTalkClientRun,
 } from "../talk-client-gateway-control.js";
 import {
   ensureTalkRealtimeRelayVoiceSession,
@@ -313,6 +314,7 @@ export const talkClientHandlers: GatewayRequestHandlers = {
         const gatewayControlOwner = wantsGatewayControl
           ? createTalkClientGatewayControlOwner({
               voiceSessionId: activeVoiceSessionId!,
+              agentId,
               sessionKey,
               connId: ownerConnId!,
               runAgentConsult: consultRunner.runArgs,
@@ -705,6 +707,7 @@ export const talkClientHandlers: GatewayRequestHandlers = {
     }
     try {
       const result = await controlRealtimeVoiceAgentRun({
+        agentId: resolveTalkClientAgentId(context.getRuntimeConfig(), params.sessionKey),
         sessionKey: params.sessionKey,
         text: params.text,
         mode: params.mode,
@@ -715,23 +718,3 @@ export const talkClientHandlers: GatewayRequestHandlers = {
     }
   },
 };
-
-function hasOwnedActiveTalkClientRun(params: {
-  context: Parameters<GatewayRequestHandlers[string]>[0]["context"];
-  clientConnId?: string;
-  sessionKey: string;
-}): boolean {
-  // Browser steering is only allowed for the connection that owns the live
-  // browser session; agent-owned consult runs use the relay steering path.
-  const connId = normalizeOptionalString(params.clientConnId);
-  const sessionKey = params.sessionKey.trim();
-  if (!connId || !sessionKey) {
-    return false;
-  }
-  for (const entry of params.context.chatAbortControllers.values()) {
-    if (entry.sessionKey === sessionKey && entry.ownerConnId === connId && entry.kind !== "agent") {
-      return true;
-    }
-  }
-  return false;
-}

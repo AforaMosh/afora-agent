@@ -214,11 +214,9 @@ export async function runReplyRecoveryUserAbort<T extends { aborted: boolean }>(
     recoveryPersistenceErrors?: string[];
   }
 > {
-  const recoveryAbort = params.operation
-    ? prepareReplyRecoveryUserAbort(params.operation)
-    : params.recoveryRun
-      ? prepareReplyRecoveryRunAbort(params.recoveryRun)
-      : undefined;
+  const recoveryAbort =
+    (params.operation ? prepareReplyRecoveryUserAbort(params.operation) : undefined) ??
+    (params.recoveryRun ? prepareReplyRecoveryRunAbort(params.recoveryRun) : undefined);
   const settleRecoveryAbort = async (accepted: boolean) => {
     if (!recoveryAbort) {
       return undefined;

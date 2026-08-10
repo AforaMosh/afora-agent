@@ -71,6 +71,7 @@ const defaultDeps: RealtimeVoiceAgentControlDeps = {
 /** Apply a spoken status, cancel, steer, or follow-up request to an active run. */
 export async function controlRealtimeVoiceAgentRun(
   params: {
+    agentId?: string;
     sessionKey: string;
     text: string;
     mode?: unknown;
@@ -128,7 +129,10 @@ export async function controlRealtimeVoiceAgentRun(
       abortOutcome = await deps.abortSessionRunTarget({
         key: sessionKey,
         sessionId,
-        storePath: deps.resolveSessionStorePathForScope({ sessionKey }),
+        storePath: deps.resolveSessionStorePathForScope({
+          ...(params.agentId ? { agentId: params.agentId } : {}),
+          sessionKey,
+        }),
       });
     } catch {
       abortOutcome = { active: true, aborted: false };

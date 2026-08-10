@@ -14,6 +14,10 @@ import { handleStopCommand } from "./commands-session-abort.js";
 import "./commands-session-abort.test-support.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
+type AbortSessionRunTargetResult = Awaited<
+  ReturnType<typeof import("./abort.js").abortSessionRunTarget>
+>;
+
 const abortEmbeddedAgentRunMock = vi.hoisted(() => vi.fn());
 const createInternalHookEventMock = vi.hoisted(() => vi.fn(() => ({})));
 const persistAbortTargetEntryMock = vi.hoisted(() => vi.fn(async () => true));
@@ -26,7 +30,7 @@ const stopSubagentsForRequesterMock = vi.hoisted(() =>
   vi.fn(async () => ({ stopped: 0, failed: 0 })),
 );
 const abortSessionRunTargetMock = vi.hoisted(() =>
-  vi.fn(async () => ({ active: false, aborted: false })),
+  vi.fn(async (): Promise<AbortSessionRunTargetResult> => ({ active: false, aborted: false })),
 );
 const formatAbortReplyTextMock = vi.hoisted(() => vi.fn(() => "⚙️ Agent was aborted."));
 

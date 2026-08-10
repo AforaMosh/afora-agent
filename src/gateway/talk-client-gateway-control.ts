@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { normalizeTalkSection } from "../config/talk.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
@@ -46,6 +47,26 @@ const owners = new Map<string, GatewayControlOwner>();
 
 const REALTIME_VOICE_CONTEXT_MAX_UTF8_BYTES = 8_000;
 const REALTIME_CONTROL_MAX_PENDING = 8;
+
+export function hasOwnedActiveTalkClientRun(params: {
+  context: Pick<GatewayRequestContext, "chatAbortControllers">;
+  clientConnId?: string;
+  sessionKey: string;
+}): boolean {
+  // Browser steering is only allowed for the connection that owns the live
+  // browser session; agent-owned consult runs use the relay steering path.
+  const connId = normalizeOptionalString(params.clientConnId);
+  const sessionKey = params.sessionKey.trim();
+  if (!connId || !sessionKey) {
+    return false;
+  }
+  for (const entry of params.context.chatAbortControllers.values()) {
+    if (entry.sessionKey === sessionKey && entry.ownerConnId === connId && entry.kind !== "agent") {
+      return true;
+    }
+  }
+  return false;
+}
 
 function createRealtimeControlQueue(): BoundedSerialQueue {
   return new BoundedSerialQueue({
@@ -225,6 +246,7 @@ export function createTalkClientAgentConsultRunner(params: {
 
 export function createTalkClientGatewayControlOwner(params: {
   voiceSessionId: string;
+  agentId: string;
   sessionKey: string;
   connId: string;
   runAgentConsult: (args: unknown, signal: AbortSignal) => Promise<{ text: string }>;
@@ -236,6 +258,7 @@ export function createTalkClientGatewayControlOwner(params: {
   flushTranscript: () => Promise<void>;
   closeLogicalSession: () => Promise<void>;
   controlAgentRun?: (params: {
+    agentId: string;
     sessionKey: string;
     text: string;
     mode?: unknown;
@@ -261,6 +284,7 @@ export function createTalkClientGatewayControlOwner(params: {
   const applyControl = async (args: unknown) => {
     const parsed = parseRealtimeVoiceAgentControlToolArgs(args);
     const result = await (params.controlAgentRun ?? controlRealtimeVoiceAgentRun)({
+      agentId: params.agentId,
       sessionKey: params.sessionKey,
       text: parsed.text,
       mode: parsed.mode,

@@ -437,7 +437,7 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
       respondUnavailable(respond, err);
     }
   },
-  "talk.session.steer": async ({ params, respond, client }) => {
+  "talk.session.steer": async ({ params, respond, client, context }) => {
     if (!assertValidParams(params, validateTalkSessionSteerParams, "talk.session.steer", respond)) {
       return;
     }
@@ -478,6 +478,7 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
         return;
       }
       const result = await controlRealtimeVoiceAgentRun({
+        agentId: resolveTalkSessionAgentId(context.getRuntimeConfig(), sessionKey),
         sessionKey,
         text: params.text,
         mode: params.mode,

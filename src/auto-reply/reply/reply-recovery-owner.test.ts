@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MainSessionRecoveryOwnerLease } from "../../agents/main-session-recovery-store.js";
 import type { InternalSessionEntry } from "../../config/sessions.js";
-import { abortSessionRunTargetWithOutcome } from "./abort.js";
+import { abortSessionRunTarget } from "./abort.js";
 import {
   runReplyRecoveryUserAbort,
   setReplyRecoveryOwner,
@@ -142,14 +142,9 @@ describe("reply recovery owner", () => {
     recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
 
     await expect(
-      runReplyRecoveryUserAbort({
-        operation,
-        abort: () =>
-          abortSessionRunTargetWithOutcome({
-            key: operation.key,
-            sessionId: operation.sessionId,
-          }),
-        logLabel: operation.key,
+      abortSessionRunTarget({
+        key: operation.key,
+        sessionId: operation.sessionId,
       }),
     ).resolves.toMatchObject({
       active: true,
@@ -206,14 +201,9 @@ describe("reply recovery owner", () => {
     recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
 
     await expect(
-      runReplyRecoveryUserAbort({
-        operation,
-        abort: () =>
-          abortSessionRunTargetWithOutcome({
-            key: operation.key,
-            sessionId: operation.sessionId,
-          }),
-        logLabel: operation.key,
+      abortSessionRunTarget({
+        key: operation.key,
+        sessionId: operation.sessionId,
       }),
     ).rejects.toThrow("cancel failed");
     expect(recoveryMocks.abortOwner).toHaveBeenCalledWith(lease, "run-abort-cancel-throws");

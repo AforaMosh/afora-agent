@@ -34,10 +34,10 @@ export function matchesMainSessionRecoveryRunIdentity(
     return true;
   }
   const claims = entry.mainRestartRecovery?.foregroundClaims;
-  return Boolean(
-    claims?.lifecycleGeneration === target.lifecycleGeneration &&
-    claims.tokens.some((claimId) => claims.runIdsByClaimId?.[claimId] === target.runId),
-  );
+  if (claims?.lifecycleGeneration !== target.lifecycleGeneration) {
+    return false;
+  }
+  return claims.tokens.some((claimId) => claims.runIdsByClaimId?.[claimId] === target.runId);
 }
 
 export function resolveMainSessionRecoveryForegroundAbort(params: {

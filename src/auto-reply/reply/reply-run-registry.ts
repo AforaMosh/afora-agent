@@ -502,6 +502,16 @@ export function isReplyRunAbortableForSignal(signal: AbortSignal): boolean {
   return operation ? isReplyOperationAbortable(operation) : true;
 }
 
+/** Resolve the active reply operation owned by a Gateway abort controller. */
+export function resolveActiveReplyOperationForAbortSignal(
+  signal: AbortSignal,
+): ReplyOperation | undefined {
+  const operation = operationsByUpstreamAbortSignal.get(signal);
+  return operation && replyRunState.activeRunsByKey.get(operation.key) === operation
+    ? operation
+    : undefined;
+}
+
 /** Keep terminal state registered until the operation owner exits via complete(). */
 export function retainReplyOperationUntilComplete(operation: ReplyOperation): void {
   retainStateUntilCompleteOperations.add(operation);

@@ -16,6 +16,8 @@ import {
 import { clearSessionQueues } from "../../auto-reply/reply/queue/cleanup.js";
 import { runReplyRecoveryUserAbort } from "../../auto-reply/reply/reply-recovery-owner.js";
 import {
+  replyRunRegistry,
+  resolveActiveReplyOperationForAbortSignal,
   resolveActiveReplyOperationForSessionId,
   resolveReplyOperationRunId,
 } from "../../auto-reply/reply/reply-run-registry.js";
@@ -285,13 +287,20 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
     let chatAbortSucceeded = false;
     let responseMeta: Record<string, unknown> | undefined;
     const persistedSessionId = sessionEntry?.sessionId;
-    const recoveryOperation = persistedSessionId
-      ? resolveActiveReplyOperationForSessionId(persistedSessionId)
+    const recoveryOperation = activeRun
+      ? resolveActiveReplyOperationForAbortSignal(activeRun.controller.signal)
+      : ([resolvedAbortSessionKey, key, canonicalKey, requestedKey]
+          .map((sessionKey) => (sessionKey ? replyRunRegistry.get(sessionKey) : undefined))
+          .find(
+            (operation) =>
+              operation && (!persistedSessionId || operation.sessionId === persistedSessionId),
+          ) ??
+        (persistedSessionId
+          ? resolveActiveReplyOperationForSessionId(persistedSessionId)
+          : undefined));
+    const recoveryRunIdentity = persistedSessionId
+      ? resolveActiveEmbeddedRunIdentity(persistedSessionId)
       : undefined;
-    const recoveryRunIdentity =
-      persistedSessionId && !recoveryOperation
-        ? resolveActiveEmbeddedRunIdentity(persistedSessionId)
-        : undefined;
     const recoveryRun =
       recoveryRunIdentity && loadedSession
         ? {
@@ -300,14 +309,33 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
             storePath: loadedSession.storePath,
           }
         : undefined;
-    const recoveryBackendRunId = recoveryOperation
-      ? resolveReplyOperationRunId(recoveryOperation)
-      : recoveryRunIdentity?.runId;
+    const recoveryBackendRunId =
+      recoveryRunIdentity?.runId ??
+      (recoveryOperation ? resolveReplyOperationRunId(recoveryOperation) : undefined);
     const recoveryClientRunId = recoveryBackendRunId
       ? context.chatRunState.registry.peek(recoveryBackendRunId)?.clientRunId
       : undefined;
     const acceptedRunIds = new Set<string>();
     let embeddedAbortAccepted = false;
+    const hasGatewayRecoveryOwner = persistedSessionId
+      ? [...context.chatAbortControllers.values()].some(
+          (entry) => entry.sessionId === persistedSessionId,
+        )
+      : false;
+    const exactRecoveryIdentityMatches = Boolean(
+      requestedRunId &&
+      !hasGatewayRecoveryOwner &&
+      (requestedRunId === recoveryBackendRunId ||
+        requestedRunId === recoveryClientRunId ||
+        requestedControllerRunId === recoveryClientRunId),
+    );
+    const abortEmbeddedRecovery = () => {
+      const embeddedAborted = persistedSessionId
+        ? abortEmbeddedAgentRun(persistedSessionId)
+        : false;
+      embeddedAbortAccepted = embeddedAborted;
+      return embeddedAborted;
+    };
     const onAuthorizedAfterQueuedAbort =
       !requestedRunId && canonicalKey !== "global" && (clearQueued || persistedSessionId)
         ? () => {
@@ -325,13 +353,13 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
             }
             // Persisted channel replies are active session work even when they
             // have no connection-owned chat controller.
-            const embeddedAborted = persistedSessionId
-              ? abortEmbeddedAgentRun(persistedSessionId)
-              : false;
-            embeddedAbortAccepted = embeddedAborted;
+            const embeddedAborted = abortEmbeddedRecovery();
             return embeddedAborted || queueCleared;
           }
         : undefined;
+    const onAuthorizedAfterExactMiss = exactRecoveryIdentityMatches
+      ? abortEmbeddedRecovery
+      : undefined;
     const recoveryAbortOutcome = await runReplyRecoveryUserAbort({
       operation: recoveryOperation,
       recoveryRun,
@@ -396,7 +424,11 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
             client,
             isWebchatConnect,
           },
-          onAuthorizedAfterQueuedAbort ? { onAuthorizedAfterQueuedAbort } : {},
+          {
+            ...(onAuthorizedAfterQueuedAbort ? { onAuthorizedAfterQueuedAbort } : {}),
+            ...(onAuthorizedAfterExactMiss ? { onAuthorizedAfterExactMiss } : {}),
+            replyRecoveryAbortHandledExternally: true,
+          },
         );
         const operationAbortAccepted =
           recoveryOperation?.result?.kind === "aborted" &&
@@ -409,7 +441,7 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
         );
         return {
           aborted: requestedRunId
-            ? exactRecoveryRunAccepted
+            ? exactRecoveryRunAccepted || operationAbortAccepted || embeddedAbortAccepted
             : embeddedAbortAccepted || operationAbortAccepted,
         };
       },

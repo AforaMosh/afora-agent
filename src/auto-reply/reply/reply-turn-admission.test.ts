@@ -20,8 +20,7 @@ import {
   interruptSessionWorkAdmissions,
   runExclusiveSessionLifecycleMutation,
 } from "../../sessions/session-lifecycle-admission.js";
-import { abortSessionRunTargetWithOutcome } from "./abort.js";
-import { runReplyRecoveryUserAbort } from "./reply-recovery-owner.js";
+import { abortSessionRunTarget } from "./abort.js";
 import {
   createReplyOperation,
   REPLY_RUN_IDLE_SETTLE_TIMEOUT_MS,
@@ -95,15 +94,6 @@ function createSessionStore(entries: Record<string, object>): string {
 
 function createSessionStoreFor(sessionKey: string, sessionId: string) {
   return createSessionStore({ [sessionKey]: { sessionId, updatedAt: Date.now() } });
-}
-
-function abortReplyRunTarget(params: Parameters<typeof abortSessionRunTargetWithOutcome>[0]) {
-  const operation = params.key ? replyRunRegistry.get(params.key) : undefined;
-  return runReplyRecoveryUserAbort({
-    operation,
-    abort: () => abortSessionRunTargetWithOutcome(params),
-    logLabel: params.key ?? "unknown session",
-  });
 }
 
 async function readSessionEntry(
@@ -715,7 +705,7 @@ describe("reply turn admission", () => {
       releaseStarted.resolve();
       await allowRelease.promise;
     });
-    const abort = abortReplyRunTarget({
+    const abort = abortSessionRunTarget({
       key: targetSessionKey,
       sessionId: targetSessionId,
     });
@@ -827,7 +817,7 @@ describe("reply turn admission", () => {
     adoption.operation.setPhase("running");
 
     await expect(
-      abortReplyRunTarget({
+      abortSessionRunTarget({
         key: targetSessionKey,
         sessionId: targetSessionId,
       }),

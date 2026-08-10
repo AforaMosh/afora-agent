@@ -67,7 +67,6 @@ export {
   listActiveEmbeddedRunSessionKeys,
   resolveActiveEmbeddedRunIdentity,
   resolveActiveEmbeddedRunSessionId,
-  type ActiveEmbeddedRunIdentity,
   type EmbeddedAgentQueueHandle,
   type EmbeddedAgentQueueMessageOptions,
 } from "./run-state.js";
