@@ -69,6 +69,8 @@ type RecoveryRunOwner = {
   sessionId: string;
 };
 
+export type MainSessionRecoveryRunIdentity = RecoveryRunOwner;
+
 export type MainSessionRecoveryCommand =
   | {
       kind: "mark_interrupted";
@@ -120,6 +122,13 @@ export type MainSessionRecoveryCommand =
   | { kind: "bind_foreground_run"; claim: MainSessionRecoveryOwnerClaim; runId: string }
   | { kind: "validate_foreground"; claim: MainSessionRecoveryOwnerClaim }
   | { kind: "release_foreground"; claim: MainSessionRecoveryOwnerClaim }
+  | {
+      kind: "abort_foreground";
+      now: number;
+      target:
+        | { kind: "claim"; claim: MainSessionRecoveryOwnerClaim; runId?: string }
+        | ({ kind: "run" } & MainSessionRecoveryRunIdentity);
+    }
   | {
       kind: "tombstone";
       now: number;

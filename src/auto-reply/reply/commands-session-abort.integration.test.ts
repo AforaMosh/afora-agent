@@ -17,13 +17,19 @@ import {
   type OpenClawConfig,
 } from "../../config/config.js";
 import type { InternalSessionEntry } from "../../config/sessions.js";
-import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
+import {
+  applySessionEntryLifecycleMutation,
+  loadSessionEntry,
+  replaceSessionEntry,
+} from "../../config/sessions/session-accessor.js";
 import type { GatewayRecoveryRuntime } from "../../gateway/server-instance-runtime.types.js";
 import { persistGatewaySessionLifecycleEvent } from "../../gateway/session-lifecycle-state.js";
 import { rotateAgentEventLifecycleGeneration } from "../../infra/agent-events.js";
 import { runExclusiveSessionLifecycleMutation } from "../../sessions/session-lifecycle-admission.js";
 import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
 import { tryFastAbortFromMessage } from "./abort.js";
+import { setReplyRecoveryOwner } from "./reply-recovery-owner.js";
+import { REPLY_RUN_TERMINAL_SETTLE_TIMEOUT_MS, replyRunRegistry } from "./reply-run-registry.js";
 import { testing as replyRunTesting } from "./reply-run-registry.test-support.js";
 import { admitReplyTurn } from "./reply-turn-admission.js";
 import { initSessionState } from "./session.js";
@@ -269,5 +275,199 @@ describe("session abort command integration", () => {
     expect(dispatchAgent).not.toHaveBeenCalled();
     expect(waitForAgent).not.toHaveBeenCalled();
     expect(sendRecoveryNotice).not.toHaveBeenCalled();
+  });
+
+  it("terminalizes /stop after the reply operation clears but its embedded run remains active", async () => {
+    const sessionKey = "agent:main:telegram:topic:operationless-recovery-abort";
+    const sessionId = "session-operationless-recovery-abort";
+    const runId = "run-operationless-recovery-abort";
+    const storePath = path.join(tempDirs.make("operationless-recovery-abort-"), "sessions.json");
+    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    setRuntimeConfigSnapshot(cfg, cfg);
+    const recoveryEntry: InternalSessionEntry = {
+      agentHarnessId: "codex",
+      sessionId,
+      status: "running",
+      abortedLastRun: true,
+      updatedAt: 100,
+      mainRestartRecovery: {
+        cycleId: "cycle-operationless-recovery-abort",
+        revision: 1,
+        chargedAttempts: 0,
+      },
+    };
+    await replaceSessionEntry({ storePath, sessionKey }, recoveryEntry);
+
+    const admission = await admitReplyTurn({
+      sessionKey,
+      sessionId,
+      expectedSessionId: sessionId,
+      storePath,
+      kind: "visible",
+      resetTriggered: false,
+    });
+    if (admission.status !== "owned") {
+      throw new Error("expected recovery-owned reply admission");
+    }
+    const backend = {
+      kind: "embedded",
+      runId,
+      cancel: () => {},
+    } as const;
+    admission.operation.attachBackend(backend);
+    admission.operation.setPhase("running");
+    let embeddedAborted = false;
+    const handle: EmbeddedAgentQueueHandle = {
+      runId,
+      abort: () => {
+        embeddedAborted = true;
+      },
+      isCompacting: () => false,
+      isStreaming: () => true,
+      queueMessage: async () => {},
+    };
+    setActiveEmbeddedRun(sessionId, handle, sessionKey);
+
+    vi.useFakeTimers();
+    try {
+      admission.operation.abortByUser();
+      expect(replyRunRegistry.get(sessionKey)).toBe(admission.operation);
+
+      await vi.advanceTimersByTimeAsync(REPLY_RUN_TERMINAL_SETTLE_TIMEOUT_MS);
+      expect(replyRunRegistry.get(sessionKey)).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+    await vi.waitFor(() => {
+      expect(
+        (loadSessionEntry({ storePath, sessionKey }) as InternalSessionEntry | undefined)
+          ?.mainRestartRecovery?.foregroundClaims,
+      ).toBeUndefined();
+    });
+    expect(loadSessionEntry({ storePath, sessionKey })?.restartRecoveryRuns).toEqual([
+      { runId, lifecycleGeneration: expect.any(String) },
+    ]);
+
+    await expect(
+      tryFastAbortFromMessage({
+        cfg,
+        ctx: buildTestCtx({
+          CommandAuthorized: true,
+          CommandBody: "/stop",
+          From: "telegram:owner",
+          Provider: "telegram",
+          RawBody: "/stop",
+          SessionKey: sessionKey,
+          Surface: "telegram",
+          To: "telegram:bot",
+        }),
+      }),
+    ).resolves.toMatchObject({ handled: true, aborted: true });
+    expect(embeddedAborted).toBe(true);
+    expect(loadSessionEntry({ storePath, sessionKey })).toMatchObject({
+      lifecycleRunId: runId,
+      sessionId,
+      status: "killed",
+      abortedLastRun: true,
+      restartRecoveryTerminalRunIds: [runId],
+    });
+    expect(
+      (loadSessionEntry({ storePath, sessionKey }) as InternalSessionEntry | undefined)
+        ?.mainRestartRecovery,
+    ).toBeUndefined();
+    expect(loadSessionEntry({ storePath, sessionKey })?.restartRecoveryRuns).toBeUndefined();
+  });
+
+  it("persists /stop against the exact recovery alias instead of the requested row", async () => {
+    const requestedKey = "agent:main:telegram:topic:requested-alias";
+    const recoveryKey = "agent:main:telegram:topic:recovery-alias";
+    const sessionId = "session-shared-alias";
+    const runId = "run-recovery-alias";
+    const lifecycleGeneration = "generation-recovery-alias";
+    const claimId = "claim-recovery-alias";
+    const storePath = path.join(tempDirs.make("recovery-alias-abort-"), "sessions.json");
+    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    setRuntimeConfigSnapshot(cfg, cfg);
+    await applySessionEntryLifecycleMutation({
+      storePath,
+      skipMaintenance: true,
+      upserts: [
+        {
+          sessionKey: requestedKey,
+          entry: {
+            sessionId,
+            status: "running",
+            abortedLastRun: false,
+            updatedAt: 100,
+            restartRecoveryRuns: [{ runId: "other-run", lifecycleGeneration: "other-generation" }],
+          },
+        },
+        {
+          sessionKey: recoveryKey,
+          entry: {
+            sessionId,
+            status: "running",
+            abortedLastRun: true,
+            updatedAt: 100,
+            restartRecoveryRuns: [{ runId, lifecycleGeneration }],
+            mainRestartRecovery: {
+              cycleId: "cycle-recovery-alias",
+              revision: 1,
+              chargedAttempts: 0,
+              foregroundClaims: {
+                lifecycleGeneration,
+                tokens: [claimId],
+                runIdsByClaimId: { [claimId]: runId },
+              },
+            },
+          },
+        },
+      ],
+    });
+    const operation = replyRunRegistry.begin({
+      sessionKey: requestedKey,
+      sessionId,
+      resetTriggered: false,
+    });
+    operation.attachBackend({ kind: "embedded", runId, cancel: () => {} });
+    operation.setPhase("running");
+    setReplyRecoveryOwner(operation, {
+      cycleId: "cycle-recovery-alias",
+      lifecycleGeneration,
+      claimId,
+      sessionId,
+      sessionKey: requestedKey,
+      storePath,
+      runId,
+    });
+
+    await expect(
+      tryFastAbortFromMessage({
+        cfg,
+        ctx: buildTestCtx({
+          CommandAuthorized: true,
+          CommandBody: "/stop",
+          From: "telegram:owner",
+          Provider: "telegram",
+          RawBody: "/stop",
+          SessionKey: requestedKey,
+          Surface: "telegram",
+          To: "telegram:bot",
+        }),
+      }),
+    ).resolves.toMatchObject({ handled: true, aborted: true });
+
+    expect(loadSessionEntry({ storePath, sessionKey: requestedKey })).toMatchObject({
+      status: "running",
+      abortedLastRun: false,
+      restartRecoveryRuns: [{ runId: "other-run", lifecycleGeneration: "other-generation" }],
+    });
+    expect(loadSessionEntry({ storePath, sessionKey: recoveryKey })).toMatchObject({
+      lifecycleRunId: runId,
+      status: "killed",
+      abortedLastRun: true,
+      restartRecoveryTerminalRunIds: [runId],
+    });
+    operation.complete();
   });
 });

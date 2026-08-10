@@ -21,11 +21,12 @@ const resolveCommandSessionEntryForKeyMock = vi.hoisted(() =>
   vi.fn(() => ({ entry: undefined, key: undefined })),
 );
 const resolveSessionIdMock = vi.hoisted(() => vi.fn(() => undefined));
+const setAbortMemoryMock = vi.hoisted(() => vi.fn());
 const stopSubagentsForRequesterMock = vi.hoisted(() =>
   vi.fn(async () => ({ stopped: 0, failed: 0 })),
 );
-const abortSessionRunTargetWithOutcomeMock = vi.hoisted(() =>
-  vi.fn(() => ({ active: false, aborted: false })),
+const abortSessionRunTargetMock = vi.hoisted(() =>
+  vi.fn(async () => ({ active: false, aborted: false })),
 );
 const formatAbortReplyTextMock = vi.hoisted(() => vi.fn(() => "⚙️ Agent was aborted."));
 
@@ -48,10 +49,10 @@ vi.mock("./abort-cutoff.js", () => ({
 }));
 
 vi.mock("./abort.js", () => ({
-  abortSessionRunTargetWithOutcome: abortSessionRunTargetWithOutcomeMock,
+  abortSessionRunTarget: abortSessionRunTargetMock,
   formatAbortReplyText: formatAbortReplyTextMock,
   isAbortTrigger: vi.fn(() => false),
-  setAbortMemory: vi.fn(),
+  setAbortMemory: setAbortMemoryMock,
   stopSubagentsForRequester: stopSubagentsForRequesterMock,
 }));
 
@@ -147,7 +148,7 @@ describe("handleStopCommand target fallback", () => {
   beforeEach(() => {
     previousPluginRegistry = getActivePluginRegistry();
     vi.clearAllMocks();
-    abortSessionRunTargetWithOutcomeMock.mockReturnValue({ active: false, aborted: false });
+    abortSessionRunTargetMock.mockResolvedValue({ active: false, aborted: false });
     persistAbortTargetEntryMock.mockResolvedValue(true);
   });
 
@@ -168,9 +169,10 @@ describe("handleStopCommand target fallback", () => {
       shouldContinue: false,
       reply: { text: "⚙️ Agent was aborted." },
     });
-    expect(abortSessionRunTargetWithOutcomeMock).toHaveBeenCalledWith({
+    expect(abortSessionRunTargetMock).toHaveBeenCalledWith({
       key: "agent:target:telegram:direct:123",
       sessionId: undefined,
+      storePath: "/tmp/sessions.json",
     });
     expect(abortEmbeddedAgentRunMock).not.toHaveBeenCalledWith("wrapper-session-id");
     const [persistAbortTargetParams] = expectDefined(
@@ -217,7 +219,7 @@ describe("handleStopCommand target fallback", () => {
 
   it("reports a finalizing target without persisting abort state", async () => {
     const params = buildStopParams();
-    abortSessionRunTargetWithOutcomeMock.mockReturnValue({ active: true, aborted: false });
+    abortSessionRunTargetMock.mockResolvedValue({ active: true, aborted: false });
     formatAbortReplyTextMock.mockReturnValue(
       "Agent reply is already finalizing and can no longer be aborted.",
     );
@@ -230,6 +232,30 @@ describe("handleStopCommand target fallback", () => {
     });
     expect(formatAbortReplyTextMock).toHaveBeenCalledWith(0, "finalizing", 0);
     expect(persistAbortTargetEntryMock).not.toHaveBeenCalled();
+  });
+
+  it("does not mark the requested alias when exact recovery persistence fails", async () => {
+    const params = buildStopParams();
+    abortSessionRunTargetMock.mockResolvedValue({
+      active: true,
+      aborted: true,
+      recoveryPersistenceErrors: ["disk unavailable"],
+    });
+    formatAbortReplyTextMock.mockReturnValue(
+      "⚙️ Agent was aborted. OpenClaw could not persist the cancellation. Retry /stop.",
+    );
+
+    const result = await handleStopCommand(params, true);
+
+    expect(result).toEqual({
+      shouldContinue: false,
+      reply: {
+        text: "⚙️ Agent was aborted. OpenClaw could not persist the cancellation. Retry /stop.",
+      },
+    });
+    expect(persistAbortTargetEntryMock).not.toHaveBeenCalled();
+    expect(setAbortMemoryMock).not.toHaveBeenCalled();
+    expect(formatAbortReplyTextMock).toHaveBeenCalledWith(0, undefined, 0, true);
   });
 
   it("surfaces child stop failures in the stop reply", async () => {
@@ -287,7 +313,7 @@ describe("handleStopCommand target fallback", () => {
       shouldContinue: false,
       reply: { text: "You are not authorized to use this command." },
     });
-    expect(abortSessionRunTargetWithOutcomeMock).not.toHaveBeenCalled();
+    expect(abortSessionRunTargetMock).not.toHaveBeenCalled();
     expect(persistAbortTargetEntryMock).not.toHaveBeenCalled();
     expect(createInternalHookEventMock).not.toHaveBeenCalled();
     expect(stopSubagentsForRequesterMock).not.toHaveBeenCalled();

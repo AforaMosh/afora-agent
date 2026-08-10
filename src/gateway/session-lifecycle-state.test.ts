@@ -2,7 +2,6 @@
  * Session lifecycle state derivation tests.
  */
 import { describe, expect, it, vi } from "vitest";
-import { abortMainSessionRecoveryOwnerEntry } from "../agents/main-session-recovery-owner-abort-entry.js";
 import { transitionMainSessionRecovery } from "../agents/main-session-recovery-state.js";
 import type { InternalSessionEntry as SessionEntry } from "../config/sessions.js";
 import { getAgentEventLifecycleGeneration } from "../infra/agent-events.js";
@@ -285,18 +284,21 @@ describe("session lifecycle state", () => {
       }),
     ).toEqual({ kind: "applied" });
     expect(
-      abortMainSessionRecoveryOwnerEntry({
-        entry: terminalized,
-        claim: {
-          cycleId: "cycle-1",
-          lifecycleGeneration: "generation-1",
-          claimId: "owner-a",
-          sessionId: "session-id",
-          sessionKey: "agent:main:main",
-        },
+      transitionMainSessionRecovery(terminalized, {
+        kind: "abort_foreground",
         now: 2_000,
+        target: {
+          kind: "claim",
+          claim: {
+            cycleId: "cycle-1",
+            lifecycleGeneration: "generation-1",
+            claimId: "owner-a",
+            sessionId: "session-id",
+            sessionKey: "agent:main:main",
+          },
+        },
       }),
-    ).toBe(true);
+    ).toEqual({ kind: "applied" });
     expect(terminalized.restartRecoveryTerminalRunIds).toEqual(["run-b"]);
 
     const afterLateStart = await persistLifecycle(terminalized, {

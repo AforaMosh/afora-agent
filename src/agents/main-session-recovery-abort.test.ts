@@ -3,7 +3,6 @@ import type {
   InternalSessionEntry as SessionEntry,
   MainRestartRecoveryState,
 } from "../config/sessions.js";
-import { abortMainSessionRecoveryOwnerEntry } from "./main-session-recovery-owner-abort-entry.js";
 import { transitionMainSessionRecovery } from "./main-session-recovery-state.js";
 
 const sessionKey = "agent:main:main";
@@ -43,6 +42,30 @@ function observe(entry: SessionEntry, lifecycleGeneration: string) {
   return result.view;
 }
 
+function abortClaim(params: {
+  claim: {
+    claimId: string;
+    cycleId: string;
+    lifecycleGeneration: string;
+    runId?: string;
+    sessionId: string;
+    sessionKey: string;
+  };
+  entry: SessionEntry;
+  now: number;
+  runId?: string;
+}) {
+  return transitionMainSessionRecovery(params.entry, {
+    kind: "abort_foreground",
+    now: params.now,
+    target: {
+      kind: "claim",
+      claim: params.claim,
+      ...(params.runId ? { runId: params.runId } : {}),
+    },
+  });
+}
+
 describe("main session recovery user abort", () => {
   it("terminalizes an exact foreground user abort before owner release", () => {
     const entry = interruptedEntry({
@@ -67,13 +90,7 @@ describe("main session recovery user abort", () => {
       runId: "recovery-1",
     };
 
-    expect(
-      abortMainSessionRecoveryOwnerEntry({
-        entry,
-        claim,
-        now: 300,
-      }),
-    ).toBe(true);
+    expect(abortClaim({ entry, claim, now: 300 })).toEqual({ kind: "applied" });
     expect(entry).toMatchObject({
       status: "killed",
       abortedLastRun: true,
@@ -107,7 +124,7 @@ describe("main session recovery user abort", () => {
     const before = structuredClone(entry);
 
     expect(
-      abortMainSessionRecoveryOwnerEntry({
+      abortClaim({
         entry,
         claim: {
           cycleId: "cycle-1",
@@ -119,12 +136,13 @@ describe("main session recovery user abort", () => {
         now: 300,
         runId: "recovery-1",
       }),
-    ).toBe(false);
+    ).toEqual({ kind: "no_change" });
     expect(entry).toEqual(before);
   });
 
   it("tombstones an aborted run while another foreground owner remains", () => {
     const entry = interruptedEntry({
+      lifecycleRunId: "recovery-1",
       restartRecoveryRuns: [
         { runId: "recovery-1", lifecycleGeneration: "generation-1" },
         { runId: "recovery-2", lifecycleGeneration: "generation-1" },
@@ -143,7 +161,7 @@ describe("main session recovery user abort", () => {
     });
 
     expect(
-      abortMainSessionRecoveryOwnerEntry({
+      abortClaim({
         entry,
         claim: {
           cycleId: "cycle-1",
@@ -155,11 +173,12 @@ describe("main session recovery user abort", () => {
         },
         now: 300,
       }),
-    ).toBe(true);
+    ).toEqual({ kind: "applied" });
     expect(entry.restartRecoveryTerminalRunIds).toEqual(["recovery-1"]);
     expect(entry.restartRecoveryRuns).toEqual([
       { runId: "recovery-2", lifecycleGeneration: "generation-1" },
     ]);
+    expect(entry.lifecycleRunId).toBe("recovery-2");
     expect(entry.mainRestartRecovery?.foregroundClaims).toEqual({
       lifecycleGeneration: "generation-1",
       tokens: ["foreground-2"],
@@ -182,7 +201,7 @@ describe("main session recovery user abort", () => {
     });
 
     expect(
-      abortMainSessionRecoveryOwnerEntry({
+      abortClaim({
         entry,
         claim: {
           cycleId: "cycle-1",
@@ -193,7 +212,7 @@ describe("main session recovery user abort", () => {
         },
         now: 300,
       }),
-    ).toBe(true);
+    ).toEqual({ kind: "applied" });
     expect(entry.restartRecoveryTerminalRunIds).toBeUndefined();
     expect(entry.restartRecoveryRuns).toEqual([
       { runId: "recovery-2", lifecycleGeneration: "generation-1" },
@@ -233,7 +252,7 @@ describe("main session recovery user abort", () => {
       }),
     ).toEqual({ kind: "applied" });
     expect(
-      abortMainSessionRecoveryOwnerEntry({
+      abortClaim({
         entry,
         claim: {
           cycleId: "cycle-1",
@@ -244,7 +263,7 @@ describe("main session recovery user abort", () => {
         },
         now: 300,
       }),
-    ).toBe(true);
+    ).toEqual({ kind: "applied" });
     expect(entry).toMatchObject({
       status: "killed",
       abortedLastRun: true,
@@ -253,5 +272,56 @@ describe("main session recovery user abort", () => {
     expect(entry.restartRecoveryTerminalRunIds).toEqual(["recovery-2"]);
     expect(entry.restartRecoveryRuns).toBeUndefined();
     expect(entry.mainRestartRecovery).toBeUndefined();
+  });
+
+  it("terminalizes an operationless active recovery run by exact identity", () => {
+    const entry = interruptedEntry({
+      startedAt: 100,
+      restartRecoveryRuns: [{ runId: "recovery-1", lifecycleGeneration: "generation-1" }],
+      mainRestartRecovery: recoveryState({ revision: 4 }),
+    });
+
+    expect(
+      transitionMainSessionRecovery(entry, {
+        kind: "abort_foreground",
+        now: 300,
+        target: {
+          kind: "run",
+          lifecycleGeneration: "generation-1",
+          runId: "recovery-1",
+          sessionId: "session-1",
+        },
+      }),
+    ).toEqual({ kind: "applied" });
+    expect(entry).toMatchObject({
+      status: "killed",
+      abortedLastRun: true,
+      lifecycleRunId: "recovery-1",
+      restartRecoveryTerminalRunIds: ["recovery-1"],
+    });
+    expect(entry.restartRecoveryRuns).toBeUndefined();
+    expect(entry.mainRestartRecovery).toBeUndefined();
+  });
+
+  it("rejects an operationless abort whose run identity no longer owns recovery", () => {
+    const entry = interruptedEntry({
+      restartRecoveryRuns: [{ runId: "recovery-2", lifecycleGeneration: "generation-1" }],
+      mainRestartRecovery: recoveryState({ revision: 4 }),
+    });
+    const before = structuredClone(entry);
+
+    expect(
+      transitionMainSessionRecovery(entry, {
+        kind: "abort_foreground",
+        now: 300,
+        target: {
+          kind: "run",
+          lifecycleGeneration: "generation-1",
+          runId: "recovery-1",
+          sessionId: "session-1",
+        },
+      }),
+    ).toEqual({ kind: "no_change" });
+    expect(entry).toEqual(before);
   });
 });

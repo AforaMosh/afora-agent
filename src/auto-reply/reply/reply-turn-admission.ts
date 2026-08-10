@@ -39,6 +39,7 @@ import {
   ReplyRunSuccessorAdmissionBlockedError,
   registerReplyOperationSuccessorBarrier,
   retainReplyOperationUntilComplete,
+  resolveReplyOperationRunId,
   runAfterReplyOperationClear,
   type ReplyOperation,
   waitForReplyRunFollowupAdmission,
@@ -73,6 +74,8 @@ async function releaseReplyRecoveryOwner(
   if (!lease) {
     return undefined;
   }
+  const runId = operation ? resolveReplyOperationRunId(operation) : undefined;
+  const releaseLease = runId ? { ...lease, runId } : lease;
   let settleDeferredRelease: (
     pending: MainSessionRecoveryPendingTarget | undefined,
   ) => void = () => {};
@@ -80,7 +83,7 @@ async function releaseReplyRecoveryOwner(
     settleDeferredRelease = resolve;
   });
   try {
-    return await releaseMainSessionRecoveryOwner(lease, {
+    return await releaseMainSessionRecoveryOwner(releaseLease, {
       onDeferredSuccess: settleDeferredRelease,
     });
   } catch (error) {

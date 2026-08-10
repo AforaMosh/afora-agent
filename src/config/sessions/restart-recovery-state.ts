@@ -432,7 +432,7 @@ export function mergeRestartRecoveryTerminalRunIds(
 }
 
 export function hasRestartRecoveryTerminalRun(
-  entry: SessionEntry | undefined,
+  entry: Pick<SessionEntry, "restartRecoveryTerminalRunIds"> | undefined,
   runId: string,
 ): boolean {
   return (

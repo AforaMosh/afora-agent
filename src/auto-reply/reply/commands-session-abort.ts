@@ -9,7 +9,7 @@ import {
   type AbortCutoff,
 } from "./abort-cutoff.js";
 import {
-  abortSessionRunTargetWithOutcome,
+  abortSessionRunTarget,
   formatAbortReplyText,
   isAbortTrigger,
   setAbortMemory,
@@ -22,7 +22,6 @@ import {
 } from "./commands-session-store.js";
 import type { CommandHandler } from "./commands-types.js";
 import { clearSessionQueues } from "./queue.js";
-import { runReplyRecoveryUserAbort } from "./reply-recovery-owner.js";
 import { replyRunRegistry } from "./reply-run-registry.js";
 
 type AbortTarget = {
@@ -90,15 +89,10 @@ async function applyAbortTarget(params: {
   abortCutoff?: AbortCutoff;
 }) {
   const { abortTarget } = params;
-  const operation = abortTarget.key ? replyRunRegistry.get(abortTarget.key) : undefined;
-  const abortOutcome = await runReplyRecoveryUserAbort({
-    operation,
-    abort: () =>
-      abortSessionRunTargetWithOutcome({
-        key: abortTarget.key,
-        sessionId: abortTarget.sessionId,
-      }),
-    logLabel: abortTarget.key ?? "unknown session",
+  const abortOutcome = await abortSessionRunTarget({
+    key: abortTarget.key,
+    sessionId: abortTarget.sessionId,
+    storePath: params.storePath,
   });
   for (const recovery of abortOutcome.recoveries ?? []) {
     if (abortTarget.key === recovery.sessionKey && abortTarget.entry) {
@@ -116,14 +110,30 @@ async function applyAbortTarget(params: {
   if (abortOutcome.active && !abortOutcome.aborted) {
     return abortOutcome;
   }
+  if (abortOutcome.recoveryPersistenceErrors?.length) {
+    return abortOutcome;
+  }
 
-  const persisted = await persistAbortTargetEntry({
-    entry: abortTarget.entry,
-    key: abortTarget.key,
-    sessionStore: params.sessionStore,
-    storePath: params.storePath,
-    abortCutoff: params.abortCutoff,
-  });
+  const recoveryTargets = new Map(
+    (abortOutcome.recoveries ?? []).map((recovery) => [
+      recovery.sessionKey,
+      { entry: recovery.entry, key: recovery.sessionKey },
+    ]),
+  );
+  const persistenceTargets =
+    recoveryTargets.size > 0
+      ? [...recoveryTargets.values()]
+      : [{ entry: abortTarget.entry, key: abortTarget.key }];
+  let persisted = false;
+  for (const target of persistenceTargets) {
+    persisted =
+      (await persistAbortTargetEntry({
+        ...target,
+        sessionStore: params.sessionStore,
+        storePath: params.storePath,
+        abortCutoff: params.abortCutoff,
+      })) || persisted;
+  }
   if (!persisted && params.abortKey) {
     setAbortMemory(params.abortKey, true);
   }
@@ -193,9 +203,14 @@ export const handleStopCommand: CommandHandler = async (params, allowTextCommand
 
   const rejectionReason =
     abortOutcome.active && !abortOutcome.aborted ? ("finalizing" as const) : undefined;
+  const persistenceFailed = Boolean(abortOutcome.recoveryPersistenceErrors?.length);
   return {
     shouldContinue: false,
-    reply: { text: formatAbortReplyText(stopped, rejectionReason, failed) },
+    reply: {
+      text: persistenceFailed
+        ? formatAbortReplyText(stopped, rejectionReason, failed, true)
+        : formatAbortReplyText(stopped, rejectionReason, failed),
+    },
   };
 };
 
@@ -219,8 +234,13 @@ export const handleAbortTrigger: CommandHandler = async (params, allowTextComman
   const abortOutcome = await applyAbortTarget(buildAbortTargetApplyParams(params, abortTarget));
   const rejectionReason =
     abortOutcome.active && !abortOutcome.aborted ? ("finalizing" as const) : undefined;
+  const persistenceFailed = Boolean(abortOutcome.recoveryPersistenceErrors?.length);
   return {
     shouldContinue: false,
-    reply: { text: formatAbortReplyText(undefined, rejectionReason) },
+    reply: {
+      text: persistenceFailed
+        ? formatAbortReplyText(undefined, rejectionReason, undefined, true)
+        : formatAbortReplyText(undefined, rejectionReason),
+    },
   };
 };

@@ -14,16 +14,35 @@ function createDeps(options: {
   activeSessionId?: string;
   queued?: boolean;
   abortResult?: boolean;
+  abortError?: Error;
+  recoveryPersistenceErrors?: string[];
+  storePath?: string;
+  storePathError?: Error;
   activity?: RealtimeVoiceAgentRunActivity;
   reason?: "no_active_run" | "not_streaming" | "compacting" | "runtime_rejected";
 }) {
   return {
-    abortEmbeddedAgentRun: vi.fn(() => options.abortResult ?? true),
+    abortSessionRunTarget: vi.fn(async () => {
+      if (options.abortError) {
+        throw options.abortError;
+      }
+      return {
+        active: true,
+        aborted: options.abortResult ?? true,
+        ...(options.recoveryPersistenceErrors?.length
+          ? { recoveryPersistenceErrors: options.recoveryPersistenceErrors }
+          : {}),
+      };
+    }),
     queueEmbeddedAgentMessageWithOutcomeAsync: vi.fn(
       async (
         sessionId: string,
         _text: string,
-        _options?: { steeringMode?: "all"; taskSuggestionDeliveryMode?: undefined },
+        _options?: {
+          steeringMode?: "all";
+          isInboundUserMessage?: boolean;
+          taskSuggestionDeliveryMode?: undefined;
+        },
       ) =>
         options.queued === false
           ? {
@@ -42,6 +61,12 @@ function createDeps(options: {
     ),
     getDiagnosticSessionActivitySnapshot: vi.fn(() => options.activity ?? {}),
     resolveActiveEmbeddedRunSessionId: vi.fn(() => options.activeSessionId),
+    resolveSessionStorePathForScope: vi.fn(() => {
+      if (options.storePathError) {
+        throw options.storePathError;
+      }
+      return options.storePath ?? "/tmp/talk-sessions.json";
+    }),
   };
 }
 
@@ -147,7 +172,12 @@ describe("controlRealtimeVoiceAgentRun", () => {
     expect(deps.queueEmbeddedAgentMessageWithOutcomeAsync).toHaveBeenCalledWith(
       "session-active",
       "use the safer path",
-      { steeringMode: "all", debounceMs: 0, taskSuggestionDeliveryMode: undefined },
+      {
+        steeringMode: "all",
+        debounceMs: 0,
+        isInboundUserMessage: true,
+        taskSuggestionDeliveryMode: undefined,
+      },
     );
   });
 
@@ -169,8 +199,12 @@ describe("controlRealtimeVoiceAgentRun", () => {
     expect(queuedText).toContain("also check the migration");
   });
 
-  it("cancels the active run without queueing a steering message", async () => {
-    const deps = createDeps({ activeSessionId: "session-active", abortResult: true });
+  it("cancels the active run through the recovery-aware session target", async () => {
+    const deps = createDeps({
+      activeSessionId: "session-active",
+      abortResult: true,
+      storePath: "/tmp/main-sessions.json",
+    });
 
     const result = await controlRealtimeVoiceAgentRun(
       {
@@ -191,8 +225,151 @@ describe("controlRealtimeVoiceAgentRun", () => {
         message: "Cancelled the active OpenClaw run.",
       },
     });
-    expect(deps.abortEmbeddedAgentRun).toHaveBeenCalledWith("session-active");
+    expect(deps.resolveSessionStorePathForScope).toHaveBeenCalledWith({
+      sessionKey: "agent:main:main",
+    });
+    expect(deps.abortSessionRunTarget).toHaveBeenCalledWith({
+      key: "agent:main:main",
+      sessionId: "session-active",
+      storePath: "/tmp/main-sessions.json",
+    });
     expect(deps.queueEmbeddedAgentMessageWithOutcomeAsync).not.toHaveBeenCalled();
+  });
+
+  it("reports a visible failure when recovery cancellation cannot be persisted", async () => {
+    const deps = createDeps({
+      activeSessionId: "session-active",
+      recoveryPersistenceErrors: ["disk unavailable"],
+    });
+
+    const result = await controlRealtimeVoiceAgentRun(
+      {
+        sessionKey: "agent:main:main",
+        text: "stop",
+        mode: "cancel",
+      },
+      deps,
+    );
+
+    expect(result).toMatchObject({
+      ok: false,
+      mode: "cancel",
+      sessionId: "session-active",
+      active: true,
+      aborted: true,
+      reason: "recovery_persistence_failed",
+      message:
+        "Cancelled the active OpenClaw run, but OpenClaw could not save the cancellation state. It may be recovered after a restart.",
+      speak: true,
+      show: true,
+      suppress: false,
+    });
+    expect(result).not.toHaveProperty("providerResult");
+    expect(result.message).not.toContain("disk unavailable");
+  });
+
+  it("preserves the existing rejection result when the active run cannot be aborted", async () => {
+    const deps = createDeps({ activeSessionId: "session-active", abortResult: false });
+
+    const result = await controlRealtimeVoiceAgentRun(
+      {
+        sessionKey: "agent:main:main",
+        text: "stop",
+        mode: "cancel",
+      },
+      deps,
+    );
+
+    expect(result).toMatchObject({
+      ok: false,
+      mode: "cancel",
+      sessionId: "session-active",
+      active: true,
+      aborted: false,
+      reason: "abort_rejected",
+      message: "OpenClaw could not cancel the active run.",
+    });
+    expect(result).not.toHaveProperty("providerResult");
+  });
+
+  it("returns a visible rejection when the recovery-aware abort rejects", async () => {
+    const deps = createDeps({
+      activeSessionId: "session-active",
+      abortError: new Error("abort backend unavailable"),
+    });
+
+    const result = await controlRealtimeVoiceAgentRun(
+      {
+        sessionKey: "agent:main:main",
+        text: "stop",
+        mode: "cancel",
+      },
+      deps,
+    );
+
+    expect(result).toMatchObject({
+      ok: false,
+      mode: "cancel",
+      sessionId: "session-active",
+      active: true,
+      aborted: false,
+      reason: "abort_rejected",
+      message: "OpenClaw could not cancel the active run.",
+      speak: true,
+      show: true,
+      suppress: false,
+    });
+    expect(result).not.toHaveProperty("providerResult");
+  });
+
+  it("returns a visible rejection when the session store cannot be resolved", async () => {
+    const deps = createDeps({
+      activeSessionId: "session-active",
+      storePathError: new Error("invalid session store"),
+    });
+
+    const result = await controlRealtimeVoiceAgentRun(
+      {
+        sessionKey: "agent:main:main",
+        text: "stop",
+        mode: "cancel",
+      },
+      deps,
+    );
+
+    expect(result).toMatchObject({
+      ok: false,
+      mode: "cancel",
+      sessionId: "session-active",
+      active: true,
+      aborted: false,
+      reason: "abort_rejected",
+      message: "OpenClaw could not cancel the active run.",
+    });
+    expect(deps.abortSessionRunTarget).not.toHaveBeenCalled();
+  });
+
+  it("does not resolve storage or abort when cancel has no active run", async () => {
+    const deps = createDeps({});
+
+    const result = await controlRealtimeVoiceAgentRun(
+      {
+        sessionKey: "agent:main:main",
+        text: "stop",
+        mode: "cancel",
+      },
+      deps,
+    );
+
+    expect(result).toMatchObject({
+      ok: false,
+      mode: "cancel",
+      active: false,
+      aborted: false,
+      reason: "no_active_run",
+    });
+    expect(deps.resolveSessionStorePathForScope).not.toHaveBeenCalled();
+    expect(deps.abortSessionRunTarget).not.toHaveBeenCalled();
   });
 
   it("answers status from recent Talk tool events", async () => {

@@ -9,6 +9,7 @@ type FastAbortResult = {
   rejectionReason?: "finalizing";
   stoppedSubagents?: number;
   failedSubagents?: number;
+  recoveryPersistenceFailed?: boolean;
 };
 
 /** Runtime hook that may convert a message into an immediate abort action. */
@@ -22,4 +23,5 @@ export type FormatAbortReplyText = (
   stoppedSubagents?: number,
   rejectionReason?: FastAbortResult["rejectionReason"],
   failedSubagents?: number,
+  recoveryPersistenceFailed?: boolean,
 ) => string;

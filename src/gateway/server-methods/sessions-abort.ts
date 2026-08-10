@@ -9,8 +9,16 @@ import {
   validateSessionsAbortParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import { abortEmbeddedAgentRun } from "../../agents/embedded-agent-runner/runs.js";
+import {
+  abortEmbeddedAgentRun,
+  resolveActiveEmbeddedRunIdentity,
+} from "../../agents/embedded-agent-runner/runs.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue/cleanup.js";
+import { runReplyRecoveryUserAbort } from "../../auto-reply/reply/reply-recovery-owner.js";
+import {
+  resolveActiveReplyOperationForSessionId,
+  resolveReplyOperationRunId,
+} from "../../auto-reply/reply/reply-run-registry.js";
 import {
   isConfiguredSessionStoreAgentId,
   resolveExistingAgentSessionStoreTargetsSync,
@@ -124,6 +132,10 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
     const p = params;
     const cfg = context.getRuntimeConfig();
     const requestedRunId = readStringValue(p.runId);
+    const requestedRunRegistration = requestedRunId
+      ? context.chatRunState.registry.peek(requestedRunId)
+      : undefined;
+    const requestedControllerRunId = requestedRunRegistration?.clientRunId ?? requestedRunId;
     const requestedKey = normalizeOptionalString(p.key);
     const requestedParamAgentId = normalizeOptionalString(p.agentId);
     const clearQueued = p.clearQueued === true;
@@ -151,7 +163,9 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
     const requestedKeyAgentId = scopedRequestedKey
       ? resolveSessionKeyAgentId(scopedRequestedKey, cfg)
       : undefined;
-    const activeRun = requestedRunId ? context.chatAbortControllers.get(requestedRunId) : undefined;
+    const activeRun = requestedControllerRunId
+      ? context.chatAbortControllers.get(requestedControllerRunId)
+      : undefined;
     const activeRunSessionKey = activeRun?.sessionKey;
     const activeRunAgentId = normalizeOptionalString(activeRun?.agentId);
     const inferredRunAgentId =
@@ -177,6 +191,7 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
     const keyCandidate =
       scopedRequestedKey ??
       scopedActiveRunSessionKey ??
+      requestedRunRegistration?.sessionKey ??
       (requestedRunId
         ? resolveSessionKeyForRun(requestedRunId, {
             agentId: requestedRunAgentId ?? resolveDefaultAgentId(cfg),
@@ -258,8 +273,8 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
     // their idempotency key), while chat-send runs use "chat:" so the abort
     // snapshot does not collide with the agent RPC dedupe cache.
     const preAbortRunKinds = new Map<string, "chat-send" | "agent" | undefined>();
-    if (requestedRunId) {
-      preAbortRunKinds.set(requestedRunId, activeRun?.kind);
+    if (requestedControllerRunId) {
+      preAbortRunKinds.set(requestedControllerRunId, activeRun?.kind);
     } else {
       for (const [rid, entry] of context.chatAbortControllers) {
         preAbortRunKinds.set(rid, entry.kind);
@@ -270,6 +285,29 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
     let chatAbortSucceeded = false;
     let responseMeta: Record<string, unknown> | undefined;
     const persistedSessionId = sessionEntry?.sessionId;
+    const recoveryOperation = persistedSessionId
+      ? resolveActiveReplyOperationForSessionId(persistedSessionId)
+      : undefined;
+    const recoveryRunIdentity =
+      persistedSessionId && !recoveryOperation
+        ? resolveActiveEmbeddedRunIdentity(persistedSessionId)
+        : undefined;
+    const recoveryRun =
+      recoveryRunIdentity && loadedSession
+        ? {
+            ...recoveryRunIdentity,
+            sessionKey: canonicalKey,
+            storePath: loadedSession.storePath,
+          }
+        : undefined;
+    const recoveryBackendRunId = recoveryOperation
+      ? resolveReplyOperationRunId(recoveryOperation)
+      : recoveryRunIdentity?.runId;
+    const recoveryClientRunId = recoveryBackendRunId
+      ? context.chatRunState.registry.peek(recoveryBackendRunId)?.clientRunId
+      : undefined;
+    const acceptedRunIds = new Set<string>();
+    let embeddedAbortAccepted = false;
     const onAuthorizedAfterQueuedAbort =
       !requestedRunId && canonicalKey !== "global" && (clearQueued || persistedSessionId)
         ? () => {
@@ -290,68 +328,105 @@ export const sessionAbortHandlers: GatewayRequestHandlers = {
             const embeddedAborted = persistedSessionId
               ? abortEmbeddedAgentRun(persistedSessionId)
               : false;
+            embeddedAbortAccepted = embeddedAborted;
             return embeddedAborted || queueCleared;
           }
         : undefined;
-    await handleChatAbortRequestWithLifecycle(
-      {
-        req,
-        params: {
-          sessionKey: abortSessionKey,
-          runId: requestedRunId,
-          ...(abortAgentId ? { agentId: abortAgentId } : {}),
-        },
-        respond: (ok, payload, error, meta) => {
-          if (!ok) {
-            respond(ok, payload, error, meta);
-            return;
-          }
-          chatAbortSucceeded = true;
-          responseMeta = meta;
-          const runIds =
-            payload &&
-            typeof payload === "object" &&
-            Array.isArray((payload as { runIds?: unknown[] }).runIds)
-              ? (payload as { runIds: unknown[] }).runIds.filter((value): value is string =>
-                  Boolean(normalizeOptionalString(value)),
-                )
-              : [];
-          const firstAbortedRunId = runIds[0] ?? null;
-          abortedRunId = firstAbortedRunId;
-          aborted =
-            firstAbortedRunId !== null ||
-            (payload !== null &&
-              typeof payload === "object" &&
-              (payload as { aborted?: unknown }).aborted === true);
-          const workerOnly = Boolean(workerRunSessionId && !activeRun);
-          if (firstAbortedRunId && !workerOnly) {
-            const endedAt = Date.now();
-            const runKind = preAbortRunKinds.get(firstAbortedRunId);
-            const dedupePrefix = runKind === "agent" ? "agent" : "chat";
-            setGatewayDedupeEntry({
-              dedupe: context.dedupe,
-              key: `${dedupePrefix}:${firstAbortedRunId}`,
-              entry: {
-                ts: endedAt,
-                ok: true,
-                payload: {
-                  status: "timeout",
-                  runId: firstAbortedRunId,
-                  ...(abortAgentId ? { agentId: abortAgentId } : {}),
-                  stopReason: "rpc",
-                  endedAt,
-                },
-              },
-            });
-          }
-        },
-        context,
-        client,
-        isWebchatConnect,
+    const recoveryAbortOutcome = await runReplyRecoveryUserAbort({
+      operation: recoveryOperation,
+      recoveryRun,
+      logLabel: canonicalKey,
+      abort: async () => {
+        await handleChatAbortRequestWithLifecycle(
+          {
+            req,
+            params: {
+              sessionKey: abortSessionKey,
+              runId: requestedControllerRunId,
+              ...(abortAgentId ? { agentId: abortAgentId } : {}),
+            },
+            respond: (ok, payload, error, meta) => {
+              if (!ok) {
+                respond(ok, payload, error, meta);
+                return;
+              }
+              chatAbortSucceeded = true;
+              responseMeta = meta;
+              const runIds =
+                payload &&
+                typeof payload === "object" &&
+                Array.isArray((payload as { runIds?: unknown[] }).runIds)
+                  ? (payload as { runIds: unknown[] }).runIds.filter((value): value is string =>
+                      Boolean(normalizeOptionalString(value)),
+                    )
+                  : [];
+              const firstAbortedRunId = runIds[0] ?? null;
+              for (const runId of runIds) {
+                acceptedRunIds.add(runId);
+              }
+              abortedRunId = firstAbortedRunId;
+              aborted =
+                firstAbortedRunId !== null ||
+                (payload !== null &&
+                  typeof payload === "object" &&
+                  (payload as { aborted?: unknown }).aborted === true);
+              const workerOnly = Boolean(workerRunSessionId && !activeRun);
+              if (firstAbortedRunId && !workerOnly) {
+                const endedAt = Date.now();
+                const runKind = preAbortRunKinds.get(firstAbortedRunId);
+                const dedupePrefix = runKind === "agent" ? "agent" : "chat";
+                setGatewayDedupeEntry({
+                  dedupe: context.dedupe,
+                  key: `${dedupePrefix}:${firstAbortedRunId}`,
+                  entry: {
+                    ts: endedAt,
+                    ok: true,
+                    payload: {
+                      status: "timeout",
+                      runId: firstAbortedRunId,
+                      ...(abortAgentId ? { agentId: abortAgentId } : {}),
+                      stopReason: "rpc",
+                      endedAt,
+                    },
+                  },
+                });
+              }
+            },
+            context,
+            client,
+            isWebchatConnect,
+          },
+          onAuthorizedAfterQueuedAbort ? { onAuthorizedAfterQueuedAbort } : {},
+        );
+        const operationAbortAccepted =
+          recoveryOperation?.result?.kind === "aborted" &&
+          recoveryOperation.result.code === "aborted_by_user";
+        const exactRecoveryRunAccepted = Boolean(
+          requestedRunId &&
+          requestedControllerRunId &&
+          acceptedRunIds.has(requestedControllerRunId) &&
+          (requestedRunId === recoveryBackendRunId || requestedRunId === recoveryClientRunId),
+        );
+        return {
+          aborted: requestedRunId
+            ? exactRecoveryRunAccepted
+            : embeddedAbortAccepted || operationAbortAccepted,
+        };
       },
-      onAuthorizedAfterQueuedAbort ? { onAuthorizedAfterQueuedAbort } : {},
-    );
+    });
     if (!chatAbortSucceeded) {
+      return;
+    }
+    if (recoveryAbortOutcome.recoveryPersistenceErrors?.length) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.UNAVAILABLE,
+          "Run cancellation was accepted, but recovery state could not be persisted. Retry sessions.abort.",
+          { retryable: true },
+        ),
+      );
       return;
     }
     respond(

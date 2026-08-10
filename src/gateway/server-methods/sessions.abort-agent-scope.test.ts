@@ -5,6 +5,7 @@
 import { expectDefined } from "@openclaw/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createReplyOperation } from "../../auto-reply/reply/reply-run-registry.js";
+import { createChatRunState } from "../server-chat-state.js";
 import type { GatewayClient, GatewayRequestContext, RespondFn } from "./types.js";
 
 const chatAbortMock = vi.fn();
@@ -13,6 +14,8 @@ const listSessionsFromStoreAsyncMock = vi.fn();
 const loadCombinedSessionStoreForGatewayMock = vi.fn();
 const isEmbeddedAgentRunInProgressMock = vi.fn();
 const abortEmbeddedAgentRunMock = vi.fn();
+const resolveActiveEmbeddedRunIdentityMock = vi.fn();
+const abortMainSessionRecoveryRunMock = vi.fn();
 const clearSessionQueuesMock = vi.fn();
 const loadSessionEntryMock = vi.fn((sessionKey: string, _opts?: { agentId?: string }) => ({
   canonicalKey: sessionKey,
@@ -65,7 +68,19 @@ vi.mock("../../agents/embedded-agent-runner/runs.js", async () => {
       abortEmbeddedAgentRunMock(sessionId);
       return actual.abortEmbeddedAgentRun(sessionId);
     },
+    resolveActiveEmbeddedRunIdentity: (...args: unknown[]) =>
+      resolveActiveEmbeddedRunIdentityMock(...args),
     isEmbeddedAgentRunInProgress: (...args: unknown[]) => isEmbeddedAgentRunInProgressMock(...args),
+  };
+});
+
+vi.mock("../../agents/main-session-recovery-store.js", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../agents/main-session-recovery-store.js")
+  >("../../agents/main-session-recovery-store.js");
+  return {
+    ...actual,
+    abortMainSessionRecoveryRun: (...args: unknown[]) => abortMainSessionRecoveryRunMock(...args),
   };
 });
 
@@ -114,6 +129,7 @@ function createContext(
   };
   return {
     chatAbortControllers: new Map(options.activeRuns ?? []),
+    chatRunState: createChatRunState(),
     getRuntimeConfig: () => cfg,
     ...options.extra,
   } as unknown as GatewayRequestContext;
@@ -243,6 +259,8 @@ describe("sessions.abort agent scope", () => {
     isEmbeddedAgentRunInProgressMock.mockReset();
     isEmbeddedAgentRunInProgressMock.mockReturnValue(false);
     abortEmbeddedAgentRunMock.mockReset();
+    resolveActiveEmbeddedRunIdentityMock.mockReset();
+    abortMainSessionRecoveryRunMock.mockReset();
     clearSessionQueuesMock.mockReset();
     clearSessionQueuesMock.mockReturnValue({ followupCleared: 0, laneCleared: 0, keys: [] });
   });
@@ -512,11 +530,18 @@ describe("sessions.abort agent scope", () => {
   });
 
   it("clears queued session work even when no embedded run remains active", async () => {
+    const sessionKey = "agent:main:openclaw-weixin:direct:queued-user";
     mockChatSuccess(chatAbortMock, { ok: true, aborted: false, runIds: [] });
-    loadSessionEntryMock.mockImplementationOnce((sessionKey: string) => ({
-      canonicalKey: sessionKey,
+    loadSessionEntryMock.mockImplementationOnce((storedSessionKey: string) => ({
+      canonicalKey: storedSessionKey,
+      storePath: "/tmp/openclaw-sessions.json",
       entry: { sessionId: "queued-session" },
     }));
+    resolveActiveEmbeddedRunIdentityMock.mockReturnValueOnce({
+      lifecycleGeneration: "generation-queued",
+      runId: "run-queued",
+      sessionId: "queued-session",
+    });
     clearSessionQueuesMock.mockReturnValueOnce({
       followupCleared: 1,
       laneCleared: 0,
@@ -531,7 +556,7 @@ describe("sessions.abort agent scope", () => {
     const respond = await callSessions(
       "sessions.abort",
       {
-        key: "agent:main:openclaw-weixin:direct:queued-user",
+        key: sessionKey,
         clearQueued: true,
       },
       { context, reqId: "req-queued-only-abort" },
@@ -543,6 +568,7 @@ describe("sessions.abort agent scope", () => {
       "queued-session",
     ]);
     expect(abortEmbeddedAgentRunMock).toHaveBeenCalledWith("queued-session");
+    expect(abortMainSessionRecoveryRunMock).not.toHaveBeenCalled();
     expect(respond).toHaveBeenCalledWith(
       true,
       { ok: true, abortedRunId: null, status: "aborted" },

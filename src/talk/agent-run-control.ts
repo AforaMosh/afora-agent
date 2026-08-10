@@ -6,10 +6,11 @@
  */
 import type { EmbeddedAgentQueueMessageOutcome } from "../agents/embedded-agent-runner/runs.js";
 import {
-  abortEmbeddedAgentRun,
   queueEmbeddedAgentMessageWithOutcomeAsync,
   resolveActiveEmbeddedRunSessionId,
 } from "../agents/embedded-agent-runner/runs.js";
+import { abortSessionRunTarget } from "../auto-reply/reply/abort.js";
+import { resolveSessionStorePathForScope } from "../config/sessions/session-store-path.js";
 import { getDiagnosticSessionActivitySnapshot } from "../logging/diagnostic-run-activity.js";
 import {
   buildRealtimeVoiceAgentCancelProviderResult,
@@ -40,13 +41,14 @@ export {
 } from "./agent-run-control-shared.js";
 
 type RealtimeVoiceAgentControlDeps = {
-  abortEmbeddedAgentRun: (sessionId: string) => boolean;
+  abortSessionRunTarget: typeof abortSessionRunTarget;
   queueEmbeddedAgentMessageWithOutcomeAsync: (
     sessionId: string,
     text: string,
     options?: {
       steeringMode?: "all";
       debounceMs?: number;
+      isInboundUserMessage?: boolean;
       taskSuggestionDeliveryMode?: undefined;
     },
   ) => Promise<EmbeddedAgentQueueMessageOutcome>;
@@ -55,13 +57,15 @@ type RealtimeVoiceAgentControlDeps = {
     sessionKey?: string;
   }) => RealtimeVoiceAgentRunActivity;
   resolveActiveEmbeddedRunSessionId: (sessionKey: string) => string | undefined;
+  resolveSessionStorePathForScope: typeof resolveSessionStorePathForScope;
 };
 
 const defaultDeps: RealtimeVoiceAgentControlDeps = {
-  abortEmbeddedAgentRun,
+  abortSessionRunTarget,
   getDiagnosticSessionActivitySnapshot,
   queueEmbeddedAgentMessageWithOutcomeAsync,
   resolveActiveEmbeddedRunSessionId,
+  resolveSessionStorePathForScope,
 };
 
 /** Apply a spoken status, cancel, steer, or follow-up request to an active run. */
@@ -119,23 +123,42 @@ export async function controlRealtimeVoiceAgentRun(
         suppress: false,
       };
     }
-    const aborted = deps.abortEmbeddedAgentRun(sessionId);
-    const message = aborted
-      ? "Cancelled the active OpenClaw run."
-      : "OpenClaw could not cancel the active run.";
+    let abortOutcome: Awaited<ReturnType<typeof abortSessionRunTarget>>;
+    try {
+      abortOutcome = await deps.abortSessionRunTarget({
+        key: sessionKey,
+        sessionId,
+        storePath: deps.resolveSessionStorePathForScope({ sessionKey }),
+      });
+    } catch {
+      abortOutcome = { active: true, aborted: false };
+    }
+    const recoveryPersistenceFailed = Boolean(abortOutcome.recoveryPersistenceErrors?.length);
+    const aborted = abortOutcome.aborted;
+    const message = recoveryPersistenceFailed
+      ? "Cancelled the active OpenClaw run, but OpenClaw could not save the cancellation state. It may be recovered after a restart."
+      : aborted
+        ? "Cancelled the active OpenClaw run."
+        : "OpenClaw could not cancel the active run.";
     return {
-      ok: aborted,
+      ok: aborted && !recoveryPersistenceFailed,
       mode,
       sessionKey,
       sessionId,
       active: true,
       aborted,
-      ...(aborted ? {} : { reason: "abort_rejected" }),
+      ...(recoveryPersistenceFailed
+        ? { reason: "recovery_persistence_failed" }
+        : aborted
+          ? {}
+          : { reason: "abort_rejected" }),
       message,
       speak: true,
       show: true,
       suppress: false,
-      ...(aborted ? { providerResult: buildRealtimeVoiceAgentCancelProviderResult(message) } : {}),
+      ...(aborted && !recoveryPersistenceFailed
+        ? { providerResult: buildRealtimeVoiceAgentCancelProviderResult(message) }
+        : {}),
     };
   }
 
@@ -160,6 +183,7 @@ export async function controlRealtimeVoiceAgentRun(
   const outcome = await deps.queueEmbeddedAgentMessageWithOutcomeAsync(sessionId, steerText, {
     steeringMode: "all",
     debounceMs: 0,
+    isInboundUserMessage: true,
     // Talk cannot present task suggestions, so spoken user input must not inherit
     // a capable TUI run's model-facing task tools.
     taskSuggestionDeliveryMode: undefined,

@@ -7,6 +7,7 @@ import { getAcpSessionManager } from "../../acp/control-plane/manager.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import {
   abortEmbeddedAgentRun,
+  resolveActiveEmbeddedRunIdentity,
   resolveActiveEmbeddedRunSessionId,
 } from "../../agents/embedded-agent-runner/runs.js";
 import { killControlledSubagentRun } from "../../agents/subagent-control.js";
@@ -52,6 +53,7 @@ export { isAbortRequestText, isAbortTrigger, setAbortMemory };
 const defaultAbortDeps = {
   getAcpSessionManager,
   abortEmbeddedAgentRun,
+  resolveActiveEmbeddedRunIdentity,
   resolveActiveEmbeddedRunSessionId,
   markSessionAbortTarget,
   resolveSessionAbortTarget,
@@ -70,6 +72,8 @@ const abortTestApi = {
       deps?.getAcpSessionManager ?? defaultAbortDeps.getAcpSessionManager;
     abortDeps.abortEmbeddedAgentRun =
       deps?.abortEmbeddedAgentRun ?? defaultAbortDeps.abortEmbeddedAgentRun;
+    abortDeps.resolveActiveEmbeddedRunIdentity =
+      deps?.resolveActiveEmbeddedRunIdentity ?? defaultAbortDeps.resolveActiveEmbeddedRunIdentity;
     abortDeps.resolveActiveEmbeddedRunSessionId =
       deps?.resolveActiveEmbeddedRunSessionId ?? defaultAbortDeps.resolveActiveEmbeddedRunSessionId;
     abortDeps.markSessionAbortTarget =
@@ -87,6 +91,7 @@ const abortTestApi = {
   resetDepsForTests(): void {
     abortDeps.getAcpSessionManager = defaultAbortDeps.getAcpSessionManager;
     abortDeps.abortEmbeddedAgentRun = defaultAbortDeps.abortEmbeddedAgentRun;
+    abortDeps.resolveActiveEmbeddedRunIdentity = defaultAbortDeps.resolveActiveEmbeddedRunIdentity;
     abortDeps.resolveActiveEmbeddedRunSessionId =
       defaultAbortDeps.resolveActiveEmbeddedRunSessionId;
     abortDeps.markSessionAbortTarget = defaultAbortDeps.markSessionAbortTarget;
@@ -121,17 +126,47 @@ export function abortSessionRunTargetWithOutcome(params: { key?: string; session
     sessionIds.add(explicitSessionId);
   }
 
-  let aborted = key ? replyRunRegistry.abort(key) : false;
+  let aborted = false;
+  let abortError: unknown;
+  try {
+    aborted = key ? replyRunRegistry.abort(key) : false;
+  } catch (error) {
+    abortError = error;
+  }
   for (const sessionId of sessionIds) {
-    aborted = abortDeps.abortEmbeddedAgentRun(sessionId) || aborted;
+    try {
+      aborted = abortDeps.abortEmbeddedAgentRun(sessionId) || aborted;
+    } catch (error) {
+      abortError ??= error;
+    }
+  }
+  if (abortError) {
+    throw abortError;
   }
   return { active, aborted };
 }
 
-async function abortSessionRunTarget(params: { key?: string; sessionId?: string }) {
+export async function abortSessionRunTarget(params: {
+  key?: string;
+  sessionId?: string;
+  storePath?: string;
+}) {
   const operation = params.key ? replyRunRegistry.get(params.key) : undefined;
+  const runIdentity =
+    !operation && params.sessionId
+      ? abortDeps.resolveActiveEmbeddedRunIdentity(params.sessionId)
+      : undefined;
+  const recoveryRun =
+    runIdentity && params.key && params.storePath
+      ? {
+          ...runIdentity,
+          sessionKey: params.key,
+          storePath: params.storePath,
+        }
+      : undefined;
   return await runReplyRecoveryUserAbort({
     operation,
+    recoveryRun,
     abort: () => abortSessionRunTargetWithOutcome(params),
     logLabel: params.key ?? "unknown session",
   });
@@ -141,7 +176,11 @@ export function formatAbortReplyText(
   stoppedSubagents?: number,
   rejectionReason?: "finalizing",
   failedSubagents?: number,
+  recoveryPersistenceFailed?: boolean,
 ): string {
+  const persistenceSuffix = recoveryPersistenceFailed
+    ? " OpenClaw could not persist the cancellation. Retry /stop."
+    : "";
   const failureSuffix =
     typeof failedSubagents === "number" && failedSubagents > 0
       ? ` ${failedSubagents === 1 ? "One sub-agent could not be stopped" : `${failedSubagents} sub-agents could not be stopped`}. Retry /stop.`
@@ -149,16 +188,16 @@ export function formatAbortReplyText(
   if (rejectionReason === "finalizing") {
     const base = "Agent reply is already finalizing and can no longer be aborted.";
     if (typeof stoppedSubagents !== "number" || stoppedSubagents <= 0) {
-      return `${base}${failureSuffix}`;
+      return `${base}${persistenceSuffix}${failureSuffix}`;
     }
     const label = stoppedSubagents === 1 ? "sub-agent" : "sub-agents";
-    return `${base} Stopped ${stoppedSubagents} ${label}.${failureSuffix}`;
+    return `${base} Stopped ${stoppedSubagents} ${label}.${persistenceSuffix}${failureSuffix}`;
   }
   if (typeof stoppedSubagents !== "number" || stoppedSubagents <= 0) {
-    return `⚙️ Agent was aborted.${failureSuffix}`;
+    return `⚙️ Agent was aborted.${persistenceSuffix}${failureSuffix}`;
   }
   const label = stoppedSubagents === 1 ? "sub-agent" : "sub-agents";
-  return `⚙️ Agent was aborted. Stopped ${stoppedSubagents} ${label}.${failureSuffix}`;
+  return `⚙️ Agent was aborted. Stopped ${stoppedSubagents} ${label}.${persistenceSuffix}${failureSuffix}`;
 }
 
 function resolveStoredSessionId(params: {
@@ -306,6 +345,7 @@ export async function tryFastAbortFromMessage(params: {
   rejectionReason?: "finalizing";
   stoppedSubagents?: number;
   failedSubagents?: number;
+  recoveryPersistenceFailed?: boolean;
 }> {
   const { ctx, cfg } = params;
   const commandSessionKey =
@@ -419,12 +459,19 @@ export async function tryFastAbortFromMessage(params: {
     );
     let aborted = false;
     let activeAbortRejected = false;
+    let recoveryPersistenceFailed = false;
+    const recoveryAbortTargetKeys = new Set<string>();
     for (const abortTargetKey of abortTargetKeys) {
       const outcome = await abortSessionRunTarget({
         key: abortTargetKey,
         sessionId: sessionIdsByKey.get(abortTargetKey),
+        storePath,
       });
       activeAbortRejected ||= outcome.active && !outcome.aborted;
+      recoveryPersistenceFailed ||= Boolean(outcome.recoveryPersistenceErrors?.length);
+      for (const recovery of outcome.recoveries ?? []) {
+        recoveryAbortTargetKeys.add(recovery.sessionKey);
+      }
       aborted = outcome.aborted || aborted;
     }
     const sourceSessionId = sourceAbortKey
@@ -435,8 +482,13 @@ export async function tryFastAbortFromMessage(params: {
       const outcome = await abortSessionRunTarget({
         key: sourceAbortKey,
         sessionId: sourceSessionId,
+        storePath,
       });
       activeAbortRejected ||= outcome.active && !outcome.aborted;
+      recoveryPersistenceFailed ||= Boolean(outcome.recoveryPersistenceErrors?.length);
+      for (const recovery of outcome.recoveries ?? []) {
+        recoveryAbortTargetKeys.add(recovery.sessionKey);
+      }
       aborted = outcome.aborted || aborted;
     }
     const cleared = clearSessionQueues(
@@ -457,22 +509,34 @@ export async function tryFastAbortFromMessage(params: {
         rejectionReason: "finalizing",
         stoppedSubagents: stopped,
         failedSubagents: failed,
+        ...(recoveryPersistenceFailed ? { recoveryPersistenceFailed: true } : {}),
       };
     }
     let persistedAbortTarget: SessionAbortTargetResult | null = null;
-    try {
-      persistedAbortTarget = await abortDeps.markSessionAbortTarget({
-        scope: {
-          agentId,
-          sessionKey: targetKey,
-          storePath,
-        },
-        resolveAbortCutoff: abortCutoffForTarget,
-      });
-    } catch (error) {
-      logVerbose(
-        `abort: failed to persist abort metadata for ${targetKey}: ${formatErrorMessage(error)}`,
-      );
+    const abortMetadataKeys =
+      recoveryAbortTargetKeys.size > 0
+        ? [...recoveryAbortTargetKeys]
+        : recoveryPersistenceFailed
+          ? []
+          : [targetKey];
+    for (const sessionKey of abortMetadataKeys) {
+      try {
+        const result = await abortDeps.markSessionAbortTarget({
+          scope: {
+            agentId,
+            sessionKey,
+            storePath,
+          },
+          resolveAbortCutoff: abortCutoffForTarget,
+        });
+        if (result?.persisted === true || !persistedAbortTarget) {
+          persistedAbortTarget = result;
+        }
+      } catch (error) {
+        logVerbose(
+          `abort: failed to persist abort metadata for ${sessionKey}: ${formatErrorMessage(error)}`,
+        );
+      }
     }
     if (persistedAbortTarget?.persisted === false) {
       logVerbose(
@@ -482,10 +546,21 @@ export async function tryFastAbortFromMessage(params: {
     const abortMemoryKey =
       persistedAbortTarget?.sessionKey ?? resolvedAbortTarget?.sessionKey ?? abortKey;
     const hasAbortTargetEntry = Boolean(persistedAbortTarget?.entry ?? resolvedAbortTarget?.entry);
-    if (persistedAbortTarget?.persisted !== true && abortMemoryKey && !hasAbortTargetEntry) {
+    if (
+      !recoveryPersistenceFailed &&
+      persistedAbortTarget?.persisted !== true &&
+      abortMemoryKey &&
+      !hasAbortTargetEntry
+    ) {
       setAbortMemory(abortMemoryKey, true);
     }
-    return { handled: true, aborted, stoppedSubagents: stopped, failedSubagents: failed };
+    return {
+      handled: true,
+      aborted,
+      stoppedSubagents: stopped,
+      failedSubagents: failed,
+      ...(recoveryPersistenceFailed ? { recoveryPersistenceFailed: true } : {}),
+    };
   }
 
   if (abortKey) {

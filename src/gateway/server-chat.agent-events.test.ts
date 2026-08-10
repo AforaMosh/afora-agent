@@ -1697,7 +1697,7 @@ describe("agent event handler", () => {
     nowSpy.mockRestore();
   });
 
-  it("routes tool events only to registered recipients when verbose is enabled", () => {
+  it("routes live edit diff progress to registered run recipients", () => {
     const { broadcast, broadcastToConnIds, toolEventRecipients, handler } = createHarness({
       resolveSessionKeyForRun: () => "session-1",
     });
@@ -1705,10 +1705,26 @@ describe("agent event handler", () => {
     registerAgentRunContext("run-tool", { sessionKey: "session-1", verboseLevel: "on" });
     toolEventRecipients.add("run-tool", "conn-1");
 
-    emitAgentEvent(handler, "run-tool", "tool", { phase: "start", name: "read", toolCallId: "t1" });
+    emitAgentEvent(handler, "run-tool", "tool", {
+      phase: "input_delta",
+      name: "edit",
+      toolCallId: "t1",
+      diff: { added: 2, removed: 1 },
+    });
 
     expect(broadcast).not.toHaveBeenCalled();
     expect(broadcastToConnIds).toHaveBeenCalledTimes(1);
+    expectRecordFields(
+      requireRecord(
+        requireMockPayload(broadcastToConnIds, 0, 1, "run tool payload").data,
+        "run tool data",
+      ),
+      {
+        phase: "input_delta",
+        name: "edit",
+        diff: { added: 2, removed: 1 },
+      },
+    );
   });
 
   it("broadcasts tool events to WS recipients even when verbose is off, but skips node send", () => {
@@ -1782,7 +1798,7 @@ describe("agent event handler", () => {
     expect(nodeToolCalls).toHaveLength(1);
   });
 
-  it("mirrors tool events to session subscribers so late-joining operator UIs can render them", () => {
+  it("mirrors live edit diff progress to session subscribers", () => {
     const { broadcastToConnIds, sessionEventSubscribers, handler } = createHarness({
       resolveSessionKeyForRun: () => "session-1",
     });
@@ -1797,10 +1813,10 @@ describe("agent event handler", () => {
       "run-session-tool",
       "tool",
       {
-        phase: "start",
-        name: "exec",
+        phase: "input_delta",
+        name: "edit",
         toolCallId: "tool-session-1",
-        args: { command: "echo hi" },
+        diff: { added: 4, removed: 2 },
       },
       { ts: 1_234 },
     );
@@ -1816,10 +1832,10 @@ describe("agent event handler", () => {
       ts: 1_234,
     });
     expectRecordFields(requireRecord(sessionToolPayload.data, "session tool payload data"), {
-      phase: "start",
-      name: "exec",
+      phase: "input_delta",
+      name: "edit",
       toolCallId: "tool-session-1",
-      args: { command: "echo hi" },
+      diff: { added: 4, removed: 2 },
     });
     expect(requireMockArg(broadcastToConnIds, 0, 2, "session tool recipients")).toEqual(
       new Set(["conn-session"]),
@@ -2288,6 +2304,74 @@ describe("agent event handler", () => {
         runtimeMs: 500,
       });
     }
+  });
+
+  it("does not project a delayed start after the recovery run was terminalized", async () => {
+    mockSessionEntry(
+      {
+        sessionId: "session-terminal-recovery",
+        updatedAt: 2_000,
+        status: "killed",
+        startedAt: 1_000,
+        endedAt: 2_000,
+        runtimeMs: 1_000,
+        abortedLastRun: true,
+        restartRecoveryTerminalRunIds: ["recovery-run"],
+      },
+      "session-terminal-recovery",
+    );
+    vi.mocked(loadGatewaySessionLifecycleSnapshot).mockReturnValue({
+      lifecycleRunId: "recovery-run",
+      row: {
+        key: "session-terminal-recovery",
+        kind: "direct",
+        sessionId: "session-terminal-recovery",
+        updatedAt: 2_000,
+        status: "killed",
+        startedAt: 1_000,
+        endedAt: 2_000,
+        runtimeMs: 1_000,
+        abortedLastRun: true,
+      },
+    });
+    const { broadcastToConnIds, sessionEventSubscribers, handler } = createHarness();
+    sessionEventSubscribers.subscribe("conn-session");
+
+    emitAgentEvent(
+      handler,
+      "recovery-run",
+      "lifecycle",
+      { phase: "start", startedAt: 3_000 },
+      {
+        sessionKey: "session-terminal-recovery",
+        sessionId: "session-terminal-recovery",
+        ts: 3_000,
+      },
+    );
+
+    await waitForFast(() => {
+      expect(
+        broadcastToConnIds.mock.calls.filter(([event]) => event === "sessions.changed"),
+      ).toHaveLength(1);
+    });
+    const payload = broadcastToConnIds.mock.calls.find(
+      ([event]) => event === "sessions.changed",
+    )?.[1];
+    expectPayloadFields(payload, {
+      sessionKey: "session-terminal-recovery",
+      status: "killed",
+      startedAt: 1_000,
+      endedAt: 2_000,
+      runtimeMs: 1_000,
+      abortedLastRun: true,
+    });
+    expectRecordFields(requireRecord(requireRecord(payload, "payload").session, "session"), {
+      status: "killed",
+      startedAt: 1_000,
+      endedAt: 2_000,
+      runtimeMs: 1_000,
+      abortedLastRun: true,
+    });
   });
 
   it.each([

@@ -12,6 +12,7 @@ import { testing as replyRunTesting } from "./reply-run-registry.test-support.js
 
 const recoveryMocks = vi.hoisted(() => ({
   abortOwner: vi.fn(),
+  abortRun: vi.fn(),
   repair: vi.fn(),
 }));
 
@@ -19,14 +20,16 @@ vi.mock("../../agents/main-session-recovery-lifecycle.js", () => ({
   repairMainSessionRecoveryMutation: recoveryMocks.repair,
 }));
 
-vi.mock("../../agents/main-session-recovery-owner-abort.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../agents/main-session-recovery-owner-abort.js")>()),
+vi.mock("../../agents/main-session-recovery-store.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../agents/main-session-recovery-store.js")>()),
   abortMainSessionRecoveryOwner: recoveryMocks.abortOwner,
+  abortMainSessionRecoveryRun: recoveryMocks.abortRun,
 }));
 
 afterEach(() => {
   replyRunTesting.resetReplyRunRegistry();
   recoveryMocks.abortOwner.mockReset();
+  recoveryMocks.abortRun.mockReset();
   recoveryMocks.repair.mockReset();
 });
 
@@ -66,7 +69,11 @@ describe("reply recovery owner", () => {
         abort: () => ({ active: true, aborted: true }),
         logLabel: operation.key,
       }),
-    ).resolves.toEqual({ active: true, aborted: true });
+    ).resolves.toEqual({
+      active: true,
+      aborted: true,
+      recoveryPersistenceErrors: ["temporary writer outage"],
+    });
     let released = false;
     const releaseWait = waitForReplyRecoveryAbortPersistence(operation).then(() => {
       released = true;
@@ -211,5 +218,89 @@ describe("reply recovery owner", () => {
     ).rejects.toThrow("cancel failed");
     expect(recoveryMocks.abortOwner).toHaveBeenCalledWith(lease, "run-abort-cancel-throws");
     await expect(waitForReplyRecoveryAbortPersistence(operation)).resolves.toBeUndefined();
+  });
+
+  it("terminalizes an accepted operationless recovery run by exact identity", async () => {
+    const recoveryRun = {
+      lifecycleGeneration: "generation-operationless",
+      runId: "run-operationless",
+      sessionId: "session-operationless",
+      sessionKey: "agent:main:telegram:topic:operationless",
+      storePath: "/tmp/operationless.sessions.json",
+    };
+    const entry: InternalSessionEntry = {
+      sessionId: recoveryRun.sessionId,
+      status: "killed",
+      abortedLastRun: true,
+      updatedAt: 10,
+    };
+    recoveryMocks.abortRun.mockResolvedValue({
+      kind: "applied",
+      entry,
+      sessionKey: recoveryRun.sessionKey,
+    });
+    recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation: undefined,
+        recoveryRun,
+        abort: async () => ({ active: true, aborted: true }),
+        logLabel: recoveryRun.sessionKey,
+      }),
+    ).resolves.toEqual({
+      active: true,
+      aborted: true,
+      recoveries: [{ kind: "applied", entry, sessionKey: recoveryRun.sessionKey }],
+    });
+    expect(recoveryMocks.abortRun).toHaveBeenCalledWith(recoveryRun);
+  });
+
+  it("does not terminalize an operationless recovery run when cancellation is rejected", async () => {
+    const recoveryRun = {
+      lifecycleGeneration: "generation-rejected",
+      runId: "run-rejected",
+      sessionId: "session-rejected",
+      sessionKey: "agent:main:telegram:topic:rejected",
+      storePath: "/tmp/rejected.sessions.json",
+    };
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation: undefined,
+        recoveryRun,
+        abort: () => ({ active: true, aborted: false }),
+        logLabel: recoveryRun.sessionKey,
+      }),
+    ).resolves.toEqual({ active: true, aborted: false });
+    expect(recoveryMocks.abortRun).not.toHaveBeenCalled();
+    expect(recoveryMocks.repair).not.toHaveBeenCalled();
+  });
+
+  it("reports operationless persistence failure as retryable caller evidence", async () => {
+    const recoveryRun = {
+      lifecycleGeneration: "generation-operationless-failure",
+      runId: "run-operationless-failure",
+      sessionId: "session-operationless-failure",
+      sessionKey: "agent:main:telegram:topic:operationless-failure",
+      storePath: "/tmp/operationless-failure.sessions.json",
+    };
+    recoveryMocks.repair.mockImplementation(async (params) => {
+      params.onError(new Error("temporary writer outage"));
+      return undefined;
+    });
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation: undefined,
+        recoveryRun,
+        abort: () => ({ active: true, aborted: true }),
+        logLabel: recoveryRun.sessionKey,
+      }),
+    ).resolves.toEqual({
+      active: true,
+      aborted: true,
+      recoveryPersistenceErrors: ["temporary writer outage"],
+    });
   });
 });

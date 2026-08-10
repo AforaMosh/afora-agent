@@ -1,15 +1,26 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { replaceSessionEntry } from "../../config/sessions/session-accessor.js";
+import { setActiveEmbeddedRun } from "../../agents/embedded-agent-runner/runs.js";
+import {
+  createEmbeddedRunHandle,
+  testing as embeddedRunsTesting,
+} from "../../agents/embedded-agent-runner/runs.test-support.js";
+import { setReplyRecoveryOwner } from "../../auto-reply/reply/reply-recovery-owner.js";
+import { replyRunRegistry } from "../../auto-reply/reply/reply-run-registry.js";
+import { testing as replyRunTesting } from "../../auto-reply/reply/reply-run-registry.test-support.js";
+import type { InternalSessionEntry } from "../../config/sessions.js";
+import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../../config/sessions/session-sqlite-target.js";
+import { getAgentEventLifecycleGeneration } from "../../infra/agent-events.js";
 import {
   closeOpenClawAgentDatabasesForTest,
   listOpenClawRegisteredAgentDatabases,
   resolveOpenClawAgentSqlitePath,
 } from "../../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
-import { testState } from "../test-helpers.js";
+import { createChatRunState } from "../server-chat-state.js";
+import { embeddedRunMock, testState } from "../test-helpers.js";
 import {
   directSessionReq,
   getGatewayConfigModule,
@@ -37,6 +48,9 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  embeddedRunsTesting.resetActiveEmbeddedRuns();
+  replyRunTesting.resetReplyRunRegistry();
+  embeddedRunMock.activeIds.clear();
   testState.sessionStorePath = undefined;
   testState.sessionConfig = undefined;
   closeOpenClawAgentDatabasesForTest();
@@ -242,4 +256,193 @@ test.each(["main", "work"])("sessions.abort still resolves the %s agent store", 
       }),
     ),
   ).toBe(true);
+});
+
+test("sessions.abort terminalizes a controller-less recovery run after its reply operation clears", async () => {
+  const agentId = "main";
+  const sessionKey = "agent:main:openclaw-weixin:direct:recovery-run";
+  const sessionId = "session-controller-less-recovery";
+  const runId = "run-controller-less-recovery";
+  const lifecycleGeneration = getAgentEventLifecycleGeneration();
+  const storePath = path.join(requireStateDir(), "agents", agentId, "sessions", "sessions.json");
+  const recoveryEntry: InternalSessionEntry = {
+    sessionId,
+    updatedAt: 100,
+    status: "running",
+    abortedLastRun: true,
+    restartRecoveryRuns: [{ runId, lifecycleGeneration }],
+    mainRestartRecovery: {
+      cycleId: "cycle-controller-less-recovery",
+      revision: 2,
+      chargedAttempts: 1,
+    },
+  };
+  await replaceSessionEntry({ agentId, sessionKey, storePath }, recoveryEntry);
+  setActiveEmbeddedRun(sessionId, createEmbeddedRunHandle({ runId }), sessionKey);
+  embeddedRunMock.activeIds.add(sessionId);
+
+  const result = await directSessionReq(
+    "sessions.abort",
+    { key: sessionKey },
+    { context: { chatRunState: createChatRunState() } },
+  );
+
+  expect(result).toMatchObject({
+    ok: true,
+    payload: { ok: true, abortedRunId: null, status: "aborted" },
+  });
+  expect(embeddedRunMock.abortCalls).toEqual([sessionId]);
+  expect(loadSessionEntry({ agentId, sessionKey, storePath })).toMatchObject({
+    sessionId,
+    lifecycleRunId: runId,
+    status: "killed",
+    abortedLastRun: true,
+    restartRecoveryTerminalRunIds: [runId],
+  });
+  expect(loadSessionEntry({ agentId, sessionKey, storePath })?.restartRecoveryRuns).toBeUndefined();
+  expect(
+    (loadSessionEntry({ agentId, sessionKey, storePath }) as InternalSessionEntry | undefined)
+      ?.mainRestartRecovery,
+  ).toBeUndefined();
+});
+
+test.each([
+  { label: "client run id", requestedRunId: "client", includeKey: true },
+  { label: "backend run id", requestedRunId: "backend", includeKey: true },
+  { label: "backend run id without a key", requestedRunId: "backend", includeKey: false },
+])("sessions.abort terminalizes the recovery owner for an exact $label", async (scenario) => {
+  const agentId = "main";
+  const sessionKey = "agent:main:openclaw-weixin:direct:exact-recovery-run";
+  const sessionId = "session-exact-recovery";
+  const backendRunId = "run-exact-recovery-backend";
+  const clientRunId = "run-exact-recovery-client";
+  const lifecycleGeneration = getAgentEventLifecycleGeneration();
+  const storePath = path.join(requireStateDir(), "agents", agentId, "sessions", "sessions.json");
+  const claimId = "claim-exact-recovery";
+  await replaceSessionEntry(
+    { agentId, sessionKey, storePath },
+    {
+      sessionId,
+      updatedAt: 100,
+      status: "running",
+      abortedLastRun: true,
+      restartRecoveryRuns: [{ runId: backendRunId, lifecycleGeneration }],
+      mainRestartRecovery: {
+        cycleId: "cycle-exact-recovery",
+        revision: 2,
+        chargedAttempts: 1,
+        foregroundClaims: {
+          lifecycleGeneration,
+          tokens: [claimId],
+          runIdsByClaimId: { [claimId]: backendRunId },
+        },
+      },
+    },
+  );
+  const operation = replyRunRegistry.begin({
+    sessionKey,
+    sessionId,
+    resetTriggered: false,
+  });
+  operation.attachBackend({
+    kind: "embedded",
+    runId: backendRunId,
+    cancel: () => {},
+  });
+  operation.setPhase("running");
+  setReplyRecoveryOwner(operation, {
+    cycleId: "cycle-exact-recovery",
+    lifecycleGeneration,
+    claimId,
+    sessionId,
+    sessionKey,
+    storePath,
+    runId: backendRunId,
+  });
+  const activeRun = createActiveRun(sessionKey, { agentId, sessionId });
+  activeRun.controller.signal.addEventListener("abort", () => {
+    operation.abortByUser();
+  });
+  const { getRuntimeConfig: _getRuntimeConfig, ...abortContext } = createChatAbortContext({
+    chatAbortControllers: new Map([[clientRunId, activeRun]]),
+  });
+  abortContext.chatRunState.registry.add(backendRunId, {
+    clientRunId,
+    sessionKey,
+    agentId,
+  });
+
+  const result = await directSessionReq(
+    "sessions.abort",
+    {
+      ...(scenario.includeKey ? { key: sessionKey } : {}),
+      runId: scenario.requestedRunId === "backend" ? backendRunId : clientRunId,
+    },
+    { context: abortContext },
+  );
+
+  expect(result).toMatchObject({
+    ok: true,
+    payload: { ok: true, abortedRunId: clientRunId, status: "aborted" },
+  });
+  expect(loadSessionEntry({ agentId, sessionKey, storePath })).toMatchObject({
+    sessionId,
+    lifecycleRunId: backendRunId,
+    status: "killed",
+    abortedLastRun: true,
+    restartRecoveryTerminalRunIds: [backendRunId],
+  });
+  operation.complete();
+});
+
+test("sessions.abort does not terminalize controller-less recovery for an unauthorized owner", async () => {
+  const agentId = "main";
+  const sessionKey = "agent:main:openclaw-weixin:direct:protected-recovery-run";
+  const sessionId = "session-protected-recovery";
+  const runId = "run-protected-recovery";
+  const lifecycleGeneration = getAgentEventLifecycleGeneration();
+  const storePath = path.join(requireStateDir(), "agents", agentId, "sessions", "sessions.json");
+  const pendingEntry: InternalSessionEntry = {
+    sessionId,
+    updatedAt: 100,
+    status: "running" as const,
+    abortedLastRun: true,
+    restartRecoveryRuns: [{ runId, lifecycleGeneration }],
+    mainRestartRecovery: {
+      cycleId: "cycle-protected-recovery",
+      revision: 2,
+      chargedAttempts: 1,
+    },
+  };
+  await replaceSessionEntry({ agentId, sessionKey, storePath }, pendingEntry);
+  setActiveEmbeddedRun(sessionId, createEmbeddedRunHandle({ runId }), sessionKey);
+  embeddedRunMock.activeIds.add(sessionId);
+  const protectedRun = createActiveRun(sessionKey, {
+    owner: { connId: "conn-owner", deviceId: "device-owner" },
+  });
+  const { getRuntimeConfig: _getRuntimeConfig, ...abortContext } = createChatAbortContext({
+    chatAbortControllers: new Map([["protected-visible-run", protectedRun]]),
+  });
+
+  const result = await directSessionReq(
+    "sessions.abort",
+    { key: sessionKey },
+    {
+      context: abortContext,
+      client: {
+        connId: "conn-other",
+        connect: {
+          device: { id: "device-other" },
+          scopes: ["operator.write"],
+        },
+      } as never,
+    },
+  );
+
+  expect(result).toMatchObject({
+    ok: false,
+    error: { code: "INVALID_REQUEST", message: "unauthorized" },
+  });
+  expect(embeddedRunMock.abortCalls).toEqual([]);
+  expect(loadSessionEntry({ agentId, sessionKey, storePath })).toMatchObject(pendingEntry);
 });

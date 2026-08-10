@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import {
   PENDING_FINAL_DELIVERY_CLEAR_PATCH,
   sanitizePendingFinalDeliveryText,
@@ -7,9 +8,16 @@ import type {
   MainRestartRecoveryState,
   RestartRecoveryRun,
 } from "../config/sessions.js";
-import { buildRestartRecoveryClaimCleanupPatch } from "../config/sessions/restart-recovery-state.js";
+import {
+  buildRestartRecoveryClaimCleanupPatch,
+  mergeRestartRecoveryTerminalRunIds,
+} from "../config/sessions/restart-recovery-state.js";
 import { isAcpSessionKey, isCronSessionKey, isSubagentSessionKey } from "../routing/session-key.js";
 import { buildMainSessionRecoveryClearPatch } from "./main-session-recovery-clear.js";
+import {
+  ownsMainSessionRecoveryClaim,
+  resolveMainSessionRecoveryForegroundAbort,
+} from "./main-session-recovery-ownership.js";
 import type {
   MainSessionRecoveryCommand,
   MainSessionRecoveryConflict,
@@ -23,6 +31,7 @@ export type {
   MainSessionRecoveryCommand,
   MainSessionRecoveryObservation,
   MainSessionRecoveryOwnerClaim,
+  MainSessionRecoveryRunIdentity,
   MainSessionRecoveryReservation,
   MainSessionRecoveryTransitionResult,
 } from "./main-session-recovery-types.js";
@@ -66,17 +75,6 @@ function hasCurrentForegroundClaim(
   return (
     state.foregroundClaims?.lifecycleGeneration === lifecycleGeneration &&
     state.foregroundClaims.tokens.length > 0
-  );
-}
-
-function ownsForegroundClaim(
-  state: MainRestartRecoveryState | undefined,
-  claim: { cycleId: string; lifecycleGeneration: string; claimId: string },
-): boolean {
-  return (
-    state?.cycleId === claim.cycleId &&
-    state.foregroundClaims?.lifecycleGeneration === claim.lifecycleGeneration &&
-    state.foregroundClaims.tokens.includes(claim.claimId)
   );
 }
 
@@ -533,7 +531,7 @@ export function transitionMainSessionRecovery(
     case "bind_foreground_run": {
       const state = entry.mainRestartRecovery;
       const claims = state?.foregroundClaims;
-      if (!state || !claims || !ownsForegroundClaim(state, command.claim)) {
+      if (!state || !claims || !ownsMainSessionRecoveryClaim(state, command.claim)) {
         return { kind: "no_change" };
       }
       recordLifecycleFence(entry, {
@@ -551,17 +549,28 @@ export function transitionMainSessionRecovery(
     case "validate_foreground": {
       const state = entry.mainRestartRecovery;
       return entry.sessionId === command.claim.sessionId &&
-        ownsForegroundClaim(state, command.claim)
+        ownsMainSessionRecoveryClaim(state, command.claim)
         ? { kind: "foreground_validated" }
         : { kind: "no_change" };
     }
     case "release_foreground": {
       const state = entry.mainRestartRecovery;
       const claims = state?.foregroundClaims;
-      if (!state || !claims || !ownsForegroundClaim(state, command.claim)) {
+      if (!state || !claims || !ownsMainSessionRecoveryClaim(state, command.claim)) {
         return { kind: "no_change" };
       }
       const tokens = claims.tokens.filter((token) => token !== command.claim.claimId);
+      const runId =
+        normalizeOptionalString(command.claim.runId) ??
+        normalizeOptionalString(claims.runIdsByClaimId?.[command.claim.claimId]);
+      if (runId) {
+        // Preserve exact backend ownership when the reply slot clears before
+        // its terminal lifecycle event reaches the session store.
+        recordLifecycleFence(entry, {
+          lifecycleGeneration: command.claim.lifecycleGeneration,
+          runId,
+        });
+      }
       const runIdsByClaimId = Object.fromEntries(
         Object.entries(claims.runIdsByClaimId ?? {}).filter(
           ([token]) => token !== command.claim.claimId,
@@ -581,6 +590,79 @@ export function transitionMainSessionRecovery(
               }
             : undefined,
       });
+      return { kind: "applied" };
+    }
+    case "abort_foreground": {
+      const owned = resolveMainSessionRecoveryForegroundAbort({
+        entry,
+        target: command.target,
+      });
+      if (!owned) {
+        return { kind: "no_change" };
+      }
+      const abortedClaimIds = new Set(owned.claimIds);
+      const tokens = owned.claims?.tokens.filter((token) => !abortedClaimIds.has(token)) ?? [];
+      const runIdsByClaimId = Object.fromEntries(
+        Object.entries(owned.claims?.runIdsByClaimId ?? {}).filter(
+          ([token]) => !abortedClaimIds.has(token),
+        ),
+      );
+      const finalOwner = tokens.length === 0;
+      const survivingRunIds = [
+        ...new Set(
+          Object.values(runIdsByClaimId)
+            .map((runId) => normalizeOptionalString(runId))
+            .filter((runId): runId is string => Boolean(runId)),
+        ),
+      ];
+      const runRemainsOwned = Boolean(owned.runId && survivingRunIds.includes(owned.runId));
+      const terminalRunIds = finalOwner
+        ? [
+            ...(entry.restartRecoveryRuns?.map((run) => run.runId) ?? []),
+            ...(owned.runId ? [owned.runId] : []),
+          ]
+        : owned.runId && !runRemainsOwned
+          ? [owned.runId]
+          : [];
+      if (terminalRunIds.length > 0) {
+        entry.restartRecoveryTerminalRunIds = mergeRestartRecoveryTerminalRunIds(
+          entry.restartRecoveryTerminalRunIds,
+          terminalRunIds,
+        );
+      }
+      if (!finalOwner) {
+        const lifecycleGeneration =
+          command.target.kind === "claim"
+            ? command.target.claim.lifecycleGeneration
+            : command.target.lifecycleGeneration;
+        updateRecoveryState(entry, owned.state, {
+          foregroundClaims: {
+            lifecycleGeneration: owned.claims!.lifecycleGeneration,
+            tokens,
+            ...(Object.keys(runIdsByClaimId).length > 0 ? { runIdsByClaimId } : {}),
+          },
+        });
+        if (owned.runId && !runRemainsOwned) {
+          const remainingRuns = entry.restartRecoveryRuns?.filter(
+            (run) => run.lifecycleGeneration !== lifecycleGeneration || run.runId !== owned.runId,
+          );
+          entry.restartRecoveryRuns = remainingRuns?.length ? remainingRuns : undefined;
+          if (entry.lifecycleRunId === owned.runId) {
+            // A surviving owner must not be fenced by the cancelled sibling's
+            // run id when its terminal lifecycle event reaches the Gateway.
+            entry.lifecycleRunId = survivingRunIds.length === 1 ? survivingRunIds[0] : undefined;
+          }
+        }
+        return { kind: "applied" };
+      }
+      entry.status = "killed";
+      entry.abortedLastRun = true;
+      entry.lifecycleRunId = owned.runId;
+      entry.endedAt = command.now;
+      entry.runtimeMs = Math.max(0, command.now - (entry.startedAt ?? command.now));
+      entry.updatedAt = command.now;
+      entry.restartRecoveryRuns = undefined;
+      entry.mainRestartRecovery = undefined;
       return { kind: "applied" };
     }
     case "tombstone": {

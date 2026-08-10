@@ -6,17 +6,19 @@ import {
   retryMainSessionRecoveryMutation,
   scheduleMainSessionRecoveryMutation,
 } from "./main-session-recovery-lifecycle.js";
+import { matchesMainSessionRecoveryRunIdentity } from "./main-session-recovery-ownership.js";
 import {
   isMainRestartRecoveryCandidate,
   isMainSessionRecoveryPending,
   transitionMainSessionRecovery,
   type MainSessionRecoveryCommand,
   type MainSessionRecoveryOwnerClaim,
+  type MainSessionRecoveryRunIdentity,
   type MainSessionRecoveryReservation,
   type MainSessionRecoveryTransitionResult,
 } from "./main-session-recovery-state.js";
 
-type MainSessionRecoveryStoreTarget = {
+export type MainSessionRecoveryStoreTarget = {
   sessionKey: string;
   storePath: string;
 };
@@ -73,9 +75,19 @@ export async function commitMainSessionRecovery(params: {
   const exactOwnerClaim =
     params.command.kind === "validate_foreground" || params.command.kind === "release_foreground"
       ? params.command.claim
+      : params.command.kind === "abort_foreground" && params.command.target.kind === "claim"
+        ? params.command.target.claim
+        : undefined;
+  const exactOwnerRun =
+    params.command.kind === "abort_foreground" && params.command.target.kind === "run"
+      ? params.command.target
       : undefined;
   const scansAliases = Boolean(
-    params.scanAliases || reservationCleanup || recoveryAdmission || exactOwnerClaim,
+    params.scanAliases ||
+    reservationCleanup ||
+    recoveryAdmission ||
+    exactOwnerClaim ||
+    exactOwnerRun,
   );
   return await applySessionEntryReplacements<MainSessionRecoveryStoreResult>({
     requireWriteSuccess: params.requireWriteSuccess,
@@ -125,11 +137,17 @@ export async function commitMainSessionRecovery(params: {
           entries.find(({ entry }) => {
             const state = (entry as SessionEntry).mainRestartRecovery;
             return (
+              entry.sessionId === exactOwnerClaim.sessionId &&
               state?.cycleId === exactOwnerClaim.cycleId &&
               state.foregroundClaims?.lifecycleGeneration === exactOwnerClaim.lifecycleGeneration &&
               state.foregroundClaims.tokens.includes(exactOwnerClaim.claimId)
             );
           }) ?? selected;
+      } else if (exactOwnerRun) {
+        candidate =
+          entries.find(({ entry }) =>
+            matchesMainSessionRecoveryRunIdentity(entry as SessionEntry, exactOwnerRun),
+          ) ?? selected;
       } else if (ownerClaim && (!selected || selected.entry.sessionId !== ownerClaim.sessionId)) {
         candidate = entries.find(({ entry }) => entry.sessionId === ownerClaim.sessionId);
       } else if (params.scanAliases && params.expectedSessionId) {
@@ -172,6 +190,50 @@ export async function commitMainSessionRecovery(params: {
         ...(changed ? { replacements: [{ sessionKey: candidate.sessionKey, entry }] } : {}),
       };
     },
+  });
+}
+
+export type MainSessionRecoveryOwnerAbortResult =
+  | { kind: "applied"; entry: SessionEntry; sessionKey: string }
+  | { kind: "owner_changed" };
+
+async function abortMainSessionRecoveryForeground(params: {
+  target:
+    | { kind: "claim"; claim: MainSessionRecoveryOwnerClaim; runId?: string }
+    | ({ kind: "run" } & MainSessionRecoveryRunIdentity);
+  storeTarget: MainSessionRecoveryStoreTarget;
+}): Promise<MainSessionRecoveryOwnerAbortResult> {
+  const result = await commitMainSessionRecovery({
+    command: { kind: "abort_foreground", now: Date.now(), target: params.target },
+    requireWriteSuccess: true,
+    target: params.storeTarget,
+  });
+  return result.transition.kind === "applied" && result.entry && result.sessionKey
+    ? { kind: "applied", entry: result.entry, sessionKey: result.sessionKey }
+    : { kind: "owner_changed" };
+}
+
+export async function abortMainSessionRecoveryOwner(
+  lease: MainSessionRecoveryOwnerLease,
+  runId?: string,
+): Promise<MainSessionRecoveryOwnerAbortResult> {
+  return await abortMainSessionRecoveryForeground({
+    target: { kind: "claim", claim: lease, ...(runId ? { runId } : {}) },
+    storeTarget: lease,
+  });
+}
+
+export async function abortMainSessionRecoveryRun(
+  target: MainSessionRecoveryRunIdentity & MainSessionRecoveryStoreTarget,
+): Promise<MainSessionRecoveryOwnerAbortResult> {
+  return await abortMainSessionRecoveryForeground({
+    target: {
+      kind: "run",
+      lifecycleGeneration: target.lifecycleGeneration,
+      runId: target.runId,
+      sessionId: target.sessionId,
+    },
+    storeTarget: target,
   });
 }
 

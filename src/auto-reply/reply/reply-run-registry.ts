@@ -28,7 +28,6 @@ import type {
   TaskSuggestionDeliveryMode,
 } from "../get-reply-options.types.js";
 import type { ReplyFollowupAdmissionBarrierTimeoutPolicy } from "./reply-dispatcher.types.js";
-import { clearReplyOperationRunId, setReplyOperationRunId } from "./reply-operation-run-id.js";
 import * as replyRunSettle from "./reply-run-finalization-lease.js";
 
 type ReplyRunKey = string;
@@ -446,6 +445,7 @@ function isReplyOperationPreBackendPhase(phase: ReplyOperationPhase): boolean {
 }
 
 const attachedBackendByOperation = new WeakMap<ReplyOperation, ReplyBackendHandle>();
+const backendRunIdByOperation = new WeakMap<ReplyOperation, string>();
 const abortFrozenOperations = new WeakSet<ReplyOperation>();
 const operationsByUpstreamAbortSignal = new WeakMap<AbortSignal, ReplyOperation>();
 const retainStateUntilCompleteOperations = new WeakSet<ReplyOperation>();
@@ -476,6 +476,10 @@ const expireReplyOperationByOperation = new WeakMap<
 
 function getAttachedBackend(operation: ReplyOperation): ReplyBackendHandle | undefined {
   return attachedBackendByOperation.get(operation);
+}
+
+export function resolveReplyOperationRunId(operation: ReplyOperation): string | undefined {
+  return backendRunIdByOperation.get(operation);
 }
 
 function isReplyOperationAbortable(operation: ReplyOperation): boolean {
@@ -1159,7 +1163,12 @@ export function createReplyOperation(params: {
       }
       recordActivity();
       attachedBackendByOperation.set(operation, handle);
-      setReplyOperationRunId(operation, handle.runId);
+      const runId = normalizeOptionalString(handle.runId);
+      if (runId) {
+        backendRunIdByOperation.set(operation, runId);
+      } else {
+        backendRunIdByOperation.delete(operation);
+      }
       if (controller.signal.aborted) {
         handle.cancel("superseded");
       }
@@ -1167,7 +1176,6 @@ export function createReplyOperation(params: {
     detachBackend(handle) {
       if (getAttachedBackend(operation) === handle) {
         attachedBackendByOperation.delete(operation);
-        clearReplyOperationRunId(operation);
       }
     },
     freezeAbort() {

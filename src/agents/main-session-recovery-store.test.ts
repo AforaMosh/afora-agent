@@ -12,6 +12,8 @@ import {
   rotateAgentEventLifecycleGeneration,
 } from "../infra/agent-events.js";
 import {
+  abortMainSessionRecoveryOwner,
+  abortMainSessionRecoveryRun,
   claimMainSessionRecoveryOwner,
   commitMainSessionRecovery,
   inspectMainSessionRecoveryRequired,
@@ -666,5 +668,57 @@ describe("main session recovery store", () => {
     rotateAgentEventLifecycleGeneration();
 
     await expect(refreshMainSessionRecoveryOwner(claim.lease)).resolves.toBeUndefined();
+  });
+
+  it("accepts exact foreground abort cleanup after lifecycle rotation", async () => {
+    await write(interruptedEntry());
+    const claim = await claimRecovery({ runId: "recovery-1" });
+    if (claim.kind !== "claimed") {
+      throw new Error("expected foreground owner claim");
+    }
+    rotateAgentEventLifecycleGeneration();
+
+    await expect(abortMainSessionRecoveryOwner(claim.lease, "recovery-1")).resolves.toMatchObject({
+      kind: "applied",
+      sessionKey,
+      entry: {
+        sessionId: "session-1",
+        lifecycleRunId: "recovery-1",
+        status: "killed",
+      },
+    });
+  });
+
+  it("selects an exact run owner when aliases share one session id", async () => {
+    const aliasKey = "agent:main:telegram:topic:exact-run-owner";
+    await seedExact({
+      [sessionKey]: interruptedEntry({
+        restartRecoveryRuns: [{ runId: "other-run", lifecycleGeneration }],
+      }),
+      [aliasKey]: interruptedEntry({
+        restartRecoveryRuns: [{ runId: "recovery-1", lifecycleGeneration }],
+      }),
+    });
+
+    await expect(
+      abortMainSessionRecoveryRun({
+        lifecycleGeneration,
+        runId: "recovery-1",
+        sessionId: "session-1",
+        sessionKey,
+        storePath,
+      }),
+    ).resolves.toMatchObject({
+      kind: "applied",
+      sessionKey: aliasKey,
+      entry: {
+        lifecycleRunId: "recovery-1",
+        status: "killed",
+      },
+    });
+    expect(readStore()[sessionKey]).toMatchObject({
+      status: "running",
+      restartRecoveryRuns: [{ runId: "other-run", lifecycleGeneration }],
+    });
   });
 });

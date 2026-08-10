@@ -117,11 +117,18 @@ export async function prepareDispatchOperation(state: PrepareDispatchOperationCo
   if (fastAbort.handled) {
     return await finishFastCommand({
       payload: {
-        text: formatAbortReplyTextResolver(
-          fastAbort.stoppedSubagents,
-          fastAbort.rejectionReason,
-          fastAbort.failedSubagents,
-        ),
+        text: fastAbort.recoveryPersistenceFailed
+          ? formatAbortReplyTextResolver(
+              fastAbort.stoppedSubagents,
+              fastAbort.rejectionReason,
+              fastAbort.failedSubagents,
+              true,
+            )
+          : formatAbortReplyTextResolver(
+              fastAbort.stoppedSubagents,
+              fastAbort.rejectionReason,
+              fastAbort.failedSubagents,
+            ),
       },
       reason: "fast_abort",
       logKind: "fast_abort",

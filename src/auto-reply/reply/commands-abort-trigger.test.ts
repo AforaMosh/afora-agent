@@ -11,8 +11,8 @@ const resolveCommandSessionEntryForKeyMock = vi.hoisted(() =>
   vi.fn(() => ({ entry: undefined, key: "agent:main:main" })),
 );
 const setAbortMemoryMock = vi.hoisted(() => vi.fn());
-const abortSessionRunTargetWithOutcomeMock = vi.hoisted(() =>
-  vi.fn(() => ({ active: false, aborted: false })),
+const abortSessionRunTargetMock = vi.hoisted(() =>
+  vi.fn(async () => ({ active: false, aborted: false })),
 );
 const formatAbortReplyTextMock = vi.hoisted(() => vi.fn(() => "⚙️ Agent was aborted."));
 
@@ -35,7 +35,7 @@ vi.mock("./abort-cutoff.js", () => ({
 }));
 
 vi.mock("./abort.js", () => ({
-  abortSessionRunTargetWithOutcome: abortSessionRunTargetWithOutcomeMock,
+  abortSessionRunTarget: abortSessionRunTargetMock,
   formatAbortReplyText: formatAbortReplyTextMock,
   isAbortTrigger: vi.fn((raw: string) => raw === "stop"),
   setAbortMemory: setAbortMemoryMock,
@@ -102,13 +102,13 @@ function buildAbortParams(): HandleCommandsParams {
 describe("handleAbortTrigger", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    abortSessionRunTargetWithOutcomeMock.mockReturnValue({ active: false, aborted: false });
+    abortSessionRunTargetMock.mockResolvedValue({ active: false, aborted: false });
   });
 
   it("rejects unauthorized natural-language abort triggers", async () => {
     const result = await handleAbortTrigger(buildAbortParams(), true);
     expect(result).toEqual({ shouldContinue: false });
-    expect(abortSessionRunTargetWithOutcomeMock).not.toHaveBeenCalled();
+    expect(abortSessionRunTargetMock).not.toHaveBeenCalled();
     expect(abortEmbeddedAgentRunMock).not.toHaveBeenCalled();
     expect(persistAbortTargetEntryMock).not.toHaveBeenCalled();
     expect(setAbortMemoryMock).not.toHaveBeenCalled();
@@ -118,7 +118,7 @@ describe("handleAbortTrigger", () => {
     const params = buildAbortParams();
     params.command.isAuthorizedSender = true;
     params.command.senderIsOwner = true;
-    abortSessionRunTargetWithOutcomeMock.mockReturnValue({ active: true, aborted: false });
+    abortSessionRunTargetMock.mockResolvedValue({ active: true, aborted: false });
     formatAbortReplyTextMock.mockReturnValue(
       "Agent reply is already finalizing and can no longer be aborted.",
     );

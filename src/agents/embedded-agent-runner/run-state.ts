@@ -59,6 +59,12 @@ export type ActiveEmbeddedRunSnapshot = {
   inFlightPrompt?: string;
 };
 
+export type ActiveEmbeddedRunIdentity = {
+  lifecycleGeneration: string;
+  runId: string;
+  sessionId: string;
+};
+
 export type EmbeddedRunWaiter = {
   resolve: (ended: boolean) => void;
   timer?: NodeJS.Timeout;
@@ -235,6 +241,24 @@ export function setActiveEmbeddedRunLifecycleGeneration(
   }
   ACTIVE_EMBEDDED_RUN_LIFECYCLE_GENERATIONS.set(handle, lifecycleGeneration);
   return lifecycleGeneration;
+}
+
+/** Resolves the exact active backend identity even after its reply operation clears. */
+export function resolveActiveEmbeddedRunIdentity(
+  sessionId: string,
+): ActiveEmbeddedRunIdentity | undefined {
+  const normalizedSessionId = sessionId.trim();
+  if (!normalizedSessionId) {
+    return undefined;
+  }
+  const handle = ACTIVE_EMBEDDED_RUNS.get(normalizedSessionId);
+  const runId = handle?.runId?.trim();
+  const lifecycleGeneration = handle
+    ? ACTIVE_EMBEDDED_RUN_LIFECYCLE_GENERATIONS.get(handle)?.trim()
+    : undefined;
+  return handle && runId && lifecycleGeneration
+    ? { lifecycleGeneration, runId, sessionId: normalizedSessionId }
+    : undefined;
 }
 
 /** Resolves the current session id for an active run after resets or compaction. */

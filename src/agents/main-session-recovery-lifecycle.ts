@@ -1,5 +1,8 @@
 import type { InternalSessionEntry as SessionEntry } from "../config/sessions.js";
-import { mergeRestartRecoveryTerminalRunIds } from "../config/sessions/restart-recovery-state.js";
+import {
+  hasRestartRecoveryTerminalRun,
+  mergeRestartRecoveryTerminalRunIds,
+} from "../config/sessions/restart-recovery-state.js";
 import { retryAsync } from "../infra/retry.js";
 import {
   buildMainSessionRecoveryClearPatch,
@@ -135,6 +138,16 @@ export function projectMainSessionRecoveryLifecycle(params: {
   snapshotPatch: Partial<SessionEntry>;
 }): { action: "suppress" } | { action: "apply"; patch: Partial<SessionEntry> } {
   const apply = (patch: Partial<SessionEntry>) => ({ action: "apply" as const, patch });
+  const phase = lifecyclePhase(params.event);
+  const runId = params.event.runId?.trim();
+  if (
+    phase === "start" &&
+    runId &&
+    hasRestartRecoveryTerminalRun(params.entry ?? undefined, runId)
+  ) {
+    // Explicit cancellation may commit before a delayed producer start.
+    return { action: "suppress" };
+  }
   if (params.entry?.mainRestartRecovery?.tombstone) {
     // Keep the operator boundary while allowing unrelated lifecycle status to settle.
     return isMainSessionRecoveryLifecycleEvent(params)
@@ -149,11 +162,9 @@ export function projectMainSessionRecoveryLifecycle(params: {
   if (isMainSessionRecoveryLifecycleEvent(params)) {
     return { action: "suppress" };
   }
-  const phase = lifecyclePhase(params.event);
   const settlesRecovery =
     (phase === "end" || phase === "error") && params.event.data?.stopReason !== "restart";
   const patch = { ...params.snapshotPatch };
-  const runId = params.event.runId?.trim();
   const lifecycleGeneration = params.event.lifecycleGeneration?.trim();
   const runs = params.entry?.restartRecoveryRuns;
   const matchesFence = Boolean(

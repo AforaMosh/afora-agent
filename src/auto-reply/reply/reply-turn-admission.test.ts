@@ -39,9 +39,9 @@ const recoveryOwnerReleaseMocks = vi.hoisted(() => ({
   schedulePendingTarget: vi.fn(),
 }));
 
-vi.mock("../../agents/main-session-recovery-owner-abort.js", async (importOriginal) => {
+vi.mock("../../agents/main-session-recovery-store.js", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../../agents/main-session-recovery-owner-abort.js")>();
+    await importOriginal<typeof import("../../agents/main-session-recovery-store.js")>();
   return {
     ...actual,
     abortMainSessionRecoveryOwner: async (
@@ -51,14 +51,6 @@ vi.mock("../../agents/main-session-recovery-owner-abort.js", async (importOrigin
       await recoveryOwnerReleaseMocks.beforeAbort();
       return await actual.abortMainSessionRecoveryOwner(lease, runId);
     },
-  };
-});
-
-vi.mock("../../agents/main-session-recovery-store.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../agents/main-session-recovery-store.js")>();
-  return {
-    ...actual,
     releaseMainSessionRecoveryOwner: async (
       lease: Parameters<typeof actual.releaseMainSessionRecoveryOwner>[0],
       options: Parameters<typeof actual.releaseMainSessionRecoveryOwner>[1],

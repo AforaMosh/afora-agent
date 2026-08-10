@@ -15,6 +15,7 @@ import { createSuiteTempRootTracker } from "../../test-helpers/temp-dir.js";
 import { resolveAbortCutoffFromContext, shouldSkipMessageByAbortCutoff } from "./abort-cutoff.js";
 import { getAbortMemory } from "./abort-primitives.js";
 import {
+  abortSessionRunTargetWithOutcome,
   formatAbortReplyText,
   isAbortRequestText,
   isAbortTrigger,
@@ -998,6 +999,41 @@ describe("abort detection", () => {
     expect(formatAbortReplyText(0, undefined, 1)).toBe(
       "⚙️ Agent was aborted. One sub-agent could not be stopped. Retry /stop.",
     );
+    expect(formatAbortReplyText(0, undefined, 0, true)).toBe(
+      "⚙️ Agent was aborted. OpenClaw could not persist the cancellation. Retry /stop.",
+    );
+    operation.complete();
+  });
+
+  it("still aborts the embedded run when reply cancellation throws", () => {
+    const sessionKey = "agent:main:telegram:direct:cancel-throws";
+    const sessionId = "session-cancel-throws";
+    const cancellationError = new Error("cancel failed");
+    const operation = createReplyOperation({
+      sessionKey,
+      sessionId,
+      resetTriggered: false,
+    });
+    operation.attachBackend({
+      kind: "embedded",
+      cancel: () => {
+        throw cancellationError;
+      },
+    });
+    operation.setPhase("running");
+    runtimeAbortMocks.abortEmbeddedAgentRun.mockImplementationOnce(() => {
+      throw new Error("embedded abort failed");
+    });
+
+    let thrown: unknown;
+    try {
+      abortSessionRunTargetWithOutcome({ key: sessionKey, sessionId });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBe(cancellationError);
+    expect(runtimeAbortMocks.abortEmbeddedAgentRun).toHaveBeenCalledWith(sessionId);
+    expect(operation.result).toEqual({ kind: "aborted", code: "aborted_by_user" });
     operation.complete();
   });
 
