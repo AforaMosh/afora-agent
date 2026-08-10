@@ -312,6 +312,9 @@ export async function executePreparedReplyRun(state: PreparedReplyRunAdmission) 
     ...(opts?.onFollowupQueueDisposition
       ? { onQueueDisposition: opts.onFollowupQueueDisposition }
       : {}),
+    ...(opts?.onQueuedFollowupReplyBatch
+      ? { onQueuedFollowupReplyBatch: opts.onQueuedFollowupReplyBatch }
+      : {}),
     messageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
     summaryLine: baseBodyTrimmedRaw,
     enqueuedAt: Date.now(),

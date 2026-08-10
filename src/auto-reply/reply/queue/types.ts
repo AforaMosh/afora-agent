@@ -25,6 +25,7 @@ import type {
   TaskSuggestionDeliveryMode,
   TurnAdoptionLifecycle,
 } from "../../get-reply-options.types.js";
+import type { ReplyPayload } from "../../reply-payload.js";
 import type { OriginatingChannelType } from "../../templating.js";
 import type { ThinkingCatalogEntry } from "../../thinking.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../directives.js";
@@ -58,6 +59,14 @@ export type EnqueueFollowupRunOptions = {
 };
 
 export type FollowupQueueDisposition = "queue-cap" | "queue-cap-old" | "queue-cap-new";
+
+/** Closed queued-followup fact carried from its source run to Gateway delivery. */
+export type QueuedFollowupReplyBatch = {
+  kind: "queued-followup";
+  runId: string;
+  originatingChannel: string | undefined;
+  payloads: ReplyPayload[];
+};
 
 export class FollowupRunDeferredError extends Error {
   constructor(message = "Follow-up run deferred") {
@@ -94,6 +103,8 @@ export type FollowupRun = {
   onReplyAdmissionWaitChange?: (waiting: boolean) => void;
   /** Records terminal queue-cap outcomes at the queue owner before lifecycle cleanup. */
   onQueueDisposition?: (disposition: FollowupQueueDisposition) => void;
+  /** Source-owned late delivery callback; never substitute mutable drain defaults. */
+  onQueuedFollowupReplyBatch?: (batch: QueuedFollowupReplyBatch) => Promise<void> | void;
   /** Provider message ID, when available (for deduplication). */
   messageId?: string;
   summaryLine?: string;

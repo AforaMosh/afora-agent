@@ -160,11 +160,68 @@ describe("followup queue in-flight ownership", () => {
     await expect.poll(() => getExistingFollowupQueue(key)).toBeUndefined();
   });
 
+  it("keeps mixed-origin delivery callbacks on their queued sources", async () => {
+    const key = createKey("mixed-origin-source");
+    const settings: QueueSettings = {
+      mode: "followup",
+      debounceMs: 0,
+      cap: 50,
+      dropPolicy: "old",
+    };
+    const webChatDelivery = vi.fn(async () => {});
+    const laterDiscordDelivery = vi.fn(async () => {});
+    const webChatRun = {
+      ...createRun({
+        prompt: "webchat reply",
+        originatingChannel: "webchat",
+      }),
+      onQueuedFollowupReplyBatch: webChatDelivery,
+    };
+    const discordRun = {
+      ...createRun({
+        prompt: "discord reply",
+        originatingChannel: "discord",
+      }),
+      onQueuedFollowupReplyBatch: laterDiscordDelivery,
+    };
+    const latestRunner = async (run: FollowupRun) => {
+      await run.onQueuedFollowupReplyBatch?.({
+        kind: "queued-followup",
+        runId: `${run.prompt}-run`,
+        originatingChannel: run.originatingChannel,
+        payloads: [{ text: run.prompt }],
+      });
+      completeFollowupRunLifecycle(run);
+    };
+
+    expect(enqueueFollowupRun(key, webChatRun, settings, "none", undefined, false)).toBe(true);
+    expect(enqueueFollowupRun(key, discordRun, settings, "none", latestRunner, false)).toBe(true);
+    scheduleFollowupDrain(key, latestRunner);
+
+    await expect.poll(() => getExistingFollowupQueue(key)).toBeUndefined();
+    expect(webChatDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originatingChannel: "webchat",
+        payloads: [{ text: "webchat reply" }],
+      }),
+    );
+    expect(laterDiscordDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originatingChannel: "discord",
+        payloads: [{ text: "discord reply" }],
+      }),
+    );
+    expect(laterDiscordDelivery).not.toHaveBeenCalledWith(
+      expect.objectContaining({ payloads: [{ text: "webchat reply" }] }),
+    );
+  });
+
   it("protects a collect group and counts only active identities still present", async () => {
     const key = createKey("collect");
     const entered = createDeferred();
     const release = createDeferred();
     const groupCompletions = [vi.fn(), vi.fn()];
+    const groupDeliveryCallbacks = [vi.fn(async () => {}), undefined];
     const pendingComplete = vi.fn();
     const rejectedComplete = vi.fn();
     let aggregate: FollowupRun | undefined;
@@ -182,6 +239,7 @@ describe("followup queue in-flight ownership", () => {
         originatingChatType: "channel",
       }),
       turnAdoptionLifecycle: { onAdopted: async () => {}, onSettled: onComplete },
+      onQueuedFollowupReplyBatch: groupDeliveryCallbacks[index],
     }));
     const runFollowup = async (run: FollowupRun) => {
       if (!aggregate) {
@@ -202,6 +260,7 @@ describe("followup queue in-flight ownership", () => {
       const queue = getExistingFollowupQueue(key);
       expect(queue?.inFlight.size).toBe(2);
       expect(getFollowupQueueDepth(key)).toBe(0);
+      expect(aggregate?.onQueuedFollowupReplyBatch).toBeUndefined();
 
       const oldSettings: QueueSettings = { ...initialSettings, cap: 1, dropPolicy: "old" };
       expect(

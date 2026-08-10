@@ -5,7 +5,7 @@ import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { GetReplyOptions } from "../get-reply-options.types.js";
 import type { ReplyPayload } from "../reply-payload.js";
 import type { MsgContext } from "../templating.js";
-import type { FollowupQueueDisposition } from "./queue/types.js";
+import type { FollowupQueueDisposition, QueuedFollowupReplyBatch } from "./queue/types.js";
 import type { ReplyOptionsWithAdmissionTicket } from "./reply-admission-ticket.js";
 import type { ReplyOptionsWithOperationRunState } from "./reply-operation-run-state.js";
 import type { ReplyOperation } from "./reply-run-registry.js";
@@ -16,13 +16,7 @@ export type ReplySessionBinding = {
   storePath?: string;
 };
 
-/** Closed queued-followup fact carried from the run owner to Gateway delivery. */
-export type QueuedFollowupReplyBatch = {
-  kind: "queued-followup";
-  runId: string;
-  originatingChannel: string | undefined;
-  payloads: ReplyPayload[];
-};
+export type { QueuedFollowupReplyBatch } from "./queue/types.js";
 
 type InternalReplySessionOptions = {
   expectedExistingSessionId?: string;

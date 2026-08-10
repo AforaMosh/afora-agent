@@ -799,9 +799,11 @@ describe("deliverFollowupDecision", () => {
     opts: { onBlockReply, onQueuedFollowupReplyBatch },
   });
 
-  it("carries dispatcher-only replies as one owner-recorded batch", async () => {
+  it("uses the queued WebChat source callback after later session defaults replace it", async () => {
     const onBlockReply = vi.fn(async (_payload: ReplyPayload) => {});
-    const onQueuedFollowupReplyBatch = vi.fn(async (_batch: QueuedFollowupReplyBatch) => {});
+    const sourceCallback = vi.fn(async (_batch: QueuedFollowupReplyBatch) => {});
+    const laterNonWebChatCallback = vi.fn(async (_batch: QueuedFollowupReplyBatch) => {});
+    const baseTurn = createTurn();
     deliveryState.followupRoute = { route: "dispatcher" };
     deliveryState.routeReply.mockReset();
 
@@ -811,18 +813,27 @@ describe("deliverFollowupDecision", () => {
           kind: "deliver",
           payloads: [{ text: "dispatcher one" }, { text: "dispatcher two" }],
         },
-        turn: createTurn(),
-        defaults: createDefaults(onBlockReply, onQueuedFollowupReplyBatch),
+        turn: {
+          ...baseTurn,
+          queued: {
+            ...baseTurn.queued,
+            originatingChannel: "webchat",
+            originatingTo: undefined,
+            onQueuedFollowupReplyBatch: sourceCallback,
+          },
+        },
+        defaults: createDefaults(onBlockReply, laterNonWebChatCallback),
         runId: "followup-run-1",
         runFollowup: vi.fn(async () => {}),
       });
 
       expect(onBlockReply).not.toHaveBeenCalled();
-      expect(onQueuedFollowupReplyBatch).toHaveBeenCalledOnce();
-      expect(onQueuedFollowupReplyBatch).toHaveBeenCalledWith({
+      expect(laterNonWebChatCallback).not.toHaveBeenCalled();
+      expect(sourceCallback).toHaveBeenCalledOnce();
+      expect(sourceCallback).toHaveBeenCalledWith({
         kind: "queued-followup",
         runId: "followup-run-1",
-        originatingChannel: "discord",
+        originatingChannel: "webchat",
         payloads: [{ text: "dispatcher one" }, { text: "dispatcher two" }],
       });
       expect(deliveryState.routeReply).not.toHaveBeenCalled();

@@ -309,9 +309,8 @@ async function sendFollowupPayloads(params: {
   if (payloads.length === 0) {
     return;
   }
-  const dispatcherAvailable = Boolean(
-    defaults.opts?.onQueuedFollowupReplyBatch || defaults.opts?.onBlockReply,
-  );
+  const onQueuedFollowupReplyBatch = turn.queued.onQueuedFollowupReplyBatch;
+  const dispatcherAvailable = Boolean(onQueuedFollowupReplyBatch || defaults.opts?.onBlockReply);
   if (!originRoutable && !dispatcherAvailable) {
     defaultRuntime.error?.(
       "followup queue: completed with payloads but no origin route or visible dispatcher is available",
@@ -327,7 +326,7 @@ async function sendFollowupPayloads(params: {
   let deliveredCrossChannelOrigin = false;
   const queuedDispatcherPayloads: ReplyPayload[] = [];
   const dispatchFollowupPayload = async (payload: ReplyPayload) => {
-    if (defaults.opts?.onQueuedFollowupReplyBatch) {
+    if (onQueuedFollowupReplyBatch) {
       queuedDispatcherPayloads.push(payload);
       return;
     }
@@ -416,7 +415,7 @@ async function sendFollowupPayloads(params: {
     });
   }
   if (queuedDispatcherPayloads.length > 0) {
-    await defaults.opts?.onQueuedFollowupReplyBatch?.({
+    await onQueuedFollowupReplyBatch?.({
       kind: "queued-followup",
       runId: params.runId,
       originatingChannel,
