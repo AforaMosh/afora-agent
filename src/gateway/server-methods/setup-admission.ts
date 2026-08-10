@@ -11,6 +11,59 @@ let wizardSessionInProgress = false;
 
 export class SetupAdmissionBusyError extends Error {}
 
+type WizardSessionRunner = ConstructorParameters<typeof WizardSession>[0];
+
+class AdmittedWizardSession extends WizardSession {
+  private readonly admittedSettlement: Promise<void>;
+  private lifecycleSettled = false;
+  private ownerReleaseError: string | undefined;
+
+  constructor(
+    runner: WizardSessionRunner,
+    options: { ownerRelease: () => Promise<void>; timeoutMs?: number },
+  ) {
+    super(
+      async (...args) => {
+        // The base constructor starts its runner immediately. Yield until this
+        // subtype's settlement overrides are initialized before exposing it.
+        await Promise.resolve();
+        await runner(...args);
+      },
+      options.timeoutMs === undefined ? undefined : { timeoutMs: options.timeoutMs },
+    );
+    // Base settlement is raw runner completion. Only this Gateway-owned subtype
+    // extends it through release of the process reservation and target lock.
+    this.admittedSettlement = super
+      .whenSettled()
+      .then(() => options.ownerRelease())
+      .catch((error: unknown) => {
+        this.ownerReleaseError = String(error);
+        throw error;
+      })
+      .finally(() => {
+        this.lifecycleSettled = true;
+      });
+    // Release can fail before a detached Gateway caller observes settlement.
+    void this.admittedSettlement.catch(() => undefined);
+  }
+
+  override getStatus() {
+    return this.ownerReleaseError === undefined ? super.getStatus() : "error";
+  }
+
+  override isSettled(): boolean {
+    return this.lifecycleSettled;
+  }
+
+  override whenSettled(): Promise<void> {
+    return this.admittedSettlement;
+  }
+
+  override getError(): string | undefined {
+    return this.ownerReleaseError ?? super.getError();
+  }
+}
+
 export async function runExclusiveSystemAgentSetupActivation<T>(
   task: () => Promise<T>,
 ): Promise<T> {
@@ -30,7 +83,7 @@ export async function runExclusiveSystemAgentSetupActivation<T>(
 }
 
 export async function createAdmittedWizardSession(
-  runner: ConstructorParameters<typeof WizardSession>[0],
+  runner: WizardSessionRunner,
   options?: { lockSetupTarget?: boolean; timeoutMs?: number },
 ): Promise<WizardSession | undefined> {
   if (wizardSessionInProgress) {
@@ -43,11 +96,9 @@ export async function createAdmittedWizardSession(
     wizardSessionInProgress = false;
   };
   const createSession = () =>
-    new WizardSession(runner, {
+    new AdmittedWizardSession(runner, {
       ...(options?.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
-      // The lock owner observes raw runner completion; public settlement waits
-      // for this admission's process reservation and target lock to be released.
-      awaitOwnerRelease: async () => {
+      ownerRelease: async () => {
         runnerSettled.resolve(undefined);
         await ownerRelease;
       },

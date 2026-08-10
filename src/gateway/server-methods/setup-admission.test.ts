@@ -90,6 +90,20 @@ describe("setup admission", () => {
     await replacement?.whenSettled();
   });
 
+  it("reports an admitted lifecycle as unsettled during synchronous runner startup", async () => {
+    let settledAtStart: boolean | undefined;
+    let settlementAtStart: Promise<void> | undefined;
+    const session = await createAdmittedWizardSession(async (_prompter, _signal, owner) => {
+      settledAtStart = owner.isSettled();
+      settlementAtStart = owner.whenSettled();
+    });
+
+    expect(settledAtStart).toBe(false);
+    expect(settlementAtStart).toBe(session?.whenSettled());
+    await session?.whenSettled();
+    expect(session?.isSettled()).toBe(true);
+  });
+
   it("rejects settlement when the canonical target lock cannot be released", async () => {
     const releaseRunner = createDeferred();
     const session = await createAdmittedWizardSession(async () => {

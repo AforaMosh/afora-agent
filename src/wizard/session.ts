@@ -257,7 +257,7 @@ class WizardSessionPrompter implements WizardPrompter {
 export class WizardSession {
   private readonly abortController = new AbortController();
   private readonly expiryTimer: ReturnType<typeof setTimeout> | undefined;
-  private readonly settlementPromise: Promise<void>;
+  private readonly runnerPromise: Promise<void>;
   private currentStep: WizardStep | null = null;
   private progressSteps: WizardStep[] = [];
   private deliveredProgressStepIds = new Set<string>();
@@ -285,31 +285,14 @@ export class WizardSession {
       signal: AbortSignal,
       session: WizardSession,
     ) => Promise<void>,
-    options?: { timeoutMs?: number; awaitOwnerRelease?: () => Promise<void> },
+    options?: { timeoutMs?: number },
   ) {
     const prompter = new WizardSessionPrompter(this);
     if (options?.timeoutMs !== undefined) {
       this.expiryTimer = setTimeout(() => this.cancel(), options.timeoutMs);
       this.expiryTimer.unref?.();
     }
-    const awaitOwnerRelease = options?.awaitOwnerRelease;
-    const runnerPromise = this.run(prompter, awaitOwnerRelease === undefined);
-    this.settlementPromise = awaitOwnerRelease
-      ? runnerPromise.then(awaitOwnerRelease).then(
-          () => {
-            this.settled = true;
-          },
-          (error: unknown) => {
-            this.status = "error";
-            this.error = String(error);
-            this.settled = true;
-            throw error;
-          },
-        )
-      : runnerPromise;
-    // Owner release can fail before a remote client observes the session.
-    // Mark this promise handled without converting the rejection returned to callers.
-    void this.settlementPromise.catch(() => undefined);
+    this.runnerPromise = this.run(prompter);
   }
 
   async next(): Promise<WizardNextResult> {
@@ -469,7 +452,7 @@ export class WizardSession {
     return url;
   }
 
-  private async run(prompter: WizardPrompter, settleWithRunner: boolean) {
+  private async run(prompter: WizardPrompter) {
     try {
       await this.runner(prompter, this.signal, this);
       if (this.status === "running") {
@@ -487,9 +470,7 @@ export class WizardSession {
         this.error = String(err);
       }
     } finally {
-      if (settleWithRunner) {
-        this.settled = true;
-      }
+      this.settled = true;
       if (this.expiryTimer) {
         clearTimeout(this.expiryTimer);
       }
@@ -528,14 +509,14 @@ export class WizardSession {
     return this.status;
   }
 
-  /** Whether the runner and its owning lifecycle have both finished. */
+  /** Whether the runner has stopped and can no longer mutate setup state. */
   isSettled(): boolean {
     return this.settled;
   }
 
-  /** Resolves after the runner and its owning lifecycle have both finished. */
+  /** Resolves after the runner can no longer mutate setup state. */
   whenSettled(): Promise<void> {
-    return this.settlementPromise;
+    return this.runnerPromise;
   }
 
   getError(): string | undefined {
