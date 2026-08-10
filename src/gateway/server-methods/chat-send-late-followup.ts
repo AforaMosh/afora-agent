@@ -14,14 +14,22 @@ type DropReason =
   | "origin-mismatch"
   | "terminal-not-recorded"
   | "already-settled"
+  | "no-visible-content"
   | "delivery-failed";
+
+type LateFollowupDeliveryResult =
+  | { kind: "delivered" }
+  | { kind: "dropped"; reason: "no-visible-content" };
 
 /** Owns the terminal fact that decides the fate of one late queued reply batch. */
 export function createChatSendLateFollowupDisposition(params: {
   runId: string;
   originatingChannel: string;
   logGateway: GatewayRequestContext["logGateway"];
-  deliver: (params: { runId: string; payloads: ReplyPayload[] }) => Promise<void>;
+  deliver: (params: {
+    runId: string;
+    payloads: ReplyPayload[];
+  }) => Promise<LateFollowupDeliveryResult>;
 }) {
   let terminal: TerminalDisposition = { kind: "pending" };
   const recordDrop = (batch: QueuedFollowupReplyBatch, reason: DropReason) => {
@@ -36,6 +44,9 @@ export function createChatSendLateFollowupDisposition(params: {
 
   return {
     recordQueued: () => {
+      if (terminal.kind !== "pending") {
+        return;
+      }
       terminal = isInternalMessageChannel(params.originatingChannel)
         ? { kind: "deliver" }
         : { kind: "drop", reason: "non-webchat-origin" };
@@ -58,7 +69,11 @@ export function createChatSendLateFollowupDisposition(params: {
         return;
       }
       try {
-        await params.deliver({ runId: batch.runId, payloads: batch.payloads });
+        const result = await params.deliver({ runId: batch.runId, payloads: batch.payloads });
+        if (result.kind === "dropped") {
+          recordDrop(batch, result.reason);
+          return;
+        }
         terminal = { kind: "settled" };
       } catch (error) {
         recordDrop(batch, "delivery-failed");

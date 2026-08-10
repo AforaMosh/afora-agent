@@ -52,9 +52,10 @@ import { createChatSendTurnAdoptionLifecycle } from "./chat-send-turn-adoption.j
 import { applyChatSendManagedMedia, prepareChatSendUserTurn } from "./chat-send-user-turn.js";
 import {
   chatSendAckServerTimingAttributes,
-  createChatSendServerTimingEmitter,
+  emitOperatorChatSendServerTiming,
   roundedChatSendTimingMs,
   shouldIncludeChatSendAckServerTiming,
+  type ChatSendServerTimingPhase,
 } from "./chat-server-timing.js";
 import { createGatewayChatUserTurnController } from "./chat-user-turn-recorder.js";
 import { gatewayClientSenderFields } from "./gateway-client-identity.js";
@@ -354,15 +355,60 @@ export async function handleChatSend(
       session: preparedSession.value,
       userTurnRecorder,
     });
-    const emitServerTiming = createChatSendServerTimingEmitter({
-      context,
-      client,
+    const queuedFollowup = createChatSendTurnAdoptionLifecycle({
+      chatQueuedTurns: context.chatQueuedTurns,
       runId: clientRunId,
+      controller: activeRunAbort.controller,
+      sessionId: backingSessionId ?? clientRunId,
       sessionKey,
-      agentId,
-      receivedAtMs: chatSendReceivedAtMs,
-      ackedAtMs: chatSendAckedAtMs,
+      agentId: selectedAgent.agentId,
+      ownerConnId: client?.connId,
+      ownerDeviceId: client?.connect?.device?.id,
+      ownerKey: queuedFollowupOwnerKey,
+      ...(expectedLeafEntryId !== undefined ? { originatingLeafEntryId: expectedLeafEntryId } : {}),
+      originatingChannel: originatingRoute.originatingChannel,
+      logGateway: context.logGateway,
+      deliverLateReply: async ({ runId, payloads }) => {
+        return await finalizeChatSendAgentReplyPayloads({
+          accountId,
+          context,
+          // The originating chat.send already terminalized; do not attribute the
+          // fresh follow-up final to its server-timing stream.
+          emitFirstAssistantServerTiming: () => {},
+          payloads,
+          session: { ...preparedSession.value, clientRunId: runId },
+        });
+      },
+      hasCronCreatorAuthority: cronCreatorAuthority !== undefined,
+      retainWorkAdmission: retainGatewayWorkAdmission,
     });
+    const dispatchErrorLifecycle = createChatSendDispatchErrorLifecycle({
+      admission: admitted.value,
+      context,
+      isQueuedFollowupEnqueued: queuedFollowup.isEnqueued,
+      persistUserTurnTranscript: persistGatewayUserTurnTranscript,
+      session: preparedSession.value,
+      terminalizeRestartSafeAdmission,
+      userTurnRecorder,
+    });
+    const emitServerTiming = (
+      phase: ChatSendServerTimingPhase,
+      extra?: Record<string, string | number>,
+      dispatchStartedAtMs?: number,
+    ) => {
+      emitOperatorChatSendServerTiming({
+        context,
+        client,
+        phase,
+        runId: clientRunId,
+        sessionKey,
+        agentId,
+        receivedAtMs: chatSendReceivedAtMs,
+        ackedAtMs: chatSendAckedAtMs,
+        dispatchStartedAtMs,
+        extra,
+      });
+    };
     const dispatchStartedAtMs = performance.now();
     if (chatSendTiming) {
       chatSendTiming.dispatchStartedAtMs = dispatchStartedAtMs;
@@ -380,40 +426,6 @@ export async function handleChatSend(
       }
       emitServerTiming("first-assistant-event", undefined, dispatchStartedAtMs);
     };
-    const queuedFollowup = createChatSendTurnAdoptionLifecycle({
-      chatQueuedTurns: context.chatQueuedTurns,
-      runId: clientRunId,
-      controller: activeRunAbort.controller,
-      sessionId: backingSessionId ?? clientRunId,
-      sessionKey,
-      agentId: selectedAgent.agentId,
-      ownerConnId: client?.connId,
-      ownerDeviceId: client?.connect?.device?.id,
-      ownerKey: queuedFollowupOwnerKey,
-      ...(expectedLeafEntryId !== undefined ? { originatingLeafEntryId: expectedLeafEntryId } : {}),
-      originatingChannel: originatingRoute.originatingChannel,
-      logGateway: context.logGateway,
-      deliverLateReply: async ({ runId, payloads }) => {
-        await finalizeChatSendAgentReplyPayloads({
-          accountId,
-          context,
-          emitFirstAssistantServerTiming,
-          payloads,
-          session: { ...preparedSession.value, clientRunId: runId },
-        });
-      },
-      hasCronCreatorAuthority: cronCreatorAuthority !== undefined,
-      retainWorkAdmission: retainGatewayWorkAdmission,
-    });
-    const dispatchErrorLifecycle = createChatSendDispatchErrorLifecycle({
-      admission: admitted.value,
-      context,
-      isQueuedFollowupEnqueued: queuedFollowup.isEnqueued,
-      persistUserTurnTranscript: persistGatewayUserTurnTranscript,
-      session: preparedSession.value,
-      terminalizeRestartSafeAdmission,
-      userTurnRecorder,
-    });
     // Reserve the detached dispatch before this request releases its root. Otherwise
     // its inherited ALS context becomes retired and rejects queued/session work.
     setReleaseGatewayRootContinuation(retainGatewayRootWorkAdmissionContinuation() ?? undefined);
@@ -490,7 +502,14 @@ export async function handleChatSend(
                   abortSignal: activeRunAbort.controller.signal,
                   // Keep a Gateway-owned cancel identity after this chat.send
                   // terminalizes while the prompt waits in followup/collect queue.
-                  onFollowupQueueDisposition: queuedFollowup.onQueueDisposition,
+                  onFollowupQueueDisposition: (reason) => {
+                    context.logGateway.info("chat queue turn intentionally skipped", {
+                      runId: clientRunId,
+                      sessionKey,
+                      outcome: "skipped",
+                      reason,
+                    });
+                  },
                   onQueuedFollowupReplyBatch: queuedFollowup.onQueuedFollowupReplyBatch,
                   turnAdoptionLifecycle: queuedFollowup.lifecycle,
                   images: replyOptionImages,

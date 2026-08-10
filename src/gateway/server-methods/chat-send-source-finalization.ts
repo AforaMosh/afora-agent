@@ -68,15 +68,19 @@ type FinalizeChatSendAgentRepliesBase = {
   >;
 };
 
+type ChatSendAgentReplyFinalization =
+  | { kind: "delivered"; hasSourceReplyTranscriptMirror: boolean }
+  | { kind: "dropped"; reason: "no-visible-content" };
+
 /** Persist and broadcast agent-run replies that bypass the original live run projection. */
 export async function finalizeChatSendAgentReplyPayloads(
   params: FinalizeChatSendAgentRepliesBase & { payloads: readonly ReplyPayload[] },
-): Promise<boolean> {
+): Promise<ChatSendAgentReplyFinalization> {
   const { accountId, context, emitFirstAssistantServerTiming, session } = params;
   const { agentId, backingSessionId, cfg, clientRunId, sessionKey, sessionLoadOptions } = session;
   const agentRunReplyPayloads = [...params.payloads];
   if (agentRunReplyPayloads.length === 0) {
-    return false;
+    return { kind: "dropped", reason: "no-visible-content" };
   }
 
   const hasSourceReplyTranscriptMirror = agentRunReplyPayloads.some(
@@ -164,7 +168,7 @@ export async function finalizeChatSendAgentReplyPayloads(
     extractAssistantDisplayTextFromContent(sourceReplyBroadcastContent) ??
     buildTranscriptReplyText(finalPayloads);
   if (!sourceReplyBroadcastContent.length && !displayReply) {
-    return false;
+    return { kind: "dropped", reason: "no-visible-content" };
   }
 
   const sourceReplyPersistenceRequests: Array<{
@@ -293,7 +297,7 @@ export async function finalizeChatSendAgentReplyPayloads(
     agentId,
     message,
   });
-  return hasSourceReplyTranscriptMirror;
+  return { kind: "delivered", hasSourceReplyTranscriptMirror };
 }
 
 /** Persist and broadcast agent-run source/status replies that bypass the normal model turn. */
@@ -303,11 +307,12 @@ export async function finalizeChatSendSourceReplies(
     hasReturnedAgentErrorPayloads: boolean;
   },
 ): Promise<boolean> {
-  return await finalizeChatSendAgentReplyPayloads({
+  const result = await finalizeChatSendAgentReplyPayloads({
     accountId: params.accountId,
     context: params.context,
     emitFirstAssistantServerTiming: params.emitFirstAssistantServerTiming,
     payloads: selectChatSendAgentReplyPayloads(params),
     session: params.session,
   });
+  return result.kind === "delivered" && result.hasSourceReplyTranscriptMirror;
 }

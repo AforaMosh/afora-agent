@@ -20,7 +20,7 @@ export type ReplySessionBinding = {
 export type QueuedFollowupReplyBatch = {
   kind: "queued-followup";
   runId: string;
-  originatingChannel?: string;
+  originatingChannel: string | undefined;
   payloads: ReplyPayload[];
 };
 

@@ -325,7 +325,15 @@ async function sendFollowupPayloads(params: {
   });
   let crossChannelFailure = false;
   let deliveredCrossChannelOrigin = false;
-  const deliveries = payloads.flatMap((payload) => {
+  const queuedDispatcherPayloads: ReplyPayload[] = [];
+  const dispatchFollowupPayload = async (payload: ReplyPayload) => {
+    if (defaults.opts?.onQueuedFollowupReplyBatch) {
+      queuedDispatcherPayloads.push(payload);
+      return;
+    }
+    await defaults.opts?.onBlockReply?.(payload);
+  };
+  for (const payload of payloads) {
     const providerRoute = deliveryPlan.resolveFollowupRoute({
       payload,
       originatingChannel,
@@ -334,7 +342,7 @@ async function sendFollowupPayloads(params: {
       dispatcherAvailable,
     });
     if (providerRoute?.route === "drop") {
-      return [];
+      continue;
     }
     const route =
       providerRoute?.route === "origin" && originRoutable
@@ -344,17 +352,6 @@ async function sendFollowupPayloads(params: {
           : originRoutable
             ? "origin"
             : "dispatcher";
-    return [{ payload, route }];
-  });
-  const queuedDispatcherPayloads: ReplyPayload[] = [];
-  const dispatchFollowupPayload = async (payload: ReplyPayload) => {
-    if (defaults.opts?.onQueuedFollowupReplyBatch) {
-      queuedDispatcherPayloads.push(payload);
-      return;
-    }
-    await defaults.opts?.onBlockReply?.(payload);
-  };
-  for (const { payload, route } of deliveries) {
     await typing.signalTextDelta(payload.text);
     if (route !== "origin") {
       await dispatchFollowupPayload(payload);
@@ -422,7 +419,7 @@ async function sendFollowupPayloads(params: {
     await defaults.opts?.onQueuedFollowupReplyBatch?.({
       kind: "queued-followup",
       runId: params.runId,
-      ...(originatingChannel ? { originatingChannel } : {}),
+      originatingChannel,
       payloads: queuedDispatcherPayloads,
     });
   }

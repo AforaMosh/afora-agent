@@ -24,13 +24,15 @@ export function createChatSendTurnAdoptionLifecycle(params: {
   originatingLeafEntryId?: string | null;
   originatingChannel: string;
   logGateway: GatewayRequestContext["logGateway"];
-  deliverLateReply: (params: { runId: string; payloads: ReplyPayload[] }) => Promise<void>;
+  deliverLateReply: (params: {
+    runId: string;
+    payloads: ReplyPayload[];
+  }) => Promise<{ kind: "delivered" } | { kind: "dropped"; reason: "no-visible-content" }>;
   hasCronCreatorAuthority: boolean;
   retainWorkAdmission: () => () => void;
 }): {
   lifecycle: TurnAdoptionLifecycle;
   isEnqueued: () => boolean;
-  onQueueDisposition: (reason: string) => void;
   onQueuedFollowupReplyBatch: (batch: QueuedFollowupReplyBatch) => Promise<void>;
 } {
   let enqueued = false;
@@ -84,14 +86,6 @@ export function createChatSendTurnAdoptionLifecycle(params: {
   return {
     lifecycle,
     isEnqueued: () => enqueued,
-    onQueueDisposition: (reason: string) => {
-      params.logGateway.info("chat queue turn intentionally skipped", {
-        runId: params.runId,
-        sessionKey: params.sessionKey,
-        outcome: "skipped",
-        reason,
-      });
-    },
     onQueuedFollowupReplyBatch: lateFollowup.deliver,
   };
 }

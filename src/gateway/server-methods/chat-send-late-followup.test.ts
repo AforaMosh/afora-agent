@@ -17,7 +17,7 @@ describe("chat.send late queued follow-up disposition", () => {
     },
   ])("records late-and-dropped for $name", async ({ originatingChannel, batchChannel, reason }) => {
     const info = vi.fn();
-    const deliver = vi.fn(async () => {});
+    const deliver = vi.fn(async () => ({ kind: "delivered" as const }));
     const disposition = createChatSendLateFollowupDisposition({
       runId: "original-run",
       originatingChannel,
@@ -39,6 +39,35 @@ describe("chat.send late queued follow-up disposition", () => {
       followupRunId: "followup-run",
       outcome: "late-and-dropped",
       reason,
+    });
+  });
+
+  it("records late-and-dropped when WebChat cannot project visible content", async () => {
+    const info = vi.fn();
+    const deliver = vi.fn(async () => ({
+      kind: "dropped" as const,
+      reason: "no-visible-content" as const,
+    }));
+    const disposition = createChatSendLateFollowupDisposition({
+      runId: "original-run",
+      originatingChannel: "webchat",
+      logGateway: { info } as never,
+      deliver,
+    });
+    disposition.recordQueued();
+
+    await disposition.deliver({
+      kind: "queued-followup",
+      runId: "followup-run",
+      originatingChannel: "webchat",
+      payloads: [{ location: { latitude: 48.858844, longitude: 2.294351 } }],
+    });
+
+    expect(info).toHaveBeenCalledWith("webchat late reply disposition", {
+      runId: "original-run",
+      followupRunId: "followup-run",
+      outcome: "late-and-dropped",
+      reason: "no-visible-content",
     });
   });
 });

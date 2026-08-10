@@ -7,7 +7,7 @@ type ChatSendAckServerTiming = {
   prepareAttachmentsMs?: number;
 };
 
-type ChatSendServerTimingPhase =
+export type ChatSendServerTimingPhase =
   | "dispatch-started"
   | "model-selected"
   | "agent-run-started"
@@ -61,7 +61,7 @@ export function resolveControlUiReconnectResumeParams(
   return { params: validatedParams, resumeRequested: true };
 }
 
-function emitOperatorChatSendServerTiming(params: {
+export function emitOperatorChatSendServerTiming(params: {
   context: Pick<GatewayRequestContext, "broadcastToConnIds">;
   client?: GatewayClient | null;
   phase: ChatSendServerTimingPhase;
@@ -100,18 +100,4 @@ function emitOperatorChatSendServerTiming(params: {
     new Set([connId]),
     { dropIfSlow: true },
   );
-}
-
-/** Bind stable chat.send timing identity once; callers add only phase-local facts. */
-export function createChatSendServerTimingEmitter(
-  params: Omit<
-    Parameters<typeof emitOperatorChatSendServerTiming>[0],
-    "phase" | "extra" | "dispatchStartedAtMs"
-  >,
-) {
-  return (
-    phase: ChatSendServerTimingPhase,
-    extra?: Record<string, string | number>,
-    dispatchStartedAtMs?: number,
-  ) => emitOperatorChatSendServerTiming({ ...params, phase, extra, dispatchStartedAtMs });
 }
