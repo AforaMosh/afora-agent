@@ -43,13 +43,11 @@ export async function authorizeSlackDirectMessage(params: {
   }
 
   if (params.ctx.dmPolicy === "pairing") {
-    const pairingSenderId = params.eventScope
-      ? formatSlackTarget({
-          teamId: params.eventScope.teamId,
-          kind: "user",
-          id: params.senderId,
-        })
-      : params.senderId;
+    const pairingSenderId = formatSlackTarget({
+      teamId: params.eventScope?.teamId,
+      kind: "user",
+      id: params.senderId,
+    });
     await createChannelPairingChallengeIssuer({
       channel: "slack",
       accountId: params.accountId,

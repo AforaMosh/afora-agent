@@ -946,9 +946,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount, SlackProbe> = crea
     normalizeAllowEntry: createPairingPrefixStripper(/^(slack|user):/i),
     resolveApprovalStoreEntry: ({ id, meta }) => {
       const senderId = meta?.senderId ?? id;
-      return meta?.teamId
-        ? formatSlackTarget({ teamId: meta.teamId, kind: "user", id: senderId })
-        : senderId;
+      return formatSlackTarget({ teamId: meta?.teamId, kind: "user", id: senderId });
     },
     notifyApproval: async ({ cfg, id, accountId, meta }) => {
       const account = resolveSlackAccount({
@@ -958,9 +956,12 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount, SlackProbe> = crea
       const { sendMessageSlack } = await loadSlackSendRuntime();
       const token = resolveSlackOperationToken(account, "write");
       const senderId = meta?.senderId ?? id;
-      const target = meta?.teamId
-        ? formatSlackTarget({ teamId: meta.teamId, kind: "user", id: senderId })
-        : `user:${senderId}`;
+      const target = formatSlackTarget({
+        teamId: meta?.teamId,
+        kind: "user",
+        id: senderId,
+        explicitKind: true,
+      });
       await sendMessageSlack(target, PAIRING_APPROVED_MESSAGE, {
         cfg,
         accountId: account.accountId,

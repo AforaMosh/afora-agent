@@ -670,7 +670,7 @@ async function authorizeSlackInboundMessage(params: {
           token: ctx.botToken,
           client: params.eventScope?.client ?? ctx.app.client,
           accountId: account.accountId,
-          ...(params.eventScope ? { eventScope: params.eventScope } : {}),
+          eventScope: params.eventScope,
         });
       },
       onDisabled: () => {
