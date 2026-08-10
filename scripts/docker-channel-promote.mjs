@@ -88,7 +88,9 @@ export function findDockerPublicationStatus({ combinedStatus, version, repositor
     throw new Error("GitHub combined status is not bound to the expected release SHA.");
   }
   const matches = response.statuses.filter(
-    (status) => String(status?.context ?? "").toLowerCase() === expected.context.toLowerCase(),
+    (status) =>
+      typeof status?.context === "string" &&
+      status.context.toLowerCase() === expected.context.toLowerCase(),
   );
   if (matches.length === 0) {
     return null;
@@ -99,10 +101,11 @@ export function findDockerPublicationStatus({ combinedStatus, version, repositor
     );
   }
   const status = matches[0];
+  const targetUrl = typeof status.target_url === "string" ? status.target_url : "";
   const targetMatch = new RegExp(
     `^https://github\\.com/${repository.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}/actions/runs/([1-9][0-9]*)$`,
     "u",
-  ).exec(String(status.target_url ?? ""));
+  ).exec(targetUrl);
   if (
     status.state !== expected.state ||
     status.context !== expected.context ||
@@ -114,7 +117,7 @@ export function findDockerPublicationStatus({ combinedStatus, version, repositor
   }
   return {
     runId: targetMatch[1],
-    targetUrl: String(status.target_url),
+    targetUrl,
   };
 }
 
@@ -375,9 +378,9 @@ export function promoteDockerChannel({ version, images }, options = {}) {
 
 function printHelp() {
   console.log(
-    "Usage: node scripts/docker-channel-promote.mjs --version YYYY.M.P --image REGISTRY/IMAGE [--image REGISTRY/IMAGE] [--allow-rollback]",
-    "       node scripts/docker-channel-promote.mjs --status-payload --version YYYY.M.P --repository OWNER/REPO --source-sha SHA --run-id ID",
-    "       node scripts/docker-channel-promote.mjs --find-status-file FILE --version YYYY.M.P --repository OWNER/REPO --source-sha SHA",
+    `Usage: node scripts/docker-channel-promote.mjs --version YYYY.M.P --image REGISTRY/IMAGE [--image REGISTRY/IMAGE] [--allow-rollback]
+       node scripts/docker-channel-promote.mjs --status-payload --version YYYY.M.P --repository OWNER/REPO --source-sha SHA --run-id ID
+       node scripts/docker-channel-promote.mjs --find-status-file FILE --version YYYY.M.P --repository OWNER/REPO --source-sha SHA`,
   );
 }
 
