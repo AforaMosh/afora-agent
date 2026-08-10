@@ -677,7 +677,7 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
     presenceMonitor = createSlackPresenceMonitor({
       accountId: account.accountId,
       accountConfig: slackCfg.presenceEvents,
-      resolveClient: (teamId) => resolveClient(teamId).users,
+      resolveClient: (workspaceTeamId) => resolveClient(workspaceTeamId).users,
       cooldownStore: openSlackPresenceCooldownStore(),
       log: runtime.log,
       error: runtime.error,

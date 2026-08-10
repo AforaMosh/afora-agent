@@ -2,14 +2,14 @@
 import { normalizeAccountId } from "openclaw/plugin-sdk/account-resolution";
 import { resolveGlobalMap } from "openclaw/plugin-sdk/global-singleton";
 
-export type SlackInstallationKind = "workspace" | "enterprise" | "degraded";
+type SlackInstallationKind = "workspace" | "enterprise" | "degraded";
 
 type SlackInstallationStateEntry = {
   kind: SlackInstallationKind;
   owner: symbol;
 };
 
-export type SlackInstallationStateRegistration = {
+type SlackInstallationStateRegistration = {
   update: (kind: SlackInstallationKind) => void;
   release: () => void;
 };
