@@ -13,12 +13,11 @@ import {
 } from "openclaw/plugin-sdk/session-binding-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { slackPlugin } from "./channel.js";
-import {
-  registerSlackInstallationState,
-  type SlackInstallationStateRegistration,
-} from "./installation-identity-state.js";
+import { registerSlackInstallationState } from "./installation-identity-state.js";
 import type { OpenClawConfig } from "./runtime-api.js";
 import { setSlackRuntime } from "./runtime.js";
+
+type SlackInstallationStateRegistration = ReturnType<typeof registerSlackInstallationState>;
 
 const CONVERSATION = {
   channel: "slack",

@@ -10,10 +10,9 @@ import {
 import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { slackApprovalCapability } from "./approval-native.js";
-import {
-  registerSlackInstallationState,
-  type SlackInstallationStateRegistration,
-} from "./installation-identity-state.js";
+import { registerSlackInstallationState } from "./installation-identity-state.js";
+
+type SlackInstallationStateRegistration = ReturnType<typeof registerSlackInstallationState>;
 
 function buildConfig(
   overrides?: Partial<NonNullable<NonNullable<OpenClawConfig["channels"]>["slack"]>>,
