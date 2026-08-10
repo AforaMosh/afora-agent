@@ -16,8 +16,6 @@ export type ReplySessionBinding = {
   storePath?: string;
 };
 
-export type { QueuedFollowupReplyBatch } from "./queue/types.js";
-
 type InternalReplySessionOptions = {
   expectedExistingSessionId?: string;
   onDeliberateSilentTerminalReply?: () => void;

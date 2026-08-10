@@ -1,5 +1,5 @@
 import type { TurnAdoptionLifecycle } from "../../auto-reply/get-reply-options.types.js";
-import type { QueuedFollowupReplyBatch } from "../../auto-reply/reply/get-reply.types.js";
+import type { QueuedFollowupReplyBatch } from "../../auto-reply/reply/queue/types.js";
 import {
   completeQueuedChatTurn,
   registerQueuedChatTurn,

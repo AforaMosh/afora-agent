@@ -1,5 +1,5 @@
 import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
-import type { QueuedFollowupReplyBatch } from "../../auto-reply/reply/get-reply.types.js";
+import type { QueuedFollowupReplyBatch } from "../../auto-reply/reply/queue/types.js";
 import { isInternalMessageChannel } from "../../utils/message-channel.js";
 import type { GatewayRequestContext } from "./types.js";
 
