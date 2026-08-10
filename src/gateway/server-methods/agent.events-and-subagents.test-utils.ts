@@ -223,7 +223,7 @@ describe("gateway agent handler", () => {
     }>();
     expect(callArgs.preserveUserFacingSessionModelState).toBe(false);
     expect(callArgs).toMatchObject({
-      senderIsOwner: true,
+      executionIdentityAdmission: { senderIsOwner: true },
       userTurnTranscriptRecorder: {
         message: {
           provenance: { kind: "inter_session" },
@@ -360,7 +360,7 @@ describe("gateway agent handler", () => {
     );
 
     expect(await waitForAgentCommandCall()).toMatchObject({
-      senderIsOwner: true,
+      executionIdentityAdmission: { senderIsOwner: true },
       userTurnTranscriptRecorder: { message: { __openclaw: { senderIsOwner: true } } },
     });
 
@@ -379,7 +379,7 @@ describe("gateway agent handler", () => {
     );
 
     expect(await waitForAgentCommandCall()).toMatchObject({
-      senderIsOwner: false,
+      executionIdentityAdmission: { senderIsOwner: false },
       userTurnTranscriptRecorder: { message: { __openclaw: { senderIsOwner: false } } },
     });
   });

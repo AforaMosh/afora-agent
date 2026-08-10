@@ -10,6 +10,7 @@ import {
   listSubagentRunsForRequester,
   resetSubagentRegistryForTests,
 } from "../../agents/subagent-registry.test-helpers.js";
+import { createExecutionIdentityAdmission } from "../../audit/execution-identity-admission.js";
 import { getDetachedTaskLifecycleRuntime } from "../../tasks/detached-task-runtime.js";
 import {
   findTaskByRunId,
@@ -728,6 +729,10 @@ describe("gateway agent handler", () => {
 
     dispatchAgentRunFromGateway({
       ingressOpts: {
+        executionIdentityAdmission: createExecutionIdentityAdmission(
+          "agent-run-tool-use-deadline",
+          false,
+        ),
         message: "review the repository",
         sessionKey: "agent:main:main",
         timeout: "600",
@@ -787,6 +792,10 @@ describe("gateway agent handler", () => {
 
     dispatchAgentRunFromGateway({
       ingressOpts: {
+        executionIdentityAdmission: createExecutionIdentityAdmission(
+          "agent-run-provider-timeout-result",
+          false,
+        ),
         message: "run a command that exceeds the provider deadline",
         sessionKey: "agent:main:main",
         timeout: "10",
@@ -841,6 +850,10 @@ describe("gateway agent handler", () => {
 
     dispatchAgentRunFromGateway({
       ingressOpts: {
+        executionIdentityAdmission: createExecutionIdentityAdmission(
+          "agent-run-resolved-error",
+          false,
+        ),
         message: "run the agent",
         sessionKey: "agent:main:main",
         timeout: "600",
@@ -941,15 +954,17 @@ describe("gateway agent handler", () => {
     });
     const context = makeContext();
     const respond = vi.fn();
+    const runId = `agent-run-deadline-control-${stopReason}-${durationMs}`;
 
     dispatchAgentRunFromGateway({
       ingressOpts: {
+        executionIdentityAdmission: createExecutionIdentityAdmission(runId, false),
         message: "review the repository",
         sessionKey: "agent:main:main",
         timeout,
         allowModelOverride: false,
       },
-      runId: `agent-run-deadline-control-${stopReason}-${durationMs}`,
+      runId,
       dedupeKeys: [`agent:deadline-control-${stopReason}-${durationMs}`],
       abortController,
       cleanupAbortController: vi.fn(),
@@ -1305,6 +1320,7 @@ describe("gateway agent handler", () => {
 
     dispatchAgentRunFromGateway({
       ingressOpts: {
+        executionIdentityAdmission: createExecutionIdentityAdmission(runId, false),
         message: "characterize terminal ownership",
         sessionKey: "agent:main:main",
         allowModelOverride: false,
@@ -1342,6 +1358,10 @@ describe("gateway agent handler", () => {
 
     dispatchAgentRunFromGateway({
       ingressOpts: {
+        executionIdentityAdmission: createExecutionIdentityAdmission(
+          "agent-run-provider-error-settlement",
+          false,
+        ),
         message: "background cli task",
         sessionKey: "agent:main:main",
         allowModelOverride: false,

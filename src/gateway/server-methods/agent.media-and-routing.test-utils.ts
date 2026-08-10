@@ -1483,7 +1483,7 @@ describe("gateway agent handler", () => {
         requireExplicitMessageTarget?: boolean;
       };
       allowModelOverride?: boolean;
-      senderIsOwner?: boolean;
+      executionIdentityAdmission?: { senderIsOwner?: boolean };
     }>();
     expect(callArgs.sessionId).toBe("run-1");
     expect(callArgs.provider).toBe("claude-cli");
@@ -1499,7 +1499,7 @@ describe("gateway agent handler", () => {
       requireExplicitMessageTarget: true,
     });
     expect(callArgs.allowModelOverride).toBe(true);
-    expect(callArgs.senderIsOwner).toBe(true);
+    expect(callArgs.executionIdentityAdmission?.senderIsOwner).toBe(true);
   });
 
   it.each([
