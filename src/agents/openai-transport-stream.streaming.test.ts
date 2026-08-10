@@ -300,7 +300,9 @@ describe("openai transport stream", () => {
         });
       });
 
-      await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+      await new Promise<void>((resolve) => {
+        server.listen(0, "127.0.0.1", resolve);
+      });
       try {
         const address = server.address();
         if (!address || typeof address === "string") {
