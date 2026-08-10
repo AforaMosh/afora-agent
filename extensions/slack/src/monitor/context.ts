@@ -169,7 +169,7 @@ export function createSlackMonitorContext(params: {
 
   botUserId: string;
   botId?: string;
-  identityHealth: SlackIdentityHealth;
+  identityHealth?: SlackIdentityHealth;
   teamId: string;
   apiAppId: string;
   installationIdentity?: SlackInstallationIdentity;
@@ -501,7 +501,7 @@ export function createSlackMonitorContext(params: {
     channelRuntime: params.channelRuntime,
     botUserId: params.botUserId,
     botId: params.botId,
-    identityHealth: params.identityHealth,
+    identityHealth: params.identityHealth ?? { healthState: "healthy", lastError: null },
     teamId: params.teamId,
     apiAppId: params.apiAppId,
     installationIdentity: params.installationIdentity ?? {

@@ -785,6 +785,7 @@ async function dispatchSlackPluginInteraction(params: {
   parsed: ParsedSlackBlockAction;
   pluginInteractionData: string;
   auth: { isAuthorizedSender: boolean };
+  channelType?: Parameters<typeof dispatchSlackPluginInteractiveHandler>[0]["channelType"];
   respond?: SlackBlockActionRespond;
 }): Promise<boolean> {
   const pluginInteractionId = buildSlackPluginInteractionId({
@@ -1193,6 +1194,7 @@ async function handleSlackBlockAction(params: {
       auth: {
         isAuthorizedSender,
       },
+      channelType: auth.channelType,
       respond,
     });
     if (handled) {

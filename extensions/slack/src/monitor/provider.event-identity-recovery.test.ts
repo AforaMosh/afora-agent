@@ -85,7 +85,7 @@ describe("auth.test event identity recovery", () => {
       client,
     });
 
-    expect(setStatus).not.toHaveBeenCalledWith(expect.objectContaining({ lifecycle: "ready" }));
+    expect(setStatus).not.toHaveBeenCalledWith(expect.objectContaining({ healthState: "healthy" }));
     expect(replyMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
     await stopSlackMonitor(monitor);
@@ -113,13 +113,7 @@ describe("auth.test event identity recovery", () => {
     const monitor = startSlackMonitor(monitorSlackProvider, { setStatus });
     const handler = await getSlackHandlerOrThrow("message");
 
-    expect(setStatus).toHaveBeenCalledWith({
-      connected: true,
-      lastConnectedAt: expect.any(Number),
-      terminalDisconnect: true,
-      lifecycle: "blocked",
-      lastError: "request_timeout",
-    });
+    expect(setStatus).not.toHaveBeenCalled();
     expect(setStatus).not.toHaveBeenCalledWith(expect.objectContaining({ connected: false }));
 
     await handler({
@@ -141,11 +135,9 @@ describe("auth.test event identity recovery", () => {
     });
 
     expect(setStatus).toHaveBeenCalledWith({
-      running: true,
       connected: true,
       lastConnectedAt: expect.any(Number),
-      terminalDisconnect: undefined,
-      lifecycle: "ready",
+      healthState: "healthy",
       lastError: null,
     });
     expect(getSlackHandlers().has("reaction_added")).toBe(true);

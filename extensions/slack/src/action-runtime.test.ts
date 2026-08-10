@@ -1,6 +1,6 @@
 // Slack tests cover action runtime plugin behavior.
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SlackActionContext } from "./action-runtime.js";
 import { handleSlackAction, slackActionRuntime } from "./action-runtime.js";
 import { parseSlackBlocksInput } from "./blocks-input.js";
@@ -51,6 +51,16 @@ const resolveSlackConversationInfo = vi.fn(
 );
 const sendSlackMessage = vi.fn(async (..._args: unknown[]) => ({ channelId: "C123" }));
 const unpinSlackMessage = vi.fn(async (..._args: unknown[]) => ({}));
+let workspaceInstallationState: ReturnType<typeof registerSlackInstallationState> | undefined;
+
+beforeEach(() => {
+  workspaceInstallationState = registerSlackInstallationState("default", "workspace");
+});
+
+afterEach(() => {
+  workspaceInstallationState?.release();
+  workspaceInstallationState = undefined;
+});
 
 describe("handleSlackAction", () => {
   function slackConfig(overrides?: Record<string, unknown>): OpenClawConfig {

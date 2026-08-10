@@ -10,7 +10,6 @@ import { migrateSlackChannelConfig } from "../../channel-migration.js";
 import { resolveSlackChannelLabel } from "../channel-config.js";
 import type { SlackMonitorContext } from "../context.js";
 import type { SlackEventScope } from "../event-scope.js";
-import { resolveSlackIngressTurnLifecycle } from "../ingress.js";
 import type {
   SlackChannelCreatedEvent,
   SlackChannelIdChangedEvent,

@@ -4,7 +4,7 @@ import type { MessageMetadata } from "@slack/types";
 import type { ChatPostMessageArguments, WebClient } from "@slack/web-api";
 import type { ChannelMessageUnknownSendContext } from "openclaw/plugin-sdk/channel-outbound";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
 import { reconcileSlackUnknownSend, sendMessageSlack } from "./send.js";
 
@@ -114,9 +114,17 @@ async function postWithDeliveryMetadata(params: {
 }
 
 describe("reconcileSlackUnknownSend", () => {
+  let workspaceInstallationState: ReturnType<typeof registerSlackInstallationState> | undefined;
+
   beforeEach(() => {
+    workspaceInstallationState = registerSlackInstallationState("default", "workspace");
     slackClientMocks.createSlackReadClient.mockReset();
     slackClientMocks.getSlackWriteClient.mockReset();
+  });
+
+  afterEach(() => {
+    workspaceInstallationState?.release();
+    workspaceInstallationState = undefined;
   });
 
   it("uses workspace-scoped clients for a qualified reconciliation", async () => {

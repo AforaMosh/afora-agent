@@ -34,6 +34,7 @@ export type SlackIdentityHealth =
 
 export type SlackAuthTestIdentity = {
   app_id?: unknown;
+  team?: unknown;
   team_id?: unknown;
   enterprise_id?: unknown;
   is_enterprise_install?: unknown;

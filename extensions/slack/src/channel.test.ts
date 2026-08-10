@@ -1,6 +1,6 @@
 // Slack tests cover channel plugin behavior.
 import { createRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { slackPlugin } from "./channel.js";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
 import { slackOutbound } from "./outbound-adapter.js";
@@ -26,6 +26,7 @@ const {
   conversationsOpenMock: vi.fn(),
   getSlackWriteClientMock: vi.fn(),
 }));
+let workspaceInstallationState: ReturnType<typeof registerSlackInstallationState> | undefined;
 
 vi.mock("./action-runtime.js", async () => {
   const actual = await vi.importActual<typeof import("./action-runtime.js")>("./action-runtime.js");
@@ -61,6 +62,7 @@ vi.mock("./client.js", async () => {
 });
 
 beforeEach(async () => {
+  workspaceInstallationState = registerSlackInstallationState("default", "workspace");
   handleSlackActionMock.mockReset();
   resolveSlackDmChannelIdMock.mockReset();
   resolveSlackDmChannelIdMock.mockResolvedValue("D123");
@@ -78,6 +80,11 @@ beforeEach(async () => {
       },
     },
   } as never);
+});
+
+afterEach(() => {
+  workspaceInstallationState?.release();
+  workspaceInstallationState = undefined;
 });
 
 async function getSlackConfiguredState(cfg: OpenClawConfig) {
@@ -1044,7 +1051,10 @@ describe("slackPlugin outbound", () => {
     } finally {
       workspaceState.release();
     }
-    expect(admit({ ...base, to: "channel:C456" } as never)).toEqual({ status: "allowed" });
+    expect(admit({ ...base, to: "channel:C456" } as never)).toEqual({
+      status: "permanent_rejection",
+      reason: expect.stringContaining("unsupported_enterprise_slack_delivery"),
+    });
   });
 
   it("forwards agent identity through the registered text sender", async () => {

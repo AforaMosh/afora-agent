@@ -16,7 +16,6 @@ type SlackInstallationStateRegistration = {
 
 const slackInstallationStates = resolveGlobalMap<string, SlackInstallationStateEntry>(
   Symbol.for("openclaw.slack.installation-identities"),
-  "close-and-restart",
 );
 
 export function registerSlackInstallationState(

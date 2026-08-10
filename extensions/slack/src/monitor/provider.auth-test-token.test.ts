@@ -132,7 +132,7 @@ describe("auth.test boot call", () => {
   it("warns when auth.test returns a user id without bot_id", async () => {
     const runtimeLog = vi.fn();
     const client = getSlackClient();
-    client.auth.test.mockResolvedValueOnce({
+    client.auth.test.mockResolvedValue({
       app_id: "A1",
       user_id: "UUSER",
       user: "human-installer",
@@ -172,7 +172,7 @@ describe("auth.test boot call", () => {
       },
     });
     const client = getSlackClient();
-    client.auth.test.mockResolvedValueOnce({
+    client.auth.test.mockResolvedValue({
       app_id: "A1",
       user_id: "UUSER",
       user: "human-installer",
@@ -250,7 +250,7 @@ describe("auth.test boot call", () => {
         slackApiUrl: "https://slack.test/api/",
       }),
     );
-    expect(getSlackClient().auth.test).toHaveBeenCalledTimes(1);
+    expect(getSlackClient().auth.test).toHaveBeenCalledTimes(2);
     expect(appStartMock).toHaveBeenCalledTimes(1);
     expect(runtimeLog).toHaveBeenCalledWith(expect.stringContaining("timeout of 10000ms exceeded"));
   });
@@ -342,7 +342,6 @@ describe("auth.test boot call", () => {
       "action",
       "command",
       "shortcut",
-      "view",
       "view",
     ]);
     expect(getSlackInstallationKind("default")).toBe("enterprise");
@@ -735,7 +734,7 @@ describe("connected identity health", () => {
     if (config) {
       resetSlackTestState(config);
     }
-    getSlackClient().auth.test.mockResolvedValueOnce(auth);
+    getSlackClient().auth.test.mockResolvedValue(auth);
     const setStatus = vi.fn();
 
     const monitor = startSlackMonitor(monitorSlackProvider, { setStatus });

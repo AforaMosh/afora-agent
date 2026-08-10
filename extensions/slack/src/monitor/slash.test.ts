@@ -381,6 +381,7 @@ function createArgMenusHarness(
   },
 ) {
   const commands = new Map<string | RegExp, (args: unknown) => Promise<void>>();
+  const commandRegistrations: Array<string | RegExp> = [];
   const actions = new Map<string | RegExp, (args: unknown) => Promise<void>>();
   const options = new Map<string, (args: unknown) => Promise<void>>();
   const optionsReceiverContexts: unknown[] = [];
@@ -457,6 +458,7 @@ function createArgMenusHarness(
   } as unknown;
 
   return {
+    commandRegistrations,
     commands,
     actions,
     options,

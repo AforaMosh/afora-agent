@@ -40,7 +40,10 @@ vi.mock("./client.js", () => ({
 }));
 
 describe("resolveSlackChannelType", () => {
+  let workspaceInstallationState: ReturnType<typeof registerSlackInstallationState> | undefined;
+
   beforeEach(() => {
+    workspaceInstallationState = registerSlackInstallationState("default", "workspace");
     conversationsInfoMock.mockReset();
     conversationsOpenMock.mockReset();
     createSlackReadClientMock.mockClear();
@@ -51,6 +54,8 @@ describe("resolveSlackChannelType", () => {
   });
 
   afterEach(() => {
+    workspaceInstallationState?.release();
+    workspaceInstallationState = undefined;
     vi.unstubAllEnvs();
   });
 
@@ -70,26 +75,31 @@ describe("resolveSlackChannelType", () => {
       }),
     ).resolves.toBe("unknown");
 
-    await expect(
-      resolveSlackChannelType({
-        cfg: {
-          channels: {
-            slack: {
-              enabled: true,
-              defaultAccount: "work",
-              accounts: {
-                work: {
-                  dm: {
-                    groupChannels: [channelId],
+    const workInstallationState = registerSlackInstallationState("work", "workspace");
+    try {
+      await expect(
+        resolveSlackChannelType({
+          cfg: {
+            channels: {
+              slack: {
+                enabled: true,
+                defaultAccount: "work",
+                accounts: {
+                  work: {
+                    dm: {
+                      groupChannels: [channelId],
+                    },
                   },
                 },
               },
             },
-          },
-        } as never,
-        channelId,
-      }),
-    ).resolves.toBe("group");
+          } as never,
+          channelId,
+        }),
+      ).resolves.toBe("group");
+    } finally {
+      workInstallationState.release();
+    }
 
     expect(conversationsInfoMock).not.toHaveBeenCalled();
   });

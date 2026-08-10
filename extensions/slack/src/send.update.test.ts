@@ -1,7 +1,7 @@
 // Slack tests cover updateMessageSlack chat.update edit-limit behavior.
 import type { Block, KnownBlock, WebClient } from "@slack/web-api";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
 import { SLACK_EDIT_TEXT_MAX_BYTES } from "./limits.js";
 import { countSlackTextUtf8Bytes } from "./truncate.js";
@@ -45,8 +45,16 @@ const statusBlocks: (Block | KnownBlock)[] = [
 ];
 
 describe("updateMessageSlack", () => {
+  let workspaceInstallationState: ReturnType<typeof registerSlackInstallationState> | undefined;
+
   beforeEach(() => {
+    workspaceInstallationState = registerSlackInstallationState("default", "workspace");
     getSlackWriteClientMock.mockReset();
+  });
+
+  afterEach(() => {
+    workspaceInstallationState?.release();
+    workspaceInstallationState = undefined;
   });
 
   it("caps chat.update text at the 4000-byte edit limit, not the 8000 send limit", async () => {
