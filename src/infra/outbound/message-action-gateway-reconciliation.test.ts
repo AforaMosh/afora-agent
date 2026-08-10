@@ -523,7 +523,8 @@ describe("runMessageAction plugin dispatch", () => {
         dryRun: false,
       });
 
-      expect(extractToolPayload(result)).toMatchObject({
+      expect(result).toMatchObject({
+        kind: "send",
         payload: {
           status: "delivery_ambiguous",
           delivered: false,
