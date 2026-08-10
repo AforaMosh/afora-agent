@@ -14,7 +14,11 @@ import type {
   SessionWorkspaceListResult,
   SessionWorkspaceSetResult,
 } from "../../api/types.ts";
-import type { SessionPatch } from "./patch.ts";
+import {
+  isSessionPresentationPatch,
+  readSessionChangedTarget,
+  type SessionPatch,
+} from "./patch.ts";
 import type {
   SessionCompactResult,
   SessionDeleteOptions,
@@ -132,16 +136,36 @@ export async function requestSessionList(
   return result ?? null;
 }
 
-export function requestSessionPatch(
+export async function requestSessionPatch(
   client: SessionRequestClient,
   key: string,
   patch: SessionPatch,
   options: { agentId?: string | null } = {},
 ): Promise<SessionsPatchResult> {
-  const params = { ...buildSessionRequestParams(key, options.agentId), ...patch };
-  return patch.archived === true
-    ? client.request<SessionsPatchResult>("sessions.patch", params, SESSION_ARCHIVE_REQUEST_OPTIONS)
-    : client.request<SessionsPatchResult>("sessions.patch", params);
+  const send = (sessionPatch: SessionPatch) => {
+    const params = { ...buildSessionRequestParams(key, options.agentId), ...sessionPatch };
+    return sessionPatch.archived === true
+      ? client.request<SessionsPatchResult>(
+          "sessions.patch",
+          params,
+          SESSION_ARCHIVE_REQUEST_OPTIONS,
+        )
+      : client.request<SessionsPatchResult>("sessions.patch", params);
+  };
+  try {
+    return await send(patch);
+  } catch (error) {
+    // Identity rotates under a live row invisibly (compaction mid-run, reset,
+    // in-place rewind) and the row keeps its label, group and pin across it, so
+    // presentation intent re-aims once at the session the Gateway reports as current.
+    // Presentation only: archiving guards its own generation, and re-aiming that
+    // would defeat a lifecycle invariant. One retry — a second refusal is real.
+    const currentSessionId = readSessionChangedTarget(error)?.currentSessionId;
+    if (!currentSessionId || !patch.expectedSessionId || !isSessionPresentationPatch(patch)) {
+      throw error;
+    }
+    return await send({ ...patch, expectedSessionId: currentSessionId });
+  }
 }
 
 export function requestSessionDelete(

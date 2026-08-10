@@ -25,6 +25,8 @@ export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 export const GatewayErrorDetailCodes = {
   MISSING_SCOPE: "MISSING_SCOPE",
   MCP_APP_VIEW_EXPIRED: "MCP_APP_VIEW_EXPIRED",
+  /** Patch target was reset, replaced or removed before it committed; resending the same expectation cannot succeed. */
+  SESSION_CHANGED: "SESSION_CHANGED",
   SESSION_COMPANION_BUSY: "SESSION_COMPANION_BUSY",
   UNKNOWN_AGENT_ID: "UNKNOWN_AGENT_ID",
   WIZARD_NOT_FOUND: "WIZARD_NOT_FOUND",

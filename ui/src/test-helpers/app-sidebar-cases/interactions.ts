@@ -134,8 +134,8 @@ describe("AppSidebar multi-select", () => {
     await waitForFast(() => expect(harness.patchMany).toHaveBeenCalledOnce());
     expect(harness.patchMany).toHaveBeenCalledWith(
       [
-        { key: "agent:main:a", agentId: "main" },
-        { key: "agent:main:b", agentId: "main" },
+        { key: "agent:main:a", agentId: "main", expectedSessionId: "session-agent:main:a" },
+        { key: "agent:main:b", agentId: "main", expectedSessionId: "session-agent:main:b" },
       ],
       { archived: true },
     );
@@ -157,8 +157,8 @@ describe("AppSidebar multi-select", () => {
     await waitForFast(() => expect(harness.patchMany).toHaveBeenCalledOnce());
     expect(harness.patchMany).toHaveBeenCalledWith(
       [
-        { key: "agent:main:a", agentId: "main" },
-        { key: "agent:main:b", agentId: "main" },
+        { key: "agent:main:a", agentId: "main", expectedSessionId: "session-agent:main:a" },
+        { key: "agent:main:b", agentId: "main", expectedSessionId: "session-agent:main:b" },
       ],
       { unread: true },
     );
@@ -184,13 +184,13 @@ describe("AppSidebar multi-select", () => {
     expect(harness.patch).toHaveBeenNthCalledWith(
       1,
       "agent:main:a",
-      { archived: true },
+      { archived: true, expectedSessionId: "session-agent:main:a" },
       { agentId: "main", deferListRefresh: true },
     );
     expect(harness.patch).toHaveBeenNthCalledWith(
       2,
       "agent:main:b",
-      { archived: true },
+      { archived: true, expectedSessionId: "session-agent:main:b" },
       { agentId: "main", deferListRefresh: true },
     );
     expect(harness.patchMany).not.toHaveBeenCalled();
@@ -221,13 +221,13 @@ describe("AppSidebar multi-select", () => {
     expect(harness.patch).toHaveBeenNthCalledWith(
       1,
       "agent:main:a",
-      { archived: true },
+      { archived: true, expectedSessionId: "session-agent:main:a" },
       { agentId: "main", deferListRefresh: true },
     );
     expect(harness.patch).toHaveBeenNthCalledWith(
       2,
       "agent:main:b",
-      { archived: true },
+      { archived: true, expectedSessionId: "session-agent:main:b" },
       { agentId: "main", deferListRefresh: true },
     );
     expect(request.mock.calls.filter(([method]) => method === "sessions.patchMany")).toHaveLength(

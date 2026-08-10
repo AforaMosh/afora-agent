@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GatewayErrorDetailCodes } from "../../packages/gateway-protocol/src/index.js";
 import {
   loadSessionEntry,
   patchSessionEntry,
@@ -401,6 +402,13 @@ describe("sessions.patchMany orchestration", () => {
           key: "agent:main:batch-1",
           error: {
             code: "INVALID_REQUEST",
+            // Clients discriminate a moved target on this detail code, not on the
+            // public copy, and tell a rotation from a deletion by whether the
+            // surviving identity is reported here.
+            details: {
+              code: GatewayErrorDetailCodes.SESSION_CHANGED,
+              currentSessionId: "session-1",
+            },
             message: "Session agent:main:batch-1 changed before patch. Retry.",
           },
         },

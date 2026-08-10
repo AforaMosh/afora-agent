@@ -40,7 +40,11 @@ import {
   validateSessionPatchArchiveProjection,
 } from "./sessions-patch-archive.js";
 import { persistSessionPatchModelSelection } from "./sessions-patch-model-selection.js";
-import { resolveSessionWorkerPlacementPatchError, sessionLog } from "./sessions-shared.js";
+import {
+  resolveSessionWorkerPlacementPatchError,
+  sessionChangedPatchError,
+  sessionLog,
+} from "./sessions-shared.js";
 import type {
   GatewayClient,
   GatewayRequestContext,
@@ -385,10 +389,7 @@ async function executeSessionPatchMutations(params: {
                         ) {
                           projectedOutcomes.push({
                             ok: false,
-                            error: errorShape(
-                              ErrorCodes.INVALID_REQUEST,
-                              `Session ${target.key} changed before patch. Retry.`,
-                            ),
+                            error: sessionChangedPatchError(target.key, existingEntry?.sessionId),
                           });
                           continue;
                         }

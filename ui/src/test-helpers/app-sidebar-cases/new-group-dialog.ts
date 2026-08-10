@@ -1,3 +1,4 @@
+import { ErrorCodes, GatewayErrorDetailCodes } from "@openclaw/gateway-client/browser";
 import { describe, expect, it } from "vitest";
 import type { SessionsListResult } from "../../api/types.ts";
 import { installDialogPolyfill, submitInputDialog, waitForInputDialog } from "../modal-dialog.ts";
@@ -36,10 +37,12 @@ describe("AppSidebar new group dialog", () => {
 
       await waitForFast(() => expect(harness.patchMany).toHaveBeenCalledOnce());
       expect(harness.groupsPut).toHaveBeenCalledWith(["Projects"]);
+      // Each target carries the identity captured with its row, so a session
+      // replaced while the dialog was open is refused instead of reassigned.
       expect(harness.patchMany).toHaveBeenCalledWith(
         [
-          { key: "agent:main:a", agentId: "main" },
-          { key: "agent:main:b", agentId: "main" },
+          { key: "agent:main:a", agentId: "main", expectedSessionId: "session-agent:main:a" },
+          { key: "agent:main:b", agentId: "main", expectedSessionId: "session-agent:main:b" },
         ],
         { category: "Projects" },
       );
@@ -53,11 +56,8 @@ describe("AppSidebar new group dialog", () => {
     }
   });
 
-  it("reports the skipped moves when selected rows leave the list mid-write", async () => {
+  it("assigns with captured identities when rows leave the list mid-write", async () => {
     const restoreDialogPolyfill = installDialogPolyfill();
-    const toastHost = document.createElement("openclaw-toast-host");
-    document.body.append(toastHost);
-    await toastHost.updateComplete;
     try {
       const { sidebar, harness } = await mountMultiSelect([
         "sessions.groups.put",
@@ -81,31 +81,28 @@ describe("AppSidebar new group dialog", () => {
       await submitInputDialog("Projects");
       await waitForFast(() => expect(harness.groupsPut).toHaveBeenCalledOnce());
 
-      // Both rows leave the list while the catalog write is still in flight;
-      // patching their keys now could recreate sessions that were removed.
+      // Both rows leave this bounded, filtered projection while the catalog write
+      // is in flight. That is not evidence they were deleted, so the assignment
+      // still goes out, carrying the identity captured with each row — which is
+      // what lets the Gateway refuse a target that really was replaced.
       harness.publish({ result: { count: 0, sessions: [] } as unknown as SessionsListResult });
       landCatalogWrite();
 
-      // The dialog is removed only once the submit chain has run to completion,
-      // so waiting on that keeps the negative assertions below from passing
-      // before the continuation has had a chance to patch anything.
-      await waitForFast(() =>
-        expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull(),
+      await waitForFast(() => expect(harness.patchMany).toHaveBeenCalledOnce());
+      expect(harness.patchMany).toHaveBeenCalledWith(
+        [
+          { key: "agent:main:a", agentId: "main", expectedSessionId: "session-agent:main:a" },
+          { key: "agent:main:b", agentId: "main", expectedSessionId: "session-agent:main:b" },
+        ],
+        { category: "Projects" },
       );
-      expect(harness.patchMany).not.toHaveBeenCalled();
       expect(harness.patch).not.toHaveBeenCalled();
-      // The group landed and the moves did not: that partial outcome has to
-      // reach the operator instead of closing as a plain success.
-      expect(toastHost.querySelector(".app-toast__message")?.textContent).toBe(
-        "Group created, but the move was skipped because the list changed. Move from the row menu.",
-      );
     } finally {
-      toastHost.remove();
       restoreDialogPolyfill();
     }
   });
 
-  it("reports the partial outcome when only part of the selection leaves the list", async () => {
+  it("names the group and the sessions that could not join it", async () => {
     const restoreDialogPolyfill = installDialogPolyfill();
     const toastHost = document.createElement("openclaw-toast-host");
     document.body.append(toastHost);
@@ -113,15 +110,32 @@ describe("AppSidebar new group dialog", () => {
     try {
       const { sidebar, harness } = await mountMultiSelect([
         "sessions.groups.put",
-        "sessions.patch",
         "sessions.patchMany",
       ]);
-      let landCatalogWrite!: () => void;
-      harness.groupsPut.mockReturnValueOnce(
-        new Promise((resolve) => {
-          landCatalogWrite = () => resolve("completed");
-        }),
-      );
+      harness.patchMany.mockResolvedValueOnce({
+        outcomes: [
+          {
+            ok: false,
+            key: "agent:main:a",
+            agentId: "main",
+            error: {
+              code: ErrorCodes.INVALID_REQUEST,
+              message: "Session agent:main:a changed before patch. Retry.",
+              details: { code: GatewayErrorDetailCodes.SESSION_CHANGED },
+            },
+          },
+          {
+            ok: false,
+            key: "agent:main:b",
+            agentId: "main",
+            error: {
+              code: ErrorCodes.INVALID_REQUEST,
+              message: "Session agent:main:b changed before patch. Retry.",
+              details: { code: GatewayErrorDetailCodes.SESSION_CHANGED },
+            },
+          },
+        ],
+      });
       click(rowLink(sidebar, "agent:main:a"), { metaKey: true });
       click(rowLink(sidebar, "agent:main:b"), { metaKey: true });
       await sidebar.updateComplete;
@@ -132,34 +146,17 @@ describe("AppSidebar new group dialog", () => {
 
       await waitForInputDialog();
       await submitInputDialog("Projects");
-      await waitForFast(() => expect(harness.groupsPut).toHaveBeenCalledOnce());
+      await waitForFast(() => expect(harness.patchMany).toHaveBeenCalledOnce());
 
-      // Only one of the two selected rows survives the catalog write. Moving the
-      // survivor is still correct, but the other row was requested and skipped.
-      harness.publish({
-        result: {
-          count: 1,
-          sessions: [{ key: "agent:main:b", agentId: "main" }],
-        } as unknown as SessionsListResult,
-      });
-      landCatalogWrite();
-
+      // The group landed and is on screen; only its members are missing. The dialog
+      // closes like any success and one quiet line accounts for them.
       await waitForFast(() =>
         expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull(),
       );
-      // The surviving row is patched on its own; the removed key is never sent,
-      // so patchMany stays out of it.
-      await waitForFast(() => expect(harness.patch).toHaveBeenCalledOnce());
-      expect(harness.patch).toHaveBeenCalledWith(
-        "agent:main:b",
-        { category: "Projects" },
-        { agentId: "main" },
-      );
-      expect(harness.patchMany).not.toHaveBeenCalled();
-      // A partly applied selection must not close as a plain success.
       expect(toastHost.querySelector(".app-toast__message")?.textContent).toBe(
-        "Group created, but some selected sessions were not moved because the list changed. Move them from the row menu.",
+        "“Projects” created. Some sessions weren’t added — they no longer exist.",
       );
+      expect(sidebar.querySelector("[data-sidebar-session-error]")).toBeNull();
     } finally {
       toastHost.remove();
       restoreDialogPolyfill();

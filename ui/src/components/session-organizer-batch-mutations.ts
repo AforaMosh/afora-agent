@@ -8,6 +8,7 @@ import { SESSION_ARCHIVE_REQUEST_OPTIONS } from "../../../src/shared/session-arc
 import { GatewayRequestError } from "../api/gateway.ts";
 import { formatUiError } from "../lib/format-error.ts";
 import { readSessionMethodAccess } from "../lib/session-method-access.ts";
+import { isSessionPresentationPatch, readSessionChangedTarget } from "../lib/sessions/patch.ts";
 import { parseAgentSessionKey } from "../lib/sessions/session-key.ts";
 import type {
   SidebarRecentSession,
@@ -18,8 +19,14 @@ import type { SessionOrganizerControllerHost } from "./session-organizer-control
 
 export type SessionActionRow = Pick<
   SidebarRecentSession,
-  "key" | "label" | "pinned" | "archived" | "active"
+  "key" | "sessionId" | "label" | "pinned" | "archived" | "active"
 >;
+
+export type SessionRowsPatchResult = {
+  rows: SessionActionRow[];
+  /** Rows the Gateway reports as gone; patching their keys again would create new sessions. */
+  gone: SessionActionRow[];
+};
 
 export type SessionActionHost = Pick<
   SessionOrganizerControllerHost,
@@ -90,14 +97,22 @@ export async function patchSessionRows(
   scope: SidebarSessionMutationScope,
   options: {
     deferListRefresh?: boolean;
-    fallback?: () => Promise<SessionActionRow[] | null>;
+    fallback?: () => Promise<SessionRowsPatchResult | null>;
   } = {},
-): Promise<SessionActionRow[] | null> {
+): Promise<SessionRowsPatchResult | null> {
   const dispatched: Array<{
     rows: readonly SessionActionRow[];
     result: SessionsPatchManyResult;
   }> = [];
   let terminalError: unknown = null;
+  const sendChunk = (params: SessionsPatchManyParams) =>
+    patch.archived === true
+      ? scope.client.request<SessionsPatchManyResult>(
+          "sessions.patchMany",
+          params,
+          SESSION_ARCHIVE_REQUEST_OPTIONS,
+        )
+      : scope.client.request<SessionsPatchManyResult>("sessions.patchMany", params);
   for (let offset = 0; offset < rows.length; offset += SESSIONS_PATCH_MANY_MAX_TARGETS) {
     if (!host.sessionData.isSessionMutationScopeCurrent(scope)) {
       return null;
@@ -107,6 +122,9 @@ export async function patchSessionRows(
       targets: chunkRows.map((row) => ({
         key: row.key,
         agentId: sessionRowAgentId(row, scope),
+        // Per-target identity: the batch refuses only the rows whose stored session
+        // moved, and still applies every row that did not.
+        ...(row.sessionId ? { expectedSessionId: row.sessionId } : {}),
       })),
       patch,
     };
@@ -125,14 +143,7 @@ export async function patchSessionRows(
       break;
     }
     try {
-      const result =
-        patch.archived === true
-          ? await scope.client.request<SessionsPatchManyResult>(
-              "sessions.patchMany",
-              params,
-              SESSION_ARCHIVE_REQUEST_OPTIONS,
-            )
-          : await scope.client.request<SessionsPatchManyResult>("sessions.patchMany", params);
+      const result = await sendChunk(params);
       if (!host.sessionData.isSessionMutationScopeCurrent(scope)) {
         return null;
       }
@@ -163,19 +174,52 @@ export async function patchSessionRows(
     return null;
   }
   const errors: string[] = [];
-  const successful = dispatched.flatMap(({ rows: chunkRows, result }) =>
+  const gone: SessionActionRow[] = [];
+  const reaim: Array<{ row: SessionActionRow; sessionId: string }> = [];
+  const collect = (chunkRows: readonly SessionActionRow[], result: SessionsPatchManyResult) =>
     result.outcomes.flatMap((outcome, index) => {
+      const row = chunkRows[index];
       if (!outcome.ok) {
-        errors.push(`${outcome.key}: ${outcome.error.message}`);
+        const changed = row ? readSessionChangedTarget(outcome.error) : null;
+        if (changed?.currentSessionId && isSessionPresentationPatch(patch)) {
+          reaim.push({ row: row!, sessionId: changed.currentSessionId });
+        } else if (changed && row) {
+          gone.push(row);
+        } else {
+          errors.push(`${outcome.key}: ${outcome.error.message}`);
+        }
         return [];
       }
-      const row = chunkRows[index];
       if (row?.pinned && patch.archived === true) {
         host.pruneSidebarSessionEntry(row.key);
       }
       return row ? [row] : [];
-    }),
+    });
+  const successful = dispatched.flatMap(({ rows: chunkRows, result }) =>
+    collect(chunkRows, result),
   );
+  // Rows whose identity rotated under them are still the rows the operator picked,
+  // so the batch re-aims at the surviving sessions once, in one extra request and
+  // without saying anything. Only rows the Gateway reports as gone are accounted for.
+  if (reaim.length > 0) {
+    const reaimRows = reaim.map(({ row }) => row);
+    try {
+      const result = await sendChunk({
+        targets: reaim.map(({ row, sessionId }) => ({
+          key: row.key,
+          agentId: sessionRowAgentId(row, scope),
+          expectedSessionId: sessionId,
+        })),
+        patch,
+      });
+      if (!host.sessionData.isSessionMutationScopeCurrent(scope)) {
+        return null;
+      }
+      successful.push(...collect(reaimRows, result));
+    } catch (error) {
+      errors.push(formatUiError(error));
+    }
+  }
   const terminalErrorMessage = terminalError === null ? "" : formatUiError(terminalError);
   if (terminalErrorMessage) {
     errors.push(terminalErrorMessage);
@@ -183,5 +227,5 @@ export async function patchSessionRows(
   if (errors.length > 0) {
     host.sessionData.publishSessionMutationError(scope, errors.join("; "));
   }
-  return successful;
+  return { rows: successful, gone };
 }

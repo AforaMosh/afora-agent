@@ -1,12 +1,14 @@
 /* @vitest-environment jsdom */
 
+import { ErrorCodes, GatewayErrorDetailCodes } from "@openclaw/gateway-client/browser";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import type { SessionsListResult } from "../../api/types.ts";
 import type { ApplicationGatewaySnapshot } from "../../app/context.ts";
 import { showInputDialog } from "../../components/input-dialog.ts";
 import type { SessionCapability } from "../../lib/sessions/index.ts";
 import type { SessionGroupMutationResult } from "../../lib/sessions/session-capability.ts";
+import { showToast } from "../../lib/toast.ts";
 import {
   createContext,
   createGateway,
@@ -15,12 +17,15 @@ import {
 } from "./sessions-page.test-support.ts";
 
 vi.mock("../../components/input-dialog.ts", () => ({ showInputDialog: vi.fn() }));
+vi.mock("../../lib/toast.ts", () => ({ showToast: vi.fn() }));
 
 const SESSION_KEY = "agent:main:move-me";
+const SESSION_ID = "session-move-me";
 
 afterEach(() => {
   document.body.replaceChildren();
   vi.mocked(showInputDialog).mockReset();
+  vi.mocked(showToast).mockReset();
   vi.restoreAllMocks();
 });
 
@@ -38,7 +43,7 @@ async function mountGroupsPage(groupsPut: () => Promise<SessionGroupMutationResu
   });
   const page = await createRenderedPage(createContext(mutableGateway.gateway, sessions), {
     count: 1,
-    sessions: [{ key: SESSION_KEY, archived: false }],
+    sessions: [{ key: SESSION_KEY, sessionId: SESSION_ID, label: "Move me", archived: false }],
   } as SessionsListResult);
   // The dialog itself is covered by input-dialog.test.ts; here it only stands in
   // for the operator submitting a name. A recorded message is what keeps the real
@@ -64,7 +69,7 @@ describe("sessions page new group", () => {
     );
     expect(sessions.patch).toHaveBeenCalledWith(
       SESSION_KEY,
-      { category: "Client work" },
+      { category: "Client work", expectedSessionId: SESSION_ID },
       expect.anything(),
     );
   });
@@ -167,7 +172,7 @@ describe("sessions page new group", () => {
     // The replacement connection reloads the list before the operator retries.
     page.result = {
       count: 1,
-      sessions: [{ key: SESSION_KEY, archived: false }],
+      sessions: [{ key: SESSION_KEY, sessionId: SESSION_ID, label: "Move me", archived: false }],
     } as SessionsListResult;
     await page.requestNewCategory(SESSION_KEY);
 
@@ -175,12 +180,12 @@ describe("sessions page new group", () => {
     expect(sessions.patch).toHaveBeenCalledOnce();
     expect(sessions.patch).toHaveBeenCalledWith(
       SESSION_KEY,
-      { category: "Client work" },
+      { category: "Client work", expectedSessionId: SESSION_ID },
       expect.anything(),
     );
   });
 
-  it("reports the skipped move when the row left the list during the catalog write", async () => {
+  it("carries the captured identity when the row left the list mid-write", async () => {
     let landCatalogWrite!: () => void;
     const pending = new Promise<SessionGroupMutationResult>((resolve) => {
       landCatalogWrite = () => resolve("completed");
@@ -190,19 +195,43 @@ describe("sessions page new group", () => {
     const created = page.requestNewCategory(SESSION_KEY);
     await vi.waitFor(() => expect(sessions.groupsPut).toHaveBeenCalledOnce());
 
-    // The row left this bounded list while the catalog write was in flight;
-    // patching its key now could recreate an entry the operator removed.
+    // An ordinary refresh pages the row out of this filtered view while the
+    // catalog write is in flight. The session still exists, so the assignment
+    // must still go out, carrying the identity captured when the dialog opened —
+    // which is what lets the Gateway refuse a genuinely replaced target.
     page.result = { count: 0, sessions: [] } as unknown as SessionsListResult;
     landCatalogWrite();
     await created;
 
-    expect(sessions.patch).not.toHaveBeenCalled();
-    // The group landed and the move did not. Retrying would only re-create the
-    // group, so the dialog closes — but the partial outcome has to stay visible
-    // on the page rather than reading as a clean success.
+    expect(sessions.patch).toHaveBeenCalledWith(
+      SESSION_KEY,
+      { category: "Client work", expectedSessionId: SESSION_ID },
+      expect.anything(),
+    );
     expect(submitMessages).toEqual([null]);
-    expect(page.error).toBe(
-      "Group created, but the move was skipped because the list changed. Move from the row menu.",
+    expect(page.error).toBeNull();
+  });
+
+  it("names the group and the session that could not join it", async () => {
+    const { page, sessions, submitMessages } = await mountGroupsPage(async () => "completed");
+    vi.mocked(sessions.patch).mockRejectedValue(
+      new GatewayRequestError({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: `Session ${SESSION_KEY} changed before patch. Retry.`,
+        details: { code: GatewayErrorDetailCodes.SESSION_CHANGED },
+      }),
+    );
+
+    await page.requestNewCategory(SESSION_KEY);
+
+    // The group landed and is on screen; only its member is missing, so the dialog
+    // closes and one quiet line names both objects.
+    expect(submitMessages).toEqual([null]);
+    expect(page.error).toBeNull();
+    expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "“Client work” created. “Move me” wasn’t added — it no longer exists.",
+      }),
     );
   });
 

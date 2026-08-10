@@ -1,5 +1,6 @@
 // Compare-and-swap session patches must reject reset replacements atomically.
 import { afterEach, expect, test } from "vitest";
+import { ErrorCodes, GatewayErrorDetailCodes } from "../../packages/gateway-protocol/src/index.js";
 import { loadSessionEntry } from "../config/sessions/session-accessor.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { embeddedRunMock, writeSessionStore } from "./test-helpers.js";
@@ -43,7 +44,13 @@ test.each([
 
   expect(archived).toMatchObject({
     ok: false,
-    error: { message: `Session ${sessionKey} changed before patch. Retry.` },
+    // Archive guards its own generation, so its refusal deliberately reports no
+    // surviving identity: there is nothing here a client may re-aim at.
+    error: {
+      code: ErrorCodes.INVALID_REQUEST,
+      details: { code: GatewayErrorDetailCodes.SESSION_CHANGED },
+      message: `Session ${sessionKey} changed before patch. Retry.`,
+    },
   });
   expect(loadSessionEntry({ sessionKey, storePath })).toMatchObject({
     sessionId: "sess-after-reset",
@@ -73,7 +80,14 @@ test("sessions.patch rejects a replaced identity before projected active-run pro
 
   expect(archived).toMatchObject({
     ok: false,
-    error: { message: `Session ${sessionKey} changed before patch. Retry.` },
+    // Clients must tell a moved target from any other invalid request without
+    // matching the public copy, and must tell a rotation from a deletion without
+    // a second read, so both facts are part of the contract.
+    error: {
+      code: ErrorCodes.INVALID_REQUEST,
+      details: { code: GatewayErrorDetailCodes.SESSION_CHANGED },
+      message: `Session ${sessionKey} changed before patch. Retry.`,
+    },
   });
   expect(loadSessionEntry({ sessionKey, storePath })).toMatchObject({
     sessionId: replacementSessionId,
@@ -109,7 +123,13 @@ test.each([
 
   expect(patched).toMatchObject({
     ok: false,
-    error: { message: `Session ${sessionKey} changed before patch. Retry.` },
+    // Archive guards its own generation, so its refusal deliberately reports no
+    // surviving identity: there is nothing here a client may re-aim at.
+    error: {
+      code: ErrorCodes.INVALID_REQUEST,
+      details: { code: GatewayErrorDetailCodes.SESSION_CHANGED },
+      message: `Session ${sessionKey} changed before patch. Retry.`,
+    },
   });
   expect(loadSessionEntry({ sessionKey, storePath })).toMatchObject({
     sessionId: "sess-after-reset",
@@ -142,4 +162,33 @@ test("sessions.patch archives the expected session under its lifecycle lock", as
     lifecycleRevision,
     archivedAt: expect.any(Number),
   });
+});
+
+test("sessions.patch reports the surviving identity when a presentation patch is refused", async () => {
+  const { storePath } = await createSessionStoreDir();
+  const sessionKey = "agent:main:subagent:rotated";
+  await writeSessionStore({
+    entries: { [sessionKey]: sessionStoreEntry("sess-after-rotation") },
+  });
+
+  const patched = await directSessionReq("sessions.patch", {
+    key: sessionKey,
+    category: "Client work",
+    expectedSessionId: "sess-before-rotation",
+  });
+
+  // Rotation under a live row is routine and invisible (compaction, reset,
+  // in-place rewind). Naming the survivor is what lets a client carry the
+  // operator's intent across it without a second read to discover the id.
+  expect(patched).toMatchObject({
+    ok: false,
+    error: {
+      code: ErrorCodes.INVALID_REQUEST,
+      details: {
+        code: GatewayErrorDetailCodes.SESSION_CHANGED,
+        currentSessionId: "sess-after-rotation",
+      },
+    },
+  });
+  expect(loadSessionEntry({ sessionKey, storePath })).not.toHaveProperty("category");
 });

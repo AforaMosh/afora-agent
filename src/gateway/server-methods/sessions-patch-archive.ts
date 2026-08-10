@@ -25,6 +25,7 @@ import {
 import {
   isAgentMainSessionKey,
   resolveSessionWorkerPlacementPatchError,
+  sessionChangedPatchError,
   sessionLog,
 } from "./sessions-shared.js";
 import type { GatewayRequestContext } from "./types.js";
@@ -46,10 +47,6 @@ type SessionPatchArchiveTarget = {
   requestedAgentId?: string;
   storePath: string;
 };
-
-function archiveChangedError(key: string): ErrorShape {
-  return errorShape(ErrorCodes.INVALID_REQUEST, `Session ${key} changed before patch. Retry.`);
-}
 
 function archiveUnavailableError(key: string, message: "active" | "stopping"): ErrorShape {
   return errorShape(
@@ -111,7 +108,7 @@ export async function prepareSessionPatchArchive(params: {
     exactRead: true,
   });
   if (freshResolved.storePath !== target.storePath) {
-    return err(archiveChangedError(target.key));
+    return err(sessionChangedPatchError(target.key));
   }
   const fresh = resolveCanonicalGatewaySessionStoreKey({
     cfg,
@@ -137,7 +134,7 @@ export async function prepareSessionPatchArchive(params: {
       patch: target.fullPatch,
     })
   ) {
-    return err(archiveChangedError(target.key));
+    return err(sessionChangedPatchError(target.key));
   }
   const missingHarnessSessionError = resolveMissingAgentHarnessSessionError(
     freshCanonicalKey,
@@ -252,7 +249,7 @@ export function validateSessionPatchArchiveProjection(params: {
       patch: params.fullPatch,
     })
   ) {
-    return archiveChangedError(params.key);
+    return sessionChangedPatchError(params.key);
   }
   return (
     protectedArchiveError(params.cfg, params.primaryKey) ??

@@ -54,6 +54,8 @@ export function sidebarSessionAttentionPriority(attention: SidebarSessionAttenti
 
 export type SidebarRecentSession = {
   key: string;
+  /** Gateway identity of the session behind this row, so a delayed mutation can prove its target. */
+  sessionId?: string;
   displayName?: string;
   incognito?: boolean;
   createdActor?: SessionCreatedActor;
@@ -180,7 +182,12 @@ export type SidebarSessionMutationScope = {
   selectedAgentId: string;
 };
 
-export type SidebarSessionMutationResult = "completed" | "failed" | "stale";
+/**
+ * `session-gone` is not a failure to retry: the row no longer exists and patching
+ * its key would create a new session, so callers account for it quietly. Rotations
+ * never reach here; they are re-aimed at the surviving session further down.
+ */
+export type SidebarSessionMutationResult = "completed" | "failed" | "stale" | "session-gone";
 
 export type SidebarSessionPatch = {
   archived?: boolean;

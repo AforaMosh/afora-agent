@@ -43,8 +43,10 @@ import {
   filterSessionRows,
   scopedAgentParamsForSession,
   type SessionArchivedFilter,
+  type SessionPatch,
 } from "../../lib/sessions/index.ts";
 import { fetchPagedSessionRows } from "../../lib/sessions/paged-session-rows.ts";
+import { readSessionChangedTarget } from "../../lib/sessions/patch.ts";
 import {
   resolveSessionPreferredFaceForKey,
   resolveSessionNavigationAgentId,
@@ -71,7 +73,7 @@ import {
 } from "./agent-scope.ts";
 import { rememberSessionCustomGroup, sessionCategoryNames } from "./custom-groups.ts";
 import { loadStoredGroupBy, parseFilterInteger, saveStoredGroupBy } from "./page-state.ts";
-import { renderSessions, type SessionsProps, type TranscriptSearchState } from "./view.ts";
+import { renderSessions, type TranscriptSearchState } from "./view.ts";
 
 const SESSIONS_DOCS_URL = "https://docs.openclaw.ai/concepts/session";
 
@@ -94,7 +96,8 @@ type SessionsPageRequestScope = {
   client: GatewayBrowserClient;
 };
 
-type SessionsPageMutationResult = "completed" | "failed" | "stale";
+/** `session-gone` is not retryable: the row no longer exists and a patch would create a new session. */
+type SessionsPageMutationResult = "completed" | "failed" | "stale" | "session-gone";
 
 /** Type-only, so the dialog itself stays behind its lazy boundary. */
 type InputDialogOpener = (typeof import("../../components/input-dialog.ts"))["showInputDialog"];
@@ -1066,6 +1069,9 @@ class SessionsPage extends OpenClawLightDomElement {
   }
 
   private async requestNewCategory(sessionKey?: string) {
+    // Identity and label are read now, from the row the operator acted on: after
+    // the catalog write a refresh may have repaged or replaced it.
+    const target = sessionKey ? this.sessionRowForKey(sessionKey) : undefined;
     await this.withDialogLifecycle(async (signal) => {
       const showInputDialog = await this.loadInputDialog();
       await showInputDialog?.({
@@ -1074,9 +1080,13 @@ class SessionsPage extends OpenClawLightDomElement {
         label: t("sessionsView.newGroupPrompt"),
         submitLabel: t("sessionsView.newGroupCreate"),
         requireValue: true,
-        submit: (name) => this.writeNewCategory(name, sessionKey),
+        submit: (name) => this.writeNewCategory(name, sessionKey, target),
       });
     });
+  }
+
+  private sessionRowForKey(key: string) {
+    return this.result?.sessions.find((row) => row.key === key);
   }
 
   /**
@@ -1084,7 +1094,11 @@ class SessionsPage extends OpenClawLightDomElement {
    * row moves, and a catalog write that outlived its connection must not be
    * followed by an assignment issued on the replacement one.
    */
-  private async writeNewCategory(name: string, sessionKey?: string): Promise<string | null> {
+  private async writeNewCategory(
+    name: string,
+    sessionKey?: string,
+    target?: GatewaySessionRow,
+  ): Promise<string | null> {
     this.error = null;
     const scope = this.captureRequestScope();
     if (!scope) {
@@ -1099,18 +1113,26 @@ class SessionsPage extends OpenClawLightDomElement {
     if (!sessionKey) {
       return null;
     }
-    // The catalog write is awaited first, so the row can leave this list in
-    // between. sessions.patch would recreate a store entry for a key the list no
-    // longer has, so the move is skipped — but this list is a bounded, filtered
-    // projection, and a plain refresh can page a live row out of it. Skipping
-    // silently would leave the operator with a new group, an unmoved session and
-    // nothing explaining why, so the partial outcome is stated and terminal:
-    // retrying here would only try to create the group that already exists.
-    if (!this.result?.sessions.some((row) => row.key === sessionKey)) {
-      this.error = t("sessionsView.newGroupMoveSkipped");
+    // The catalog write is awaited first, so the row's identity can rotate in
+    // between; that is re-aimed silently one layer down, because the operator
+    // picked the row and the row survives a rotation. This page's own list is one
+    // filtered page and cannot decide any of it.
+    const assigned = await this.patchSession(
+      sessionKey,
+      { category: name, ...(target?.sessionId ? { expectedSessionId: target.sessionId } : {}) },
+      scope,
+    );
+    // The group is created and on screen; only the member could not join it.
+    if (assigned === "session-gone") {
+      showToast({
+        message: t("sessionsView.newGroupSessionGone", {
+          group: name,
+          session: normalizeOptionalString(target?.label) ?? sessionKey,
+        }),
+        durationMs: 12_000,
+      });
       return null;
     }
-    const assigned = await this.patchSession(sessionKey, { category: name }, scope);
     if (assigned === "failed") {
       return this.error ?? t("sessionsView.newGroupFailed");
     }
@@ -1136,23 +1158,31 @@ class SessionsPage extends OpenClawLightDomElement {
 
   private async patchSession(
     key: string,
-    patch: Parameters<SessionsProps["onPatch"]>[1],
+    patch: SessionPatch,
     scope: SessionsPageRequestScope | null = this.captureRequestScope(),
   ): Promise<SessionsPageMutationResult> {
     if (!scope) {
       return "stale";
     }
     const agentId = this.sessionAgentId(key, scope.context);
+    // Every mutation proves its target. Callers that captured identity earlier
+    // (the group dialog) keep theirs; a direct row action reads it here, which is
+    // still the moment the operator acted.
+    const expectedSessionId = patch.expectedSessionId ?? this.sessionRowForKey(key)?.sessionId;
+    const identifiedPatch = {
+      ...patch,
+      ...(expectedSessionId ? { expectedSessionId } : {}),
+    };
     if (
       !this.requireMutationAccess(scope, {
         method: "sessions.patch",
-        params: { key, ...patch, ...(agentId ? { agentId } : {}) },
+        params: { key, ...identifiedPatch, ...(agentId ? { agentId } : {}) },
       })
     ) {
       return "failed";
     }
     try {
-      const patched = await scope.sessions.patch(key, patch, {
+      const patched = await scope.sessions.patch(key, identifiedPatch, {
         agentId,
       });
       if (!this.isRequestScopeCurrent(scope)) {
@@ -1168,6 +1198,11 @@ class SessionsPage extends OpenClawLightDomElement {
       return "completed";
     } catch (error) {
       if (this.isRequestScopeCurrent(scope)) {
+        // A rotation was re-aimed at the surviving session already, so this shape
+        // means the row is gone; recreating it under the same key is not a fix.
+        if (readSessionChangedTarget(error)) {
+          return "session-gone";
+        }
         this.error = String(error);
         return "failed";
       }
