@@ -132,6 +132,17 @@ function createImplicitGoogleVertexProvider(): ProviderConfig {
   };
 }
 
+const ZAI_PLUGIN_METADATA_SNAPSHOT = {
+  index: { plugins: [{ pluginId: "zai", enabled: true }] },
+  normalizePluginId: (pluginId: string) => pluginId,
+  manifestRegistry: { plugins: [], diagnostics: [] },
+  owners: {
+    providers: new Map([["zai", ["zai"]]]),
+    modelCatalogProviders: new Map([["zai", ["zai"]]]),
+    setupProviders: new Map(),
+  },
+} as unknown as Pick<PluginMetadataSnapshot, "index" | "manifestRegistry" | "owners">;
+
 async function resolveProvidersForConfigEnvTest(params: {
   cfg: OpenClawConfig;
   onResolveImplicitProviders: (env: NodeJS.ProcessEnv) => void;
@@ -509,16 +520,6 @@ describe("models-config", () => {
   });
 
   it("moves plugin-owned provider catalogs into plugin-scoped files", async () => {
-    const pluginMetadataSnapshot = {
-      index: { plugins: [{ pluginId: "zai", enabled: true }] },
-      normalizePluginId: (pluginId: string) => pluginId,
-      manifestRegistry: { plugins: [], diagnostics: [] },
-      owners: {
-        providers: new Map([["zai", ["zai"]]]),
-        modelCatalogProviders: new Map([["zai", ["zai"]]]),
-        setupProviders: new Map(),
-      },
-    } as unknown as Pick<PluginMetadataSnapshot, "index" | "manifestRegistry" | "owners">;
     const plan = await planOpenClawModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
@@ -529,7 +530,7 @@ describe("models-config", () => {
         } as NodeJS.ProcessEnv,
         existingRaw: "",
         existingParsed: null,
-        pluginMetadataSnapshot,
+        pluginMetadataSnapshot: ZAI_PLUGIN_METADATA_SNAPSHOT,
       },
       {
         resolveImplicitProviders: async () => ({
@@ -569,7 +570,7 @@ describe("models-config", () => {
             contents: plan.pluginCatalogWrites?.[zaiCatalogPath] ?? "",
           },
         ],
-        pluginMetadataSnapshot,
+        pluginMetadataSnapshot: ZAI_PLUGIN_METADATA_SNAPSHOT,
       });
       process.env["_CUSTOM_API_KEY"] = "custom-test-secret";
       process.env["_PLUGIN_CUSTOM_KEY"] = "plugin-test-secret";
@@ -606,22 +607,7 @@ describe("models-config", () => {
         "zai:default": { type: "api_key", provider: "zai", key: "zai-profile-secret" },
       },
     };
-    replaceRuntimeAuthProfileStoreSnapshots([
-      {
-        agentDir,
-        store: canonicalStore,
-      },
-    ]);
-    const pluginMetadataSnapshot = {
-      index: { plugins: [{ pluginId: "zai", enabled: true }] },
-      normalizePluginId: (pluginId: string) => pluginId,
-      manifestRegistry: { plugins: [], diagnostics: [] },
-      owners: {
-        providers: new Map([["zai", ["zai"]]]),
-        modelCatalogProviders: new Map([["zai", ["zai"]]]),
-        setupProviders: new Map(),
-      },
-    } as unknown as Pick<PluginMetadataSnapshot, "index" | "manifestRegistry" | "owners">;
+    replaceRuntimeAuthProfileStoreSnapshots([{ agentDir, store: canonicalStore }]);
 
     try {
       const plan = await planOpenClawModelsJsonWithDeps(
@@ -631,7 +617,7 @@ describe("models-config", () => {
           env: {},
           existingRaw: "",
           existingParsed: null,
-          pluginMetadataSnapshot,
+          pluginMetadataSnapshot: ZAI_PLUGIN_METADATA_SNAPSHOT,
         },
         {
           resolveImplicitProviders: async () => ({
@@ -664,7 +650,7 @@ describe("models-config", () => {
       const registry = ModelRegistry.create(authStorage, "/virtual/models.json", {
         modelsJsonContents: plan.contents,
         pluginCatalogs: [{ pluginId: "zai", contents: pluginContents }],
-        pluginMetadataSnapshot,
+        pluginMetadataSnapshot: ZAI_PLUGIN_METADATA_SNAPSHOT,
       });
       await expect(registry.getApiKeyForProvider("custom")).resolves.toBe("ABCDEF123456");
       await expect(registry.getApiKeyForProvider("zai")).resolves.toBe("zai-profile-secret");
