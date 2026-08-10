@@ -553,11 +553,13 @@ async function dispatchChannelTurnWithDeliveryOwner(
                         "deliverWithProviderMessageSending" in delivery &&
                         delivery.deliverWithProviderMessageSending
                       ) {
-                        const providerInfo = {
-                          ...info,
-                          ...(createDirectPendingFinalCustody(effectivePayload) ??
-                            NO_PENDING_FINAL_CUSTODY),
-                        };
+                        const providerInfo = info.onPlatformSendDispatch
+                          ? { ...info, onPlatformSendDispatch: info.onPlatformSendDispatch }
+                          : {
+                              ...info,
+                              ...(createDirectPendingFinalCustody(effectivePayload) ??
+                                NO_PENDING_FINAL_CUSTODY),
+                            };
                         directInfo = providerInfo;
                         result = await delivery.deliverWithProviderMessageSending(
                           effectivePayload,
@@ -583,8 +585,13 @@ async function dispatchChannelTurnWithDeliveryOwner(
                               "channel delivery adapter is missing a direct deliverer",
                             );
                           }
-                          const custody = createDirectPendingFinalCustody(effectivePayload);
-                          await custody?.onPlatformSendDispatch();
+                          if (info.onPlatformSendDispatch) {
+                            await info.onPlatformSendDispatch();
+                          } else {
+                            await createDirectPendingFinalCustody(
+                              effectivePayload,
+                            )?.onPlatformSendDispatch();
+                          }
                           result = await delivery.deliver(
                             effectivePayload,
                             toCoreManagedDeliveryInfo(info),

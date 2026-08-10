@@ -519,14 +519,25 @@ describe("channel turn delivery", () => {
 
   it("delegates routed hybrid delivery to the provider message hook owner", async () => {
     const runMessageSending = vi.fn();
+    const onPlatformSendDispatch = vi.fn(async () => undefined);
     getGlobalHookRunner.mockReturnValue({
       hasHooks: (name: string) => name === "message_sending",
       runMessageSending,
     });
-    const deliverWithProviderMessageSending = vi.fn(async () => ({
-      messageIds: ["provider-1"],
-      visibleReplySent: true,
-    }));
+    dispatchReplyWithRoutedChannelDispatcherCore.mockImplementationOnce(async (params) => {
+      await params.dispatcherOptions.deliver(
+        { text: "reply" },
+        { kind: "final", onPlatformSendDispatch },
+      );
+      return { queuedFinal: true, counts: { tool: 0, block: 0, final: 1 } };
+    });
+    const deliverWithProviderMessageSending = vi.fn(async (_payload, info) => {
+      await info.onPlatformSendDispatch();
+      return {
+        messageIds: ["provider-1"],
+        visibleReplySent: true,
+      };
+    });
 
     await dispatchRoutedChannelTurn({
       cfg,
@@ -543,6 +554,7 @@ describe("channel turn delivery", () => {
         onPlatformSendDispatch: expect.any(Function),
       }),
     );
+    expect(onPlatformSendDispatch).toHaveBeenCalledOnce();
     expect(runMessageSending).not.toHaveBeenCalled();
   });
 
