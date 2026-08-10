@@ -69,6 +69,8 @@ const repositoryScriptEntries = [
   "scripts/live-docker-normalize-config.ts!",
   "scripts/mcp-code-mode-gateway-e2e.ts!",
   "scripts/memory-index-manager.sync-repro.ts!",
+  // Frozen release tooling invokes the typed dependency-evidence entrypoint indirectly.
+  "scripts/generate-dependency-release-evidence.mts!",
   "scripts/openclaw-release-clawhub-plan.ts!",
   "scripts/openclaw-release-clawhub-runtime-state.ts!",
   // Oxlint loads this JS plugin by path from config/oxlint/boundary-guards.json.
