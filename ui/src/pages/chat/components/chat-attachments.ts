@@ -1,17 +1,7 @@
 // Shared attachment controls for chat and new-session composers.
-import { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
+import { canonicalizeBase64 } from "@openclaw/media-core/base64";
 import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import { html, nothing } from "lit";
-import {
-  CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
-  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
-  CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
-  CHAT_ATTACHMENT_MAX_ITEMS,
-  estimateChatAttachmentRequestBytes,
-  type ChatAttachmentLimits,
-  type ChatAttachmentSizeDescriptor,
-} from "../../../../../packages/gateway-protocol/src/chat-attachment-limits.ts";
 import { icons } from "../../../components/icons.ts";
 import "../../../components/tooltip.ts";
 import "../../../components/web-awesome.ts";
@@ -24,6 +14,12 @@ import {
   registerChatAttachmentPayload,
   releaseChatAttachmentPayload,
 } from "../attachment-payload-store.ts";
+import {
+  currentChatAttachments,
+  releaseAttachmentReservation,
+  reserveAttachmentFiles,
+  type ChatAttachmentReservationProps,
+} from "./chat-attachment-reservations.ts";
 
 const CHAT_ATTACHMENT_ACCEPT =
   "image/*,audio/*,video/*,application/pdf,text/*,.csv,.json,.md,.txt,.zip," +
@@ -35,55 +31,14 @@ const PASTED_TEXT_PREVIEW_MAX_LENGTH = 20;
 const largePastedTextAttachments = new WeakSet<ChatAttachment>();
 const pastedTextPreviews = new WeakMap<ChatAttachment, string>();
 
-export type ChatAttachmentControlsProps = {
-  attachments?: ChatAttachment[];
+export type ChatAttachmentControlsProps = ChatAttachmentReservationProps & {
   disabled?: boolean;
-  getAttachments?: () => ChatAttachment[];
-  draft?: string;
-  getDraft?: () => string;
   onAttachmentsChange?: (attachments: ChatAttachment[]) => void;
   onRemoveAttachment?: (attachment: ChatAttachment) => void;
-  onAttachmentError?: (message: string) => void;
   onDraftChange?: (next: string) => void;
   onPendingReadsChange?: (delta: 1 | -1) => void;
   onRequestUpdate?: () => void;
-  readSignal?: AbortSignal;
-  attachmentLimits?: Partial<ChatAttachmentLimits>;
 };
-
-const DEFAULT_ATTACHMENT_LIMITS: ChatAttachmentLimits = {
-  maxItems: CHAT_ATTACHMENT_MAX_ITEMS,
-  maxBytes: CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
-  maxImageBytes: MAX_IMAGE_BYTES,
-  maxAggregateDecodedBytes: CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
-  maxEncodedRequestBytes: CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
-};
-const pendingAttachmentReservations = new WeakMap<AbortSignal, ChatAttachmentSizeDescriptor[]>();
-
-function conservativeLimit(value: number | undefined, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
-    ? Math.min(value, fallback)
-    : fallback;
-}
-
-function resolveAttachmentLimits(limits?: Partial<ChatAttachmentLimits>): ChatAttachmentLimits {
-  return {
-    maxItems: conservativeLimit(limits?.maxItems, DEFAULT_ATTACHMENT_LIMITS.maxItems),
-    maxBytes: conservativeLimit(limits?.maxBytes, DEFAULT_ATTACHMENT_LIMITS.maxBytes),
-    maxImageBytes: conservativeLimit(
-      limits?.maxImageBytes,
-      DEFAULT_ATTACHMENT_LIMITS.maxImageBytes,
-    ),
-    maxAggregateDecodedBytes: conservativeLimit(
-      limits?.maxAggregateDecodedBytes,
-      DEFAULT_ATTACHMENT_LIMITS.maxAggregateDecodedBytes,
-    ),
-    maxEncodedRequestBytes: conservativeLimit(
-      limits?.maxEncodedRequestBytes,
-      DEFAULT_ATTACHMENT_LIMITS.maxEncodedRequestBytes,
-    ),
-  };
-}
 
 export class ChatAttachmentReadLifecycle {
   pendingReads = 0;
@@ -142,114 +97,6 @@ function isEditableDropTarget(event: DragEvent): boolean {
     return !editable.disabled && !editable.readOnly;
   }
   return editable instanceof HTMLElement && editable.isContentEditable;
-}
-
-function currentAttachments(props: ChatAttachmentControlsProps): ChatAttachment[] {
-  return props.getAttachments?.() ?? props.attachments ?? [];
-}
-
-function decodedDataUrlBytes(dataUrl: string): number | undefined {
-  const source = /^data:[^;]+;base64,(.*)$/u.exec(dataUrl)?.[1];
-  if (!source) {
-    return undefined;
-  }
-  const canonical = canonicalizeBase64(source);
-  return canonical === source ? estimateBase64DecodedBytes(canonical) : undefined;
-}
-
-function attachmentSizeDescriptor(attachment: ChatAttachment): ChatAttachmentSizeDescriptor {
-  const dataUrl = getChatAttachmentDataUrl(attachment);
-  const decodedBytes = attachment.sizeBytes ?? (dataUrl ? decodedDataUrlBytes(dataUrl) : undefined);
-  return {
-    decodedBytes: decodedBytes ?? 0,
-    fileName: attachment.fileName,
-    mimeType: attachment.mimeType,
-  };
-}
-
-function formatMiB(bytes: number): string {
-  return `${bytes / (1024 * 1024)} MiB`;
-}
-
-function reserveAttachmentFiles(
-  files: readonly File[],
-  props: ChatAttachmentControlsProps,
-): ChatAttachmentSizeDescriptor[] | undefined {
-  const limits = resolveAttachmentLimits(props.attachmentLimits);
-  const existing = currentAttachments(props).map(attachmentSizeDescriptor);
-  const pending = props.readSignal
-    ? (pendingAttachmentReservations.get(props.readSignal) ?? [])
-    : [];
-  const incoming = files.map((file) => ({
-    decodedBytes: file.size,
-    fileName: file.name || undefined,
-    mimeType: file.type || "application/octet-stream",
-  }));
-  const combined = [...existing, ...pending, ...incoming];
-  if (combined.length > limits.maxItems) {
-    props.onAttachmentError?.(t("chat.attachments.tooMany", { count: String(limits.maxItems) }));
-    return undefined;
-  }
-  const oversized = combined.find(
-    (attachment) =>
-      attachment.decodedBytes >
-      (attachment.mimeType.startsWith("image/") ? limits.maxImageBytes : limits.maxBytes),
-  );
-  if (oversized) {
-    const maxBytes = oversized.mimeType.startsWith("image/")
-      ? limits.maxImageBytes
-      : limits.maxBytes;
-    props.onAttachmentError?.(
-      t("chat.attachments.fileTooLarge", {
-        file: oversized.fileName ?? t("chat.attachments.attachedFile"),
-        limit: formatMiB(maxBytes),
-      }),
-    );
-    return undefined;
-  }
-  const aggregateBytes = combined.reduce((total, attachment) => total + attachment.decodedBytes, 0);
-  if (aggregateBytes > limits.maxAggregateDecodedBytes) {
-    props.onAttachmentError?.(
-      t("chat.attachments.totalTooLarge", {
-        limit: formatMiB(limits.maxAggregateDecodedBytes),
-      }),
-    );
-    return undefined;
-  }
-  const encodedRequestBytes = estimateChatAttachmentRequestBytes({
-    attachments: combined,
-    message: props.getDraft?.() ?? props.draft ?? "",
-  });
-  if (encodedRequestBytes >= limits.maxEncodedRequestBytes) {
-    props.onAttachmentError?.(
-      t("chat.attachments.requestTooLarge", {
-        limit: formatMiB(limits.maxEncodedRequestBytes),
-      }),
-    );
-    return undefined;
-  }
-  if (props.readSignal) {
-    pendingAttachmentReservations.set(props.readSignal, [...pending, ...incoming]);
-  }
-  return incoming;
-}
-
-function releaseAttachmentReservation(
-  reservation: readonly ChatAttachmentSizeDescriptor[],
-  readSignal?: AbortSignal,
-): void {
-  if (!readSignal) {
-    return;
-  }
-  const released = new Set(reservation);
-  const remaining = (pendingAttachmentReservations.get(readSignal) ?? []).filter(
-    (entry) => !released.has(entry),
-  );
-  if (remaining.length > 0) {
-    pendingAttachmentReservations.set(readSignal, remaining);
-  } else {
-    pendingAttachmentReservations.delete(readSignal);
-  }
 }
 
 function clickComposerInput(target: HTMLElement, selector: string) {
@@ -362,7 +209,7 @@ function handleLargeTextPaste(e: ClipboardEvent, props: ChatAttachmentControlsPr
   }
   try {
     const attachment = createLargePastedTextAttachment(text, file);
-    props.onAttachmentsChange([...currentAttachments(props), attachment]);
+    props.onAttachmentsChange([...currentChatAttachments(props), attachment]);
   } finally {
     releaseAttachmentReservation(reservation, props.readSignal);
   }
@@ -475,7 +322,7 @@ async function appendAttachmentFiles(files: readonly File[], props: ChatAttachme
     }
     // Keep the batch pending until its payloads are in the composer so an
     // immediate send cannot slip between FileReader completion and insertion.
-    props.onAttachmentsChange([...currentAttachments(props), ...additions]);
+    props.onAttachmentsChange([...currentChatAttachments(props), ...additions]);
   } finally {
     releaseAttachmentReservation(reservation, props.readSignal);
     props.onPendingReadsChange?.(-1);
@@ -505,7 +352,7 @@ export function handleChatAttachmentPaste(e: ClipboardEvent, props: ChatAttachme
     }
     try {
       props.onAttachmentsChange([
-        ...currentAttachments(props),
+        ...currentChatAttachments(props),
         chatAttachmentFromFile(pasted.file, pasted.dataUrl),
       ]);
     } finally {
@@ -523,7 +370,7 @@ function showPastedTextInComposer(att: ChatAttachment, props: ChatAttachmentCont
   if (!text || !props.onDraftChange) {
     return;
   }
-  const nextAttachments = currentAttachments(props).filter(
+  const nextAttachments = currentChatAttachments(props).filter(
     (attachment) => attachment.id !== att.id,
   );
   releaseChatAttachmentPayload(att.id);
@@ -702,7 +549,7 @@ function removeBrowserAnnotationAttachment(
     props.onRemoveAttachment(attachment);
     return;
   }
-  const next = currentAttachments(props).filter((candidate) => candidate.id !== attachment.id);
+  const next = currentChatAttachments(props).filter((candidate) => candidate.id !== attachment.id);
   releaseChatAttachmentPayload(attachment.id);
   props.onAttachmentsChange?.(next);
 }
@@ -834,7 +681,7 @@ export function renderAttachmentPreview(props: ChatAttachmentControlsProps) {
                     aria-label=${t("chat.composer.removeAttachment")}
                     ?disabled=${props.disabled}
                     @click=${() => {
-                      const next = currentAttachments(props).filter((a) => a.id !== att.id);
+                      const next = currentChatAttachments(props).filter((a) => a.id !== att.id);
                       releaseChatAttachmentPayload(att.id);
                       props.onAttachmentsChange?.(next);
                     }}

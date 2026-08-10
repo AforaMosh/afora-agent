@@ -532,7 +532,7 @@ export function resolveMediaFactIdentityIndexes(
       resolved.add(factIndex);
     }
   }
-  return [...resolved].sort((left, right) => left - right);
+  return [...resolved].toSorted((left, right) => left - right);
 }
 
 // Empty slots exist only to keep legacy parallel-array positions aligned;

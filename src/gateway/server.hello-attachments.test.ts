@@ -4,7 +4,6 @@ import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import {
   CHAT_ATTACHMENT_MAX_AGGREGATE_DECODED_BYTES,
-  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
   CHAT_ATTACHMENT_MAX_ENCODED_REQUEST_BYTES,
   CHAT_ATTACHMENT_MAX_ITEMS,
 } from "../../packages/gateway-protocol/src/chat-attachment-limits.js";

@@ -152,7 +152,8 @@ export function buildBeforeModelResolveAttachments(
   inputMedia: readonly { type?: "image" | "video"; mimeType?: string; data?: string }[] | undefined,
   mediaFacts?: readonly MediaFact[],
 ): PluginHookBeforeModelResolveAttachment[] | undefined {
-  const attachments = (mediaFacts ?? []).map((fact) => {
+  const attachments: PluginHookBeforeModelResolveAttachment[] = [];
+  for (const fact of mediaFacts ?? []) {
     const kind = isVideoMediaFact(fact)
       ? "video"
       : isImageMediaFact(fact)
@@ -162,14 +163,21 @@ export function buildBeforeModelResolveAttachments(
           : fact.kind === "document"
             ? "document"
             : "other";
-    return {
-      kind,
-      ...(fact.contentType ? { mimeType: fact.contentType } : {}),
-      ...(fact.sizeBytes !== undefined ? { sizeBytes: fact.sizeBytes } : {}),
-      ...(fact.sourceId ? { sourceId: fact.sourceId } : {}),
-      ...(fact.sourceIndex !== undefined ? { sourceIndex: fact.sourceIndex } : {}),
-    } satisfies PluginHookBeforeModelResolveAttachment;
-  });
+    const attachment: PluginHookBeforeModelResolveAttachment = { kind };
+    if (fact.contentType) {
+      attachment.mimeType = fact.contentType;
+    }
+    if (fact.sizeBytes !== undefined) {
+      attachment.sizeBytes = fact.sizeBytes;
+    }
+    if (fact.sourceId) {
+      attachment.sourceId = fact.sourceId;
+    }
+    if (fact.sourceIndex !== undefined) {
+      attachment.sourceIndex = fact.sourceIndex;
+    }
+    attachments.push(attachment);
+  }
   const factIndexes = readRuntimePromptImageFactIndexes(inputMedia);
   for (const [mediaIndex, media] of (inputMedia ?? []).entries()) {
     const inputSizeBytes =

@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import path from "node:path";
 import { APIError as AnthropicAPIError } from "@anthropic-ai/sdk/core/error.js";
 import type { AssistantMessageEventStreamLike, Context, Model } from "@openclaw/llm-core";
@@ -421,10 +422,12 @@ describe("provider and transport observable parity fixtures", () => {
         ],
       } satisfies Context;
       const onPayload = (payload: unknown) => {
-        const replacement = JSON.parse(JSON.stringify(payload)) as {
+        const replacement = structuredClone(payload) as {
           messages: Array<{ content: unknown[]; role: string }>;
         };
-        replacement.messages[0]!.content.push(
+        const firstMessage = replacement.messages[0];
+        assert(firstMessage);
+        firstMessage.content.push(
           { type: "input_video", video_url: "data:video/mp4;base64,aG9vay0x" },
           {
             type: "video",

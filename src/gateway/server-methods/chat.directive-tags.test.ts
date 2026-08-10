@@ -1817,7 +1817,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       originatingLeafEntryId: null,
     });
     operation.setPhase("running");
-    const queueMessage = vi.fn(async () => {});
+    const queueMessage = vi.fn(
+      async (_text: string, _options?: ReplyBackendQueueMessageOptions) => {},
+    );
     operation.attachBackend({
       kind: "embedded",
       runId: "active-run",
@@ -1856,7 +1858,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         ],
       }),
     );
-    const options = queueMessage.mock.calls[0]?.[1] as ReplyBackendQueueMessageOptions | undefined;
+    const options = queueMessage.mock.calls[0]?.[1];
     expect(options?.media).toHaveLength(1);
     expect(mockState.lastDispatchCtx).toBeUndefined();
   });
@@ -3476,9 +3478,12 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
           expect(broadcastContent[1]).toMatchObject({
             type: "image",
             artifactId: expect.any(String),
-            openUrl: expect.stringContaining("/api/chat/media/outgoing/"),
+            url: expect.stringMatching(/^\/api\/chat\/media\/outgoing\/[^/?#]+\/[^/?#]+\/full$/u),
+            openUrl: expect.stringMatching(
+              /^\/api\/chat\/media\/outgoing\/[^/?#]+\/[^/?#]+\/full$/u,
+            ),
           });
-          expect(broadcastContent[1]).not.toHaveProperty("url");
+          expect(broadcastContent[1]?.url).toBe(broadcastContent[1]?.openUrl);
           const assistantUpdates = findAssistantTranscriptUpdates();
           expect(assistantUpdates).toStrictEqual([]);
           const assistantEntries = await readActiveAssistantTranscriptMessages();
@@ -3755,9 +3760,10 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         expect(broadcastContent[1]).toMatchObject({
           type: "image",
           artifactId: expect.any(String),
-          openUrl: expect.stringContaining("/api/chat/media/outgoing/"),
+          url: expect.stringMatching(/^\/api\/chat\/media\/outgoing\/[^/?#]+\/[^/?#]+\/full$/u),
+          openUrl: expect.stringMatching(/^\/api\/chat\/media\/outgoing\/[^/?#]+\/[^/?#]+\/full$/u),
         });
-        expect(broadcastContent[1]).not.toHaveProperty("url");
+        expect(broadcastContent[1]?.url).toBe(broadcastContent[1]?.openUrl);
         const assistantEntries = await readActiveAssistantTranscriptMessages();
         expect(assistantEntries).toHaveLength(1);
         expect(assistantEntries[0]?.idempotencyKey).toBe(backedMirrorKey);

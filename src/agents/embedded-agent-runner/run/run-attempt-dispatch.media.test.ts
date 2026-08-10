@@ -179,7 +179,12 @@ describe("plugin harness prompt media", () => {
     await fs.mkdir(workspaceDir, { recursive: true });
     await fs.mkdir(inboundDir, { recursive: true });
     await fs.writeFile(imagePath, testCase.bytes);
-    const media = [{ path: imagePath, contentType: testCase.contentType, kind: testCase.kind }];
+    const mediaFact = {
+      path: imagePath,
+      contentType: testCase.contentType,
+      kind: testCase.kind,
+    };
+    const media = [mediaFact];
     const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
     setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
 
@@ -207,7 +212,7 @@ describe("plugin harness prompt media", () => {
         expect(result.images?.[0]?.mimeType).toBe("image/png");
         expect(JSON.stringify(result.media)).not.toContain(imagePath);
       } else {
-        expect(result.media?.[0]).toMatchObject(media[0]);
+        expect(result.media?.[0]).toMatchObject(mediaFact);
         expect(result.media?.[0]?.path).toBe(imagePath);
       }
     } finally {

@@ -284,14 +284,24 @@ export async function finalizeChatSendNonAgentReplies(params: {
   const persistedContentForAppend = hasAssistantDisplayMediaContent(persistedAssistantContent)
     ? persistedAssistantContent
     : undefined;
+  const assistantDisplayText = extractAssistantDisplayTextFromContent(assistantContent);
+  const mediaMessageDisplayText =
+    assistantDisplayText ??
+    (mediaMessage?.transcriptText
+      ? stripInlineDirectiveTagsForDisplay(mediaMessage.transcriptText).text.trim()
+      : undefined);
+  const broadcastMediaContent = hasAssistantDisplayMediaContent(mediaMessage?.content)
+    ? replaceAssistantContentTextBlocks(
+        mediaMessage?.content,
+        mediaMessageDisplayText
+          ? { content: [{ type: "text", text: mediaMessageDisplayText }] }
+          : null,
+      )
+    : undefined;
   const broadcastAssistantContent = hasAssistantDisplayMediaContent(assistantContent)
     ? assistantContent
-    : hasAssistantDisplayMediaContent(mediaMessage?.content)
-      ? mediaMessage?.content
-      : assistantContent;
-  const displayReply =
-    extractAssistantDisplayTextFromContent(assistantContent) ??
-    buildTranscriptReplyText(finalPayloads);
+    : (broadcastMediaContent ?? assistantContent);
+  const displayReply = assistantDisplayText ?? buildTranscriptReplyText(finalPayloads);
   const transcriptDisplayReply = displayReply
     ? stripInlineDirectiveTagsForDisplay(displayReply).text.trim()
     : "";

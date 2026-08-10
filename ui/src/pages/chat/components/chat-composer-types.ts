@@ -44,6 +44,13 @@ type ChatComposerDisabledBannerContent = {
 export type ChatComposerDisabledBanner = ChatComposerDisabledBannerContent &
   ({ kind: "above-composer" } | { kind: "composer-replacement" });
 
+export type ChatReplyTarget = {
+  messageId: string;
+  text: string;
+  senderLabel?: string | null;
+  sourceMessageId?: string | null;
+};
+
 export type ChatComposerProps = {
   paneId: string;
   sessionKey: string;
@@ -82,12 +89,7 @@ export type ChatComposerProps = {
   onPendingReadsChange?: (delta: 1 | -1) => void;
   attachmentLimits?: Partial<ChatAttachmentLimits>;
   onAttachmentError?: (message: string) => void;
-  replyTarget?: {
-    messageId: string;
-    text: string;
-    senderLabel?: string | null;
-    sourceMessageId?: string | null;
-  } | null;
+  replyTarget?: ChatReplyTarget | null;
   realtimeTalkActive?: boolean;
   realtimeTalkStatus?: RealtimeTalkStatus;
   realtimeTalkDetail?: string | null;

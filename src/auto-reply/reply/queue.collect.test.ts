@@ -3652,8 +3652,8 @@ describe("followup queue collect routing", () => {
             }
           | undefined
       )?.message;
-      expect(message?.__openclaw?.media?.map((fact) => fact.sourceIndex)).toEqual([0, 1, 2, 3]);
-      expect(message?.__openclaw?.mediaVideoDescriptions).toEqual([
+      expect(message?.["__openclaw"]?.media?.map((fact) => fact.sourceIndex)).toEqual([0, 1, 2, 3]);
+      expect(message?.["__openclaw"]?.mediaVideoDescriptions).toEqual([
         { sourceId: "first-video", sourceIndex: 1 },
         { sourceIndex: 3 },
       ]);
@@ -3711,7 +3711,7 @@ describe("followup queue collect routing", () => {
             };
           }
         | undefined
-    )?.__openclaw;
+    )?.["__openclaw"];
     expect(
       metadata?.media?.map(({ sourceId, sourceIndex }) => ({ sourceId, sourceIndex })),
     ).toEqual([

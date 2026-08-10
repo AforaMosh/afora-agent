@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { describe, expect, it } from "vitest";
 import { convertMessages } from "./openai-completions-messages.js";
 import {
@@ -444,7 +445,13 @@ describe("convertMessages provider-owned native video", () => {
 
   it.each([
     ["structured clone", (value: unknown) => structuredClone(value)],
-    ["JSON roundtrip", (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown],
+    [
+      "JSON roundtrip",
+      (value: unknown) => {
+        // oxlint-disable-next-line unicorn/prefer-structured-clone -- JSON serialization is the behavior under test.
+        return JSON.parse(JSON.stringify(value)) as unknown;
+      },
+    ],
   ])("preserves original video across a %s payload replacement", (_name, clone) => {
     const original = {
       messages: [
@@ -475,8 +482,10 @@ describe("convertMessages provider-owned native video", () => {
       ],
     };
     const provenance = captureOpenAICompatibleChatVideoProvenance(original);
-    const replacement = JSON.parse(JSON.stringify(original)) as typeof original;
-    replacement.messages[0]!.content.push(structuredClone(videoPart));
+    const replacement = structuredClone(original);
+    const firstMessage = replacement.messages[0];
+    assert(firstMessage);
+    firstMessage.content.push(structuredClone(videoPart));
 
     enforceOpenAICompatibleChatVideoRequestLimits(
       replacement,
@@ -498,16 +507,19 @@ describe("convertMessages provider-owned native video", () => {
   });
 
   it("rebuilds a provenance-matched part without hook-added video carriers", () => {
+    const augmented: Record<string, unknown> = {
+      type: "video_url",
+      video_url: { url: "data:video/mp4;base64,bmV3" },
+    };
     const original = {
       messages: [
         {
           role: "user",
-          content: [{ type: "video_url", video_url: { url: "data:video/mp4;base64,bmV3" } }],
+          content: [augmented],
         },
       ],
     };
     const provenance = captureOpenAICompatibleChatVideoProvenance(original);
-    const augmented = original.messages[0]!.content[0]! as Record<string, unknown>;
     augmented.blob = "private-hook-blob";
     augmented.image_url = {
       url: "data:video/mp4;base64,private-hook-image-url",
@@ -571,7 +583,9 @@ describe("convertMessages provider-owned native video", () => {
     };
     const provenance = captureOpenAICompatibleChatVideoProvenance(original);
     const request: { messages: Array<{ role: string; content: unknown[] }> } = original;
-    request.messages[0]!.content[0] = block(`data:video/mp4;base64,${data}`, data);
+    const firstMessage = request.messages[0];
+    assert(firstMessage);
+    firstMessage.content[0] = block(`data:video/mp4;base64,${data}`, data);
 
     enforceOpenAICompatibleChatVideoRequestLimits(request, videoModel, provenance);
 
@@ -593,7 +607,9 @@ describe("convertMessages provider-owned native video", () => {
     };
     const provenance = captureOpenAICompatibleChatVideoProvenance(original);
     const request: { messages: Array<{ role: string; content: unknown[] }> } = original;
-    request.messages[0]!.content.push(block(`data:video/mp4;base64,${injectedData}`, injectedData));
+    const firstMessage = request.messages[0];
+    assert(firstMessage);
+    firstMessage.content.push(block(`data:video/mp4;base64,${injectedData}`, injectedData));
 
     enforceOpenAICompatibleChatVideoRequestLimits(request, videoModel, provenance);
 
@@ -630,18 +646,28 @@ describe("convertMessages provider-owned native video", () => {
   it.each([
     [
       "reordered",
-      (request: { messages: Array<{ content: unknown[] }> }) =>
-        request.messages[0]!.content.reverse(),
+      (request: { messages: Array<{ content: unknown[] }> }) => {
+        const firstMessage = request.messages[0];
+        assert(firstMessage);
+        firstMessage.content.reverse();
+      },
     ],
     [
       "moved",
-      (request: { messages: Array<{ content: unknown[] }> }) =>
-        request.messages.push({ content: [request.messages[0]!.content.shift()] }),
+      (request: { messages: Array<{ content: unknown[] }> }) => {
+        const firstMessage = request.messages[0];
+        assert(firstMessage);
+        request.messages.push({ content: [firstMessage.content.shift()] });
+      },
     ],
     [
       "modified",
       (request: { messages: Array<{ content: Array<{ video_url?: { url: string } }> }> }) => {
-        request.messages[0]!.content[0]!.video_url!.url = "data:video/mp4;base64,bW9kaWZpZWQ=";
+        const firstMessage = request.messages[0];
+        assert(firstMessage);
+        const firstContent = firstMessage.content[0];
+        assert(firstContent?.video_url);
+        firstContent.video_url.url = "data:video/mp4;base64,bW9kaWZpZWQ=";
       },
     ],
   ])("fails closed when cloned hook video is %s", (_name, mutate) => {

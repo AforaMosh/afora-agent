@@ -6,6 +6,7 @@ import {
   resolveUserPath,
   TRANSCRIPT_CREDENTIAL_SAFETY_PROMPT,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { Model } from "openclaw/plugin-sdk/llm";
 import {
   COPILOT_ASK_USER_AVAILABLE_TOOLS,
   COPILOT_SETTLED_FINALIZATION_SYSTEM_MESSAGE,
@@ -304,10 +305,16 @@ async function resolvePromptImages(
   });
   return result.images;
 }
-function resolveImageCapabilityModel(params: AttemptParamsLike): { input?: string[] } {
+function resolveImageCapabilityModel(
+  params: AttemptParamsLike,
+): Pick<Model, "input" | "nativeVideoInput"> {
   const model = params.model;
-  if (model && typeof model === "object" && Array.isArray((model as { input?: unknown }).input)) {
-    return { input: (model as { input: string[] }).input };
+  if (model && typeof model === "object" && Array.isArray(model.input)) {
+    const nativeVideoInput = model.nativeVideoInput;
+    return {
+      input: nativeVideoInput ? model.input : model.input.filter((input) => input !== "video"),
+      ...(nativeVideoInput ? { nativeVideoInput } : {}),
+    };
   }
   return { input: ["image"] };
 }

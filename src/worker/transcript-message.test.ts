@@ -457,7 +457,7 @@ describe("worker transcript durable media projection", () => {
     };
 
     const result = toWorkerTranscriptMessage(message, "transcript");
-    if (!result || result.kind !== "complete") {
+    if (!result || result.kind !== "complete" || result.message.role !== "toolResult") {
       throw new Error("expected complete worker transcript projection");
     }
 

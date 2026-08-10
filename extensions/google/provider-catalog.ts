@@ -171,12 +171,16 @@ export async function buildGoogleLiveCatalogProvider(params: {
 }
 
 export function buildGoogleVertexStaticCatalogProvider(): ModelProviderConfig {
+  const models: ModelDefinitionConfig[] = [];
+  for (const model of GOOGLE_GEMINI_TEXT_MODELS) {
+    models.push({
+      ...model,
+      input: model.input.filter((capability) => capability !== "video"),
+    });
+  }
   return {
     baseUrl: GOOGLE_VERTEX_BASE_URL,
     api: "google-vertex",
-    models: GOOGLE_GEMINI_TEXT_MODELS.map((model) => ({
-      ...model,
-      input: model.input.filter((capability) => capability !== "video"),
-    })),
+    models,
   };
 }

@@ -43,6 +43,7 @@ import type { BackgroundTasksProps } from "./components/chat-background-tasks.ty
 import type {
   CapabilityMenuProps,
   ChatComposerDisabledBanner,
+  ChatReplyTarget,
 } from "./components/chat-composer-types.ts";
 import { isChatRunWorking, renderChatComposer } from "./components/chat-composer.ts";
 import { inlineChatImageFromEvent, openInlineChatImage } from "./components/chat-image-lightbox.ts";
@@ -76,13 +77,6 @@ import type { ChatRunUiStatus } from "./run-lifecycle.ts";
 import type { CompactionStatus, FallbackStatus, PlanStatus } from "./tool-stream.ts";
 import type { WorkspaceResultConflict } from "./workspace-conflict.ts";
 import "../../components/resizable-divider.ts";
-
-type ChatReplyTarget = {
-  messageId: string;
-  text: string;
-  senderLabel?: string | null;
-  sourceMessageId?: string | null;
-};
 
 export type ChatProps = ChatTaskSuggestionTrayProps & {
   transcript: ChatTranscriptController;

@@ -231,6 +231,32 @@ describe("OpenAI provider Codex transport hooks", () => {
     });
   });
 
+  it("does not advertise native video for registry-backed ChatGPT models", () => {
+    const provider = buildOpenAIProvider();
+    const model = provider.resolveDynamicModel?.({
+      provider: "openai",
+      modelId: "gpt-5.6-luna",
+      authProfileMode: "oauth",
+      providerConfig: CODEX_PROVIDER_CONFIG,
+      modelRegistry: {
+        find: () => ({
+          id: "gpt-5.6-luna",
+          name: "GPT-5.6 Luna",
+          provider: "openai",
+          api: "openai-responses",
+          baseUrl: "https://api.openai.com/v1",
+          reasoning: true,
+          input: ["text", "image", "video"],
+          cost: { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 1.25 },
+          contextWindow: 372_000,
+          maxTokens: 128_000,
+        }),
+      },
+    } as never);
+
+    expect(model?.input).toEqual(["text", "image"]);
+  });
+
   it("keeps default Codex-backed OpenAI catalog models on the Codex Responses transport", () => {
     const provider = buildOpenAIProvider();
 

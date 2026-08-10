@@ -101,6 +101,15 @@ type PromptMediaDependencies = {
 
 type PromptMediaEntry = { media: MediaContent; factIndex: ImageFactIndex; order: number };
 
+type PromptMediaOutcomeBlock =
+  | ({ kind: "media" } & PromptMediaEntry)
+  | {
+      kind: "omission";
+      factIndex: ImageFactIndex;
+      order: number;
+      omission: PromptVideoOmission;
+    };
+
 function videoFactReference(fact: MediaFact): DetectedPromptMediaRef | undefined {
   const inboundUri = [fact.url, fact.path].find((value) => value?.startsWith("media://inbound/"));
   const identity = inboundUri ?? fact.path ?? fact.url;
@@ -347,16 +356,21 @@ function finalizePromptMediaResult(params: {
             : (params.mediaFacts?.[factIndex]?.sourceIndex ?? factIndex),
     };
   });
-  const outcomeBlocks = [
-    ...imageEntries.map((entry) => ({ kind: "media" as const, ...entry })),
-    ...params.videoEntries.map((entry) => ({ kind: "media" as const, ...entry })),
-    ...params.videoOmissions.map((omission, index) => ({
-      kind: "omission" as const,
+  const outcomeBlocks: PromptMediaOutcomeBlock[] = [];
+  for (const entry of imageEntries) {
+    outcomeBlocks.push({ kind: "media", ...entry });
+  }
+  for (const entry of params.videoEntries) {
+    outcomeBlocks.push({ kind: "media", ...entry });
+  }
+  for (const [index, omission] of params.videoOmissions.entries()) {
+    outcomeBlocks.push({
+      kind: "omission",
       factIndex: omission.factIndex,
       order: params.videoOmissionOrders[index] ?? omission.sourceIndex,
       omission,
-    })),
-  ];
+    });
+  }
   // Existing block position is authoritative after input hooks. Hydrated facts
   // use their parser-owned source index, and factless insertions stay interleaved.
   const ordered = outcomeBlocks.toSorted((left, right) => left.order - right.order);

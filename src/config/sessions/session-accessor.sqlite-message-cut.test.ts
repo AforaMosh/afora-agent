@@ -30,10 +30,8 @@ import {
   updateSessionEntry,
   upsertSessionEntry,
 } from "./session-accessor.js";
-import {
-  extractEditorAttachments,
-  listSqliteSessionBranches,
-} from "./session-accessor.sqlite-message-cut.js";
+import { extractEditorAttachments } from "./session-accessor.sqlite-message-cut-media.js";
+import { listSqliteSessionBranches } from "./session-accessor.sqlite-message-cut.js";
 import type { InternalSessionEntry } from "./types.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);

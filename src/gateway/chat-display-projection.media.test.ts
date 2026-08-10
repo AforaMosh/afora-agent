@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createNoisyPngBuffer } from "../../test/helpers/image-fixtures.js";
-import { projectChatDisplayMessages } from "./chat-display-projection.js";
+import {
+  projectChatDisplayMessages,
+  projectLiveChatDisplayMessage,
+} from "./chat-display-projection.js";
 import { sanitizeChatHistoryMediaContentBlock } from "./chat-display-projection.media.js";
 import {
   CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES,
@@ -22,6 +25,61 @@ function projectHistoryTransports(message: Record<string, unknown>) {
 }
 
 describe("oversized multimodal chat history", () => {
+  it("preserves canonical inline assistant images only in live display projection", () => {
+    const imageUrl = "data:image/png;base64,cG5n";
+    const message = {
+      role: "assistant",
+      content: [
+        { type: "text", text: "[[reply_to_current]]Visible reply" },
+        {
+          type: "input_image",
+          image_url: imageUrl,
+          providerMetadata: { private: true },
+        },
+      ],
+      providerReplay: { private: true },
+      details: { private: true },
+    };
+
+    expect(projectChatDisplayMessages([message])).toEqual([
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "Visible reply" },
+          {
+            type: "input_image",
+            image_url: "[media data omitted]",
+            providerMetadata: { private: true },
+          },
+        ],
+      },
+    ]);
+    expect(projectLiveChatDisplayMessage(message)).toEqual({
+      role: "assistant",
+      content: [
+        { type: "text", text: "Visible reply" },
+        { type: "input_image", image_url: imageUrl },
+      ],
+    });
+  });
+
+  it.each([
+    {
+      name: "inline video",
+      block: { type: "input_video", video_url: "data:video/mp4;base64,cG5n" },
+      privateValue: "data:video/mp4;base64,cG5n",
+    },
+    {
+      name: "noncanonical image base64",
+      block: { type: "input_image", image_url: "data:image/png;base64,cG4" },
+      privateValue: "data:image/png;base64,cG4",
+    },
+  ])("does not preserve $name in live display projection", ({ block, privateValue }) => {
+    const projected = projectLiveChatDisplayMessage({ role: "assistant", content: [block] });
+
+    expect(JSON.stringify(projected)).not.toContain(privateValue);
+  });
+
   it.each([
     {
       name: "native image data",

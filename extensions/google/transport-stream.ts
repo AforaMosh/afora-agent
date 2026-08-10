@@ -628,14 +628,14 @@ function collectGoogleContentPartLists(request: GoogleGenerateContentRequest) {
   }> = [];
   for (let contentIndex = 0; contentIndex < request.contents.length; contentIndex += 1) {
     const content = request.contents[contentIndex];
-    const parts = content?.parts;
-    if (Array.isArray(parts)) {
-      contentPartLists.push({
-        contentIndex,
-        parts: parts as MutableGooglePart[],
-        role: content.role,
-      });
+    if (!content || !Array.isArray(content.parts)) {
+      continue;
     }
+    contentPartLists.push({
+      contentIndex,
+      parts: content.parts as MutableGooglePart[],
+      role: content.role,
+    });
   }
   return contentPartLists;
 }
@@ -1077,8 +1077,7 @@ function convertGoogleMessages(
     activeToolResultParts = undefined;
   };
 
-  for (let messageIndex = 0; messageIndex < transformedMessages.length; messageIndex += 1) {
-    const msg = transformedMessages[messageIndex];
+  for (const msg of transformedMessages) {
     if (!msg) {
       continue;
     }

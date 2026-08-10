@@ -106,7 +106,9 @@ describe("buildGoogleProvider native video contract", () => {
     ],
     [
       "credential-bearing AI Studio URL",
-      { baseUrl: "https://user" + ":secret@generativelanguage.googleapis.com/v1beta" },
+      {
+        baseUrl: ["https://user", ":secret@", "generativelanguage.googleapis.com/v1beta"].join(""),
+      },
       "google",
     ],
   ] as const)("does not attach native video for %s", (_label, overrides, provider) => {

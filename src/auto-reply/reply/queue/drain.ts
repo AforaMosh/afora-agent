@@ -429,7 +429,7 @@ function resolveFollowupTranscriptTarget(source: FollowupRun) {
 function readPersistedVideoDescriptions(message: object | undefined): MediaFactIdentity[] {
   const descriptions = (
     message as { __openclaw?: { mediaVideoDescriptions?: unknown } } | undefined
-  )?.__openclaw?.mediaVideoDescriptions;
+  )?.["__openclaw"]?.mediaVideoDescriptions;
   return normalizeMediaFactIdentities(descriptions);
 }
 

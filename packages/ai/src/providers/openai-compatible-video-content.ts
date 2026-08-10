@@ -29,7 +29,7 @@ type OpenAICompatibleChatVideoProvenanceEntry = {
   occurrence: number;
   priorityTier: OpenAICompatibleChatVideoPriorityTier;
 };
-export type OpenAICompatibleChatVideoProvenance = {
+type OpenAICompatibleChatVideoProvenance = {
   byIdentity: WeakMap<object, OpenAICompatibleChatVideoProvenanceEntry>;
   byLocation: Map<string, OpenAICompatibleChatVideoProvenanceEntry>;
 };

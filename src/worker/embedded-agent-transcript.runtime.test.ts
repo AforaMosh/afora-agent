@@ -235,7 +235,7 @@ describe("worker video downgrade boundaries", () => {
       isError: false,
       timestamp: 1,
     });
-    await runtime.withSessionWriteLock(() => undefined);
+    await runtime.withSessionWriteSettlement(() => undefined);
 
     expect(commit).toHaveBeenCalledWith([
       expect.objectContaining({

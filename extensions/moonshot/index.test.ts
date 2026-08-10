@@ -60,7 +60,10 @@ describe("moonshot provider plugin", () => {
       { ...baseModel, api: "anthropic-messages" as const },
       { ...baseModel, baseUrl: "https://proxy.example.test/v1" },
       { ...baseModel, baseUrl: "https://api.moonshot.ai/v1?token=inline" },
-      { ...baseModel, baseUrl: "https://user" + ":secret@api.moonshot.ai/v1" },
+      {
+        ...baseModel,
+        baseUrl: ["https://user", ":secret@", "api.moonshot.ai/v1"].join(""),
+      },
       { ...baseModel, provider: "kimi-coding" },
     ]) {
       expect(normalize(candidate, candidate.provider)).not.toHaveProperty("nativeVideoInput");

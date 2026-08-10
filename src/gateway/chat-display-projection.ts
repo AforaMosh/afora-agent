@@ -4,6 +4,7 @@ export {
   projectChatDisplayMessage,
   projectChatDisplayMessages,
   projectChatDisplayMessagesWithState,
+  projectLiveChatDisplayMessage,
   projectRecentChatDisplayMessages,
 } from "./chat-display-projection.core.js";
 export {

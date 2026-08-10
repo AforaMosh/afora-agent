@@ -10,12 +10,13 @@ import { isMediaPayloadContainerKey } from "../media/media-reference-projection.
 
 const REDACTED_MEDIA_DATA = "<redacted>";
 const REDACTED_MEDIA_REFERENCE = "<redacted-media-reference>";
+const UNREADABLE_PROPERTY = "[unreadable property]";
 const INLINE_MEDIA_DATA_URL_RE =
   /^data:((?:audio|image|video)\/[^;,\s]+)(?:;[^,\s]+)*;base64,([\s\S]*)$/iu;
 // Consume the complete suffix because base64 data can be folded across lines;
 // stopping at the first fragment would persist the remaining media bytes.
 const EMBEDDED_MEDIA_DATA_URL_RE =
-  /\bdata:(?:audio|image|video)\/[^;,\s]+(?:;[^,\s]+)*,[\s\S]*$/giu;
+  /\bdata:(?:(?:audio|image|video)\/[^;,\s]+(?:;[^;,\s]+)*|(?:;[^;,\s]+)*;base64),[\s\S]*$/giu;
 const MEDIA_ATTACHED_NOTE_RE = /\[media attached(?: [^:\]]+)?:[^\]]*\]/giu;
 const MEDIA_DIRECTIVE_RE = /\bMEDIA:(?:file:\/\/)?[^\s]+/giu;
 const MEDIA_REFERENCE_FIELDS = new Set([
@@ -62,6 +63,43 @@ const NON_CREDENTIAL_FIELD_NAMES = new Set([
 const AUTHORIZATION_VALUE_RE = /\b(Bearer|Basic)\s+[A-Za-z0-9+/._~=-]{8,}/giu;
 const JWT_VALUE_RE = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/gu;
 const COOKIE_PAIR_RE = /\b([A-Za-z][A-Za-z0-9_.-]{1,64})=([A-Za-z0-9+/._~%=-]{16,})(?=;|\s|$)/gu;
+
+type ReadablePropertySnapshot = {
+  arrayLength?: number;
+  record: Record<string, unknown>;
+};
+
+function snapshotReadableProperties(
+  value: object,
+  cache: WeakMap<object, ReadablePropertySnapshot>,
+): ReadablePropertySnapshot {
+  const existing = cache.get(value);
+  if (existing) {
+    return existing;
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const entries: Array<[string, unknown]> = [];
+  for (const [key, descriptor] of Object.entries(descriptors)) {
+    if (!descriptor.enumerable) {
+      continue;
+    }
+    if ("value" in descriptor) {
+      entries.push([key, descriptor.value]);
+      continue;
+    }
+    try {
+      entries.push([key, descriptor.get ? descriptor.get.call(value) : UNREADABLE_PROPERTY]);
+    } catch {
+      entries.push([key, UNREADABLE_PROPERTY]);
+    }
+  }
+  const snapshot = {
+    arrayLength: Array.isArray(value) ? (descriptors.length?.value as number) : undefined,
+    record: Object.fromEntries(entries),
+  };
+  cache.set(value, snapshot);
+  return snapshot;
+}
 
 function normalizeFieldName(value: string): string {
   return normalizeLowercaseStringOrEmpty(value.replaceAll(/[^a-z0-9]/gi, ""));
@@ -166,11 +204,12 @@ function redactInlineMediaFields(
 function redactInlineMediaDataUrl(
   record: Record<string, unknown>,
   out: Record<string, unknown>,
+  snapshotRecord: (value: object) => Record<string, unknown>,
 ): void {
   for (const field of INLINE_MEDIA_URL_FIELDS) {
     const value = record[field];
     const nested = value && typeof value === "object" && !Array.isArray(value);
-    const url = nested ? (value as Record<string, unknown>).url : value;
+    const url = nested ? snapshotRecord(value).url : value;
     if (typeof url !== "string") {
       continue;
     }
@@ -203,11 +242,9 @@ function visitDiagnosticPayload(
   },
 ): unknown {
   const seen = new WeakSet<object>();
+  const snapshots = new WeakMap<object, ReadablePropertySnapshot>();
 
   const visit = (input: unknown, insideMedia = false): unknown => {
-    if (Array.isArray(input)) {
-      return input.map((entry) => visit(entry, insideMedia));
-    }
     if (typeof input === "string") {
       const redacted = redactSensitivePayloadString(input);
       return opts?.redactMediaLocations
@@ -222,8 +259,9 @@ function visitDiagnosticPayload(
     }
     seen.add(input);
 
-    const record = input as Record<string, unknown>;
-    const out: Record<string, unknown> = {};
+    const readable = snapshotReadableProperties(input, snapshots);
+    const record = readable.record;
+    const outputEntries: Array<[string, unknown]> = [];
     const redactValueField = hasSensitiveNameValuePair(record);
     const mediaContext = insideMedia || isMediaProjectionRecord(record);
     for (const [key, val] of Object.entries(record)) {
@@ -236,17 +274,31 @@ function visitDiagnosticPayload(
         MEDIA_REFERENCE_FIELDS.has(key) &&
         typeof val === "string"
       ) {
-        out[key] = REDACTED_MEDIA_REFERENCE;
+        outputEntries.push([key, REDACTED_MEDIA_REFERENCE]);
         continue;
       }
-      out[key] =
+      outputEntries.push([
+        key,
         redactValueField && key === "value"
           ? "<redacted>"
-          : visit(val, mediaContext || isMediaPayloadContainerKey(key));
+          : visit(val, mediaContext || isMediaPayloadContainerKey(key)),
+      ]);
     }
 
+    const objectOutput = Object.fromEntries(outputEntries);
+    let arrayOutput: unknown[] | undefined;
+    if (readable.arrayLength !== undefined) {
+      arrayOutput = [];
+      arrayOutput.length = readable.arrayLength;
+      Object.defineProperties(arrayOutput, Object.getOwnPropertyDescriptors(objectOutput));
+    }
+    const out = (arrayOutput ?? objectOutput) as Record<string, unknown>;
     redactInlineMediaFields(record, out, mediaContext);
-    redactInlineMediaDataUrl(record, out);
+    redactInlineMediaDataUrl(
+      record,
+      out,
+      (nestedValue) => snapshotReadableProperties(nestedValue, snapshots).record,
+    );
     return out;
   };
 

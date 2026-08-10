@@ -210,7 +210,10 @@ describe("canonical persisted media", () => {
         media: [
           { path: `data:image/png;base64,${inlinePayload}`, contentType: "image/png" },
           {
-            url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+            url: [
+              "https://user",
+              ":password@cdn.example.test/clip.mp4?signature=private#preview",
+            ].join(""),
             contentType: "video/mp4",
           },
         ],
@@ -229,8 +232,10 @@ describe("canonical persisted media", () => {
 
 describe("runtime media facts", () => {
   it("preserves trimmed authenticated runtime references needed for fetching", () => {
-    const authenticatedReference =
-      "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview";
+    const authenticatedReference = [
+      "https://user",
+      ":password@cdn.example.test/clip.mp4?signature=private#preview",
+    ].join("");
 
     expect(
       normalizeMediaFacts([

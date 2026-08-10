@@ -1,6 +1,6 @@
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { getReplyPayloadMetadata, type ReplyPayload } from "../../auto-reply/reply-payload.js";
-import { projectChatDisplayMessage } from "../chat-display-projection.js";
+import { projectLiveChatDisplayMessage } from "../chat-display-projection.js";
 import {
   resolveSessionSubscriptionKey,
   resolveSessionSubscriptionKeys,
@@ -80,7 +80,7 @@ export function broadcastChatFinal(params: {
     ...(payloadAgentId ? { agentId: payloadAgentId } : {}),
     seq,
     state: "final" as const,
-    message: projectChatDisplayMessage(params.message),
+    message: projectLiveChatDisplayMessage(params.message),
   };
   params.context.broadcast("chat", payload, {
     sessionKeys: resolveChatSessionKeys({

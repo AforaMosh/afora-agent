@@ -214,6 +214,29 @@ describe("sanitizeDiagnosticPayload", () => {
     },
   );
 
+  it.each([
+    { name: "diagnostic", sanitize: sanitizeDiagnosticPayload },
+    { name: "model-visible", sanitize: sanitizeModelVisibleMediaPayload },
+  ])(
+    "redacts MIME-less base64 data URLs in $name strings without broadening typed data URI redaction",
+    ({ sanitize }) => {
+      const fragments = ["cHJpdmF0ZS", "1taW1lbGVz", "cy1wYXlsb2Fk"];
+      const folded = `captured: data:;base64,${fragments.join(" \t\n")}`;
+      const parameterized = `captured: data:;charset=utf-8;base64,${mediaData}`;
+      const pdf = `document: data:application/pdf;base64,${mediaData}`;
+      const ordinaryText = "note: data:;charset=utf-8,ordinary%20text";
+      const foldedProjection = String(sanitize(folded));
+
+      expect(foldedProjection).toBe("captured: <redacted>");
+      expect(sanitize(parameterized)).toBe("captured: <redacted>");
+      expect(sanitize(pdf)).toBe(pdf);
+      expect(sanitize(ordinaryText)).toBe(ordinaryText);
+      for (const fragment of fragments) {
+        expect(foldedProjection).not.toContain(fragment);
+      }
+    },
+  );
+
   it("redacts non-base64 media data URLs in arbitrary diagnostic strings", () => {
     expect(
       sanitizeDiagnosticPayload(
@@ -326,5 +349,63 @@ describe("sanitizeDiagnosticPayload", () => {
     for (const fragment of fragments) {
       expect(projected).not.toContain(fragment);
     }
+  });
+
+  it.each([
+    { name: "diagnostic", sanitize: sanitizeDiagnosticPayload },
+    { name: "model-visible", sanitize: sanitizeModelVisibleMediaPayload },
+  ])("contains unreadable own enumerable accessors in the $name projection", ({ sanitize }) => {
+    const items: unknown[] = [];
+    items.length = 1;
+    Object.defineProperty(items, "0", {
+      enumerable: true,
+      get() {
+        throw new Error("synthetic array accessor failure");
+      },
+    });
+    const payload = { items, safe: "keep" } as Record<string, unknown>;
+    Object.defineProperty(payload, "throwing", {
+      enumerable: true,
+      get() {
+        throw new Error("synthetic accessor failure");
+      },
+    });
+    Object.defineProperty(payload, "writeOnly", {
+      enumerable: true,
+      set(_value: unknown) {},
+    });
+
+    expect(sanitize(payload)).toEqual({
+      items: ["[unreadable property]"],
+      safe: "keep",
+      throwing: "[unreadable property]",
+      writeOnly: "[unreadable property]",
+    });
+  });
+
+  it.each([
+    { name: "diagnostic", sanitize: sanitizeDiagnosticPayload },
+    { name: "model-visible", sanitize: sanitizeModelVisibleMediaPayload },
+  ])("reads a successful nested media accessor once in the $name projection", ({ sanitize }) => {
+    let reads = 0;
+    const imageUrl = {} as Record<string, unknown>;
+    Object.defineProperty(imageUrl, "url", {
+      enumerable: true,
+      get() {
+        reads += 1;
+        return `data:image/png;base64,${mediaData}`;
+      },
+    });
+
+    expect(sanitize({ type: "image_url", image_url: imageUrl })).toEqual({
+      type: "image_url",
+      image_url: {
+        url: "<redacted>",
+        mimeType: "image/png",
+        bytes: 11,
+        sha256: mediaDigest,
+      },
+    });
+    expect(reads).toBe(1);
   });
 });

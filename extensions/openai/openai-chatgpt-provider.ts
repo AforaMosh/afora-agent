@@ -389,9 +389,12 @@ function withDefaultCodexContextMetadata(params: {
       : typeof params.model.contextWindow === "number" && params.model.contextWindow > 0
         ? Math.min(params.contextTokens, params.model.contextWindow)
         : params.contextTokens;
-  const input = params.model.input?.includes("image")
-    ? params.model.input
-    : uniqueValues<"text" | "image">([...(params.model.input ?? ["text"]), "image"]);
+  const supportedInput = params.model.input?.filter(
+    (input): input is "text" | "image" => input === "text" || input === "image",
+  );
+  const input = supportedInput?.includes("image")
+    ? supportedInput
+    : uniqueValues<"text" | "image">([...(supportedInput ?? ["text"]), "image"]);
   return {
     ...params.model,
     input,

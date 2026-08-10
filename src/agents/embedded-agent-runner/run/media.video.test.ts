@@ -620,35 +620,34 @@ describe("native prompt video replay", () => {
   });
 
   it("keeps paired replay identities paired across duplicate IDs and indexes", async () => {
-    const message = JSON.parse(
-      JSON.stringify({
-        role: "user" as const,
-        content: "the fallback caption describes only the exact pair",
-        __openclaw: {
-          media: [
-            {
-              sourceId: "duplicate-id",
-              sourceIndex: 5,
-              path: "/missing/exact.mp4",
-              contentType: "video/mp4",
-            },
-            {
-              sourceId: "duplicate-id",
-              sourceIndex: 6,
-              path: "/missing/same-id.mp4",
-              contentType: "video/mp4",
-            },
-            {
-              sourceId: "other-id",
-              sourceIndex: 5,
-              path: "/missing/same-index.mp4",
-              contentType: "video/mp4",
-            },
-          ],
-          mediaVideoDescriptions: [{ sourceId: "duplicate-id", sourceIndex: 5 }],
-        },
-      }),
-    ) as AgentMessage;
+    const message = structuredClone({
+      role: "user" as const,
+      content: "the fallback caption describes only the exact pair",
+      timestamp: 1,
+      __openclaw: {
+        media: [
+          {
+            sourceId: "duplicate-id",
+            sourceIndex: 5,
+            path: "/missing/exact.mp4",
+            contentType: "video/mp4",
+          },
+          {
+            sourceId: "duplicate-id",
+            sourceIndex: 6,
+            path: "/missing/same-id.mp4",
+            contentType: "video/mp4",
+          },
+          {
+            sourceId: "other-id",
+            sourceIndex: 5,
+            path: "/missing/same-index.mp4",
+            contentType: "video/mp4",
+          },
+        ],
+        mediaVideoDescriptions: [{ sourceId: "duplicate-id", sourceIndex: 5 }],
+      },
+    }) as AgentMessage;
     const [replayed] = await hydratePromptMediaMessages([message], {
       workspaceDir: os.tmpdir(),
       model: { input: ["text", "image"] },
@@ -677,7 +676,7 @@ describe("native prompt video replay", () => {
     });
 
     expect(
-      (message as unknown as { __openclaw?: Record<string, unknown> }).__openclaw,
+      (message as unknown as { __openclaw?: Record<string, unknown> })["__openclaw"],
     ).toMatchObject({
       mediaVideoDescriptions: [{ sourceId: "unique-id" }, { sourceId: "duplicate-id" }],
     });

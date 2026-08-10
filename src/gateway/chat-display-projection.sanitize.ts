@@ -131,7 +131,11 @@ function projectLegacyChatHistoryMediaCarriers(entry: Record<string, unknown>): 
 
 export function sanitizeChatHistoryContentBlock(
   block: unknown,
-  opts?: { preserveExactToolPayload?: boolean; maxChars?: number },
+  opts?: {
+    preserveExactToolPayload?: boolean;
+    preserveInlineImageData?: boolean;
+    maxChars?: number;
+  },
 ): { block: unknown; changed: boolean } {
   if (!block || typeof block !== "object") {
     return { block, changed: false };
@@ -195,7 +199,9 @@ export function sanitizeChatHistoryContentBlock(
     delete entry.openclawReasoningReplay;
     changed = true;
   }
-  const sanitizedMedia = sanitizeChatHistoryMediaContentBlock(entry);
+  const sanitizedMedia = sanitizeChatHistoryMediaContentBlock(entry, {
+    preserveInlineImageData: opts?.preserveInlineImageData,
+  });
   if (sanitizedMedia) {
     const mediaChanged = changed || sanitizedMedia.changed;
     return { block: mediaChanged ? sanitizedMedia.block : block, changed: mediaChanged };
@@ -372,6 +378,7 @@ function projectWorkspaceConflictDetails(
 export function sanitizeChatHistoryMessage(
   message: unknown,
   maxChars: number = DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS,
+  opts?: { preserveInlineImageData?: boolean },
 ): { message: unknown; changed: boolean } {
   if (!message || typeof message !== "object") {
     return { message, changed: false };
@@ -481,6 +488,8 @@ export function sanitizeChatHistoryMessage(
     const updated = entry.content.map((block) => {
       const sanitized = sanitizeChatHistoryContentBlock(block, {
         preserveExactToolPayload,
+        preserveInlineImageData:
+          entry.role === "assistant" && opts?.preserveInlineImageData === true,
         maxChars,
       });
       if (
@@ -598,6 +607,7 @@ export function shouldDropAssistantHistoryMessage(message: unknown): boolean {
 export function sanitizeChatHistoryMessages(
   messages: unknown[],
   maxChars: number = DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS,
+  opts?: { preserveInlineImageData?: boolean },
 ): unknown[] {
   if (messages.length === 0) {
     return messages;
@@ -609,7 +619,7 @@ export function sanitizeChatHistoryMessages(
       changed = true;
       continue;
     }
-    const res = sanitizeChatHistoryMessage(message, maxChars);
+    const res = sanitizeChatHistoryMessage(message, maxChars, opts);
     changed ||= res.changed;
     if (shouldDropAssistantHistoryMessage(res.message)) {
       changed = true;

@@ -1,7 +1,6 @@
 import path from "node:path";
 import { formatNativeVideoOmission, type NativeVideoOmissionReason } from "@openclaw/llm-core";
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { formatErrorMessage } from "../../../infra/errors.js";
 import { assertNoWindowsNetworkPath, safeFileURLToPath } from "../../../infra/local-file-access.js";
 import type { ImageContent, MediaContent, Model } from "../../../llm/types.js";
 import {
@@ -16,23 +15,14 @@ import {
   readRuntimePromptMediaFacts,
   readPersistedMediaFacts,
 } from "../../../media/media-facts.js";
-import {
-  resolveInboundMediaReference,
-  resolveMediaReferenceLocalPath,
-} from "../../../media/media-reference.js";
 import type { PromptImageOrderEntry } from "../../../media/prompt-image-order.js";
 import {
   finalizeRuntimePromptImages,
   readRuntimePromptImageFactIndexes,
 } from "../../../media/runtime-prompt-image-provenance.js";
-import { loadWebMedia } from "../../../media/web-media.js";
 import { resolveUserPath } from "../../../utils.js";
 import type { ImageSanitizationLimits } from "../../image-sanitization.js";
 import type { AgentMessage } from "../../runtime/index.js";
-import {
-  createSandboxBridgeReadFile,
-  resolveSandboxedBridgeMediaPath,
-} from "../../sandbox-media-paths.js";
 import type { SandboxFsBridge } from "../../sandbox/fs-bridge.js";
 import { sanitizeImageBlocks } from "../../tool-images.js";
 import { log } from "../logger.js";
@@ -51,6 +41,7 @@ import {
   readPersistedMediaImageLayout,
   resolveLayoutInlineFactIndexes,
 } from "./prompt-image-metadata.js";
+import { loadPromptMediaFromRef } from "./prompt-media-read.js";
 import {
   hydrateNativePromptMedia,
   type DetectedPromptMediaRef,
@@ -58,7 +49,6 @@ import {
   type PromptImageLoadResult,
   type PromptMediaLoadParams,
   type PromptMediaLoadResult,
-  type PromptMediaReadOptions,
 } from "./prompt-media.js";
 
 export { hasHydratableMediaImages } from "./images.media-refs.js";
@@ -292,87 +282,6 @@ function rawAliasDedupeKey(alias: string): string | undefined {
     /^[a-z][a-z0-9+.-]*:/i.test(alias)
     ? normalizeRefForDedupe(alias)
     : undefined;
-}
-
-async function loadPromptMediaFromRef(
-  ref: DetectedImageRef,
-  workspaceDir: string,
-  options: PromptMediaReadOptions,
-): Promise<MediaContent | null> {
-  try {
-    let targetPath = ref.resolved;
-    let managedInboundHostRead = false;
-
-    if (!options.sandbox) {
-      targetPath = await resolveMediaReferenceLocalPath(targetPath);
-    }
-
-    if (options.sandbox) {
-      try {
-        const resolved = await resolveSandboxedBridgeMediaPath({
-          sandbox: {
-            root: options.sandbox.root,
-            bridge: options.sandbox.bridge,
-            workspaceOnly: options.workspaceOnly,
-          },
-          mediaPath: targetPath,
-          inboundFallbackDir: "media/inbound",
-        });
-        targetPath = resolved.resolved;
-      } catch (err) {
-        // Gateway-owned inbound video is intentionally never staged: the sandbox's
-        // tool-file limit is smaller than the model's native-video contract.
-        const inbound =
-          options.kind === "video"
-            ? await resolveInboundMediaReference(targetPath).catch(() => undefined)
-            : undefined;
-        if (!inbound) {
-          log.debug(
-            `Native ${options.kind}: sandbox validation failed for ${ref.resolved}: ${formatErrorMessage(err)}`,
-          );
-          return null;
-        }
-        targetPath = inbound.physicalPath;
-        managedInboundHostRead = true;
-      }
-    } else if (!path.isAbsolute(targetPath)) {
-      targetPath = path.resolve(workspaceDir, targetPath);
-    }
-
-    const media =
-      options.sandbox && !managedInboundHostRead
-        ? await loadWebMedia(targetPath, {
-            maxBytes: options.maxBytes,
-            sandboxValidated: true,
-            readFile: createSandboxBridgeReadFile({ sandbox: options.sandbox }),
-          })
-        : await loadWebMedia(
-            targetPath,
-            options.workspaceOnly || options.localRoots || managedInboundHostRead
-              ? {
-                  maxBytes: options.maxBytes,
-                  localRoots: managedInboundHostRead
-                    ? [...(options.localRoots ?? [workspaceDir]), path.dirname(targetPath)]
-                    : (options.localRoots ?? [workspaceDir]),
-                }
-              : options.maxBytes,
-          );
-
-    if (media.kind !== options.kind) {
-      log.debug(`Native ${options.kind}: unexpected media kind: ${targetPath} (got ${media.kind})`);
-      return null;
-    }
-
-    const mimeType = media.contentType ?? (options.kind === "image" ? "image/jpeg" : "video/mp4");
-    const data = media.buffer.toString("base64");
-
-    return options.kind === "image"
-      ? { type: "image", data, mimeType }
-      : { type: "video", data, mimeType };
-  } catch (err) {
-    log.debug(`Native ${options.kind}: failed to load ${ref.resolved}: ${formatErrorMessage(err)}`);
-    return null;
-  }
 }
 
 function modelSupportsImages(model: { input?: string[] }): boolean {

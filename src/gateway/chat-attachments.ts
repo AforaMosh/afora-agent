@@ -590,24 +590,33 @@ export async function parseMessageWithAttachments(
   }
 
   await enrichOffloadedMediaMetadata(offloadedRefs);
+  const projectedMedia: MediaFact[] = [];
+  for (const fact of media) {
+    const ref = offloadedRefs.find((candidate) => candidate.sourceIndex === fact.sourceIndex);
+    if (!ref) {
+      projectedMedia.push(fact);
+      continue;
+    }
+    const projectedFact = { ...fact };
+    if (ref.durationMs) {
+      projectedFact.durationMs = ref.durationMs;
+    }
+    if (ref.width) {
+      projectedFact.width = ref.width;
+    }
+    if (ref.height) {
+      projectedFact.height = ref.height;
+    }
+    projectedMedia.push(projectedFact);
+  }
 
   return {
     message: updatedMessage !== message ? updatedMessage.trimEnd() : message,
     images,
     imageOrder,
-    media: media
-      .map((fact) => {
-        const ref = offloadedRefs.find((candidate) => candidate.sourceIndex === fact.sourceIndex);
-        return ref
-          ? {
-              ...fact,
-              ...(ref.durationMs ? { durationMs: ref.durationMs } : {}),
-              ...(ref.width ? { width: ref.width } : {}),
-              ...(ref.height ? { height: ref.height } : {}),
-            }
-          : fact;
-      })
-      .toSorted((left, right) => (left.sourceIndex ?? 0) - (right.sourceIndex ?? 0)),
+    media: projectedMedia.toSorted(
+      (left, right) => (left.sourceIndex ?? 0) - (right.sourceIndex ?? 0),
+    ),
     offloadedRefs,
   };
 }

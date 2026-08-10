@@ -1,6 +1,11 @@
 import path from "node:path";
 import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
 import {
+  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+  CHAT_ATTACHMENT_MAX_ITEMS,
+  encodedBase64Length,
+} from "../../../packages/gateway-protocol/src/chat-attachment-limits.js";
+import {
   readPersistedMediaBlockFactIndexes,
   readPersistedMediaFacts,
 } from "../../media/media-facts.js";
@@ -11,6 +16,47 @@ import type { SessionEditorMediaRef } from "./session-accessor.types.js";
 type ResolvedEditorMediaRef =
   | { kind: "image"; id: string; factIndex: number; ref: SessionEditorMediaRef }
   | { kind: "video"; ref: SessionEditorMediaRef };
+
+const EDITOR_ATTACHMENT_MAX_BASE64_CHARS = encodedBase64Length(
+  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
+);
+const INVALID_EDITOR_ATTACHMENT_FIELD = "!";
+const EDITOR_ATTACHMENT_COUNT_OVERFLOW_SIGNAL = { mimeType: "image/png", data: "AA==" };
+
+export function extractEditorAttachments(
+  content: unknown,
+): Array<{ mimeType: string; data: string }> | undefined {
+  if (!Array.isArray(content)) {
+    return undefined;
+  }
+  const attachments: Array<{ mimeType: string; data: string }> = [];
+  for (const block of content) {
+    const record = asRecord(block);
+    if (record?.type !== "image") {
+      continue;
+    }
+    if (attachments.length === CHAT_ATTACHMENT_MAX_ITEMS) {
+      // Do not retain or inspect another payload. One tiny valid entry makes the Gateway's
+      // existing item-count validator fail with limit precedence over malformed item fields.
+      attachments.push(EDITOR_ATTACHMENT_COUNT_OVERFLOW_SIGNAL);
+      break;
+    }
+    // The Gateway owns strict size/MIME/base64 validation before mutation. Keep
+    // bounded malformed blocks visible to that preflight instead of silently dropping them.
+    const mimeType = typeof record.mimeType === "string" ? record.mimeType : "";
+    const data = typeof record.data === "string" ? record.data : "";
+    attachments.push({
+      mimeType:
+        mimeType.length <= EDITOR_ATTACHMENT_MAX_BASE64_CHARS
+          ? mimeType
+          : INVALID_EDITOR_ATTACHMENT_FIELD,
+      // Do not copy or truncate an oversized transcript payload merely to reject it later.
+      data:
+        data.length <= EDITOR_ATTACHMENT_MAX_BASE64_CHARS ? data : INVALID_EDITOR_ATTACHMENT_FIELD,
+    });
+  }
+  return attachments.length > 0 ? attachments : undefined;
+}
 
 export function extractEditorMediaRefs(
   message: Record<string, unknown>,

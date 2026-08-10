@@ -31,6 +31,7 @@ import type {
 
 type ChatDisplayProjectionOptions = {
   maxChars?: number;
+  preserveInlineImageData?: boolean;
   resolveCurrentUserProfileDisplay?: CurrentUserProfileDisplayResolver;
   stripEnvelope?: boolean;
   turnBoundaryPending?: boolean;
@@ -314,13 +315,18 @@ export function projectChatDisplayMessagesWithState(
   const projectedErrors = projectEmptyAssistantErrorMessages(repairedStreamErrors.messages);
   const filtered = filterVisibleProjectedHistoryMessages(
     projectSessionsSendInterSessionMessages(
-      toProjectedMessages(sanitizeChatHistoryMessages(projectedErrors, Number.MAX_SAFE_INTEGER)),
+      toProjectedMessages(
+        sanitizeChatHistoryMessages(projectedErrors, Number.MAX_SAFE_INTEGER, {
+          preserveInlineImageData: options?.preserveInlineImageData,
+        }),
+      ),
     ),
     options?.turnBoundaryPending,
   );
   const displayMessages = sanitizeChatHistoryMessages(
     mergeTtsSupplementMessages(filtered.messages),
     options?.maxChars ?? DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS,
+    { preserveInlineImageData: options?.preserveInlineImageData },
   ) as Array<Record<string, unknown>>;
   return {
     messages: projectCurrentUserProfileAvatars(
@@ -367,4 +373,10 @@ export function projectChatDisplayMessage(
   options?: ChatDisplayProjectionOptions,
 ): Record<string, unknown> | undefined {
   return projectChatDisplayMessages([message], options)[0];
+}
+
+export function projectLiveChatDisplayMessage(
+  message: unknown,
+): Record<string, unknown> | undefined {
+  return projectChatDisplayMessage(message, { preserveInlineImageData: true });
 }

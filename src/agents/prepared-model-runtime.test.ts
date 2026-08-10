@@ -177,13 +177,18 @@ describe("prepared model runtime snapshots", () => {
           entries: Array<Record<string, unknown>>;
           routeVariants: Array<Record<string, unknown>>;
         };
+        const entries: Array<Record<string, unknown>> = [];
+        for (const entry of catalog.entries) {
+          entries.push({ ...entry, supportsNativeVideo: true });
+        }
+        const routeVariants: Array<Record<string, unknown>> = [];
+        for (const entry of catalog.routeVariants) {
+          routeVariants.push({ ...entry, supportsNativeVideo: true });
+        }
         return {
           ...catalog,
-          entries: catalog.entries.map((entry) => ({ ...entry, supportsNativeVideo: true })),
-          routeVariants: catalog.routeVariants.map((entry) => ({
-            ...entry,
-            supportsNativeVideo: true,
-          })),
+          entries,
+          routeVariants,
         };
       },
     );

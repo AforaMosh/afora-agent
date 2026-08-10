@@ -23,6 +23,7 @@ import {
   sanitizeToolResult,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
 import { createAgentHarnessToolSurfaceRuntime } from "openclaw/plugin-sdk/agent-harness-tool-runtime";
+import { NATIVE_TOOL_VIDEO_OMISSION } from "openclaw/plugin-sdk/llm";
 
 type CreateOpenClawCodingTools =
   (typeof import("openclaw/plugin-sdk/agent-harness"))["createOpenClawCodingTools"];
@@ -610,9 +611,14 @@ function convertOpenClawToolToSdkTool(
 
     const sanitizedResult = sanitizeToolResult(result);
     const resultIsError = isToolResultError(sanitizedResult);
+    // Copilot's MCP converter has no video block; replace it here so payload
+    // bytes never cross the SDK boundary and the omission stays model-visible.
+    const mcpContent = result.content.map((item) =>
+      item.type === "video" ? { type: "text" as const, text: NATIVE_TOOL_VIDEO_OMISSION } : item,
+    );
     // The SDK only marks fulfilled tool results as failures when isError is forwarded.
     const sdkResult = convertMcpCallToolResult({
-      content: result.content,
+      content: mcpContent,
       isError: resultIsError,
     });
     const resultError = resultIsError ? extractToolErrorMessage(sanitizedResult) : undefined;

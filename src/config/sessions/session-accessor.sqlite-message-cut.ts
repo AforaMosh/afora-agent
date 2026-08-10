@@ -1,11 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import {
-  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
-  CHAT_ATTACHMENT_MAX_ITEMS,
-  encodedBase64Length,
-} from "../../../packages/gateway-protocol/src/chat-attachment-limits.js";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import { extractAssistantVisibleText } from "../../shared/chat-message-content.js";
@@ -22,7 +17,10 @@ import {
   writeSessionEntry,
 } from "./session-accessor.sqlite-entry-store.js";
 import { emitCommittedSessionIdentityDiff } from "./session-accessor.sqlite-identity.js";
-import { extractEditorMediaRefs } from "./session-accessor.sqlite-message-cut-media.js";
+import {
+  extractEditorAttachments,
+  extractEditorMediaRefs,
+} from "./session-accessor.sqlite-message-cut-media.js";
 import { loadSqliteTranscriptEventsFromDatabase } from "./session-accessor.sqlite-read.js";
 import {
   getSessionKysely,
@@ -74,11 +72,6 @@ type SessionEntryExpectedState = Pick<SessionEntry, "lifecycleRevision" | "sessi
 
 const BRANCH_HEADLINE_MAX_CHARS = 120;
 const SESSION_BRANCH_CACHE_MAX_ENTRIES = 32;
-const EDITOR_ATTACHMENT_MAX_BASE64_CHARS = encodedBase64Length(
-  CHAT_ATTACHMENT_MAX_DECODED_BYTES_PER_ITEM,
-);
-const INVALID_EDITOR_ATTACHMENT_FIELD = "!";
-const EDITOR_ATTACHMENT_COUNT_OVERFLOW_SIGNAL = { mimeType: "image/png", data: "AA==" };
 
 type SessionBranchCacheEntry = {
   branches: SessionBranchSummary[];
@@ -609,41 +602,6 @@ function extractEditorText(content: unknown): string | undefined {
     })
     .join("");
   return text || undefined;
-}
-
-export function extractEditorAttachments(
-  content: unknown,
-): Array<{ mimeType: string; data: string }> | undefined {
-  if (!Array.isArray(content)) {
-    return undefined;
-  }
-  const attachments: Array<{ mimeType: string; data: string }> = [];
-  for (const block of content) {
-    const record = asRecord(block);
-    if (record?.type !== "image") {
-      continue;
-    }
-    if (attachments.length === CHAT_ATTACHMENT_MAX_ITEMS) {
-      // Do not retain or inspect another payload. One tiny valid entry makes the Gateway's
-      // existing item-count validator fail with limit precedence over malformed item fields.
-      attachments.push(EDITOR_ATTACHMENT_COUNT_OVERFLOW_SIGNAL);
-      break;
-    }
-    // The Gateway owns strict size/MIME/base64 validation before mutation. Keep
-    // bounded malformed blocks visible to that preflight instead of silently dropping them.
-    const mimeType = typeof record.mimeType === "string" ? record.mimeType : "";
-    const data = typeof record.data === "string" ? record.data : "";
-    attachments.push({
-      mimeType:
-        mimeType.length <= EDITOR_ATTACHMENT_MAX_BASE64_CHARS
-          ? mimeType
-          : INVALID_EDITOR_ATTACHMENT_FIELD,
-      // Do not copy or truncate an oversized transcript payload merely to reject it later.
-      data:
-        data.length <= EDITOR_ATTACHMENT_MAX_BASE64_CHARS ? data : INVALID_EDITOR_ATTACHMENT_FIELD,
-    });
-  }
-  return attachments.length > 0 ? attachments : undefined;
 }
 
 function isSessionHeader(event: unknown): boolean {

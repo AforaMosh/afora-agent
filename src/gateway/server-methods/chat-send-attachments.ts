@@ -100,14 +100,22 @@ async function prestageMediaPathOffloads(params: {
   const parsedMedia = params.parsedMedia.filter(
     (fact) => fact.sourceId !== undefined && selectedSourceIds.has(fact.sourceId),
   );
-  const projectRefs = (stagedPaths: ReadonlyMap<string, string> = new Map()) => ({
-    media: parsedMedia.map((fact) => {
+  const projectRefs = (stagedPaths: ReadonlyMap<string, string> = new Map()) => {
+    const projectedMedia: MediaFact[] = [];
+    for (const fact of parsedMedia) {
       const stagedPath = fact.sourceId ? stagedPaths.get(fact.sourceId) : undefined;
-      return stagedPath && stagedPath !== fact.path ? { ...fact, path: stagedPath } : fact;
-    }),
-    paths: mediaPathRefs.map((ref) => stagedPaths.get(ref.id) ?? ref.path),
-    types: mediaPathRefs.map((ref) => ref.mimeType),
-  });
+      if (!stagedPath || stagedPath === fact.path) {
+        projectedMedia.push(fact);
+        continue;
+      }
+      projectedMedia.push({ ...fact, path: stagedPath });
+    }
+    return {
+      media: projectedMedia,
+      paths: mediaPathRefs.map((ref) => stagedPaths.get(ref.id) ?? ref.path),
+      types: mediaPathRefs.map((ref) => ref.mimeType),
+    };
+  };
   const refsToStage = mediaPathRefs.filter(
     (ref) => !shouldPassThroughManagedInboundPdfOffloadRef(ref),
   );

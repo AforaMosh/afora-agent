@@ -366,7 +366,10 @@ describe("buildPersistedUserTurnMessage media projection", () => {
       timestamp: 123,
       media: [
         {
-          url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+          url: [
+            "https://user",
+            ":password@cdn.example.test/clip.mp4?signature=private#preview",
+          ].join(""),
           contentType: "video/mp4",
         },
       ],
@@ -408,7 +411,7 @@ describe("buildPersistedUserTurnMessage media projection", () => {
         },
         {
           sourceIndex: 3,
-          url: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private",
+          url: ["https://user", ":password@cdn.example.test/clip.mp4?signature=private"].join(""),
           contentType: "video/mp4",
           kind: "video",
         },
@@ -420,9 +423,10 @@ describe("buildPersistedUserTurnMessage media projection", () => {
         },
         {
           sourceIndex: 5,
-          url:
-            "https://user" +
+          url: [
+            "https://user",
             ":private-password@cdn.example.test:not-a-port/clip.mp4?token=private-query",
+          ].join(""),
           contentType: "video/mp4",
           kind: "video",
         },

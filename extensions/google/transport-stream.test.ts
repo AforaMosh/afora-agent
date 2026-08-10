@@ -2923,6 +2923,27 @@ describe("google provider-owned native video request limits", () => {
     systemInstruction?: { parts: MutableGoogleTestPart[] };
     tools?: Array<Record<string, unknown>>;
   };
+
+  function requireMutableGoogleTestRequest(
+    value: unknown,
+    label: string,
+  ): MutableGoogleTestRequest {
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      !("contents" in value) ||
+      !Array.isArray(value.contents)
+    ) {
+      throw new Error(`Expected ${label} to contain Google request contents`);
+    }
+    return value as MutableGoogleTestRequest;
+  }
+
+  function jsonRoundtripClone<T>(value: T): T {
+    // oxlint-disable-next-line unicorn/prefer-structured-clone -- Intentionally test JSON hook replacement semantics.
+    return JSON.parse(JSON.stringify(value)) as T;
+  }
+
   const oldVideoData = "b2xkISE=";
   const currentVideoData = "bmV3ISE=";
   const nativeModel = () =>
@@ -2943,13 +2964,15 @@ describe("google provider-owned native video request limits", () => {
     const stream = await Promise.resolve(
       streamFn(
         params.model ?? nativeModel(),
-        params.context as Parameters<typeof streamFn>[1],
+        params.context as unknown as Parameters<typeof streamFn>[1],
         {
           apiKey: "gemini-api-key",
           ...(params.onPayload
             ? {
                 onPayload: (request: unknown) =>
-                  params.onPayload?.(request as MutableGoogleTestRequest),
+                  params.onPayload?.(
+                    requireMutableGoogleTestRequest(request, "payload hook request"),
+                  ),
               }
             : {}),
         } as Parameters<typeof streamFn>[2],
@@ -2957,9 +2980,10 @@ describe("google provider-owned native video request limits", () => {
     );
     await stream.result();
     const guardedCall = requireMockCall(guardedFetchMock, 0, "guarded fetch");
-    return parseRequestJsonBody(
-      requireRequestInit(guardedCall, "guarded fetch"),
-    ) as MutableGoogleTestRequest;
+    return requireMutableGoogleTestRequest(
+      parseRequestJsonBody(requireRequestInit(guardedCall, "guarded fetch")),
+      "serialized Google request",
+    );
   }
 
   function toolImageContext(model: string, data: string, currentImageData?: string) {
@@ -3037,7 +3061,7 @@ describe("google provider-owned native video request limits", () => {
       "nested function response",
       "gemini-3.1-pro-preview",
       "JSON roundtrip",
-      (request: unknown) => JSON.parse(JSON.stringify(request)) as unknown,
+      (request: unknown) => jsonRoundtripClone(request),
     ],
     [
       "deferred tool image turn",
@@ -3049,7 +3073,7 @@ describe("google provider-owned native video request limits", () => {
       "deferred tool image turn",
       "gemini-2.5-flash",
       "JSON roundtrip",
-      (request: unknown) => JSON.parse(JSON.stringify(request)) as unknown,
+      (request: unknown) => jsonRoundtripClone(request),
     ],
   ])(
     "preserves a %s for %s across a %s hook replacement",
@@ -3101,7 +3125,7 @@ describe("google provider-owned native video request limits", () => {
     const params = await captureHookedNativeRequest({
       context: toolImageContext("gemini-3.1-pro-preview", toolImageData, currentImageData),
       model: toolImageModel("gemini-3.1-pro-preview", { maxAggregateDecodedBytes: 4 }),
-      onPayload: (request) => JSON.parse(JSON.stringify(request)) as unknown,
+      onPayload: (request) => jsonRoundtripClone(request),
     });
 
     const serialized = JSON.stringify(params);
@@ -3133,7 +3157,7 @@ describe("google provider-owned native video request limits", () => {
       model: toolImageModel(modelId, {
         maxSerializedRequestBytesExclusive: serializedCap,
       }),
-      onPayload: (request) => JSON.parse(JSON.stringify(request)) as unknown,
+      onPayload: (request) => jsonRoundtripClone(request),
     });
 
     const serialized = JSON.stringify(params);
@@ -3500,14 +3524,15 @@ describe("google provider-owned native video request limits", () => {
         {
           apiKey: "gemini-api-key",
           onPayload: (params) => {
-            params.contents.unshift({
+            const request = requireMutableGoogleTestRequest(params, "payload hook params");
+            request.contents.unshift({
               role: "model",
               parts: [
                 { inlineData: { mimeType: "image/png", data: "aW1n" } },
                 { inlineData: { mimeType: "image/jpeg", data: "b2xk" } },
               ],
             });
-            return params;
+            return request;
           },
         } as Parameters<typeof streamFn>[2],
       ),
@@ -3534,7 +3559,7 @@ describe("google provider-owned native video request limits", () => {
     },
     {
       replacement: "JSON roundtrip",
-      clone: (request: unknown) => JSON.parse(JSON.stringify(request)) as unknown,
+      clone: (request: unknown) => jsonRoundtripClone(request),
     },
   ])("preserves ordinary-user video across a $replacement replacement", async ({ clone }) => {
     const params = await captureHookedNativeRequest({
@@ -3577,7 +3602,8 @@ describe("google provider-owned native video request limits", () => {
       }),
       onPayload: (request) => {
         const replacement = structuredClone(request);
-        replacement.contents[0].parts.push({
+        const content = expectDefined(replacement.contents[0], "hook replacement content");
+        content.parts.push({
           inlineData: { mimeType: "video/mp4", data: injectedVideoData },
         });
         return replacement;
@@ -3614,8 +3640,10 @@ describe("google provider-owned native video request limits", () => {
         },
       }),
       onPayload: (request) => {
-        const replacement = JSON.parse(JSON.stringify(request)) as MutableGoogleTestRequest;
-        replacement.contents[0].parts.push(structuredClone(replacement.contents[0].parts[0]));
+        const replacement = jsonRoundtripClone(request);
+        const content = expectDefined(replacement.contents[0], "cloned replacement content");
+        const originalPart = expectDefined(content.parts[0], "cloned original media part");
+        content.parts.push(structuredClone(originalPart));
         return replacement;
       },
     });
@@ -3664,7 +3692,9 @@ describe("google provider-owned native video request limits", () => {
   it.each([
     {
       mutation: "reorders cloned media",
-      apply: (request: MutableGoogleTestRequest) => request.contents[0].parts.reverse(),
+      apply: (request: MutableGoogleTestRequest) => {
+        expectDefined(request.contents[0], "cloned media content").parts.reverse();
+      },
       expected: [
         { text: "(video omitted: unsupported or exceeds provider limits)" },
         { text: "(video omitted: unsupported or exceeds provider limits)" },
@@ -3673,7 +3703,9 @@ describe("google provider-owned native video request limits", () => {
     {
       mutation: "modifies cloned media",
       apply: (request: MutableGoogleTestRequest) => {
-        request.contents[0].parts[0].inlineData!.data = "bW9kaWZpZWQ=";
+        const content = expectDefined(request.contents[0], "cloned media content");
+        const part = expectDefined(content.parts[0], "cloned media part");
+        expectDefined(part.inlineData, "cloned inline media").data = "bW9kaWZpZWQ=";
       },
       expected: [
         { text: "(video omitted: unsupported or exceeds provider limits)" },
@@ -3683,7 +3715,7 @@ describe("google provider-owned native video request limits", () => {
     {
       mutation: "moves cloned media to a model turn",
       apply: (request: MutableGoogleTestRequest) => {
-        request.contents[0]!.role = "model";
+        expectDefined(request.contents[0], "cloned media content").role = "model";
       },
       expected: [
         { text: "(video omitted: unsupported or exceeds provider limits)" },
@@ -3789,11 +3821,14 @@ describe("google provider-owned native video request limits", () => {
         {
           apiKey: "gemini-api-key",
           onPayload: (params) => {
-            params.contents.unshift(
-              structuredClone(hookedRequest.contents[0]!),
-              structuredClone(hookedRequest.contents[1]!),
+            const request = requireMutableGoogleTestRequest(params, "payload hook params");
+            request.contents.unshift(
+              structuredClone(expectDefined(hookedRequest.contents[0], "hooked tool content")),
+              structuredClone(
+                expectDefined(hookedRequest.contents[1], "hooked deferred-image content"),
+              ),
             );
-            return params;
+            return request;
           },
         } as Parameters<typeof streamFn>[2],
       ),
@@ -3965,7 +4000,11 @@ describe("google provider-owned native video request limits", () => {
       systemInstruction: { parts: [{ text: hookPadding }] },
     };
     const oneHistoricalItemEvicted = structuredClone(hookedRequest);
-    oneHistoricalItemEvicted.contents[0]!.parts[1] = {
+    const historicalContent = expectDefined(
+      oneHistoricalItemEvicted.contents[0],
+      "historical hooked content",
+    );
+    historicalContent.parts[1] = {
       text: "(media omitted: exceeds provider limits)",
     } as never;
     const serializedBytes = new TextEncoder().encode(
@@ -4009,8 +4048,9 @@ describe("google provider-owned native video request limits", () => {
         {
           apiKey: "gemini-api-key",
           onPayload: (params) => {
-            params.systemInstruction = structuredClone(hookedRequest.systemInstruction);
-            return params;
+            const request = requireMutableGoogleTestRequest(params, "payload hook params");
+            request.systemInstruction = structuredClone(hookedRequest.systemInstruction);
+            return request;
           },
         } as Parameters<typeof streamFn>[2],
       ),

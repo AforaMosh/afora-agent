@@ -476,20 +476,25 @@ describe("createBundleMcpToolRuntime", () => {
 
   it("redacts structured content type aliases and line-wrapped data URLs", async () => {
     const mediaPayloads = Object.fromEntries(
-      [
-        ["contentTypeImage", "contentType", "image/png"],
-        ["contentTypeAudio", "contentType", "audio/mpeg"],
-        ["contentTypeVideo", "contentType", "video/mp4"],
-        ["contentTypeSnakeImage", "content_type", "image/jpeg"],
-        ["contentTypeSnakeAudio", "content_type", "audio/wav"],
-        ["contentTypeSnakeVideo", "content_type", "video/webm"],
-      ].map(([name, alias, mimeType]) => [
-        name,
-        {
-          [alias]: mimeType,
-          data: Buffer.from(`PRIVATE_${name}`).toString("base64"),
-        },
-      ]),
+      (
+        [
+          ["contentTypeImage", "contentType", "image/png"],
+          ["contentTypeAudio", "contentType", "audio/mpeg"],
+          ["contentTypeVideo", "contentType", "video/mp4"],
+          ["contentTypeSnakeImage", "content_type", "image/jpeg"],
+          ["contentTypeSnakeAudio", "content_type", "audio/wav"],
+          ["contentTypeSnakeVideo", "content_type", "video/webm"],
+        ] as const
+      ).map(
+        ([name, alias, mimeType]) =>
+          [
+            name,
+            {
+              [alias]: mimeType,
+              data: Buffer.from(`PRIVATE_${name}`).toString("base64"),
+            },
+          ] as const,
+      ),
     );
     const wrappedPayload = Buffer.from("PRIVATE_LINE_WRAPPED_MCP_DATA_URL".repeat(8)).toString(
       "base64",

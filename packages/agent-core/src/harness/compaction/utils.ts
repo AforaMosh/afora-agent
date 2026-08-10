@@ -203,12 +203,13 @@ export function serializeConversation(messages: Message[]): string {
   for (const msg of messages) {
     if (msg.role === "user") {
       const structuredContent = typeof msg.content === "string" ? undefined : msg.content;
-      const content = structuredContent
-        ? structuredContent
-            .filter((c): c is { type: "text"; text: string } => c.type === "text")
-            .map((c) => c.text)
-            .join("")
-        : msg.content;
+      const content =
+        typeof msg.content === "string"
+          ? msg.content
+          : msg.content
+              .filter((c): c is { type: "text"; text: string } => c.type === "text")
+              .map((c) => c.text)
+              .join("");
       if (content) {
         parts.push(`[User]: ${content}`);
       }

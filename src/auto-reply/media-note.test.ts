@@ -101,9 +101,13 @@ describe("buildInboundMediaNote", () => {
   });
 
   it("removes remote media URL credentials before prompt projection", () => {
+    const authenticatedUrl = [
+      "https://user",
+      ":password@cdn.example.test/clip.mp4?signature=private#preview",
+    ].join("");
     const note = buildInboundMediaNote({
-      MediaPath: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
-      MediaUrl: "https://user" + ":password@cdn.example.test/clip.mp4?signature=private#preview",
+      MediaPath: authenticatedUrl,
+      MediaUrl: authenticatedUrl,
       MediaType: "video/mp4",
     });
 

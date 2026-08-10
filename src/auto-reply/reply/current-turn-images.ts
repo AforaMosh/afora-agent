@@ -166,8 +166,9 @@ function resolveMergedTurnInputMedia(
     inputMedia.length === 0 &&
     orderedImageSlots.length === 0 &&
     handledVideoIdentities.length === 0
-  )
+  ) {
     return {};
+  }
   const result = {
     ...(inputMedia.length > 0 ? { inputMedia } : {}),
     ...(images.length > 0 ? { images } : {}),
@@ -217,7 +218,9 @@ export async function resolveCurrentTurnInputMedia(params: {
   const normalizedAttachments = normalizeAttachments(params.ctx);
   const handledVideoIdentities =
     params.ctx.MediaUnderstanding?.flatMap((output) => {
-      if (output.kind !== "video.description") return [];
+      if (output.kind !== "video.description") {
+        return [];
+      }
       const attachment = normalizedAttachments.find(
         (candidate) => candidate.index === output.attachmentIndex,
       );

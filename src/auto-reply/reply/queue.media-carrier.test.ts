@@ -93,7 +93,7 @@ describe("followup prompt media carrier", () => {
     const key = `native-video-collect-${Date.now()}`;
     queueKeys.add(key);
     const settings: QueueSettings = { mode: "collect", debounceMs: 0 };
-    const done = createDeferred<void>();
+    const done = createDeferred();
     let collected: FollowupRun | undefined;
     const video = { type: "video" as const, data: "video", mimeType: "video/mp4" };
     const image = { type: "image" as const, data: "image", mimeType: "image/png" };

@@ -1,5 +1,6 @@
 import path from "node:path";
-import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
+import { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
+import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
 import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   isMediaPayloadContainerKey,
@@ -13,6 +14,29 @@ import {
 } from "../media/media-reference-projection.js";
 
 const AUDIO_LOCAL_PATH_FIELDS = ["path", "file", "filePath", "localPath"] as const;
+const INLINE_IMAGE_DATA_URL_PREFIX_RE = /^data:image\/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*;base64,/u;
+const INLINE_IMAGE_MAX_ENCODED_CHARS = Math.ceil(MAX_IMAGE_BYTES / 3) * 4;
+
+function projectLiveInlineImageData(
+  entry: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (entry.type !== "input_image" || typeof entry.image_url !== "string") {
+    return undefined;
+  }
+  const prefix = INLINE_IMAGE_DATA_URL_PREFIX_RE.exec(entry.image_url)?.[0];
+  if (!prefix) {
+    return undefined;
+  }
+  const base64 = entry.image_url.slice(prefix.length);
+  if (
+    base64.length > INLINE_IMAGE_MAX_ENCODED_CHARS ||
+    estimateBase64DecodedBytes(base64) > MAX_IMAGE_BYTES ||
+    canonicalizeBase64(base64) !== base64
+  ) {
+    return undefined;
+  }
+  return { type: "input_image", image_url: entry.image_url };
+}
 
 function isAbsoluteStoragePath(value: unknown): value is string {
   return (
@@ -167,7 +191,14 @@ function omitAudioHistoryContent(
 
 export function sanitizeChatHistoryMediaContentBlock(
   entry: Record<string, unknown>,
+  opts?: { preserveInlineImageData?: boolean },
 ): { block: Record<string, unknown>; changed: boolean } | undefined {
+  if (opts?.preserveInlineImageData) {
+    const inlineImage = projectLiveInlineImageData(entry);
+    if (inlineImage) {
+      return { block: inlineImage, changed: true };
+    }
+  }
   const type = typeof entry.type === "string" ? entry.type : "";
   if (
     type !== "audio" &&
