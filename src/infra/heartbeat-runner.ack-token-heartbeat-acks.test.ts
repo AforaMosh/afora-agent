@@ -130,7 +130,7 @@ describe("runHeartbeatOnce ack handling", () => {
           mediaLocalRoots: undefined,
           mediaReadFile: undefined,
           onDeliveryResult: expect.any(Function),
-          onPlatformSendDispatch: expect.any(Function),
+          onPlatformSendDispatch: undefined,
           preparedMessageId: undefined,
           replyToIdSource: undefined,
           replyToMode: undefined,
