@@ -150,7 +150,6 @@ export class WorkboardWorkflowStore extends WorkboardPromoteStore {
           card.status === "backlog" || card.status === "todo" || card.status === "ready"
             ? "running"
             : card.status,
-        agentId: card.agentId ?? ownerId,
       });
       return { card: next, token };
     });
