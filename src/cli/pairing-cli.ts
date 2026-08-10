@@ -131,7 +131,7 @@ export function registerPairingCli(program: Command) {
           ],
           rows: requests.map((r) => ({
             Code: r.code,
-            ID: r.id,
+            ID: r.meta?.senderId ?? r.id,
             Meta: r.meta ? JSON.stringify(r.meta) : "",
             Requested: r.createdAt,
           })),
@@ -190,7 +190,7 @@ export function registerPairingCli(program: Command) {
       }
 
       defaultRuntime.log(
-        `${theme.success("Approved")} ${theme.muted(channel)} sender ${theme.command(approved.id)}.`,
+        `${theme.success("Approved")} ${theme.muted(channel)} sender ${theme.command(approved.entry.meta?.senderId ?? approved.id)}.`,
       );
       const ownerBootstrap = await bootstrapCommandOwnerFromPairing({
         channel,

@@ -391,8 +391,8 @@ describe("slackPlugin actions", () => {
     }
     expect(
       pairing.resolveApprovalStoreEntry({
-        id: "U12345678",
-        meta: { teamId: "T12345678" },
+        id: "team:T12345678:user:U12345678",
+        meta: { senderId: "U12345678", teamId: "T12345678" },
       }),
     ).toBe("team:T12345678:user:U12345678");
 
@@ -407,9 +407,9 @@ describe("slackPlugin actions", () => {
     } as OpenClawConfig;
     await pairing.notifyApproval({
       cfg,
-      id: "U12345678",
+      id: "team:T12345678:user:U12345678",
       accountId: "org",
-      meta: { teamId: "T12345678" },
+      meta: { senderId: "U12345678", teamId: "T12345678" },
     });
 
     expect(requireMockCallArgValue(sendMessageSlackMock, 0, 0)).toBe(
