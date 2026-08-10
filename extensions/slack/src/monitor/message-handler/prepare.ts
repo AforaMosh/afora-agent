@@ -1190,22 +1190,18 @@ export async function prepareSlackMessage(params: {
     channel: "slack",
     accountId: account.accountId,
   });
-  const preflightChannelTarget = opts.eventScope
-    ? formatSlackTarget({
-        teamId: opts.eventScope.teamId,
-        kind: "channel",
-        id: message.channel,
-      })
-    : `channel:${message.channel}`;
-  const replyRouteTarget = opts.eventScope
-    ? formatSlackTarget({
-        teamId: opts.eventScope.teamId,
-        kind: isDirectMessage ? "user" : "channel",
-        id: isDirectMessage ? senderId : message.channel,
-      })
-    : isDirectMessage
-      ? `user:${message.user}`
-      : `channel:${message.channel}`;
+  const preflightChannelTarget = formatSlackTarget({
+    teamId: opts.eventScope?.teamId,
+    kind: "channel",
+    id: message.channel,
+    explicitKind: true,
+  });
+  const replyRouteTarget = formatSlackTarget({
+    teamId: opts.eventScope?.teamId,
+    kind: isDirectMessage ? "user" : "channel",
+    id: isDirectMessage ? senderId : message.channel,
+    explicitKind: true,
+  });
   const commandAuthorized = messageIngress.commandAccess.authorized;
 
   if (isRoomish && messageIngress.commandAccess.shouldBlockControlCommand) {
@@ -1812,7 +1808,7 @@ export async function prepareSlackMessage(params: {
     account,
     message,
     ...(opts.relayIdentity ? { relayIdentity: opts.relayIdentity } : {}),
-    ...(opts.eventScope ? { eventScope: opts.eventScope } : {}),
+    eventScope: opts.eventScope,
     route,
     channelConfig,
     replyTarget,

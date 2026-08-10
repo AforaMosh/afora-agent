@@ -123,9 +123,12 @@ function resolveObservedTarget(params: {
     mode,
     channelId,
     threadId,
-    to: teamId
-      ? formatSlackTarget({ teamId, kind: targetKind, id: targetId })
-      : `${targetKind}:${targetId}`,
+    to: formatSlackTarget({
+      teamId,
+      kind: targetKind,
+      id: targetId,
+      explicitKind: true,
+    }),
     sessionKey: prepared.route.sessionKey,
     agentId: prepared.route.agentId,
     participants: new Map([[userId, params.nowMs]]),
