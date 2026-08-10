@@ -127,6 +127,7 @@ describe("executeAgentTurn: lifecycle progress", () => {
     await Promise.all(pendingToolTasks);
 
     expect(result.kind).toBe("success");
+    expect(onItemEvent).toHaveBeenCalledTimes(1);
     expect(onItemEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         itemId: "tool:read-1",
@@ -176,14 +177,16 @@ describe("executeAgentTurn: lifecycle progress", () => {
 
     expect(result.kind).toBe("success");
     expect(onItemEvent).not.toHaveBeenCalled();
-    expect(onToolStart).toHaveBeenCalledWith({
-      itemId: "cmd-1",
-      toolCallId: "cmd-1",
-      name: "bash",
-      phase: "start",
-      args: { command: "pnpm test" },
-      detailMode: undefined,
-    });
+    expect(onToolStart).toHaveBeenCalledTimes(1);
+    expect(onToolStart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        itemId: "cmd-1",
+        toolCallId: "cmd-1",
+        name: "bash",
+        phase: "start",
+        args: { command: "pnpm test" },
+      }),
+    );
   });
 
   it("preserves suppressed item progress when no tool-start callback is registered", async () => {
@@ -220,6 +223,7 @@ describe("executeAgentTurn: lifecycle progress", () => {
     });
 
     expect(result.kind).toBe("success");
+    expect(onItemEvent).toHaveBeenCalledTimes(1);
     expect(onItemEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         itemId: "cmd-1",
@@ -326,14 +330,15 @@ describe("executeAgentTurn: lifecycle progress", () => {
     );
 
     expect(result.kind).toBe("success");
-    expect(onToolStart).toHaveBeenCalledWith({
-      itemId: undefined,
-      toolCallId: undefined,
-      name: "exec",
-      phase: "start",
-      args: { command: "pnpm test -- --watch=false" },
-      detailMode: "raw",
-    });
+    expect(onToolStart).toHaveBeenCalledTimes(1);
+    expect(onToolStart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "exec",
+        phase: "start",
+        args: { command: "pnpm test -- --watch=false" },
+        detailMode: "raw",
+      }),
+    );
   });
 
   it("fires tool-start progress before slow typing signals resolve for best-effort agent events", async () => {
@@ -367,14 +372,14 @@ describe("executeAgentTurn: lifecycle progress", () => {
 
     try {
       expect(result.kind).toBe("success");
-      expect(onToolStart).toHaveBeenCalledWith({
-        itemId: undefined,
-        toolCallId: undefined,
-        name: "exec",
-        phase: "start",
-        args: { command: "echo hi" },
-        detailMode: undefined,
-      });
+      expect(onToolStart).toHaveBeenCalledTimes(1);
+      expect(onToolStart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "exec",
+          phase: "start",
+          args: { command: "echo hi" },
+        }),
+      );
     } finally {
       releaseTyping?.();
       await Promise.resolve();
