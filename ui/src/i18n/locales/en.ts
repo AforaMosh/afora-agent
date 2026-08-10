@@ -480,11 +480,11 @@ export const en: TranslationMap = {
       button: "Pair mobile device",
       adminRequired: "Administrator access is required to create setup codes.",
       title: "OpenClaw mobile",
-      subtitle: "Connect a phone to this Gateway.",
       noApp: "Don't have the app yet?",
       getApps: "Get the apps",
       generating: "Creating a secure setup code…",
-      accessTitle: "Mobile access",
+      accessLevel: "Access level",
+      fullAccessShort: "Full access",
       fullAccess: "Full access (recommended)",
       fullAccessHint:
         "Device capabilities plus complete Gateway controls, including settings and upgrades.",

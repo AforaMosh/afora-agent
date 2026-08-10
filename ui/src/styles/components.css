@@ -4815,34 +4815,27 @@ td.data-table-key-col {
   box-shadow: var(--shadow-xl);
 }
 
+/* One-row identity bar: the step heading below carries the visual weight. */
 .device-pair-setup__header {
-  position: relative;
-  display: grid;
-  justify-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 28px 52px 18px;
-  text-align: center;
+  padding: 14px 14px 14px 24px;
 }
 
 .device-pair-setup__header h2 {
   margin: 0;
   color: var(--text-strong);
-  font-size: 24px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.025em;
 }
 
-.device-pair-setup__header p {
-  max-width: 390px;
-  margin: 7px 0 0;
+.device-pair-setup__get-apps {
+  margin: -4px 0 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.device-pair-setup__header p.device-pair-setup__get-apps {
-  margin-top: 2px;
   font-size: 13px;
+  text-align: center;
 }
 
 .device-pair-setup__get-apps button {
@@ -4866,90 +4859,91 @@ td.data-table-key-col {
   border-radius: 4px;
 }
 
-.device-pair-setup__phone {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
-  border-radius: 14px;
-  background: var(--accent-subtle);
-  color: var(--accent);
-}
-
-.device-pair-setup__phone svg {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.5px;
-}
-
-.device-pair-setup__close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-}
-
 .device-pair-setup__body {
   display: grid;
   justify-items: center;
   gap: 15px;
-  padding: 0 28px 24px;
+  padding: 4px 28px 24px;
 }
 
-/* One column at every width so it reads as a list, like the route choices. */
+/* Subordinate to the route decision above: a collapsed row that names the
+   bound value, expanding into plain radio rows rather than competing cards. */
 .device-pair-setup__access {
-  display: grid;
   width: min(440px, 100%);
-  gap: 8px;
-  margin: 0;
+  margin-top: 2px;
+}
+
+.device-pair-setup__access summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 2px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.device-pair-setup__access summary::-webkit-details-marker {
+  display: none;
+}
+
+.device-pair-setup__access summary:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: var(--focus-ring);
+}
+
+.device-pair-setup__access-value {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.device-pair-setup__access summary .collapse-chevron {
+  transform: rotate(-90deg);
+}
+
+.device-pair-setup__access[open] summary .collapse-chevron {
+  transform: none;
+}
+
+.device-pair-setup__access-options {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 0;
   padding: 0;
   border: 0;
 }
 
-.device-pair-setup__access legend {
-  margin: 0 0 8px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.device-pair-setup__access label {
+.device-pair-setup__access-options label {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--border);
+  gap: 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-md);
-  background: var(--bg-elevated);
   cursor: pointer;
 }
 
-.device-pair-setup__access label:has(input:checked) {
-  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
-  background: var(--accent-subtle);
+.device-pair-setup__access-options label:hover {
+  background: var(--bg-elevated);
 }
 
-.device-pair-setup__access input {
+.device-pair-setup__access-options input {
   margin-top: 2px;
 }
 
-.device-pair-setup__access span {
+.device-pair-setup__access-options span {
   display: grid;
   gap: 3px;
 }
 
-.device-pair-setup__access strong {
+.device-pair-setup__access-options strong {
   color: var(--text-strong);
   font-size: 13px;
+  font-weight: 600;
 }
 
-.device-pair-setup__access small {
+.device-pair-setup__access-options small {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.35;
@@ -5075,8 +5069,10 @@ td.data-table-key-col {
   width: min(440px, 100%);
   margin: 0;
   color: var(--text-strong);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
 }
 
 .device-pair-setup__routes {
@@ -5168,24 +5164,15 @@ td.data-table-key-col {
 }
 
 .device-pair-setup__field {
-  display: grid;
-  gap: 5px;
-  color: var(--text-strong);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.device-pair-setup__field input {
   padding: 9px 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--text);
   font: inherit;
-  font-weight: 400;
 }
 
-.device-pair-setup__field input:focus-visible {
+.device-pair-setup__field:focus-visible {
   outline: none;
   border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
   box-shadow: var(--focus-ring);
@@ -5238,40 +5225,66 @@ td.data-table-key-col {
   text-align: center;
 }
 
+/* Both escape hatches share one quiet link grammar; neither is a call to action. */
 .device-pair-setup__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 12px 24px;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
   font-size: 13px;
 }
 
-.device-pair-setup__footer a {
+.device-pair-setup__footer a,
+.device-pair-setup__footer-link {
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.device-pair-setup__footer a:hover {
+.device-pair-setup__footer a:hover,
+.device-pair-setup__footer-link:hover {
   color: var(--text);
 }
 
+.device-pair-setup__footer-link:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: var(--focus-ring);
+}
+
+/* Sheet presentation on phones: full-width, docked to the bottom edge by the
+   modal's `sheet` variant, so only the top corners keep a radius. */
 @media (max-width: 640px) {
   .device-pair-setup {
-    max-height: 90dvh;
+    max-height: calc(100dvh - 32px);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 
   .device-pair-setup__header {
-    padding: 22px 46px 16px;
+    padding: 12px 10px 12px 18px;
   }
 
   .device-pair-setup__body {
-    padding: 0 18px 20px;
+    padding: 4px 18px 20px;
   }
 
   .device-pair-setup__qr-frame {
     width: min(300px, 100%);
     padding: 14px;
+  }
+
+  .device-pair-setup__footer {
+    padding: 12px 18px max(12px, env(safe-area-inset-bottom));
   }
 }
 

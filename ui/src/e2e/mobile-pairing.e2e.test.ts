@@ -80,10 +80,13 @@ async function restartGatewayConnection(gateway: MockGatewayControls, page: Page
 /** Waits out the modal's entry animation so captures are not half-faded. */
 async function settleDialog(page: Page) {
   await page.waitForFunction(() => {
-    const modal = document.querySelector("openclaw-modal-dialog");
+    // Resolve the pairing dialog through its panel: other modal hosts (the
+    // shell nav drawer) precede it in the DOM, and gating on the first host
+    // captures the pairing dialog mid entry animation.
+    const panel = document.querySelector(".device-pair-setup");
+    const modal = panel?.closest("openclaw-modal-dialog");
     const host = modal?.shadowRoot?.querySelector("wa-dialog");
     const native = host?.shadowRoot?.querySelector("dialog");
-    const panel = document.querySelector(".device-pair-setup");
     if (!modal || !host || !native || !panel) {
       return false;
     }
@@ -187,6 +190,9 @@ suite.define(() => {
         await dialog.waitFor();
         const chooserPrompt = page.getByText("How should this phone reach the Gateway?");
         await chooserPrompt.waitFor();
+        // The subordinate access control opens collapsed on the default level.
+        const accessValue = page.locator(".device-pair-setup__access-value");
+        expect(await accessValue.textContent()).toBe("Full access");
         await expect
           .poll(async () => (await gateway.getRequests("device.pair.connectivity.inspect")).length)
           .toBe(1);
@@ -232,6 +238,22 @@ suite.define(() => {
         expect(
           (await gateway.getRequests("device.pair.connectivity.inspect")).length,
         ).toBeGreaterThan(1);
+
+        // The Gateway downgraded the plaintext route to Limited; the collapsed
+        // access control adopts and surfaces that recorded fact on the chooser,
+        // and the adopted level binds to the next issuance.
+        await page.getByRole("button", { name: /New code/ }).click();
+        await chooserPrompt.waitFor();
+        expect(await accessValue.textContent()).toBe("Limited access");
+        await page.getByText("Access level").click();
+        expect(await page.getByRole("radio", { name: /Limited access/ }).isChecked()).toBe(true);
+        await page.getByRole("button", { name: /^Local network/ }).click();
+        await page.getByRole("button", { name: "Expose on local network" }).click();
+        await page.getByAltText("OpenClaw mobile pairing QR code").waitFor({ timeout: 20_000 });
+        expect((await gateway.getRequests("device.pair.setupCode")).map((r) => r.params)).toEqual([
+          { mode: "lan" },
+          { bootstrapProfile: "limited", mode: "lan" },
+        ]);
 
         writeFileSync(
           path.join(artifactDir, "behavior-summary.json"),
@@ -343,19 +365,24 @@ suite.define(() => {
             await page.getByText("How should this phone reach the Gateway?").waitFor();
             await capture("01-chooser");
 
+            await page.getByText("Access level").click();
+            await page.getByRole("radio", { name: /Full access/ }).waitFor();
+            await capture("02-chooser-access-open");
+            await page.getByText("Access level").click();
+
             await page.getByRole("button", { name: /^Local network/ }).click();
             await page.getByText("Expose the Gateway on your local network").waitFor();
-            await capture("02-lan-review");
+            await capture("03-lan-review");
 
             await page.getByRole("button", { name: "Expose on local network" }).click();
             await gateway.waitForRequest("config.patch");
             await page.getByText("Waiting for the Gateway to restart…").waitFor();
-            await capture("03-awaiting-restart");
+            await capture("04-awaiting-restart");
 
             await gateway.setMethodResponse("device.pair.connectivity.plan", appliedLanPlan);
             await restartGatewayConnection(gateway, page);
             await page.getByAltText("OpenClaw mobile pairing QR code").waitFor({ timeout: 20_000 });
-            await capture("04-setup-code");
+            await capture("05-setup-code");
 
             // Back to the chooser, then down the public branch of the same flow.
             await page.getByRole("button", { name: /New code/ }).click();
@@ -365,11 +392,11 @@ suite.define(() => {
             const input = page.locator('input[name="device-pair-public-url"]');
             await input.waitFor();
             await input.fill("ws://gateway.example.com");
-            await capture("05-public-url");
+            await capture("06-public-url");
 
             await page.getByRole("button", { name: "Check address" }).click();
             await page.getByText("Public pairing requires a secure wss:// address.").waitFor();
-            await capture("06-public-url-rejected");
+            await capture("07-public-url-rejected");
           },
         );
       }

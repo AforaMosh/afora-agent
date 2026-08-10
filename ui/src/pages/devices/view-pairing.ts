@@ -106,34 +106,50 @@ function renderBack(actions: PairingWizardActions) {
 
 function renderAccess(props: DevicePairSetupProps) {
   const choose = (access: PairingWizardAccess) => () => props.actions.setAccess(access);
+  // Access binds when the setup code is minted, and every route passes through
+  // the chooser first, so this is the one step shared by all three routes where
+  // the choice can live. It stays collapsed: the route is this step's decision.
+  const currentLabel =
+    props.wizard.access === "limited"
+      ? t("devices.pairing.limitedAccess")
+      : t("devices.pairing.fullAccessShort");
   return html`
-    <fieldset class="device-pair-setup__access">
-      <legend>${t("devices.pairing.accessTitle")}</legend>
-      <label>
-        <input
-          type="radio"
-          name="device-pair-access"
-          .checked=${props.wizard.access === "full"}
-          @change=${choose("full")}
-        />
-        <span>
-          <strong>${t("devices.pairing.fullAccess")}</strong>
-          <small>${t("devices.pairing.fullAccessHint")}</small>
-        </span>
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="device-pair-access"
-          .checked=${props.wizard.access === "limited"}
-          @change=${choose("limited")}
-        />
-        <span>
-          <strong>${t("devices.pairing.limitedAccess")}</strong>
-          <small>${t("devices.pairing.limitedAccessHint")}</small>
-        </span>
-      </label>
-    </fieldset>
+    <details class="device-pair-setup__access">
+      <summary>
+        <span class="device-pair-setup__access-name">${t("devices.pairing.accessLevel")}</span>
+        <span class="device-pair-setup__access-value">${currentLabel}</span>
+        <span class="collapse-chevron" aria-hidden="true">${icons.chevronDown}</span>
+      </summary>
+      <fieldset
+        class="device-pair-setup__access-options"
+        aria-label=${t("devices.pairing.accessLevel")}
+      >
+        <label>
+          <input
+            type="radio"
+            name="device-pair-access"
+            .checked=${props.wizard.access === "full"}
+            @change=${choose("full")}
+          />
+          <span>
+            <strong>${t("devices.pairing.fullAccess")}</strong>
+            <small>${t("devices.pairing.fullAccessHint")}</small>
+          </span>
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="device-pair-access"
+            .checked=${props.wizard.access === "limited"}
+            @change=${choose("limited")}
+          />
+          <span>
+            <strong>${t("devices.pairing.limitedAccess")}</strong>
+            <small>${t("devices.pairing.limitedAccessHint")}</small>
+          </span>
+        </label>
+      </fieldset>
+    </details>
   `;
 }
 
@@ -194,7 +210,7 @@ function renderChooser(
           ${t("devices.pairing.noticeReverted")}
         </div>`
       : nothing}
-    <p class="device-pair-setup__prompt">${t("devices.pairing.chooserTitle")}</p>
+    <h3 class="device-pair-setup__prompt">${t("devices.pairing.chooserTitle")}</h3>
     <div class="device-pair-setup__routes">
       ${reusableCurrent && current.status === "ready"
         ? renderRoute({
@@ -230,18 +246,18 @@ function renderPublicUrl(
   };
   return html`
     <form class="device-pair-setup__form" @submit=${submit}>
-      <label class="device-pair-setup__field">
-        <span>${t("devices.pairing.publicTitle")}</span>
-        <input
-          type="url"
-          name="device-pair-public-url"
-          .value=${params.value}
-          placeholder=${t("devices.pairing.publicPlaceholder")}
-          ?disabled=${params.checking}
-          @input=${(event: Event) =>
-            props.actions.setPublicUrl((event.target as HTMLInputElement).value)}
-        />
-      </label>
+      <h3 class="device-pair-setup__prompt">${t("devices.pairing.publicTitle")}</h3>
+      <input
+        class="device-pair-setup__field"
+        type="url"
+        name="device-pair-public-url"
+        aria-label=${t("devices.pairing.publicTitle")}
+        .value=${params.value}
+        placeholder=${t("devices.pairing.publicPlaceholder")}
+        ?disabled=${params.checking}
+        @input=${(event: Event) =>
+          props.actions.setPublicUrl((event.target as HTMLInputElement).value)}
+      />
       <p class="device-pair-setup__hint">${t("devices.pairing.publicHint")}</p>
       <p class="device-pair-setup__hint">${t("devices.pairing.publicTrust")}</p>
       ${params.error
@@ -265,7 +281,7 @@ function renderLanReview(
 ) {
   const { plan } = step;
   return html`
-    <p class="device-pair-setup__prompt">${t("devices.pairing.lanTitle")}</p>
+    <h3 class="device-pair-setup__prompt">${t("devices.pairing.lanTitle")}</h3>
     <div class="device-pair-setup__gateways device-pair-setup__gateways--review">
       ${plan.urls.map(
         (url) => html`<span class="device-pair-setup__gateway" title=${url}>${url}</span>`,
@@ -367,6 +383,10 @@ function renderCode(
           </div>
         `
       : html`<p class="device-pair-setup__waiting">${t("devices.pairing.waiting")}</p>`}
+    <p class="device-pair-setup__get-apps">
+      ${t("devices.pairing.noApp")}
+      <button type="button" @click=${props.onGetApps}>${t("devices.pairing.getApps")}</button>
+    </p>
   `;
 }
 
@@ -448,28 +468,12 @@ function renderDevicePairSetup(props: DevicePairSetupProps) {
     return nothing;
   }
   const title = t("devices.pairing.title");
-  const description = t("devices.pairing.subtitle");
 
   return html`
-    <openclaw-modal-dialog label=${title} description=${description} @modal-cancel=${props.onClose}>
+    <openclaw-modal-dialog class="sheet" label=${title} @modal-cancel=${props.onClose}>
       <section class="device-pair-setup">
         <header class="device-pair-setup__header">
-          <div class="device-pair-setup__phone" aria-hidden="true">${icons.smartphone}</div>
-          <div>
-            <h2>${title}</h2>
-            <p>${description}</p>
-            ${
-              // Only the QR step needs the app; earlier steps are about the route.
-              props.wizard.step.kind === "code"
-                ? html`<p class="device-pair-setup__get-apps">
-                    ${t("devices.pairing.noApp")}
-                    <button type="button" @click=${props.onGetApps}>
-                      ${t("devices.pairing.getApps")}
-                    </button>
-                  </p>`
-                : nothing
-            }
-          </div>
+          <h2>${title}</h2>
           <button
             class="btn btn--icon btn--ghost device-pair-setup__close"
             type="button"
@@ -486,7 +490,11 @@ function renderDevicePairSetup(props: DevicePairSetupProps) {
           <a href=${PAIRING_DOCS_URL} target="_blank" rel="noreferrer">
             ${t("devices.pairing.help")}
           </a>
-          <button class="btn btn--ghost" type="button" @click=${props.onManageDevices}>
+          <button
+            class="device-pair-setup__footer-link"
+            type="button"
+            @click=${props.onManageDevices}
+          >
             ${t("devices.pairing.manageDevices")}
           </button>
         </footer>
