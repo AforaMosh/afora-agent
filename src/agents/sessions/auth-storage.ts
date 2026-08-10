@@ -48,7 +48,7 @@ import {
 import {
   attachAuthStorageProfiles,
   isAuthStorageCredentialFree,
-  registerAuthStorageAccess,
+  registerAuthStorageRuntimeOverride,
 } from "./auth-storage-profiles.js";
 import { resolveConfigValue } from "./resolve-config-value.js";
 
@@ -445,10 +445,7 @@ export class AuthStorage {
   private constructor(storage: AuthStorageBackend, migrationOwnerAgentDir?: string) {
     this.storage = storage;
     this.migrationOwnerAgentDir = migrationOwnerAgentDir ?? storage.migrationOwnerAgentDir;
-    registerAuthStorageAccess(this, {
-      getCredential: (provider) => this.data[provider],
-      getRuntimeOverride: (provider) => this.runtimeOverrides.get(provider),
-    });
+    registerAuthStorageRuntimeOverride(this, (provider) => this.runtimeOverrides.get(provider));
     this.reload();
   }
 
@@ -458,12 +455,11 @@ export class AuthStorage {
       getRuntimeAuthProfileStoreSnapshot(agentDir) ??
       loadAuthProfileStoreForSecretsRuntime(agentDir);
     assertAuthStorageSecretRefsMaterialized(preparedStore);
-    const storage = new AuthStorage(
-      new SqliteAuthStorageBackend(agentDir, preparedStore),
-      agentDir,
+    return attachAuthStorageProfiles(
+      new AuthStorage(new SqliteAuthStorageBackend(agentDir, preparedStore), agentDir),
+      preparedStore,
+      { liveDefault: true },
     );
-    attachAuthStorageProfiles(storage, preparedStore, { liveDefault: true });
-    return storage;
   }
 
   /**
@@ -534,10 +530,7 @@ export class AuthStorage {
   }
 
   private parseStorageData(content: string | undefined): AuthStorageData {
-    if (!content) {
-      return {};
-    }
-    return JSON.parse(content) as AuthStorageData;
+    return content ? (JSON.parse(content) as AuthStorageData) : {};
   }
 
   /**
@@ -638,11 +631,9 @@ export class AuthStorage {
    * Unlike getApiKey(), this doesn't refresh OAuth tokens.
    */
   hasAuth(provider: string): boolean {
-    if (this.runtimeOverrides.has(provider)) {
-      return true;
-    }
-    if (isAuthStorageCredentialFree(this)) {
-      return false;
+    const runtimeOverride = this.runtimeOverrides.has(provider);
+    if (runtimeOverride || isAuthStorageCredentialFree(this)) {
+      return runtimeOverride;
     }
     if (this.data[provider]) {
       return true;
@@ -660,11 +651,11 @@ export class AuthStorage {
    * Return auth status without exposing credential values or refreshing tokens.
    */
   getAuthStatus(provider: string): AuthStatus {
-    if (this.runtimeOverrides.has(provider)) {
-      return { configured: false, source: "runtime", label: "--api-key" };
-    }
-    if (isAuthStorageCredentialFree(this)) {
-      return { configured: false };
+    const runtimeOverride = this.runtimeOverrides.has(provider);
+    if (runtimeOverride || isAuthStorageCredentialFree(this)) {
+      return runtimeOverride
+        ? { configured: false, source: "runtime", label: "--api-key" }
+        : { configured: false };
     }
     if (this.data[provider]) {
       return { configured: true, source: "stored" };
@@ -790,11 +781,8 @@ export class AuthStorage {
   ): Promise<string | undefined> {
     // Runtime override takes highest priority
     const runtimeKey = this.runtimeOverrides.get(providerId);
-    if (runtimeKey) {
-      return runtimeKey;
-    }
-    if (isAuthStorageCredentialFree(this)) {
-      return undefined;
+    if (runtimeKey || isAuthStorageCredentialFree(this)) {
+      return runtimeKey || undefined;
     }
 
     if (this.migrationOwnerAgentDir) {

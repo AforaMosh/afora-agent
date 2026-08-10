@@ -15,25 +15,25 @@ type StorageCredential =
   | { type: "token"; token: string; expires?: number }
   | { type: "oauth"; access: string; refresh: string; expires: number };
 type ProfileData = Record<string, MaterializedProfile>;
-type AuthStorageAccess = {
-  getCredential: (provider: string) => StorageCredential | undefined;
-  getRuntimeOverride: (provider: string) => string | undefined;
-};
+type AuthStorageCredentialReader = { get(provider: string): StorageCredential | undefined };
 
 const profileDataByStorage = new WeakMap<object, ProfileData>();
-const accessByStorage = new WeakMap<object, AuthStorageAccess>();
+const runtimeOverrideByStorage = new WeakMap<object, (provider: string) => string | undefined>();
 const credentialFreeStorage = new WeakSet<object>();
 const liveDefaultStorage = new WeakSet<object>();
 
-export function registerAuthStorageAccess(storage: object, access: AuthStorageAccess): void {
-  accessByStorage.set(storage, access);
+export function registerAuthStorageRuntimeOverride(
+  storage: object,
+  resolve: (provider: string) => string | undefined,
+): void {
+  runtimeOverrideByStorage.set(storage, resolve);
 }
 
-export function attachAuthStorageProfiles(
-  storage: object,
+export function attachAuthStorageProfiles<T extends object>(
+  storage: T,
   store: AuthProfileStore,
   options?: { liveDefault?: boolean },
-): void {
+): T {
   const profiles = Object.fromEntries(
     Object.entries(structuredClone(store.profiles)).filter(
       ([profileId, profile]) =>
@@ -46,6 +46,7 @@ export function attachAuthStorageProfiles(
   if (options?.liveDefault) {
     liveDefaultStorage.add(storage);
   }
+  return storage;
 }
 
 export function copyAuthStorageProfiles(source: object, target: object): void {
@@ -62,7 +63,7 @@ function resolveProfile(
   }
   const liveDefault =
     liveDefaultStorage.has(storage) && profileId === `${provider}:default`
-      ? accessByStorage.get(storage)?.getCredential(provider)
+      ? (storage as AuthStorageCredentialReader).get(provider)
       : undefined;
   const profile =
     liveDefault?.type === "api_key" || liveDefault?.type === "token"
@@ -82,7 +83,7 @@ export function hasAuthStorageProfile(
 ): boolean {
   return Boolean(
     (options?.includeRuntimeOverride !== false &&
-      accessByStorage.get(storage)?.getRuntimeOverride(provider)) ||
+      runtimeOverrideByStorage.get(storage)?.(provider)) ||
     resolveProfile(storage, provider, profileId),
   );
 }
@@ -92,7 +93,7 @@ export function resolveAuthStorageProfileApiKey(
   provider: string,
   profileId: string,
 ): string | undefined {
-  const runtimeOverride = accessByStorage.get(storage)?.getRuntimeOverride(provider);
+  const runtimeOverride = runtimeOverrideByStorage.get(storage)?.(provider);
   if (runtimeOverride) {
     return runtimeOverride;
   }
