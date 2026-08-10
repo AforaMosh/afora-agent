@@ -63,6 +63,7 @@ async function renderSourceFixture(
 }
 
 async function renderPrivateDeclarationFixture(params?: {
+  nestedOption?: boolean;
   optionalOption?: boolean;
   optionalResult?: boolean;
 }) {
@@ -81,20 +82,23 @@ async function renderPrivateDeclarationFixture(params?: {
       },
     })}\n`,
   );
+  const optionModule = params?.nestedOption ? "fixture-internal/fixture-option" : "fixture-option";
+  const optionImport = `./${optionModule}.js`;
   fs.writeFileSync(
     path.join(sourceDir, "fixture.ts"),
     [
-      'import type { FixtureOptionLeaf } from "./fixture-option.js";',
       'import type { FixtureResultLeaf } from "./fixture-result.js";',
-      "type FixtureOptions = { nested: FixtureOptionLeaf };",
+      `type FixtureOptions = { nested: import("${optionImport}").FixtureOptionLeaf };`,
       "type FixtureResult = { nested: FixtureResultLeaf };",
       "export declare function createFixture(options: FixtureOptions): FixtureResult;",
     ].join("\n"),
   );
+  const optionPath = path.join(sourceDir, `${optionModule}.ts`);
+  fs.mkdirSync(path.dirname(optionPath), { recursive: true });
   fs.writeFileSync(
-    path.join(sourceDir, "fixture-option.ts"),
+    optionPath,
     [
-      'import type { FixtureResultLeaf } from "./fixture-result.js";',
+      `import type { FixtureResultLeaf } from "${params?.nestedOption ? "../" : "./"}fixture-result.js";`,
       'import type { FixtureExternal } from "fixture-external";',
       `export type FixtureOptionLeaf = { required${params?.optionalOption ? "?" : ""}: string; result?: FixtureResultLeaf; external?: FixtureExternal };`,
     ].join("\n"),
@@ -106,7 +110,7 @@ async function renderPrivateDeclarationFixture(params?: {
   fs.writeFileSync(
     path.join(sourceDir, "fixture-result-shape.ts"),
     [
-      'import type { FixtureOptionLeaf } from "./fixture-option.js";',
+      `import type { FixtureOptionLeaf } from "${optionImport}";`,
       `export type FixtureResultLeaf = { value${params?.optionalResult ? "?" : ""}: string; option?: FixtureOptionLeaf };`,
     ].join("\n"),
   );
@@ -347,6 +351,13 @@ describe("Plugin SDK API baseline", () => {
     const secondRender = await renderPrivateDeclarationFixture();
 
     expect(secondRender.jsonl).toBe(firstRender.jsonl);
+  });
+
+  it("keeps the baseline byte-identical when a private closure file moves", async () => {
+    const baseline = await renderPrivateDeclarationFixture();
+    const moved = await renderPrivateDeclarationFixture({ nestedOption: true });
+
+    expect(moved.jsonl).toBe(baseline.jsonl);
   });
 
   it("fails checks on contract drift and passes after write", async () => {
