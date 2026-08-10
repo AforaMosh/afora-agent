@@ -119,7 +119,10 @@ function startRecoveryOwnerAbort(mutation: () => Promise<ReplyRecoveryOwnerAbort
  * Registers the release barrier before backend cancellation can synchronously
  * complete the reply operation. Persistence starts only after abort acceptance.
  */
-function prepareReplyRecoveryUserAbort(operation: ReplyOperation):
+function prepareReplyRecoveryUserAbort(
+  operation: ReplyOperation,
+  barrierOperation?: ReplyOperation,
+):
   | {
       commit(): void;
       reject(): void;
@@ -134,6 +137,9 @@ function prepareReplyRecoveryUserAbort(operation: ReplyOperation):
   const initial = createDeferred<ReplyRecoveryAbortResult>();
   const settled = createDeferred();
   addAbortPersistenceBarrier(operation, settled.promise);
+  if (barrierOperation && barrierOperation !== operation) {
+    addAbortPersistenceBarrier(barrierOperation, settled.promise);
+  }
   let decided = false;
   return {
     result: initial.promise,
@@ -171,12 +177,19 @@ function prepareReplyRecoveryUserAbort(operation: ReplyOperation):
 
 type ReplyRecoveryRunTarget = MainSessionRecoveryRunIdentity & MainSessionRecoveryStoreTarget;
 
-function prepareReplyRecoveryRunAbort(target: ReplyRecoveryRunTarget): {
+function prepareReplyRecoveryRunAbort(
+  target: ReplyRecoveryRunTarget,
+  barrierOperation?: ReplyOperation,
+): {
   commit(): void;
   reject(): void;
   result: Promise<ReplyRecoveryAbortResult>;
 } {
   const initial = createDeferred<ReplyRecoveryAbortResult>();
+  const settled = createDeferred();
+  if (barrierOperation) {
+    addAbortPersistenceBarrier(barrierOperation, settled.promise);
+  }
   let decided = false;
   return {
     result: initial.promise,
@@ -192,6 +205,7 @@ function prepareReplyRecoveryRunAbort(target: ReplyRecoveryRunTarget): {
           persistenceErrors: result.kind === "persistence_failed" ? [result.error] : [],
         });
       });
+      void attempt.settled.then(() => settled.resolve());
     },
     reject() {
       if (decided) {
@@ -199,13 +213,16 @@ function prepareReplyRecoveryRunAbort(target: ReplyRecoveryRunTarget): {
       }
       decided = true;
       initial.resolve({ recoveries: [], persistenceErrors: [] });
+      settled.resolve();
     },
   };
 }
 
 export async function runReplyRecoveryUserAbort<T extends { aborted: boolean }>(params: {
   operation: ReplyOperation | undefined;
+  barrierOperation?: ReplyOperation;
   recoveryRun?: ReplyRecoveryRunTarget;
+  didAbortRecoveryRun?: () => boolean;
   abort: () => T | Promise<T>;
   logLabel: string;
 }): Promise<
@@ -214,19 +231,54 @@ export async function runReplyRecoveryUserAbort<T extends { aborted: boolean }>(
     recoveryPersistenceErrors?: string[];
   }
 > {
-  const recoveryAbort =
-    (params.operation ? prepareReplyRecoveryUserAbort(params.operation) : undefined) ??
-    (params.recoveryRun ? prepareReplyRecoveryRunAbort(params.recoveryRun) : undefined);
-  const settleRecoveryAbort = async (accepted: boolean) => {
-    if (!recoveryAbort) {
+  const operationAbort = params.operation
+    ? prepareReplyRecoveryUserAbort(params.operation, params.barrierOperation)
+    : undefined;
+  const operationRunId = params.operation
+    ? resolveReplyOperationRunId(params.operation)
+    : undefined;
+  const operationOwnsRecoveryRun = Boolean(
+    operationAbort &&
+    params.recoveryRun &&
+    operationRunId === params.recoveryRun.runId &&
+    params.operation?.sessionId === params.recoveryRun.sessionId &&
+    params.operation.lifecycleGeneration === params.recoveryRun.lifecycleGeneration,
+  );
+  const barrierOperation = params.barrierOperation ?? params.operation;
+  const recoveryRunAbort =
+    !operationOwnsRecoveryRun && params.recoveryRun && params.didAbortRecoveryRun
+      ? prepareReplyRecoveryRunAbort(params.recoveryRun, barrierOperation)
+      : undefined;
+  const settleRecoveryAborts = async () => {
+    if (!operationAbort && !recoveryRunAbort) {
       return undefined;
     }
-    if (accepted) {
-      recoveryAbort.commit();
-    } else {
-      recoveryAbort.reject();
+    const operationResult = params.operation?.result;
+    const operationAccepted =
+      operationResult?.kind === "aborted" && operationResult.code === "aborted_by_user";
+    if (operationAbort) {
+      if (operationAccepted) {
+        operationAbort.commit();
+      } else {
+        operationAbort.reject();
+      }
     }
-    const recovery = await recoveryAbort.result;
+    if (recoveryRunAbort) {
+      if (params.didAbortRecoveryRun?.() === true) {
+        recoveryRunAbort.commit();
+      } else {
+        recoveryRunAbort.reject();
+      }
+    }
+    const recoveries = await Promise.all(
+      [operationAbort, recoveryRunAbort]
+        .filter((abort): abort is NonNullable<typeof abort> => Boolean(abort))
+        .map((abort) => abort.result),
+    );
+    const recovery = {
+      recoveries: recoveries.flatMap((result) => result.recoveries),
+      persistenceErrors: recoveries.flatMap((result) => result.persistenceErrors),
+    };
     for (const error of recovery.persistenceErrors) {
       logVerbose(`abort: failed to persist recovery abort for ${params.logLabel}: ${error}`);
     }
@@ -237,14 +289,11 @@ export async function runReplyRecoveryUserAbort<T extends { aborted: boolean }>(
   try {
     outcome = await params.abort();
   } catch (error) {
-    const operationResult = params.operation?.result;
-    await settleRecoveryAbort(
-      operationResult?.kind === "aborted" && operationResult.code === "aborted_by_user",
-    );
+    await settleRecoveryAborts();
     throw error;
   }
 
-  const recovery = await settleRecoveryAbort(outcome.aborted);
+  const recovery = await settleRecoveryAborts();
   return {
     ...outcome,
     ...(recovery?.recoveries.length ? { recoveries: recovery.recoveries } : {}),

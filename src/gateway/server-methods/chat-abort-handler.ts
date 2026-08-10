@@ -60,24 +60,37 @@ type ChatAbortTarget = Pick<
 
 function resolveChatAbortReplyOperation(params: {
   active?: ChatAbortControllerEntry;
+  excludeOperation?: ReplyOperation;
   sessionId?: string;
   sessionKeys: readonly (string | undefined)[];
 }): ReplyOperation | undefined {
   if (params.active) {
-    return resolveActiveReplyOperationForAbortSignal(params.active.controller.signal);
-  }
-  for (const sessionKey of params.sessionKeys) {
-    const operation = sessionKey ? replyRunRegistry.get(sessionKey) : undefined;
-    if (operation && (!params.sessionId || operation.sessionId === params.sessionId)) {
+    const operation = resolveActiveReplyOperationForAbortSignal(params.active.controller.signal);
+    if (operation && operation !== params.excludeOperation) {
       return operation;
     }
   }
-  return params.sessionId ? resolveActiveReplyOperationForSessionId(params.sessionId) : undefined;
+  for (const sessionKey of params.sessionKeys) {
+    const operation = sessionKey ? replyRunRegistry.get(sessionKey) : undefined;
+    if (
+      operation &&
+      operation !== params.excludeOperation &&
+      (!params.sessionId || operation.sessionId === params.sessionId)
+    ) {
+      return operation;
+    }
+  }
+  const operation = params.sessionId
+    ? resolveActiveReplyOperationForSessionId(params.sessionId)
+    : undefined;
+  return operation !== params.excludeOperation ? operation : undefined;
 }
 
 async function runChatAbortWithReplyRecovery<T extends { aborted: boolean }>(params: {
   operation: ReplyOperation | undefined;
+  barrierOperation?: ReplyOperation;
   recoveryRun?: Parameters<typeof runReplyRecoveryUserAbort>[0]["recoveryRun"];
+  didAbortRecoveryRun?: () => boolean;
   logLabel: string;
   handledExternally: boolean;
   abort: () => T | Promise<T>;
@@ -87,7 +100,9 @@ async function runChatAbortWithReplyRecovery<T extends { aborted: boolean }>(par
   }
   return await runReplyRecoveryUserAbort({
     operation: params.operation,
+    ...(params.barrierOperation ? { barrierOperation: params.barrierOperation } : {}),
     recoveryRun: params.recoveryRun,
+    didAbortRecoveryRun: params.didAbortRecoveryRun,
     abort: params.abort,
     logLabel: params.logLabel,
   });
@@ -116,6 +131,19 @@ function resolveChatAbortRecoveryRun(params: {
         storePath: params.storePath,
       }
     : undefined;
+}
+
+function abortExactRecoveryRun(
+  recoveryRun: NonNullable<Parameters<typeof runReplyRecoveryUserAbort>[0]["recoveryRun"]>,
+): boolean {
+  const active = resolveActiveEmbeddedRunIdentity(recoveryRun.sessionId);
+  if (
+    active?.runId !== recoveryRun.runId ||
+    active.lifecycleGeneration !== recoveryRun.lifecycleGeneration
+  ) {
+    return false;
+  }
+  return abortEmbeddedAgentRun(recoveryRun.sessionId);
 }
 
 function respondRecoveryPersistenceFailure(respond: GatewayRequestHandlerOptions["respond"]): void {
@@ -216,13 +244,14 @@ export async function handleChatAbortRequestWithLifecycle(
       lifecycle.onAuthorizedAfterQueuedAbort ??
       (recoveryRun
         ? () => {
-            recoveryFallbackAccepted = abortEmbeddedAgentRun(recoveryRun.sessionId);
+            recoveryFallbackAccepted = abortExactRecoveryRun(recoveryRun);
             return recoveryFallbackAccepted;
           }
         : undefined);
     const res = await runChatAbortWithReplyRecovery({
       operation,
       recoveryRun,
+      didAbortRecoveryRun: () => recoveryFallbackAccepted,
       logLabel: canonicalAbortSessionKey,
       handledExternally: lifecycle.replyRecoveryAbortHandledExternally === true,
       abort: async () => {
@@ -375,11 +404,53 @@ export async function handleChatAbortRequestWithLifecycle(
         runId,
       )
     ) {
-      const additionalAborted = lifecycle.onAuthorizedAfterExactMiss?.() ?? false;
+      if (lifecycle.onAuthorizedAfterExactMiss) {
+        const additionalAborted = lifecycle.onAuthorizedAfterExactMiss();
+        respond(true, {
+          ok: true,
+          aborted: additionalAborted,
+          runIds: additionalAborted ? [runId] : [],
+        });
+        return;
+      }
+      const recoveryRun = resolveChatAbortRecoveryRun({
+        operation: undefined,
+        sessionId: abortSessionEntry?.sessionId,
+        sessionKey: persistedAbortSessionKey,
+        storePath: abortStorePath,
+      });
+      const barrierOperation = resolveChatAbortReplyOperation({
+        sessionId: abortSessionEntry?.sessionId,
+        sessionKeys: [canonicalAbortSessionKey, rawSessionKey],
+      });
+      const recoveryClientRunId = recoveryRun
+        ? context.chatRunState.registry.peek(recoveryRun.runId)?.clientRunId
+        : undefined;
+      if (!recoveryRun || (runId !== recoveryRun.runId && runId !== recoveryClientRunId)) {
+        respond(true, { ok: true, aborted: false, runIds: [] });
+        return;
+      }
+      let exactRecoveryAbortAccepted = false;
+      const res = await runChatAbortWithReplyRecovery({
+        operation: undefined,
+        ...(barrierOperation ? { barrierOperation } : {}),
+        recoveryRun,
+        didAbortRecoveryRun: () => exactRecoveryAbortAccepted,
+        logLabel: canonicalAbortSessionKey,
+        handledExternally: false,
+        abort: () => {
+          exactRecoveryAbortAccepted = abortExactRecoveryRun(recoveryRun);
+          return { aborted: exactRecoveryAbortAccepted };
+        },
+      });
+      if (res.recoveryPersistenceErrors?.length) {
+        respondRecoveryPersistenceFailure(respond);
+        return;
+      }
       respond(true, {
         ok: true,
-        aborted: additionalAborted,
-        runIds: additionalAborted ? [runId] : [],
+        aborted: res.aborted,
+        runIds: res.aborted ? [runId] : [],
       });
       return;
     }
@@ -412,9 +483,20 @@ export async function handleChatAbortRequestWithLifecycle(
   const exactRecoveryRunMatches = Boolean(
     recoveryRun && (runId === recoveryRun.runId || runId === recoveryClientRunId),
   );
+  // Exact aborts can target an older alias while a newer same-session owner survives.
+  // Keep the survivor behind the target's recovery-persistence barrier.
+  const barrierOperation =
+    resolveChatAbortReplyOperation({
+      sessionId: active.sessionId,
+      sessionKeys: [active.sessionKey, canonicalAbortSessionKey, rawSessionKey],
+      excludeOperation: operation,
+    }) ?? operation;
+  let recoveryRunAbortAccepted = false;
   const res = await runChatAbortWithReplyRecovery({
     operation,
+    ...(barrierOperation ? { barrierOperation } : {}),
     recoveryRun,
+    didAbortRecoveryRun: () => recoveryRunAbortAccepted,
     logLabel: active.sessionKey,
     handledExternally: lifecycle.replyRecoveryAbortHandledExternally === true,
     abort: () => {
@@ -423,8 +505,13 @@ export async function handleChatAbortRequestWithLifecycle(
         sessionKey: active.sessionKey,
         stopReason: "rpc",
       });
-      if (!result.aborted && exactRecoveryRunMatches) {
-        return { aborted: abortEmbeddedAgentRun(active.sessionId) };
+      if (result.aborted && exactRecoveryRunMatches) {
+        recoveryRunAbortAccepted = true;
+        return result;
+      }
+      if (!result.aborted && exactRecoveryRunMatches && recoveryRun) {
+        recoveryRunAbortAccepted = abortExactRecoveryRun(recoveryRun);
+        return { aborted: recoveryRunAbortAccepted };
       }
       return result;
     },

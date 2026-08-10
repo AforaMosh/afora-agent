@@ -66,7 +66,7 @@ describe("reply recovery owner", () => {
     await expect(
       runReplyRecoveryUserAbort({
         operation,
-        abort: () => ({ active: true, aborted: true }),
+        abort: () => ({ active: true, aborted: operation.abortByUser() }),
         logLabel: operation.key,
       }),
     ).resolves.toEqual({
@@ -94,6 +94,83 @@ describe("reply recovery owner", () => {
     });
     await releaseWait;
     expect(released).toBe(true);
+  });
+
+  it("keeps a same-session successor fenced while an exact older owner persists", async () => {
+    let deferredSuccess:
+      | ((result: { kind: "applied"; entry: InternalSessionEntry; sessionKey: string }) => void)
+      | undefined;
+    recoveryMocks.repair.mockImplementation(async (params) => {
+      deferredSuccess = params.onDeferredSuccess;
+      params.onError(new Error("temporary older-owner writer outage"));
+      return undefined;
+    });
+    const sessionId = "session-two-operation-abort-retry";
+    const operation = createReplyOperation({
+      sessionKey: "agent:main:telegram:topic:older-owner",
+      sessionId,
+      resetTriggered: false,
+    });
+    operation.attachBackend({
+      kind: "embedded",
+      runId: "run-two-operation-older",
+      cancel: () => {},
+    });
+    const successor = createReplyOperation({
+      sessionKey: "agent:main:telegram:topic:successor-owner",
+      sessionId,
+      resetTriggered: false,
+    });
+    const lease: MainSessionRecoveryOwnerLease = {
+      cycleId: "cycle-two-operation-abort-retry",
+      lifecycleGeneration: "generation-two-operation-abort-retry",
+      claimId: "claim-two-operation-abort-retry",
+      sessionId,
+      sessionKey: operation.key,
+      storePath: "/tmp/two-operation-abort-retry.sessions.json",
+    };
+    setReplyRecoveryOwner(operation, lease);
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation,
+        barrierOperation: successor,
+        abort: () => ({ active: true, aborted: operation.abortByUser() }),
+        logLabel: operation.key,
+      }),
+    ).resolves.toEqual({
+      active: true,
+      aborted: true,
+      recoveryPersistenceErrors: ["temporary older-owner writer outage"],
+    });
+
+    let operationReleased = false;
+    let successorReleased = false;
+    const releaseWait = Promise.all([
+      waitForReplyRecoveryAbortPersistence(operation).then(() => {
+        operationReleased = true;
+      }),
+      waitForReplyRecoveryAbortPersistence(successor).then(() => {
+        successorReleased = true;
+      }),
+    ]);
+    await Promise.resolve();
+    expect(operationReleased).toBe(false);
+    expect(successorReleased).toBe(false);
+
+    deferredSuccess?.({
+      kind: "applied",
+      entry: {
+        sessionId,
+        status: "killed",
+        abortedLastRun: true,
+        updatedAt: 10,
+      },
+      sessionKey: operation.key,
+    });
+    await releaseWait;
+    expect(operationReleased).toBe(true);
+    expect(successorReleased).toBe(true);
   });
 
   it("terminalizes every recovery owner attached to one operation", async () => {
@@ -162,6 +239,233 @@ describe("reply recovery owner", () => {
       leases.map((lease) => [lease, "run-multi-owner"]),
     );
     await expect(waitForReplyRecoveryAbortPersistence(operation)).resolves.toBeUndefined();
+  });
+
+  it("does not terminalize an operation owner when only unrelated work was aborted", async () => {
+    const operation = createReplyOperation({
+      sessionKey: "agent:main:telegram:topic:unrelated-abort",
+      sessionId: "session-unrelated-abort",
+      resetTriggered: false,
+    });
+    const lease: MainSessionRecoveryOwnerLease = {
+      cycleId: "cycle-unrelated-abort",
+      lifecycleGeneration: "generation-unrelated-abort",
+      claimId: "claim-unrelated-abort",
+      sessionId: operation.sessionId,
+      sessionKey: operation.key,
+      storePath: "/tmp/unrelated-abort.sessions.json",
+    };
+    setReplyRecoveryOwner(operation, lease);
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation,
+        abort: () => ({ active: true, aborted: true }),
+        logLabel: operation.key,
+      }),
+    ).resolves.toEqual({ active: true, aborted: true });
+    expect(operation.result).toBeNull();
+    expect(recoveryMocks.abortOwner).not.toHaveBeenCalled();
+    expect(recoveryMocks.repair).not.toHaveBeenCalled();
+    await expect(waitForReplyRecoveryAbortPersistence(operation)).resolves.toBeUndefined();
+    operation.complete();
+  });
+
+  it("terminalizes distinct accepted operation and embedded recovery identities", async () => {
+    const operation = createReplyOperation({
+      sessionKey: "agent:main:telegram:topic:dual-recovery-abort",
+      sessionId: "session-dual-recovery-abort",
+      resetTriggered: false,
+    });
+    operation.attachBackend({
+      kind: "embedded",
+      runId: "run-dual-recovery-successor",
+      cancel: () => {},
+    });
+    operation.setPhase("running");
+    const lease: MainSessionRecoveryOwnerLease = {
+      cycleId: "cycle-dual-recovery-successor",
+      lifecycleGeneration: "generation-dual-recovery",
+      claimId: "claim-dual-recovery-successor",
+      sessionId: operation.sessionId,
+      sessionKey: operation.key,
+      storePath: "/tmp/dual-recovery.sessions.json",
+      runId: "run-dual-recovery-successor",
+    };
+    const recoveryRun = {
+      lifecycleGeneration: "generation-dual-recovery",
+      runId: "run-dual-recovery-older",
+      sessionId: operation.sessionId,
+      sessionKey: operation.key,
+      storePath: lease.storePath,
+    };
+    setReplyRecoveryOwner(operation, lease);
+    recoveryMocks.abortOwner.mockResolvedValue({
+      kind: "applied",
+      entry: {
+        sessionId: operation.sessionId,
+        status: "running",
+        abortedLastRun: true,
+        updatedAt: 10,
+      },
+      sessionKey: operation.key,
+    });
+    recoveryMocks.abortRun.mockResolvedValue({
+      kind: "applied",
+      entry: {
+        sessionId: operation.sessionId,
+        status: "killed",
+        abortedLastRun: true,
+        updatedAt: 11,
+      },
+      sessionKey: operation.key,
+    });
+    recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
+    let recoveryRunAborted = false;
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation,
+        recoveryRun,
+        didAbortRecoveryRun: () => recoveryRunAborted,
+        abort: () => {
+          const aborted = operation.abortByUser();
+          recoveryRunAborted = true;
+          return { active: true, aborted };
+        },
+        logLabel: operation.key,
+      }),
+    ).resolves.toMatchObject({
+      active: true,
+      aborted: true,
+      recoveries: [{ kind: "applied" }, { kind: "applied" }],
+    });
+    expect(recoveryMocks.abortOwner).toHaveBeenCalledWith(lease, "run-dual-recovery-successor");
+    expect(recoveryMocks.abortRun).toHaveBeenCalledWith(recoveryRun);
+    await expect(waitForReplyRecoveryAbortPersistence(operation)).resolves.toBeUndefined();
+  });
+
+  it("keeps successor release fenced until distinct recovery persistence succeeds", async () => {
+    let deferredSuccess:
+      | ((result: { kind: "applied"; entry: InternalSessionEntry; sessionKey: string }) => void)
+      | undefined;
+    recoveryMocks.repair.mockImplementation(async (params) => {
+      deferredSuccess = params.onDeferredSuccess;
+      params.onError(new Error("temporary distinct writer outage"));
+      return undefined;
+    });
+    const operation = createReplyOperation({
+      sessionKey: "agent:main:telegram:topic:distinct-abort-retry",
+      sessionId: "session-distinct-abort-retry",
+      resetTriggered: false,
+    });
+    operation.attachBackend({
+      kind: "embedded",
+      runId: "run-distinct-abort-successor",
+      cancel: () => {},
+    });
+    const recoveryRun = {
+      lifecycleGeneration: operation.lifecycleGeneration!,
+      runId: "run-distinct-abort-older",
+      sessionId: operation.sessionId,
+      sessionKey: operation.key,
+      storePath: "/tmp/distinct-abort-retry.sessions.json",
+    };
+    let recoveryRunAborted = false;
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation: undefined,
+        barrierOperation: operation,
+        recoveryRun,
+        didAbortRecoveryRun: () => recoveryRunAborted,
+        abort: () => {
+          recoveryRunAborted = true;
+          return { active: true, aborted: true };
+        },
+        logLabel: operation.key,
+      }),
+    ).resolves.toEqual({
+      active: true,
+      aborted: true,
+      recoveryPersistenceErrors: ["temporary distinct writer outage"],
+    });
+    expect(operation.result).toBeNull();
+    let released = false;
+    const releaseWait = waitForReplyRecoveryAbortPersistence(operation).then(() => {
+      released = true;
+    });
+    await Promise.resolve();
+    expect(released).toBe(false);
+
+    deferredSuccess?.({
+      kind: "applied",
+      entry: {
+        sessionId: recoveryRun.sessionId,
+        status: "killed",
+        abortedLastRun: true,
+        updatedAt: 10,
+      },
+      sessionKey: recoveryRun.sessionKey,
+    });
+    await releaseWait;
+    expect(released).toBe(true);
+  });
+
+  it("terminalizes a distinct accepted recovery when later cancellation throws", async () => {
+    const operation = createReplyOperation({
+      sessionKey: "agent:main:telegram:topic:dual-recovery-error",
+      sessionId: "session-dual-recovery-error",
+      resetTriggered: false,
+    });
+    operation.attachBackend({
+      kind: "embedded",
+      runId: "run-dual-recovery-error-successor",
+      cancel: () => {},
+    });
+    const lease: MainSessionRecoveryOwnerLease = {
+      cycleId: "cycle-dual-recovery-error-successor",
+      lifecycleGeneration: "generation-dual-recovery-error",
+      claimId: "claim-dual-recovery-error-successor",
+      sessionId: operation.sessionId,
+      sessionKey: operation.key,
+      storePath: "/tmp/dual-recovery-error.sessions.json",
+    };
+    const recoveryRun = {
+      lifecycleGeneration: "generation-dual-recovery-error",
+      runId: "run-dual-recovery-error-older",
+      sessionId: operation.sessionId,
+      sessionKey: operation.key,
+      storePath: lease.storePath,
+    };
+    setReplyRecoveryOwner(operation, lease);
+    recoveryMocks.abortRun.mockResolvedValue({
+      kind: "applied",
+      entry: {
+        sessionId: operation.sessionId,
+        status: "killed",
+        abortedLastRun: true,
+        updatedAt: 10,
+      },
+      sessionKey: operation.key,
+    });
+    recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
+    let recoveryRunAborted = false;
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation,
+        recoveryRun,
+        didAbortRecoveryRun: () => recoveryRunAborted,
+        abort: () => {
+          recoveryRunAborted = true;
+          throw new Error("later cancellation failed");
+        },
+        logLabel: operation.key,
+      }),
+    ).rejects.toThrow("later cancellation failed");
+    expect(recoveryMocks.abortOwner).not.toHaveBeenCalled();
+    expect(recoveryMocks.abortRun).toHaveBeenCalledWith(recoveryRun);
   });
 
   it("settles accepted abort persistence when backend cancellation throws", async () => {
@@ -235,6 +539,7 @@ describe("reply recovery owner", () => {
       runReplyRecoveryUserAbort({
         operation: undefined,
         recoveryRun,
+        didAbortRecoveryRun: () => true,
         abort: async () => ({ active: true, aborted: true }),
         logLabel: recoveryRun.sessionKey,
       }),
@@ -259,12 +564,50 @@ describe("reply recovery owner", () => {
       runReplyRecoveryUserAbort({
         operation: undefined,
         recoveryRun,
+        didAbortRecoveryRun: () => false,
         abort: () => ({ active: true, aborted: false }),
         logLabel: recoveryRun.sessionKey,
       }),
     ).resolves.toEqual({ active: true, aborted: false });
     expect(recoveryMocks.abortRun).not.toHaveBeenCalled();
     expect(recoveryMocks.repair).not.toHaveBeenCalled();
+  });
+
+  it("terminalizes an accepted operationless recovery when later cancellation throws", async () => {
+    const recoveryRun = {
+      lifecycleGeneration: "generation-operationless-error",
+      runId: "run-operationless-error",
+      sessionId: "session-operationless-error",
+      sessionKey: "agent:main:telegram:topic:operationless-error",
+      storePath: "/tmp/operationless-error.sessions.json",
+    };
+    const entry: InternalSessionEntry = {
+      sessionId: recoveryRun.sessionId,
+      status: "killed",
+      abortedLastRun: true,
+      updatedAt: 10,
+    };
+    recoveryMocks.abortRun.mockResolvedValue({
+      kind: "applied",
+      entry,
+      sessionKey: recoveryRun.sessionKey,
+    });
+    recoveryMocks.repair.mockImplementation(async (params) => await params.mutation());
+    let accepted = false;
+
+    await expect(
+      runReplyRecoveryUserAbort({
+        operation: undefined,
+        recoveryRun,
+        didAbortRecoveryRun: () => accepted,
+        abort: () => {
+          accepted = true;
+          throw new Error("later cancellation failed");
+        },
+        logLabel: recoveryRun.sessionKey,
+      }),
+    ).rejects.toThrow("later cancellation failed");
+    expect(recoveryMocks.abortRun).toHaveBeenCalledWith(recoveryRun);
   });
 
   it("reports operationless persistence failure as retryable caller evidence", async () => {
@@ -284,6 +627,7 @@ describe("reply recovery owner", () => {
       runReplyRecoveryUserAbort({
         operation: undefined,
         recoveryRun,
+        didAbortRecoveryRun: () => true,
         abort: () => ({ active: true, aborted: true }),
         logLabel: recoveryRun.sessionKey,
       }),

@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import type { SubagentRunRecord } from "../../agents/subagent-registry.js";
 import type { OpenClawConfig } from "../../config/config.js";
+import type { InternalSessionEntry } from "../../config/sessions.js";
 import { resolveStorePath } from "../../config/sessions.js";
 import {
   loadSessionEntry,
@@ -1012,27 +1013,26 @@ describe("abort detection", () => {
     const runId = "run-recovery-successor";
     const lifecycleGeneration = getAgentEventLifecycleGeneration();
     const { storePath } = await createAbortConfig();
-    await replaceSessionEntry(
-      { storePath, sessionKey },
-      {
-        sessionId,
-        updatedAt: 100,
-        status: "running",
-        abortedLastRun: true,
-        restartRecoveryRuns: [{ runId, lifecycleGeneration }],
-        mainRestartRecovery: {
-          cycleId: "cycle-recovery-successor",
-          revision: 2,
-          chargedAttempts: 1,
-        },
+    const recoveryEntry: InternalSessionEntry = {
+      sessionId,
+      updatedAt: 100,
+      status: "running",
+      abortedLastRun: true,
+      restartRecoveryRuns: [{ runId, lifecycleGeneration }],
+      mainRestartRecovery: {
+        cycleId: "cycle-recovery-successor",
+        revision: 2,
+        chargedAttempts: 1,
       },
-    );
+    };
+    await replaceSessionEntry({ storePath, sessionKey }, recoveryEntry);
     const successor = createReplyOperation({
       sessionKey,
       sessionId,
       resetTriggered: false,
     });
     abortTesting.setDepsForTests({
+      abortEmbeddedAgentRun: runtimeAbortMocks.abortEmbeddedAgentRun,
       resolveActiveEmbeddedRunIdentity: () => ({
         lifecycleGeneration,
         runId,
@@ -1045,6 +1045,7 @@ describe("abort detection", () => {
     );
 
     expect(successor.result).toEqual({ kind: "aborted", code: "aborted_by_user" });
+    expect(runtimeAbortMocks.abortEmbeddedAgentRun).toHaveBeenCalledWith(sessionId);
     expect(readAbortSessionEntry(storePath, sessionKey)).toMatchObject({
       status: "killed",
       restartRecoveryTerminalRunIds: [runId],

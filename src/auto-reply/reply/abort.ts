@@ -10,6 +10,7 @@ import {
   resolveActiveEmbeddedRunIdentity,
   resolveActiveEmbeddedRunSessionId,
 } from "../../agents/embedded-agent-runner/runs.js";
+import type { MainSessionRecoveryRunIdentity } from "../../agents/main-session-recovery-types.js";
 import { killControlledSubagentRun } from "../../agents/subagent-control.js";
 import {
   getLatestSubagentRunByChildSessionKey,
@@ -107,7 +108,12 @@ if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.abortTestApi")] = abortTestApi;
 }
 
-function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: string }): {
+function abortSessionRunTargetWithOutcome(params: {
+  key?: string;
+  sessionId?: string;
+  recoveryRun?: MainSessionRecoveryRunIdentity;
+  onRecoveryRunAborted?: () => void;
+}): {
   active: boolean;
   aborted: boolean;
 } {
@@ -135,7 +141,21 @@ function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: st
   }
   for (const sessionId of sessionIds) {
     try {
-      aborted = abortDeps.abortEmbeddedAgentRun(sessionId) || aborted;
+      const recoveryRun = params.recoveryRun;
+      const activeRun = recoveryRun
+        ? abortDeps.resolveActiveEmbeddedRunIdentity(sessionId)
+        : undefined;
+      const embeddedAborted = abortDeps.abortEmbeddedAgentRun(sessionId);
+      if (
+        embeddedAborted &&
+        recoveryRun &&
+        activeRun?.sessionId === recoveryRun.sessionId &&
+        activeRun.runId === recoveryRun.runId &&
+        activeRun.lifecycleGeneration === recoveryRun.lifecycleGeneration
+      ) {
+        params.onRecoveryRunAborted?.();
+      }
+      aborted = embeddedAborted || aborted;
     } catch (error) {
       abortError ??= error;
     }
@@ -163,10 +183,19 @@ export async function abortSessionRunTarget(params: {
           storePath: params.storePath,
         }
       : undefined;
+  let recoveryRunAborted = false;
   return await runReplyRecoveryUserAbort({
     operation,
     recoveryRun,
-    abort: () => abortSessionRunTargetWithOutcome(params),
+    didAbortRecoveryRun: () => recoveryRunAborted,
+    abort: () =>
+      abortSessionRunTargetWithOutcome({
+        ...params,
+        recoveryRun,
+        onRecoveryRunAborted: () => {
+          recoveryRunAborted = true;
+        },
+      }),
     logLabel: params.key ?? "unknown session",
   });
 }

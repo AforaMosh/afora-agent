@@ -45,6 +45,133 @@ function requireStateDir(): string {
   return stateDir;
 }
 
+async function createRecoveryWithSuccessorFixture(
+  label: string,
+  options: { successorOwnsRecovery?: boolean } = {},
+) {
+  const agentId = "main";
+  const sessionKey = `agent:main:direct:${label}`;
+  const sessionId = `session-${label}`;
+  const recoveryBackendRunId = `run-${label}-recovery-backend`;
+  const recoveryClientRunId = `run-${label}-recovery-client`;
+  const successorBackendRunId = `run-${label}-successor-backend`;
+  const successorClientRunId = `run-${label}-successor-client`;
+  const successorClaimId = `claim-${label}-successor`;
+  const lifecycleGeneration = getAgentEventLifecycleGeneration();
+  const storePath = path.join(requireStateDir(), "agents", agentId, "sessions", "sessions.json");
+  const recoveryEntry: InternalSessionEntry = {
+    sessionId,
+    updatedAt: 100,
+    status: "running",
+    abortedLastRun: true,
+    lifecycleRunId: recoveryBackendRunId,
+    restartRecoveryRuns: [
+      { runId: recoveryBackendRunId, lifecycleGeneration },
+      ...(options.successorOwnsRecovery
+        ? [{ runId: successorBackendRunId, lifecycleGeneration }]
+        : []),
+    ],
+    mainRestartRecovery: {
+      cycleId: `cycle-${label}`,
+      revision: 2,
+      chargedAttempts: 1,
+      ...(options.successorOwnsRecovery
+        ? {
+            foregroundClaims: {
+              lifecycleGeneration,
+              tokens: [successorClaimId],
+              runIdsByClaimId: { [successorClaimId]: successorBackendRunId },
+            },
+          }
+        : {}),
+    },
+  };
+  await replaceSessionEntry({ agentId, sessionKey, storePath }, recoveryEntry);
+  setActiveEmbeddedRun(
+    sessionId,
+    createEmbeddedRunHandle({ runId: recoveryBackendRunId }),
+    sessionKey,
+  );
+  embeddedRunMock.activeIds.add(sessionId);
+  const successorRun = createActiveRun(sessionKey, { agentId, sessionId });
+  const successorOperation = replyRunRegistry.begin({
+    sessionKey,
+    sessionId,
+    resetTriggered: false,
+    upstreamAbortSignal: successorRun.controller.signal,
+  });
+  successorOperation.attachBackend({
+    kind: "embedded",
+    runId: successorBackendRunId,
+    cancel: () => {},
+  });
+  successorOperation.setPhase("running");
+  const successorRecoveryOwner = options.successorOwnsRecovery
+    ? {
+        cycleId: `cycle-${label}`,
+        lifecycleGeneration,
+        claimId: successorClaimId,
+        sessionId,
+        sessionKey,
+        storePath,
+        runId: successorBackendRunId,
+      }
+    : undefined;
+  if (successorRecoveryOwner) {
+    setReplyRecoveryOwner(successorOperation, successorRecoveryOwner);
+  }
+  const chatAbortContext = createChatAbortContext({
+    chatAbortControllers: new Map([[successorClientRunId, successorRun]]),
+  });
+  chatAbortContext.chatRunState.registry.add(recoveryBackendRunId, {
+    clientRunId: recoveryClientRunId,
+    sessionKey,
+    agentId,
+  });
+  chatAbortContext.chatRunState.registry.add(successorBackendRunId, {
+    clientRunId: successorClientRunId,
+    sessionKey,
+    agentId,
+  });
+  return {
+    agentId,
+    chatAbortContext,
+    recoveryBackendRunId,
+    recoveryClientRunId,
+    recoveryEntry,
+    sessionId,
+    sessionKey,
+    storePath,
+    successorBackendRunId,
+    successorClaimId,
+    successorClientRunId,
+    successorOperation,
+    successorRecoveryOwner,
+    successorRun,
+  };
+}
+
+async function invokeExactAbort(params: {
+  method: "chat.abort" | "sessions.abort";
+  runId: string;
+  sessionKey: string;
+  context: ReturnType<typeof createChatAbortContext>;
+}) {
+  if (params.method === "chat.abort") {
+    return await invokeChatAbortHandler({
+      handler: chatHandlers["chat.abort"]!,
+      context: params.context,
+      request: { sessionKey: params.sessionKey, runId: params.runId },
+    });
+  }
+  const { getRuntimeConfig: _getRuntimeConfig, ...context } = params.context;
+  return await directSessionReq(
+    "sessions.abort",
+    { key: params.sessionKey, runId: params.runId },
+    { context },
+  );
+}
+
 beforeEach(async () => {
   testState.sessionStorePath = undefined;
   testState.sessionConfig = undefined;
@@ -133,6 +260,125 @@ test.each([
           }
         : recoveryEntry,
     );
+  },
+);
+
+test.each(["chat.abort", "sessions.abort"] as const)(
+  "$method aborting a same-session successor leaves older recovery state untouched",
+  async (method) => {
+    const fixture = await createRecoveryWithSuccessorFixture(`${method}-successor-target`);
+
+    const result = await invokeExactAbort({
+      method,
+      runId: fixture.successorClientRunId,
+      sessionKey: fixture.sessionKey,
+      context: fixture.chatAbortContext,
+    });
+
+    if (method === "chat.abort") {
+      expect(result).toHaveBeenCalledWith(true, {
+        ok: true,
+        aborted: true,
+        runIds: [fixture.successorClientRunId],
+      });
+    } else {
+      expect(result).toMatchObject({
+        ok: true,
+        payload: {
+          ok: true,
+          abortedRunId: fixture.successorClientRunId,
+          status: "aborted",
+        },
+      });
+    }
+    expect(fixture.successorOperation.result).toEqual({
+      kind: "aborted",
+      code: "aborted_by_user",
+    });
+    expect(fixture.successorRun.controller.signal.aborted).toBe(true);
+    expect(embeddedRunMock.abortCalls).toEqual([]);
+    const entry = loadSessionEntry({
+      agentId: fixture.agentId,
+      sessionKey: fixture.sessionKey,
+      storePath: fixture.storePath,
+    });
+    expect(entry).toMatchObject(fixture.recoveryEntry);
+    expect(entry?.restartRecoveryTerminalRunIds).toBeUndefined();
+    fixture.successorOperation.complete();
+  },
+);
+
+test.each([
+  { method: "chat.abort", target: "client" },
+  { method: "chat.abort", target: "backend" },
+  { method: "sessions.abort", target: "client" },
+  { method: "sessions.abort", target: "backend" },
+] as const)(
+  "$method aborts an exact older recovery by $target id while a same-session successor stays active",
+  async ({ method, target }) => {
+    const fixture = await createRecoveryWithSuccessorFixture(
+      `${method}-${target}-recovery-target`,
+      { successorOwnsRecovery: true },
+    );
+    const requestedRunId =
+      target === "backend" ? fixture.recoveryBackendRunId : fixture.recoveryClientRunId;
+
+    const result = await invokeExactAbort({
+      method,
+      runId: requestedRunId,
+      sessionKey: fixture.sessionKey,
+      context: fixture.chatAbortContext,
+    });
+
+    if (method === "chat.abort") {
+      expect(result).toHaveBeenCalledWith(true, {
+        ok: true,
+        aborted: true,
+        runIds: [requestedRunId],
+      });
+    } else {
+      expect(result).toMatchObject({
+        ok: true,
+        payload: {
+          ok: true,
+          abortedRunId: fixture.recoveryClientRunId,
+          status: "aborted",
+        },
+      });
+    }
+    expect(embeddedRunMock.abortCalls).toEqual([fixture.sessionId]);
+    expect(fixture.successorOperation.result).toBeNull();
+    expect(fixture.successorRun.controller.signal.aborted).toBe(false);
+    expect(
+      loadSessionEntry({
+        agentId: fixture.agentId,
+        sessionKey: fixture.sessionKey,
+        storePath: fixture.storePath,
+      }),
+    ).toMatchObject({
+      sessionId: fixture.sessionId,
+      lifecycleRunId: fixture.successorBackendRunId,
+      status: "running",
+      restartRecoveryTerminalRunIds: [fixture.recoveryBackendRunId],
+      restartRecoveryRuns: [
+        {
+          runId: fixture.successorBackendRunId,
+          lifecycleGeneration: expect.any(String),
+        },
+      ],
+      mainRestartRecovery: {
+        foregroundClaims: {
+          tokens: [fixture.successorClaimId],
+          runIdsByClaimId: {
+            [fixture.successorClaimId]: fixture.successorBackendRunId,
+          },
+        },
+      },
+    });
+    if (fixture.successorRecoveryOwner) {
+      clearReplyRecoveryOwner(fixture.successorOperation, fixture.successorRecoveryOwner);
+    }
+    fixture.successorOperation.complete();
   },
 );
 
