@@ -14,6 +14,7 @@ type AgentPayloadLike = {
   presentation?: unknown;
   interactive?: unknown;
   channelData?: unknown;
+  location?: unknown;
   attachments?: unknown;
   isError?: unknown;
   isReasoning?: unknown;

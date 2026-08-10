@@ -44,15 +44,17 @@ import {
 } from "./chat-send-reply-context.js";
 import { createChatSendReplyDispatch } from "./chat-send-reply-dispatch.js";
 import { prepareAndAdmitChatSend } from "./chat-send-setup.js";
-import { finalizeChatSendSourceReplies } from "./chat-send-source-finalization.js";
+import {
+  finalizeChatSendAgentReplyPayloads,
+  finalizeChatSendSourceReplies,
+} from "./chat-send-source-finalization.js";
 import { createChatSendTurnAdoptionLifecycle } from "./chat-send-turn-adoption.js";
 import { applyChatSendManagedMedia, prepareChatSendUserTurn } from "./chat-send-user-turn.js";
 import {
   chatSendAckServerTimingAttributes,
-  emitOperatorChatSendServerTiming,
+  createChatSendServerTimingEmitter,
   roundedChatSendTimingMs,
   shouldIncludeChatSendAckServerTiming,
-  type ChatSendServerTimingPhase,
 } from "./chat-server-timing.js";
 import { createGatewayChatUserTurnController } from "./chat-user-turn-recorder.js";
 import { gatewayClientSenderFields } from "./gateway-client-identity.js";
@@ -108,6 +110,7 @@ export async function handleChatSend(
     gatewayWorkAdmission,
     lifecycleGeneration,
     messageInjectionTarget,
+    originatingRoute,
     retainGatewayWorkAdmission,
     restartSafeAdmission,
     setReleaseGatewayRootContinuation,
@@ -351,47 +354,15 @@ export async function handleChatSend(
       session: preparedSession.value,
       userTurnRecorder,
     });
-    const queuedFollowup = createChatSendTurnAdoptionLifecycle({
-      chatQueuedTurns: context.chatQueuedTurns,
-      runId: clientRunId,
-      controller: activeRunAbort.controller,
-      sessionId: backingSessionId ?? clientRunId,
-      sessionKey,
-      agentId: selectedAgent.agentId,
-      ownerConnId: client?.connId,
-      ownerDeviceId: client?.connect?.device?.id,
-      ownerKey: queuedFollowupOwnerKey,
-      ...(expectedLeafEntryId !== undefined ? { originatingLeafEntryId: expectedLeafEntryId } : {}),
-      hasCronCreatorAuthority: cronCreatorAuthority !== undefined,
-      retainWorkAdmission: retainGatewayWorkAdmission,
-    });
-    const dispatchErrorLifecycle = createChatSendDispatchErrorLifecycle({
-      admission: admitted.value,
+    const emitServerTiming = createChatSendServerTimingEmitter({
       context,
-      isQueuedFollowupEnqueued: queuedFollowup.isEnqueued,
-      persistUserTurnTranscript: persistGatewayUserTurnTranscript,
-      session: preparedSession.value,
-      terminalizeRestartSafeAdmission,
-      userTurnRecorder,
+      client,
+      runId: clientRunId,
+      sessionKey,
+      agentId,
+      receivedAtMs: chatSendReceivedAtMs,
+      ackedAtMs: chatSendAckedAtMs,
     });
-    const emitServerTiming = (
-      phase: ChatSendServerTimingPhase,
-      extra?: Record<string, string | number>,
-      dispatchStartedAtMs?: number,
-    ) => {
-      emitOperatorChatSendServerTiming({
-        context,
-        client,
-        phase,
-        runId: clientRunId,
-        sessionKey,
-        agentId,
-        receivedAtMs: chatSendReceivedAtMs,
-        ackedAtMs: chatSendAckedAtMs,
-        dispatchStartedAtMs,
-        extra,
-      });
-    };
     const dispatchStartedAtMs = performance.now();
     if (chatSendTiming) {
       chatSendTiming.dispatchStartedAtMs = dispatchStartedAtMs;
@@ -409,6 +380,40 @@ export async function handleChatSend(
       }
       emitServerTiming("first-assistant-event", undefined, dispatchStartedAtMs);
     };
+    const queuedFollowup = createChatSendTurnAdoptionLifecycle({
+      chatQueuedTurns: context.chatQueuedTurns,
+      runId: clientRunId,
+      controller: activeRunAbort.controller,
+      sessionId: backingSessionId ?? clientRunId,
+      sessionKey,
+      agentId: selectedAgent.agentId,
+      ownerConnId: client?.connId,
+      ownerDeviceId: client?.connect?.device?.id,
+      ownerKey: queuedFollowupOwnerKey,
+      ...(expectedLeafEntryId !== undefined ? { originatingLeafEntryId: expectedLeafEntryId } : {}),
+      originatingChannel: originatingRoute.originatingChannel,
+      logGateway: context.logGateway,
+      deliverLateReply: async ({ runId, payloads }) => {
+        await finalizeChatSendAgentReplyPayloads({
+          accountId,
+          context,
+          emitFirstAssistantServerTiming,
+          payloads,
+          session: { ...preparedSession.value, clientRunId: runId },
+        });
+      },
+      hasCronCreatorAuthority: cronCreatorAuthority !== undefined,
+      retainWorkAdmission: retainGatewayWorkAdmission,
+    });
+    const dispatchErrorLifecycle = createChatSendDispatchErrorLifecycle({
+      admission: admitted.value,
+      context,
+      isQueuedFollowupEnqueued: queuedFollowup.isEnqueued,
+      persistUserTurnTranscript: persistGatewayUserTurnTranscript,
+      session: preparedSession.value,
+      terminalizeRestartSafeAdmission,
+      userTurnRecorder,
+    });
     // Reserve the detached dispatch before this request releases its root. Otherwise
     // its inherited ALS context becomes retired and rejects queued/session work.
     setReleaseGatewayRootContinuation(retainGatewayRootWorkAdmissionContinuation() ?? undefined);
@@ -485,14 +490,8 @@ export async function handleChatSend(
                   abortSignal: activeRunAbort.controller.signal,
                   // Keep a Gateway-owned cancel identity after this chat.send
                   // terminalizes while the prompt waits in followup/collect queue.
-                  onFollowupQueueDisposition: (reason) => {
-                    context.logGateway.info("chat queue turn intentionally skipped", {
-                      runId: clientRunId,
-                      sessionKey,
-                      outcome: "skipped",
-                      reason,
-                    });
-                  },
+                  onFollowupQueueDisposition: queuedFollowup.onQueueDisposition,
+                  onQueuedFollowupReplyBatch: queuedFollowup.onQueuedFollowupReplyBatch,
                   turnAdoptionLifecycle: queuedFollowup.lifecycle,
                   images: replyOptionImages,
                   imageOrder: imageOrder.length > 0 ? imageOrder : undefined,

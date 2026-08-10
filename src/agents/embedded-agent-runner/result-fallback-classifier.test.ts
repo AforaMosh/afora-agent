@@ -195,6 +195,19 @@ describe("classifyEmbeddedAgentRunResultForModelFallback", () => {
     expect(result).toBeNull();
   });
 
+  it("does not classify a location-only assistant output as fallback-worthy", () => {
+    const result = classifyEmbeddedAgentRunResultForModelFallback({
+      provider: "claude-cli",
+      model: "claude-sonnet-4-6",
+      result: {
+        payloads: [{ location: { latitude: 48.858844, longitude: 2.294351 } }],
+        meta: { durationMs: 42 },
+      },
+    });
+
+    expect(result).toBeNull();
+  });
+
   it("does not retry generic external runner failure text mixed with non-text visible content", () => {
     const result = classifyEmbeddedAgentRunResultForModelFallback({
       provider: "claude-cli",

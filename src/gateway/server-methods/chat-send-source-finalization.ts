@@ -58,31 +58,23 @@ function selectChatSendAgentReplyPayloads(params: {
     .map((entry) => entry.payload);
 }
 
-/** Persist and broadcast agent-run source/status replies that bypass the normal model turn. */
-export async function finalizeChatSendSourceReplies(params: {
+type FinalizeChatSendAgentRepliesBase = {
   accountId: string | undefined;
   context: GatewayRequestContext;
-  deliveredReplies: readonly DeliveredReply[];
   emitFirstAssistantServerTiming: () => void;
-  hasReturnedAgentErrorPayloads: boolean;
   session: Pick<
     PreparedChatSendSession,
     "agentId" | "backingSessionId" | "cfg" | "clientRunId" | "sessionKey" | "sessionLoadOptions"
   >;
-}): Promise<boolean> {
-  const {
-    accountId,
-    context,
-    deliveredReplies,
-    emitFirstAssistantServerTiming,
-    hasReturnedAgentErrorPayloads,
-    session,
-  } = params;
+};
+
+/** Persist and broadcast agent-run replies that bypass the original live run projection. */
+export async function finalizeChatSendAgentReplyPayloads(
+  params: FinalizeChatSendAgentRepliesBase & { payloads: readonly ReplyPayload[] },
+): Promise<boolean> {
+  const { accountId, context, emitFirstAssistantServerTiming, session } = params;
   const { agentId, backingSessionId, cfg, clientRunId, sessionKey, sessionLoadOptions } = session;
-  const agentRunReplyPayloads = selectChatSendAgentReplyPayloads({
-    deliveredReplies,
-    hasReturnedAgentErrorPayloads,
-  });
+  const agentRunReplyPayloads = [...params.payloads];
   if (agentRunReplyPayloads.length === 0) {
     return false;
   }
@@ -302,4 +294,20 @@ export async function finalizeChatSendSourceReplies(params: {
     message,
   });
   return hasSourceReplyTranscriptMirror;
+}
+
+/** Persist and broadcast agent-run source/status replies that bypass the normal model turn. */
+export async function finalizeChatSendSourceReplies(
+  params: FinalizeChatSendAgentRepliesBase & {
+    deliveredReplies: readonly DeliveredReply[];
+    hasReturnedAgentErrorPayloads: boolean;
+  },
+): Promise<boolean> {
+  return await finalizeChatSendAgentReplyPayloads({
+    accountId: params.accountId,
+    context: params.context,
+    emitFirstAssistantServerTiming: params.emitFirstAssistantServerTiming,
+    payloads: selectChatSendAgentReplyPayloads(params),
+    session: params.session,
+  });
 }

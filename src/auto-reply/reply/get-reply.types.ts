@@ -16,6 +16,14 @@ export type ReplySessionBinding = {
   storePath?: string;
 };
 
+/** Closed queued-followup fact carried from the run owner to Gateway delivery. */
+export type QueuedFollowupReplyBatch = {
+  kind: "queued-followup";
+  runId: string;
+  originatingChannel?: string;
+  payloads: ReplyPayload[];
+};
+
 type InternalReplySessionOptions = {
   expectedExistingSessionId?: string;
   onDeliberateSilentTerminalReply?: () => void;
@@ -30,6 +38,8 @@ type InternalReplySessionOptions = {
   onReplyAdmissionWaitChange?: (waiting: boolean) => void;
   /** Receives terminal queue-cap outcomes without widening the public reply API. */
   onFollowupQueueDisposition?: (disposition: FollowupQueueDisposition) => void;
+  /** Delivers one admitted queued follow-up batch against its owner-recorded run. */
+  onQueuedFollowupReplyBatch?: (batch: QueuedFollowupReplyBatch) => Promise<void> | void;
   /** Overrides persisted queue mode for this reply only. */
   queueModeOverride?: QueueMode;
   /** Dispatch-owned operation used to defer hooks until durable run admission. */

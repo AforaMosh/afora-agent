@@ -7,6 +7,7 @@ import type { AgentTurnExecutionResult } from "./agent-runner-execution.types.js
 import { resolveFollowupDeliveryPayloads } from "./followup-delivery-payloads.js";
 import { deliverFollowupDecision, resolveFollowupDeliveryDecision } from "./followup-delivery.js";
 import type { AdmittedFollowupTurn } from "./followup-turn-admission.js";
+import type { QueuedFollowupReplyBatch } from "./get-reply.types.js";
 
 const deliveryState = vi.hoisted(() => ({
   followupRoute: undefined as { route: "dispatcher" | "origin" | "drop" } | undefined,
@@ -453,6 +454,7 @@ describe("resolveFollowupDeliveryDecision", () => {
       queued: {
         ...createTurn().queued,
         currentInboundEventKind: "room_event",
+        run: { ...createTurn().queued.run, messageProvider: "webchat" },
       },
     });
 
@@ -462,6 +464,28 @@ describe("resolveFollowupDeliveryDecision", () => {
         execution: createSettledExecution("private room final"),
       }),
     ).toEqual({ kind: "suppress", reason: "room-event" });
+  });
+
+  it("delivers internal WebChat room-event finals by originating channel", () => {
+    const baseTurn = createTurn();
+    const turn = createTurn({
+      queued: {
+        ...baseTurn.queued,
+        currentInboundEventKind: "room_event",
+        originatingChannel: "webchat",
+        originatingTo: undefined,
+        run: { ...baseTurn.queued.run, messageProvider: "discord" },
+      },
+    });
+
+    expect(
+      resolveFollowupDeliveryDecision({
+        turn,
+        execution: createSettledExecution("late WebChat final"),
+        accounting: createAccounting([{ text: "late WebChat final" }]),
+        opts: { onBlockReply: vi.fn(async () => {}) },
+      }),
+    ).toMatchObject({ kind: "deliver", payloads: [{ text: "late WebChat final" }] });
   });
 
   it("honors the admission-time send policy before any final projection", () => {
@@ -756,7 +780,10 @@ describe("resolveFollowupDeliveryDecision", () => {
 });
 
 describe("deliverFollowupDecision", () => {
-  const createDefaults = (onBlockReply: (payload: ReplyPayload) => Promise<void>) => ({
+  const createDefaults = (
+    onBlockReply: (payload: ReplyPayload) => Promise<void>,
+    onQueuedFollowupReplyBatch?: (batch: QueuedFollowupReplyBatch) => Promise<void>,
+  ) => ({
     defaultModel: "claude",
     typingMode: "never" as const,
     typing: {
@@ -769,24 +796,35 @@ describe("deliverFollowupDecision", () => {
       markDispatchIdle: vi.fn(),
       cleanup: vi.fn(),
     },
-    opts: { onBlockReply },
+    opts: { onBlockReply, onQueuedFollowupReplyBatch },
   });
 
-  it("keeps dispatcher-only delivery out of a routable origin", async () => {
+  it("carries dispatcher-only replies as one owner-recorded batch", async () => {
     const onBlockReply = vi.fn(async (_payload: ReplyPayload) => {});
+    const onQueuedFollowupReplyBatch = vi.fn(async (_batch: QueuedFollowupReplyBatch) => {});
     deliveryState.followupRoute = { route: "dispatcher" };
     deliveryState.routeReply.mockReset();
 
     try {
       await deliverFollowupDecision({
-        decision: { kind: "deliver", payloads: [{ text: "dispatcher only" }] },
+        decision: {
+          kind: "deliver",
+          payloads: [{ text: "dispatcher one" }, { text: "dispatcher two" }],
+        },
         turn: createTurn(),
-        defaults: createDefaults(onBlockReply),
-        runId: "run-1",
+        defaults: createDefaults(onBlockReply, onQueuedFollowupReplyBatch),
+        runId: "followup-run-1",
         runFollowup: vi.fn(async () => {}),
       });
 
-      expect(onBlockReply).toHaveBeenCalledOnce();
+      expect(onBlockReply).not.toHaveBeenCalled();
+      expect(onQueuedFollowupReplyBatch).toHaveBeenCalledOnce();
+      expect(onQueuedFollowupReplyBatch).toHaveBeenCalledWith({
+        kind: "queued-followup",
+        runId: "followup-run-1",
+        originatingChannel: "discord",
+        payloads: [{ text: "dispatcher one" }, { text: "dispatcher two" }],
+      });
       expect(deliveryState.routeReply).not.toHaveBeenCalled();
     } finally {
       deliveryState.followupRoute = undefined;

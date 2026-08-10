@@ -3970,9 +3970,14 @@ describe("gateway server chat", () => {
       });
       let turnAdoptionLifecycle: GetReplyOptions["turnAdoptionLifecycle"];
       let onQueueDisposition: InternalGetReplyOptions["onFollowupQueueDisposition"];
+      let onQueuedFollowupReplyBatch: InternalGetReplyOptions["onQueuedFollowupReplyBatch"];
       const dispatchRelease = createDeferred();
       dispatchInboundMessageMock.mockImplementationOnce(async (args: unknown) => {
-        const replyOptions = (args as { replyOptions?: InternalGetReplyOptions }).replyOptions;
+        const dispatch = args as {
+          replyOptions?: InternalGetReplyOptions;
+        };
+        const replyOptions = dispatch.replyOptions;
+        onQueuedFollowupReplyBatch = replyOptions?.onQueuedFollowupReplyBatch;
         turnAdoptionLifecycle = replyOptions?.turnAdoptionLifecycle;
         onQueueDisposition = replyOptions?.onFollowupQueueDisposition;
         turnAdoptionLifecycle?.onDeferred?.();
@@ -4018,6 +4023,42 @@ describe("gateway server chat", () => {
           (payload as { state?: string }).state === "final",
       );
       expect(finalEvents).toHaveLength(1);
+      const deliverQueuedFollowupReplyBatch = expectDefined(
+        onQueuedFollowupReplyBatch,
+        "queued follow-up batch delivery",
+      );
+      await deliverQueuedFollowupReplyBatch({
+        kind: "queued-followup",
+        runId: "queued-followup-agent-run",
+        originatingChannel: "webchat",
+        payloads: [{ text: "queued follow-up answer" }],
+      });
+      await waitForFast(() => {
+        expect(broadcast).toHaveBeenCalledWith(
+          "chat",
+          expect.objectContaining({
+            runId: "queued-followup-agent-run",
+            sessionKey: "agent:main:main",
+            state: "final",
+            message: expect.objectContaining({
+              content: [{ type: "text", text: "queued follow-up answer" }],
+            }),
+          }),
+          { sessionKeys: ["agent:main:main"] },
+        );
+      }, FAST_WAIT_OPTS);
+      await deliverQueuedFollowupReplyBatch({
+        kind: "queued-followup",
+        runId: "queued-followup-duplicate",
+        originatingChannel: "webchat",
+        payloads: [{ text: "must not create a second late final" }],
+      });
+      expect(context.logGateway.info).toHaveBeenCalledWith("webchat late reply disposition", {
+        runId: "idem-queued-followup",
+        followupRunId: "queued-followup-duplicate",
+        outcome: "late-and-dropped",
+        reason: "already-settled",
+      });
       expect(context.chatQueuedTurns.has("idem-queued-followup")).toBe(true);
       expect(isSessionWorkAdmissionActive(storePath, ["agent:main:main", "sess-main"])).toBe(true);
 

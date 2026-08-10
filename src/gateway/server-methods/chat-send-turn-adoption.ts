@@ -1,11 +1,15 @@
 import type { TurnAdoptionLifecycle } from "../../auto-reply/get-reply-options.types.js";
+import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
+import type { QueuedFollowupReplyBatch } from "../../auto-reply/reply/get-reply.types.js";
 import {
   completeQueuedChatTurn,
   registerQueuedChatTurn,
   retireQueuedChatTurnCancellation,
   type QueuedChatTurnMap,
 } from "../chat-queued-turns.js";
+import { createChatSendLateFollowupDisposition } from "./chat-send-late-followup.js";
 import { normalizeOptionalChatText } from "./chat-text-normalization.js";
+import type { GatewayRequestContext } from "./types.js";
 
 export function createChatSendTurnAdoptionLifecycle(params: {
   chatQueuedTurns: QueuedChatTurnMap;
@@ -18,11 +22,25 @@ export function createChatSendTurnAdoptionLifecycle(params: {
   ownerDeviceId?: string;
   ownerKey?: string;
   originatingLeafEntryId?: string | null;
+  originatingChannel: string;
+  logGateway: GatewayRequestContext["logGateway"];
+  deliverLateReply: (params: { runId: string; payloads: ReplyPayload[] }) => Promise<void>;
   hasCronCreatorAuthority: boolean;
   retainWorkAdmission: () => () => void;
-}): { lifecycle: TurnAdoptionLifecycle; isEnqueued: () => boolean } {
+}): {
+  lifecycle: TurnAdoptionLifecycle;
+  isEnqueued: () => boolean;
+  onQueueDisposition: (reason: string) => void;
+  onQueuedFollowupReplyBatch: (batch: QueuedFollowupReplyBatch) => Promise<void>;
+} {
   let enqueued = false;
   let releaseWorkAdmission: (() => void) | undefined;
+  const lateFollowup = createChatSendLateFollowupDisposition({
+    runId: params.runId,
+    originatingChannel: params.originatingChannel,
+    logGateway: params.logGateway,
+    deliver: params.deliverLateReply,
+  });
   const lifecycle: TurnAdoptionLifecycle = {
     // Gateway cancel identity only — share collect key via ownerKey.
     admission: "cancel-only",
@@ -49,6 +67,9 @@ export function createChatSendTurnAdoptionLifecycle(params: {
         // Retain the session fence until this detached queued turn is adopted.
         releaseWorkAdmission = params.retainWorkAdmission();
       }
+      if (enqueued) {
+        lateFollowup.recordQueued();
+      }
       return enqueued;
     },
     onCancellationRetired: () => {
@@ -60,5 +81,17 @@ export function createChatSendTurnAdoptionLifecycle(params: {
       releaseWorkAdmission = undefined;
     },
   };
-  return { lifecycle, isEnqueued: () => enqueued };
+  return {
+    lifecycle,
+    isEnqueued: () => enqueued,
+    onQueueDisposition: (reason: string) => {
+      params.logGateway.info("chat queue turn intentionally skipped", {
+        runId: params.runId,
+        sessionKey: params.sessionKey,
+        outcome: "skipped",
+        reason,
+      });
+    },
+    onQueuedFollowupReplyBatch: lateFollowup.deliver,
+  };
 }

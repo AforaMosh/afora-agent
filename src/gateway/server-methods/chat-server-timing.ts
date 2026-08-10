@@ -101,3 +101,17 @@ export function emitOperatorChatSendServerTiming(params: {
     { dropIfSlow: true },
   );
 }
+
+/** Bind stable chat.send timing identity once; callers add only phase-local facts. */
+export function createChatSendServerTimingEmitter(
+  params: Omit<
+    Parameters<typeof emitOperatorChatSendServerTiming>[0],
+    "phase" | "extra" | "dispatchStartedAtMs"
+  >,
+) {
+  return (
+    phase: ChatSendServerTimingPhase,
+    extra?: Record<string, string | number>,
+    dispatchStartedAtMs?: number,
+  ) => emitOperatorChatSendServerTiming({ ...params, phase, extra, dispatchStartedAtMs });
+}

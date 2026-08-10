@@ -71,7 +71,10 @@ export function resolveFollowupDeliveryDecision(params: {
   if (turn.sendPolicy === "deny") {
     return { kind: "suppress", reason: "send-policy" };
   }
-  if (turn.queued.currentInboundEventKind === "room_event") {
+  if (
+    turn.queued.currentInboundEventKind === "room_event" &&
+    !isInternalMessageChannel(turn.queued.originatingChannel)
+  ) {
     return { kind: "suppress", reason: "room-event" };
   }
   if (
@@ -306,7 +309,10 @@ async function sendFollowupPayloads(params: {
   if (payloads.length === 0) {
     return;
   }
-  if (!originRoutable && !defaults.opts?.onBlockReply) {
+  const dispatcherAvailable = Boolean(
+    defaults.opts?.onQueuedFollowupReplyBatch || defaults.opts?.onBlockReply,
+  );
+  if (!originRoutable && !dispatcherAvailable) {
     defaultRuntime.error?.(
       "followup queue: completed with payloads but no origin route or visible dispatcher is available",
     );
@@ -319,28 +325,39 @@ async function sendFollowupPayloads(params: {
   });
   let crossChannelFailure = false;
   let deliveredCrossChannelOrigin = false;
-  for (const payload of payloads) {
+  const deliveries = payloads.flatMap((payload) => {
     const providerRoute = deliveryPlan.resolveFollowupRoute({
       payload,
       originatingChannel,
       originatingTo,
       originRoutable,
-      dispatcherAvailable: Boolean(defaults.opts?.onBlockReply),
+      dispatcherAvailable,
     });
     if (providerRoute?.route === "drop") {
-      continue;
+      return [];
     }
     const route =
       providerRoute?.route === "origin" && originRoutable
         ? "origin"
-        : providerRoute?.route === "dispatcher" && defaults.opts?.onBlockReply
+        : providerRoute?.route === "dispatcher" && dispatcherAvailable
           ? "dispatcher"
           : originRoutable
             ? "origin"
             : "dispatcher";
+    return [{ payload, route }];
+  });
+  const queuedDispatcherPayloads: ReplyPayload[] = [];
+  const dispatchFollowupPayload = async (payload: ReplyPayload) => {
+    if (defaults.opts?.onQueuedFollowupReplyBatch) {
+      queuedDispatcherPayloads.push(payload);
+      return;
+    }
+    await defaults.opts?.onBlockReply?.(payload);
+  };
+  for (const { payload, route } of deliveries) {
     await typing.signalTextDelta(payload.text);
     if (route !== "origin") {
-      await defaults.opts?.onBlockReply?.(payload);
+      await dispatchFollowupPayload(payload);
     } else if (isRoutableChannel(originatingChannel) && originatingTo) {
       const metadata = getReplyPayloadMetadata(payload);
       const result = await routeReply({
@@ -370,9 +387,9 @@ async function sendFollowupPayloads(params: {
           provider: turn.queued.run.messageProvider,
         });
         const origin = resolveOriginMessageProvider({ originatingChannel });
-        if (origin && origin === provider && defaults.opts?.onBlockReply) {
-          await defaults.opts.onBlockReply(payload);
-        } else if (defaults.opts?.onBlockReply) {
+        if (origin && origin === provider && dispatcherAvailable) {
+          await dispatchFollowupPayload(payload);
+        } else if (dispatcherAvailable) {
           crossChannelFailure = true;
         } else {
           defaultRuntime.error?.(`followup queue: route-reply failed: ${routeError}`);
@@ -393,12 +410,20 @@ async function sendFollowupPayloads(params: {
       }
     }
   }
-  if (crossChannelFailure && !deliveredCrossChannelOrigin && defaults.opts?.onBlockReply) {
-    await defaults.opts.onBlockReply({
+  if (crossChannelFailure && !deliveredCrossChannelOrigin && dispatcherAvailable) {
+    await dispatchFollowupPayload({
       text:
         "Follow-up completed, but OpenClaw could not deliver it to the originating channel. " +
         "The reply content was not forwarded to this channel to avoid cross-channel misdelivery.",
       isError: true,
+    });
+  }
+  if (queuedDispatcherPayloads.length > 0) {
+    await defaults.opts?.onQueuedFollowupReplyBatch?.({
+      kind: "queued-followup",
+      runId: params.runId,
+      ...(originatingChannel ? { originatingChannel } : {}),
+      payloads: queuedDispatcherPayloads,
     });
   }
 }
