@@ -84,7 +84,7 @@ type LegacyModule = {
   main: (argv?: string[]) => Promise<number>;
 };
 
-const legacyModulePath: string = "./generate-dependency-release-evidence.mjs";
+const legacyModulePath = "./generate-dependency-release-evidence.mjs";
 const legacy = (await import(legacyModulePath)) as LegacyModule;
 
 export const {
