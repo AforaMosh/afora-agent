@@ -1,7 +1,15 @@
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { DurableDeliveryCompletion } from "../../infra/outbound/delivery-completion.js";
+import { PlatformMessageNotDispatchedError } from "../../infra/outbound/deliver-types.js";
+import {
+  settlePendingFinalDelivery,
+  type DurableDeliveryCompletion,
+} from "../../infra/outbound/delivery-completion.js";
 import { normalizeReplyPayloadsForDelivery } from "../../infra/outbound/payloads.js";
-import { getReplyPayloadMetadata, type ReplyPayload } from "../reply-payload.js";
+import {
+  getReplyPayloadMetadata,
+  setReplyPayloadMetadata,
+  type ReplyPayload,
+} from "../reply-payload.js";
 import {
   isSilentReplyPayloadText,
   isSilentReplyText,
@@ -12,6 +20,25 @@ import {
 } from "../tokens.js";
 import { stripInternalMetadataForDisplay } from "./display-text-sanitize.js";
 import { normalizeReplyPayload } from "./normalize-reply.js";
+import type { ReplyDispatchKind, ReplyDispatchRuntimeInfo } from "./reply-dispatcher.types.js";
+
+type PendingFinalDeliveryCompletion = Extract<DurableDeliveryCompletion, { kind: "pending-final" }>;
+
+type PendingFinalReplyDispatchCustody = {
+  completion: PendingFinalDeliveryCompletion;
+  claim?: Promise<boolean>;
+};
+
+type PendingFinalReplyDispatchOutcome =
+  | "delivered"
+  | "cancelled"
+  | "failed-before-deliver"
+  | "failed-deliver";
+
+const pendingFinalCustodyByInfo = new WeakMap<
+  ReplyDispatchRuntimeInfo,
+  PendingFinalReplyDispatchCustody
+>();
 
 /** Normalize raw final payloads into the channel-agnostic sendable set recovery can mark. */
 export function normalizePendingFinalDeliveryPayloads(
@@ -105,6 +132,66 @@ export function resolvePendingFinalDeliveryCompletion(
     ?.map((payload) => getReplyPayloadMetadata(payload)?.pendingFinalDeliveryCompletion)
     .find(Boolean);
   return completion ? { kind: "pending-final", ...completion } : undefined;
+}
+
+export function buildPendingFinalReplyDispatchRuntimeInfo(
+  payload: ReplyPayload,
+  kind: ReplyDispatchKind,
+): ReplyDispatchRuntimeInfo {
+  const assistantMessageIndex = getReplyPayloadMetadata(payload)?.assistantMessageIndex;
+  const info: ReplyDispatchRuntimeInfo = {
+    kind,
+    ...(assistantMessageIndex !== undefined ? { assistantMessageIndex } : {}),
+  };
+  const completion = resolvePendingFinalDeliveryCompletion([payload]);
+  if (!completion) {
+    return info;
+  }
+  const { kind: _kind, ...identity } = completion;
+  info.bindPendingFinalDelivery = (nextPayload) =>
+    setReplyPayloadMetadata(nextPayload, { pendingFinalDeliveryCompletion: identity });
+  info.onPlatformSendDispatch = async () => {
+    if (!(await claimPendingFinalReplyDispatch(info))) {
+      throw new PlatformMessageNotDispatchedError(
+        "Pending final delivery ownership changed before platform dispatch",
+        { cause: new Error("pending final delivery is no longer prepared") },
+      );
+    }
+  };
+  pendingFinalCustodyByInfo.set(info, { completion });
+  return info;
+}
+
+export async function claimPendingFinalReplyDispatch(
+  info: ReplyDispatchRuntimeInfo,
+): Promise<boolean> {
+  const custody = pendingFinalCustodyByInfo.get(info);
+  if (!custody) {
+    return true;
+  }
+  custody.claim ??= settlePendingFinalDelivery(custody.completion, "queued", "prepared").then(
+    ({ state }) => state === "queued",
+  );
+  return await custody.claim;
+}
+
+export async function settlePendingFinalReplyDispatchOutcome(
+  info: ReplyDispatchRuntimeInfo,
+  outcome: PendingFinalReplyDispatchOutcome,
+): Promise<void> {
+  const custody = pendingFinalCustodyByInfo.get(info);
+  if (!custody) {
+    return;
+  }
+  if (outcome === "cancelled" && custody.claim === undefined) {
+    await settlePendingFinalDelivery(custody.completion, "suppressed", "prepared");
+  } else if (outcome === "delivered") {
+    await settlePendingFinalDelivery(custody.completion, "delivered", "queued");
+  } else if (outcome === "failed-before-deliver" && custody.claim !== undefined) {
+    await settlePendingFinalDelivery(custody.completion, "prepared", "queued");
+  } else if (outcome === "failed-deliver") {
+    await settlePendingFinalDelivery(custody.completion, "unknown", "queued");
+  }
 }
 
 function collectDurableMediaDirectives(payload: ReplyPayload): string[] {

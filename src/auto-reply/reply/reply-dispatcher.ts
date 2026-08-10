@@ -8,25 +8,20 @@ import {
   isProvenDeliveryNotSentError,
 } from "../../infra/delivery-recovery.shared.js";
 import { collectErrorGraphCandidates } from "../../infra/errors.js";
-import { PlatformMessageNotDispatchedError } from "../../infra/outbound/deliver-types.js";
-import {
-  settlePendingFinalDelivery,
-  type DurableDeliveryCompletion,
-} from "../../infra/outbound/delivery-completion.js";
 import { generateSecureInt } from "../../infra/secure-random.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { SilentReplyConversationType } from "../../shared/silent-reply-policy.js";
 import { sleep } from "../../utils.js";
-import {
-  copyReplyPayloadMetadata,
-  getReplyPayloadMetadata,
-  setReplyPayloadMetadata,
-} from "../reply-payload.js";
+import { copyReplyPayloadMetadata } from "../reply-payload.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { registerDispatcher } from "./dispatcher-registry.js";
 import { normalizeReplyPayload, type NormalizeReplySkipReason } from "./normalize-reply.js";
-import { resolvePendingFinalDeliveryCompletion } from "./pending-final-delivery.js";
+import {
+  buildPendingFinalReplyDispatchRuntimeInfo,
+  claimPendingFinalReplyDispatch,
+  settlePendingFinalReplyDispatchOutcome,
+} from "./pending-final-delivery.js";
 import type {
   ReplyDispatchBeforeDeliver,
   ReplyDispatchBeforeDeliverOptions,
@@ -86,13 +81,6 @@ type ReplyDispatchDeliveryOutcomeTracker = {
   tracked: boolean;
 };
 
-type PendingFinalDeliveryCompletion = Extract<DurableDeliveryCompletion, { kind: "pending-final" }>;
-
-type ReplyDispatchPendingFinalCustody = {
-  completion: PendingFinalDeliveryCompletion;
-  claim?: Promise<boolean>;
-};
-
 type ReplyDispatchDeliverer = (
   payload: ReplyPayload,
   info: ReplyDispatchRuntimeInfo,
@@ -107,10 +95,6 @@ const silentReplyLogger = createSubsystemLogger("silent-reply/dispatcher");
 const beforeDeliverCancelledHooks = new WeakMap<ReplyDispatcher, ReplyDispatchCancelHandler[]>();
 const deliveryOutcomeTrackers = new WeakMap<ReplyPayload, ReplyDispatchDeliveryOutcomeTracker>();
 const undeliveredFallbacks = new WeakMap<ReplyPayload, ReplyPayload>();
-const pendingFinalCustodyByInfo = new WeakMap<
-  ReplyDispatchRuntimeInfo,
-  ReplyDispatchPendingFinalCustody
->();
 
 type ReplyDispatchBeforeDeliverStage = {
   hook: ReplyDispatchBeforeDeliver;
@@ -274,64 +258,6 @@ export function attachReplyDispatchUndeliveredFallback(
   fallback: ReplyPayload,
 ): void {
   undeliveredFallbacks.set(payload, fallback);
-}
-
-function buildReplyDispatchRuntimeInfo(
-  payload: ReplyPayload,
-  kind: ReplyDispatchKind,
-): ReplyDispatchRuntimeInfo {
-  const assistantMessageIndex = getReplyPayloadMetadata(payload)?.assistantMessageIndex;
-  const info: ReplyDispatchRuntimeInfo = {
-    kind,
-    ...(assistantMessageIndex !== undefined ? { assistantMessageIndex } : {}),
-  };
-  const completion = resolvePendingFinalDeliveryCompletion([payload]);
-  if (!completion) {
-    return info;
-  }
-  const { kind: _kind, ...identity } = completion;
-  info.bindPendingFinalDelivery = (nextPayload) =>
-    setReplyPayloadMetadata(nextPayload, { pendingFinalDeliveryCompletion: identity });
-  info.onPlatformSendDispatch = async () => {
-    if (!(await claimPendingFinalDelivery(info))) {
-      throw new PlatformMessageNotDispatchedError(
-        "Pending final delivery ownership changed before platform dispatch",
-        { cause: new Error("pending final delivery is no longer prepared") },
-      );
-    }
-  };
-  pendingFinalCustodyByInfo.set(info, { completion });
-  return info;
-}
-
-async function claimPendingFinalDelivery(info: ReplyDispatchRuntimeInfo): Promise<boolean> {
-  const custody = pendingFinalCustodyByInfo.get(info);
-  if (!custody) {
-    return true;
-  }
-  custody.claim ??= settlePendingFinalDelivery(custody.completion, "queued", "prepared").then(
-    ({ state }) => state === "queued",
-  );
-  return await custody.claim;
-}
-
-async function settlePendingFinalDeliveryOutcome(
-  info: ReplyDispatchRuntimeInfo,
-  outcome: ReplyDispatchDeliveryOutcome,
-): Promise<void> {
-  const custody = pendingFinalCustodyByInfo.get(info);
-  if (!custody) {
-    return;
-  }
-  if (outcome === "cancelled" && custody.claim === undefined) {
-    await settlePendingFinalDelivery(custody.completion, "suppressed", "prepared");
-  } else if (outcome === "delivered") {
-    await settlePendingFinalDelivery(custody.completion, "delivered", "queued");
-  } else if (outcome === "failed-before-deliver" && custody.claim !== undefined) {
-    await settlePendingFinalDelivery(custody.completion, "prepared", "queued");
-  } else if (outcome === "failed-deliver") {
-    await settlePendingFinalDelivery(custody.completion, "unknown", "queued");
-  }
 }
 
 /** Generate a random delay within the configured range. */
@@ -528,21 +454,21 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         }
         if (!deliverPayload) {
           if (isFinalAttempt) {
-            await settlePendingFinalDeliveryOutcome(info, "cancelled");
+            await settlePendingFinalReplyDispatchOutcome(info, "cancelled");
           }
           await notifyBeforeDeliverCancelled(payload, info);
           return "cancelled";
         }
         deliverPayload = copyReplyPayloadMetadata(payload, deliverPayload);
       }
-      if (!(await claimPendingFinalDelivery(info))) {
+      if (!(await claimPendingFinalReplyDispatch(info))) {
         await notifyBeforeDeliverCancelled(deliverPayload, info);
         return "cancelled";
       }
       deliveryStarted = true;
       await options.deliver(deliverPayload, info);
       if (isFinalAttempt) {
-        await settlePendingFinalDeliveryOutcome(info, "delivered");
+        await settlePendingFinalReplyDispatchOutcome(info, "delivered");
       }
       return "delivered";
     } catch (error) {
@@ -551,7 +477,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
           ? "failed-deliver"
           : "failed-before-deliver";
       if (isFinalAttempt) {
-        await settlePendingFinalDeliveryOutcome(info, outcome);
+        await settlePendingFinalReplyDispatchOutcome(info, outcome);
       }
       try {
         await options.onError?.(error, info);
@@ -572,7 +498,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       onHeartbeatStrip: options.onHeartbeatStrip,
       onSkip: (reason) =>
         options.onSkip?.(payload, {
-          ...buildReplyDispatchRuntimeInfo(payload, kind),
+          ...buildPendingFinalReplyDispatchRuntimeInfo(payload, kind),
           reason,
         }),
     });
@@ -620,7 +546,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
             await sleep(delayMs);
           }
         }
-        const dispatchInfo = buildReplyDispatchRuntimeInfo(normalized, kind);
+        const dispatchInfo = buildPendingFinalReplyDispatchRuntimeInfo(normalized, kind);
         deliveryOutcome = await deliverOnce(normalized, dispatchInfo, !deliveryFallback);
         if (
           deliveryFallback &&
@@ -629,7 +555,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
           deliveryOutcome = await deliverOnce(deliveryFallback, dispatchInfo, true);
         }
         if (deliveryFallback && deliveryOutcome === "failed-deliver") {
-          await settlePendingFinalDeliveryOutcome(dispatchInfo, deliveryOutcome);
+          await settlePendingFinalReplyDispatchOutcome(dispatchInfo, deliveryOutcome);
         }
         if (deliveryOutcome === "cancelled") {
           cancelledCounts[kind] += 1;
@@ -643,12 +569,12 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       .catch(async (err: unknown) => {
         failedCounts[kind] += 1;
         try {
-          await options.onError?.(err, buildReplyDispatchRuntimeInfo(normalized, kind));
+          await options.onError?.(err, buildPendingFinalReplyDispatchRuntimeInfo(normalized, kind));
         } catch {}
         deliveryOutcome = "failed-before-deliver";
       })
       .finally(() => {
-        const dispatchInfo = buildReplyDispatchRuntimeInfo(normalized, kind);
+        const dispatchInfo = buildPendingFinalReplyDispatchRuntimeInfo(normalized, kind);
         deliveryOutcomeTracker?.resolve(deliveryOutcome);
         deliveryOutcomeTrackers.delete(payload);
         try {
