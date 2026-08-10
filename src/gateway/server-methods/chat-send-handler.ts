@@ -8,7 +8,6 @@ import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/i
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { resolveProviderIdForAuth } from "../../agents/provider-auth-aliases.js";
 import { createAgentRunRestartAbortError } from "../../agents/run-termination.js";
-import { createExecutionIdentityAdmission } from "../../audit/execution-identity-admission.js";
 import { dispatchInboundMessageWithProjectedDispatcher } from "../../auto-reply/dispatch.js";
 import { getAgentEventLifecycleGeneration } from "../../infra/agent-events.js";
 import {
@@ -21,7 +20,7 @@ import { setGatewayDedupeEntry } from "../agent-turn/agent-job.js";
 import { updateChatRunProvider } from "../chat-abort.js";
 import type { ChatRunTiming } from "../server-chat-state.js";
 import { broadcastChatError, broadcastChatFinal } from "./chat-broadcast.js";
-import { hasGatewayAdminScope } from "./chat-origin-routing.js";
+import { createGatewayClientAdmission } from "./chat-origin-routing.js";
 import { terminalizeRestartSafeChatAdmission } from "./chat-restart-recovery.js";
 import { prepareChatSendAttachments } from "./chat-send-attachments.js";
 import {
@@ -165,10 +164,6 @@ export async function handleChatSend(
     });
 
   try {
-    const executionIdentityAdmission = createExecutionIdentityAdmission(
-      clientRunId,
-      hasGatewayAdminScope(client),
-    );
     const userTurn = createGatewayChatUserTurnController({
       agentId,
       cfg,
@@ -179,7 +174,7 @@ export async function handleChatSend(
       rawMessage,
       ...(restartSafeAdmission ? { restartAdmission: restartSafeAdmission } : {}),
       ...gatewayClientSenderFields(client),
-      executionIdentityAdmission,
+      executionIdentityAdmission: createGatewayClientAdmission(clientRunId, client),
       sessionKey,
       ...(sessionLoadOptions ? { sessionLoadOptions } : {}),
       startedAt: admissionStartedAt,

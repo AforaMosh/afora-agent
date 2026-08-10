@@ -4,6 +4,7 @@ import {
 } from "../../../packages/gateway-protocol/src/client-info.js";
 import { CHAT_SEND_SESSION_KEY_MAX_LENGTH } from "../../../packages/gateway-protocol/src/schema.js";
 import { listAgentIds } from "../../agents/agent-scope.js";
+import { createExecutionIdentityAdmission } from "../../audit/execution-identity-admission.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { getSessionBindingService } from "../../infra/outbound/session-binding-service.js";
@@ -341,4 +342,11 @@ export function isAcpBridgeClient(client: GatewayRequestHandlerOptions["client"]
 export function hasGatewayAdminScope(client: GatewayRequestHandlerOptions["client"]): boolean {
   const scopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];
   return scopes.includes(ADMIN_SCOPE);
+}
+
+export function createGatewayClientAdmission(
+  runId: string,
+  client: GatewayRequestHandlerOptions["client"],
+) {
+  return createExecutionIdentityAdmission(runId, hasGatewayAdminScope(client));
 }
