@@ -128,13 +128,19 @@ describe("executeAgentTurn: lifecycle progress", () => {
 
     expect(result.kind).toBe("success");
     expect(onItemEvent).toHaveBeenCalledWith({
+      approvalId: undefined,
+      approvalSlug: undefined,
+      commandBearing: false,
       itemId: "tool:read-1",
       toolCallId: "read-1",
       kind: "tool",
       title: "read",
       name: "read",
+      meta: undefined,
       phase: "start",
+      progressText: undefined,
       status: "running",
+      summary: undefined,
     });
   });
 
@@ -219,13 +225,19 @@ describe("executeAgentTurn: lifecycle progress", () => {
 
     expect(result.kind).toBe("success");
     expect(onItemEvent).toHaveBeenCalledWith({
+      approvalId: undefined,
+      approvalSlug: undefined,
+      commandBearing: false,
       itemId: "cmd-1",
       toolCallId: "cmd-1",
       kind: "command",
       title: "Command",
       name: "bash",
+      meta: undefined,
       phase: "start",
+      progressText: undefined,
       status: "running",
+      summary: undefined,
     });
   });
 

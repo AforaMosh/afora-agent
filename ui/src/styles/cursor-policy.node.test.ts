@@ -103,7 +103,7 @@ describe("Control UI cursor policy", () => {
     }
   });
 
-  it("keeps the unconditional pointer hand on link rules only", () => {
+  it("keeps the unconditional pointer hand on links and generated image actions", () => {
     const offenders = collectStyleSources(path.join(stylesDir, ".."))
       .flatMap((filePath) => {
         const lines = fs.readFileSync(filePath, "utf8").split("\n");
@@ -115,8 +115,13 @@ describe("Control UI cursor policy", () => {
       })
       .filter((hit) => !ANCHOR_SELECTOR.test(hit.selector));
 
-    // Controls consume var(--cursor-action); a hardcoded hand is how the policy
-    // drifted apart before (92 declarations by the time it was caught).
-    expect(offenders).toEqual([]);
+    // Controls consume var(--cursor-action); generated-image actions are the
+    // sole button exception because their overlay is link-like image chrome.
+    expect(offenders).toEqual([
+      {
+        file: "chat/layout.css",
+        selector: ".chat-image-action",
+      },
+    ]);
   });
 });
