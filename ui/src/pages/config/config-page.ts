@@ -66,6 +66,13 @@ import {
   type ConfigPageId,
 } from "./config-sections.ts";
 import * as themeImport from "./custom-theme-import-owner.ts";
+import {
+  buildFocusedSettingPatch,
+  parseFocusedSettingLookup,
+  renderFocusedSetting,
+  type FocusedSettingLookup,
+  type FocusedSettingLookupState,
+} from "./focused-setting.ts";
 import { renderMcp } from "./mcp.ts";
 import { renderMemoryPage } from "./memory-page.ts";
 import { narrowMemorySchema } from "./memory-schema.ts";
@@ -256,6 +263,10 @@ export class ConfigPage extends OpenClawLightDomElement {
   @state() private cameraPermissionRequired = true;
   @state() private cameraLoading = false;
   @state() private cameraError: string | null = null;
+  @state() private focusedSettingPendingValue: boolean | null = null;
+  @state() private focusedSettingSaving = false;
+  @state() private focusedSettingSaved = false;
+  @state() private focusedSettingSaveError: string | null = null;
   private cameraLoaded = false;
   private cameraRefreshRequestsPermission = false;
   private cameraPermissionRefreshPending = false;
@@ -315,6 +326,27 @@ export class ConfigPage extends OpenClawLightDomElement {
     () => this.requestUpdate(),
     false,
   );
+  private readonly focusedSettingTask = new Task(this, {
+    args: () => {
+      const runtimeConfig = this.context?.runtimeConfig;
+      return [
+        this.routeData?.settingPath ?? null,
+        runtimeConfig,
+        runtimeConfig?.state.client ?? null,
+        runtimeConfig?.state.connected ?? false,
+      ] as const;
+    },
+    task: async ([path, runtimeConfig]) => {
+      if (!path || !runtimeConfig) {
+        return initialState;
+      }
+      const lookup = parseFocusedSettingLookup(await runtimeConfig.lookupSchemaPath(path), path);
+      if (!lookup) {
+        throw new Error(t("focusedSetting.unsupported"));
+      }
+      return lookup;
+    },
+  });
   private readonly systemInfoTask = new Task(this, {
     autoRun: false,
     // Null is an explicit visibility/capability invalidation for the current source.
@@ -424,6 +456,12 @@ export class ConfigPage extends OpenClawLightDomElement {
   }
 
   override willUpdate(changed: PropertyValues) {
+    if (changed.has("routeData")) {
+      this.focusedSettingPendingValue = null;
+      this.focusedSettingSaving = false;
+      this.focusedSettingSaved = false;
+      this.focusedSettingSaveError = null;
+    }
     if (changed.get("pageId") === "appearance" && this.pageId !== "appearance") {
       this.customThemeImportOwner.retireImport();
     }
@@ -994,9 +1032,90 @@ export class ConfigPage extends OpenClawLightDomElement {
     );
   }
 
+  private focusedSettingLookupState(): FocusedSettingLookupState {
+    switch (this.focusedSettingTask.status) {
+      case TaskStatus.COMPLETE:
+        return { phase: "ready", lookup: this.focusedSettingTask.value as FocusedSettingLookup };
+      case TaskStatus.ERROR:
+        return {
+          phase: "error",
+          message:
+            this.focusedSettingTask.error instanceof Error
+              ? this.focusedSettingTask.error.message
+              : String(this.focusedSettingTask.error),
+        };
+      default:
+        return { phase: "loading" };
+    }
+  }
+
+  private canDispatchFocusedSetting(): boolean {
+    const runtimeConfig = this.context.runtimeConfig;
+    const configState = runtimeConfig.state;
+    return Boolean(
+      this.focusedSettingTask.status === TaskStatus.COMPLETE &&
+      configState.connected &&
+      configState.configSnapshot?.hash &&
+      !configState.configLoading &&
+      !configState.configSaving &&
+      !configState.configApplying &&
+      !this.isUpdateBusy() &&
+      runtimeConfig.canPatch &&
+      hasOperatorAdminAccess(this.context.gateway.snapshot.hello?.auth ?? null),
+    );
+  }
+
+  private canEditFocusedSetting(): boolean {
+    return !this.focusedSettingSaving && this.canDispatchFocusedSetting();
+  }
+
+  private async updateFocusedSetting(enabled: boolean) {
+    const lookup = this.focusedSettingTask.value as FocusedSettingLookup | undefined;
+    const patch = lookup ? buildFocusedSettingPatch(lookup.path, enabled) : null;
+    if (!lookup || !patch || !this.canEditFocusedSetting()) {
+      return;
+    }
+    this.focusedSettingPendingValue = enabled;
+    this.focusedSettingSaving = true;
+    this.focusedSettingSaved = false;
+    this.focusedSettingSaveError = null;
+    try {
+      const saved = await this.context.runtimeConfig.patch({
+        raw: patch,
+        note: `settings: update ${lookup.path}`,
+        canDispatch: () => this.canDispatchFocusedSetting(),
+      });
+      if (!saved) {
+        this.focusedSettingSaveError =
+          this.context.runtimeConfig.state.lastError ?? t("focusedSetting.saveFailed");
+        return;
+      }
+      this.focusedSettingSaved = true;
+    } catch (error) {
+      this.focusedSettingSaveError = error instanceof Error ? error.message : String(error);
+    } finally {
+      this.focusedSettingPendingValue = null;
+      this.focusedSettingSaving = false;
+    }
+  }
+
   private renderAdvancedConfig(configObject: Record<string, unknown>) {
     const runtimeConfig = this.context.runtimeConfig;
     const configState = runtimeConfig.state;
+    const focusedSettingPath = this.routeData?.settingPath;
+    if (focusedSettingPath) {
+      return renderFocusedSetting({
+        path: focusedSettingPath,
+        state: this.focusedSettingLookupState(),
+        config: configObject,
+        pendingValue: this.focusedSettingPendingValue,
+        saving: this.focusedSettingSaving,
+        saved: this.focusedSettingSaved,
+        saveError: this.focusedSettingSaveError,
+        canEdit: this.canEditFocusedSetting(),
+        onChange: (enabled) => void this.updateFocusedSetting(enabled),
+      });
+    }
     if (this.pageId === "updates") {
       const gatewaySnapshot = this.context.gateway.snapshot;
       const overlaySnapshot = this.context.overlays.snapshot;

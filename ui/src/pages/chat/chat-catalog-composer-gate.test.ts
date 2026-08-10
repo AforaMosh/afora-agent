@@ -36,7 +36,9 @@ describe("catalog composer capability gate", () => {
   it("routes a setup path to its owning settings page", () => {
     const navigate = vi.fn();
     openCatalogSetup(navigate, "plugins.entries.codex.config.supervision.enabled");
-    expect(navigate).toHaveBeenCalledWith("automation", { search: "?section=plugins" });
+    expect(navigate).toHaveBeenCalledWith("automation", {
+      search: "?setting=plugins.entries.codex.config.supervision.enabled",
+    });
   });
 
   it("does not disable a continuable or still-loading catalog session", () => {

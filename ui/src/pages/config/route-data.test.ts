@@ -16,6 +16,7 @@ describe("config route data", () => {
       section: "browser",
       advanced: false,
       tab: null,
+      settingPath: null,
       targetBlockId: "config-section-browser/profiles",
     });
   });
@@ -29,6 +30,7 @@ describe("config route data", () => {
       section: null,
       advanced: false,
       tab: null,
+      settingPath: null,
       targetBlockId: null,
     });
   });
@@ -47,6 +49,7 @@ describe("config route data", () => {
       section: "gateway",
       advanced: true,
       tab: null,
+      settingPath: null,
       targetBlockId: null,
     });
   });
@@ -65,7 +68,20 @@ describe("config route data", () => {
       section: "memory",
       advanced: false,
       tab: "search",
+      settingPath: null,
       targetBlockId: null,
+    });
+  });
+
+  it("carries a focused setting path", () => {
+    expect(
+      configRouteData({
+        pathname: "/settings/automation",
+        search: "?setting=plugins.entries.codex.config.supervision.enabled",
+        hash: "",
+      }),
+    ).toMatchObject({
+      settingPath: "plugins.entries.codex.config.supervision.enabled",
     });
   });
 

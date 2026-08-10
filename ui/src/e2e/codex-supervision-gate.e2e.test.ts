@@ -11,9 +11,55 @@ const suite = createControlUiE2eSuite({
 suite.define(() => {
   it("keeps disabled sessions readable and routes continuation setup", async () => {
     const page = await suite.browser.newPage();
+    const disabledConfig = {
+      plugins: { entries: { codex: { config: { supervision: { enabled: false } } } } },
+    };
+    const enabledConfig = {
+      plugins: { entries: { codex: { config: { supervision: { enabled: true } } } } },
+    };
     const gateway = await installMockGateway(page, {
-      featureMethods: ["chat.metadata", "chat.startup", "sessions.catalog.list"],
+      featureMethods: [
+        "chat.metadata",
+        "chat.startup",
+        "config.get",
+        "config.patch",
+        "config.schema",
+        "config.schema.lookup",
+        "sessions.catalog.list",
+      ],
       methodResponses: {
+        "config.get": {
+          appliedConfigHash: "config-disabled",
+          config: disabledConfig,
+          configRevisionHash: "config-disabled",
+          hash: "config-disabled",
+          issues: [],
+          raw: JSON.stringify(disabledConfig),
+          valid: true,
+        },
+        "config.patch": {
+          config: enabledConfig,
+          hash: "config-enabled",
+          ok: true,
+        },
+        "config.schema": {
+          generatedAt: "2026-08-10T00:00:00.000Z",
+          schema: { type: "object", properties: {} },
+          uiHints: {},
+          version: "e2e",
+        },
+        "config.schema.lookup": {
+          path: "plugins.entries.codex.config.supervision.enabled",
+          schema: { type: "boolean", default: false },
+          reloadKind: "hot",
+          hint: {
+            label: "Enable Codex Supervision",
+            help: "Enable continuation of local native Codex sessions in Chat.",
+            advanced: true,
+          },
+          hintPath: "plugins.entries.codex.config.supervision.enabled",
+          children: [],
+        },
         "sessions.catalog.list": {
           catalogs: [
             {
@@ -78,7 +124,24 @@ suite.define(() => {
 
       await page.getByRole("button", { name: "Open settings" }).click();
       await expect.poll(() => new URL(page.url()).pathname).toBe("/settings/automation");
-      expect(new URL(page.url()).searchParams.get("section")).toBe("plugins");
+      expect(new URL(page.url()).searchParams.get("setting")).toBe(
+        "plugins.entries.codex.config.supervision.enabled",
+      );
+      const supervisionToggle = page.locator("wa-switch.settings-toggle");
+      await supervisionToggle.waitFor();
+      await expect
+        .poll(async () => (await gateway.getRequests("config.schema.lookup")).at(-1)?.params)
+        .toEqual({ path: "plugins.entries.codex.config.supervision.enabled" });
+      await expect.poll(() => supervisionToggle.evaluate((element) => element.checked)).toBe(false);
+      await supervisionToggle.click();
+      await expect
+        .poll(async () => {
+          const requests = await gateway.getRequests("config.patch");
+          return requests.at(-1)?.params;
+        })
+        .toMatchObject({
+          raw: JSON.stringify(enabledConfig),
+        });
     } finally {
       await page.close();
     }

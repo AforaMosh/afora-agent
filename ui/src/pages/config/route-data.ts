@@ -9,6 +9,8 @@ export type ConfigRouteData = {
   advanced: boolean;
   /** Raw `?tab=`; curated hub pages normalize it against their own tab set. */
   tab: string | null;
+  /** Exact schema-backed setting path for the focused single-setting editor. */
+  settingPath: string | null;
   targetBlockId: string | null;
 };
 
@@ -36,6 +38,7 @@ export function configRouteData(location: RouteLocation): ConfigRouteData {
     section,
     advanced: searchParams.get("advanced") === "1",
     tab: searchParams.get("tab")?.trim() || null,
+    settingPath: searchParams.get("setting")?.trim() || null,
     targetBlockId: configTargetIdFromHash(location.hash),
   };
 }

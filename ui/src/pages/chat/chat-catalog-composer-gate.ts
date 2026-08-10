@@ -18,7 +18,7 @@ export function openCatalogSetup(
 ): void {
   const section = configPath.split(".")[0];
   navigate(section ? configPageForSection(section) : "advanced", {
-    search: section ? `?section=${encodeURIComponent(section)}` : "",
+    search: `?setting=${encodeURIComponent(configPath)}`,
   });
 }
 

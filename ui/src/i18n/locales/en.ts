@@ -1394,6 +1394,20 @@ export const en: TranslationMap = {
     themeImported: "Imported {name}.",
     themeRemoved: "Custom theme removed.",
   },
+  focusedSetting: {
+    title: "Configure setting",
+    pathLabel: "Configuration path:",
+    loadingDescription: "Loading the schema and current value for this setting.",
+    unavailableTitle: "Setting unavailable",
+    unsupported: "This setting cannot be edited in the focused settings editor.",
+    adminRequired: "Operator administrator access is required to change this setting.",
+    reloadHot: "Changes apply without restarting the Gateway.",
+    reloadRestart: "Changing this setting requires a Gateway restart.",
+    reloadNone: "This setting does not affect the running Gateway.",
+    saving: "Saving setting",
+    saved: "Setting saved",
+    saveFailed: "The setting could not be saved.",
+  },
   configView: {
     categories: {
       core: "Core",

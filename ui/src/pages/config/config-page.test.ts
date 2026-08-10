@@ -251,6 +251,7 @@ describe("ConfigPage moved section routes", () => {
         section: string;
         advanced: boolean;
         tab: string | null;
+        settingPath: string | null;
         targetBlockId: string | null;
       };
       syncRouteData: () => void;
@@ -264,6 +265,7 @@ describe("ConfigPage moved section routes", () => {
       section,
       advanced: false,
       tab: null,
+      settingPath: null,
       targetBlockId: null,
     };
 
@@ -285,6 +287,7 @@ describe("ConfigPage moved section routes", () => {
         section: string;
         advanced: boolean;
         tab: string | null;
+        settingPath: string | null;
         targetBlockId: string | null;
       };
       syncRouteData: () => void;
@@ -298,6 +301,7 @@ describe("ConfigPage moved section routes", () => {
       section: "models",
       advanced: false,
       tab: null,
+      settingPath: null,
       targetBlockId: null,
     };
 
