@@ -1,5 +1,9 @@
 // Verifies agent runtime plugin loads stay scoped to prepared-runtime handles.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  getPluginRuntimeGatewayRequestScope,
+  withPluginRuntimeRegistryScope,
+} from "../plugins/runtime/gateway-request-scope.js";
 
 const hoisted = vi.hoisted(() => ({
   getCurrentPluginMetadataSnapshot: vi.fn(),
@@ -19,7 +23,10 @@ vi.mock("./harness/runtime-plugin-load-plan.js", () => ({
   resolveAgentRuntimePluginLoadPlan: hoisted.resolveAgentRuntimePluginLoadPlan,
 }));
 
-import { loadAgentRuntimePluginRegistryHandle } from "./runtime-plugins.js";
+import {
+  loadAgentRuntimePluginRegistryHandle,
+  withAgentPluginRegistry,
+} from "./runtime-plugins.js";
 
 describe("agent runtime plugin registries", () => {
   beforeEach(() => {
@@ -101,5 +108,61 @@ describe("agent runtime plugin registries", () => {
         channelPluginLoadIntent: "full",
       }),
     );
+  });
+
+  it("lets direct hosts bound the registry to configured runtime owners", () => {
+    const config = {} as never;
+
+    loadAgentRuntimePluginRegistryHandle({
+      basePluginIds: [],
+      config,
+      workspaceDir: "/tmp/workspace",
+    });
+
+    expect(hoisted.getCurrentPluginMetadataSnapshot).not.toHaveBeenCalled();
+    expect(hoisted.resolveAgentRuntimePluginLoadPlan).toHaveBeenCalledWith({
+      config,
+      workspaceDir: "/tmp/workspace",
+      basePluginIds: [],
+      selections: [],
+    });
+  });
+
+  it("owns a scoped registry for direct hosts", async () => {
+    const config = {} as never;
+    const pluginRegistry = { handle: true } as never;
+    hoisted.loadPluginRegistryHandle.mockReturnValue(pluginRegistry);
+
+    await expect(
+      withAgentPluginRegistry({
+        config,
+        workspaceDir: "/tmp/workspace",
+        run: async () => getPluginRuntimeGatewayRequestScope()?.pluginRegistry,
+      }),
+    ).resolves.toBe(pluginRegistry);
+
+    expect(getPluginRuntimeGatewayRequestScope()).toBeUndefined();
+    expect(hoisted.resolveAgentRuntimePluginLoadPlan).toHaveBeenCalledWith({
+      config,
+      workspaceDir: "/tmp/workspace",
+      basePluginIds: [],
+      selections: [],
+    });
+  });
+
+  it("reuses an existing gateway registry owner", async () => {
+    const gatewayRegistry = { gateway: true } as never;
+
+    await expect(
+      withPluginRuntimeRegistryScope(gatewayRegistry, () =>
+        withAgentPluginRegistry({
+          config: {} as never,
+          workspaceDir: "/tmp/workspace",
+          run: async () => getPluginRuntimeGatewayRequestScope()?.pluginRegistry,
+        }),
+      ),
+    ).resolves.toBe(gatewayRegistry);
+
+    expect(hoisted.loadPluginRegistryHandle).not.toHaveBeenCalled();
   });
 });

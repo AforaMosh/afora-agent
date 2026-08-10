@@ -877,6 +877,30 @@ describe("agentCommand", () => {
     });
   });
 
+  it("installs a plugin registry scope for direct ingress dispatch", async () => {
+    await withTempHome(async (home) => {
+      const store = path.join(home, "sessions.json");
+      mockConfig(home, store);
+      const { getPluginRuntimeGatewayRequestScope } =
+        await import("../plugins/runtime/gateway-request-scope.js");
+      vi.mocked(attemptExecutionRuntime.runAgentAttempt).mockImplementationOnce(async () => {
+        expect(getPluginRuntimeGatewayRequestScope()?.pluginRegistry).toBeDefined();
+        return createDefaultAgentResult();
+      });
+
+      await agentCommandFromIngress(
+        {
+          message: "ping",
+          agentId: "main",
+          allowModelOverride: false,
+        },
+        runtime,
+      );
+
+      expect(getPluginRuntimeGatewayRequestScope()).toBeUndefined();
+    });
+  });
+
   it("persists local overrides", async () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
