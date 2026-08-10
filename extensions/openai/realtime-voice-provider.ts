@@ -315,6 +315,20 @@ const KEYCHAIN_SECRET_REF_RE = /^keychain:([^:]+):([^:]+)$/;
 const KEYCHAIN_LOOKUP_TIMEOUT_MS = 5000;
 const resolvedKeychainSecretRefCache = new Map<string, string>();
 
+function resolveUnsupportedOpenAIGptLiveModelError(model: string | undefined): string | undefined {
+  if (!isOpenAIGptLiveModel(model) || isSupportedOpenAIGptLiveModel(model)) {
+    return undefined;
+  }
+  return `Unsupported OpenAI GPT-Live model "${model}". Use ${OPENAI_GPT_LIVE_MODELS.join(", ")}.`;
+}
+
+function assertSupportedOpenAIGptLiveModel(model: string | undefined): void {
+  const error = resolveUnsupportedOpenAIGptLiveModelError(model);
+  if (error) {
+    throw new Error(error);
+  }
+}
+
 function isDirectOpenAIRealtimeWebSocketUrl(value: string): boolean {
   try {
     return new URL(value).hostname === "api.openai.com";
@@ -575,12 +589,15 @@ async function resolveOpenAIRealtimePlatformAuth(params: {
     profileTypes: ["api_key"],
     includeExternalCliAuth: false,
   });
+  if (hasConfiguredApiKeyProfile) {
+    return { status: "missing" };
+  }
 
   const envApiKey = resolveOpenAIRealtimeEnvApiKey();
   if (envApiKey.status === "available") {
     return envApiKey;
   }
-  if (hasConfiguredApiKeyProfile || hasOpenAIRealtimeApiKeyInput(undefined)) {
+  if (hasOpenAIRealtimeApiKeyInput(undefined)) {
     return { status: "missing" };
   }
 
@@ -2124,6 +2141,7 @@ async function createOpenAIRealtimeBrowserSession(
   }
 
   const model = req.model ?? config.model ?? OPENAI_REALTIME_DEFAULT_MODEL;
+  assertSupportedOpenAIGptLiveModel(model);
   if (req.gatewayControl) {
     if (isOpenAIGptLiveModel(model)) {
       throw new Error("gateway-control-v1 supports OpenAI GA Realtime models only");
@@ -2294,6 +2312,9 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
     resolveConfig: ({ rawConfig }) => normalizeProviderConfig(rawConfig),
     isConfigured: ({ cfg, providerConfig }) => {
       const config = normalizeProviderConfig(providerConfig);
+      if (resolveUnsupportedOpenAIGptLiveModelError(config.model)) {
+        return false;
+      }
       if (config.azureEndpoint || config.azureDeployment) {
         return hasOpenAIRealtimeApiKeyInput(config.apiKey);
       }
@@ -2310,6 +2331,7 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
     createBridge: (req) => {
       const config = normalizeProviderConfig(req.providerConfig);
       const model = config.model;
+      assertSupportedOpenAIGptLiveModel(model);
       if (model && isOpenAIGptLiveModel(model)) {
         if (config.azureEndpoint || config.azureDeployment) {
           throw new Error(
@@ -2447,7 +2469,12 @@ export function buildOpenAIRealtimeVoiceProvider(options?: {
     },
     validateGatewayRelayLaunch: ({ providerConfig, model, autoRespondToAudio }) => {
       const config = normalizeProviderConfig(providerConfig);
-      if (autoRespondToAudio === false && isOpenAIGptLiveModel(model ?? config.model)) {
+      const resolvedModel = model ?? config.model;
+      const unsupportedModelError = resolveUnsupportedOpenAIGptLiveModelError(resolvedModel);
+      if (unsupportedModelError) {
+        return unsupportedModelError;
+      }
+      if (autoRespondToAudio === false && isOpenAIGptLiveModel(resolvedModel)) {
         return "GPT-Live gateway-relay sessions cannot use forced agent consult routing; GPT-Live delegates to the agent natively";
       }
       return undefined;

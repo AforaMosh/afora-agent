@@ -158,7 +158,7 @@ configured realtime API key, an `openai` API-key profile, then
 ChatGPT OAuth profile and exchanges SDP through the Gateway's single-use offer
 broker, so the OAuth token never reaches the browser. A configured Platform
 credential that cannot be resolved fails closed instead of silently falling
-through to OAuth.
+through to `OPENAI_API_KEY` or OAuth.
 
 iOS client-owned WebRTC, Voice Call, GA Gateway relay, provider WebSocket
 transports, Discord realtime voice, and Android realtime remain

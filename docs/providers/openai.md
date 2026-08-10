@@ -176,7 +176,7 @@ API-key profile, then `OPENAI_API_KEY`. GA browser Talk falls back to ChatGPT
 OAuth only when no Platform credential source is configured. ChatGPT OAuth does
 not configure GPT-Live, Voice Call, Discord realtime voice, or realtime
 transcription. A configured Platform credential that cannot be resolved fails
-closed instead of falling through to OAuth.
+closed instead of falling through to `OPENAI_API_KEY` or OAuth.
 
 If API-key auth reports missing billing, top up Platform credits at
 [platform.openai.com/account/billing](https://platform.openai.com/account/billing)
