@@ -7,6 +7,7 @@ import {
   type ReplyPayload,
   type ReplyPayloadMetadata,
 } from "../reply-payload.js";
+import type { ReplyDispatchDeliveryOutcome } from "./reply-dispatcher.js";
 
 type PendingFinalDeliveryIdentity = NonNullable<
   ReplyPayloadMetadata["pendingFinalDeliveryCompletion"]
@@ -22,6 +23,20 @@ export async function suppressPendingFinalDelivery(payload: ReplyPayload): Promi
     );
     await clearPendingFinalDeliveryAfterSuccess(completion);
   }
+}
+
+export async function settlePendingFinalDeliveryAfterDispatch(
+  payload: ReplyPayload,
+  outcome: ReplyDispatchDeliveryOutcome,
+): Promise<void> {
+  const completion = getReplyPayloadMetadata(payload)?.pendingFinalDeliveryCompletion;
+  if (!completion || outcome === "failed-before-deliver") {
+    return;
+  }
+  await settlePendingFinalDelivery(
+    { kind: "pending-final", ...completion },
+    outcome === "delivered" ? "delivered" : outcome === "cancelled" ? "suppressed" : "unknown",
+  );
 }
 
 export async function clearPendingFinalDeliveryAfterSuccess(

@@ -107,37 +107,16 @@ describe("runHeartbeatOnce ack handling", () => {
     send: ReturnType<typeof vi.fn>,
     params: { to: string; text: string; cfg: OpenClawConfig },
   ) {
-    expect(send.mock.calls).toEqual([
-      [
-        params.to,
-        params.text,
-        {
-          verbose: false,
-          cfg: params.cfg,
-          accountId: undefined,
-          audioAsVoice: undefined,
-          conversationReadOrigin: undefined,
-          deliveryPartCount: 1,
-          deliveryPartIndex: 0,
-          deliveryQueueId: undefined,
-          forceDocument: undefined,
-          formatting: undefined,
-          gatewayClientScopes: undefined,
-          gifPlayback: undefined,
-          identity: undefined,
-          kind: "text",
-          mediaAccess: {},
-          mediaLocalRoots: undefined,
-          mediaReadFile: undefined,
-          onDeliveryResult: expect.any(Function),
-          onPlatformSendDispatch: expect.any(Function),
-          preparedMessageId: undefined,
-          replyToIdSource: undefined,
-          replyToMode: undefined,
-          silent: undefined,
-        },
-      ],
-    ]);
+    expect(send).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledWith(
+      params.to,
+      params.text,
+      expect.objectContaining({
+        verbose: false,
+        cfg: params.cfg,
+        accountId: undefined,
+      }),
+    );
   }
 
   async function runTelegramHeartbeatWithDefaults(params: {

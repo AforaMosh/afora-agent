@@ -193,8 +193,15 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       onDelivered?: (payload: unknown, info: unknown, result: unknown) => Promise<void> | void;
       onError?: (err: unknown, info: unknown) => void;
     };
-    const sourceDeliver =
-      sourceDelivery.deliverWithProviderMessageSending ?? sourceDelivery.deliver;
+    const sourceDeliver = sourceDelivery.deliverWithProviderMessageSending
+      ? (payload: unknown, info: unknown) =>
+          sourceDelivery.deliverWithProviderMessageSending!(payload, {
+            ...(info as Record<string, unknown>),
+            onPlatformSendDispatch:
+              (info as { onPlatformSendDispatch?: () => Promise<void> }).onPlatformSendDispatch ??
+              (async () => undefined),
+          })
+      : sourceDelivery.deliver;
     if (admission.kind !== "observeOnly" && !sourceDeliver) {
       throw new Error("channel delivery mock requires a delivery callback");
     }

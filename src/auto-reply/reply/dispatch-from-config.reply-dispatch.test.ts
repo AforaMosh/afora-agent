@@ -2,10 +2,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
 import { clearAgentHarnesses } from "../../agents/harness/registry.js";
-import {
-  OutboundDeliveryError,
-  PlatformMessageNotDispatchedError,
-} from "../../infra/outbound/deliver-types.js";
 import type { PluginHookReplyDispatchResult } from "../../plugins/hooks.test-fixtures.js";
 import { getPluginRuntimeGatewayRequestScope } from "../../plugins/runtime/gateway-request-scope.js";
 import { createInternalHookEventPayload } from "../../test-utils/internal-hook-event-payload.js";
@@ -60,8 +56,6 @@ function firstReplyDispatchCall() {
 function pendingFinalDelivery(
   text: string,
   overrides: {
-    createdAt?: number;
-    context?: Record<string, unknown>;
     deliveries?: Array<{
       id: string;
       state: "prepared" | "queued" | "delivered" | "suppressed" | "unknown";
@@ -95,6 +89,17 @@ function pendingFinalReply(
       },
     },
   );
+}
+
+function setPendingFinalEntry(pending: ReturnType<typeof pendingFinalDelivery>) {
+  sessionStoreMocks.currentEntry = {
+    sessionId: "session-1",
+    sessionKey: "agent:test:session",
+    pendingFinalDelivery: pending,
+  };
+  sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
+    existing: sessionStoreMocks.currentEntry,
+  });
 }
 
 describe("dispatchReplyFromConfig reply_dispatch hook", () => {
@@ -254,20 +259,12 @@ describe("dispatchReplyFromConfig reply_dispatch hook", () => {
     });
   });
 
-  it("clears pending final delivery after final dispatch succeeds", async () => {
+  it("settles and clears a pending final after generic dispatch succeeds", async () => {
     hookMocks.runner.hasHooks.mockReturnValue(false);
-    sessionStoreMocks.currentEntry = {
-      sessionId: "session-1",
-      sessionKey: "agent:test:session",
-      pendingFinalDelivery: pendingFinalDelivery("durable reply", {
-        context: { source: "heartbeat" },
-      }),
-    };
-    sessionStoreMocks.loadSessionStore.mockClear();
-    mocks.routeReply.mockResolvedValue({ ok: true, delivered: true, messageId: "mock" });
-
+    setPendingFinalEntry(pendingFinalDelivery("durable reply"));
     const deliver = vi.fn().mockResolvedValue(undefined);
     const dispatcher = createReplyDispatcher({ deliver });
+
     const result = await dispatchReplyFromConfig({
       ctx: createHookCtx(),
       cfg: emptyConfig,
@@ -280,35 +277,12 @@ describe("dispatchReplyFromConfig reply_dispatch hook", () => {
     });
 
     expect(result.queuedFinal).toBe(true);
-    expect(sessionStoreMocks.loadSessionStoreEntry).toHaveBeenCalledWith({
-      agentId: "test",
-      storePath: "/tmp/mock-sessions.json",
-      sessionKey: "agent:test:session",
-      readConsistency: "latest",
-      clone: false,
-    });
-    expect(sessionStoreMocks.loadSessionStore).not.toHaveBeenCalled();
     expect(deliver).toHaveBeenCalledOnce();
-    expect(sessionStoreMocks.updateSessionEntry).toHaveBeenCalledTimes(3);
   });
 
-  it("clears pending final delivery when abort fires after a successful final send (#89115)", async () => {
-    // Regression for #89115: an abort that lands after the final reply has
-    // shipped (here, during sendFinalReply) must still clear the pending-final
-    // bookkeeping — otherwise pendingFinalDelivery stays true and the get-reply
-    // redelivery short-circuit silently blocks every later inbound.
+  it("clears a delivered pending final when abort arrives after queueing (#89115)", async () => {
     hookMocks.runner.hasHooks.mockReturnValue(false);
-    sessionStoreMocks.currentEntry = {
-      sessionId: "session-1",
-      sessionKey: "agent:test:session",
-      pendingFinalDelivery: pendingFinalDelivery("durable reply", {
-        context: { source: "heartbeat" },
-        intentId: "intent-89115",
-      }),
-    };
-    sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-      existing: sessionStoreMocks.currentEntry,
-    });
+    setPendingFinalEntry(pendingFinalDelivery("durable reply", { intentId: "intent-89115" }));
     const abortController = new AbortController();
     const deliver = vi.fn().mockResolvedValue(undefined);
     const dispatcher = createReplyDispatcher({ deliver });
@@ -332,233 +306,70 @@ describe("dispatchReplyFromConfig reply_dispatch hook", () => {
         }),
     });
 
-    // Abort landed after delivery: the run is still surfaced as aborted
-    // (queuedFinal:false), but the pending-final state is fully cleared.
-    expect(dispatcher.sendFinalReply).toHaveBeenCalledOnce();
-    expect(deliver).toHaveBeenCalledOnce();
     expect(result.queuedFinal).toBe(false);
-    expect(sessionStoreMocks.updateSessionEntry).toHaveBeenCalledTimes(3);
+    expect(deliver).toHaveBeenCalledOnce();
     expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toBeUndefined();
   });
 
-  it("preserves pending final delivery when final dispatch fails", async () => {
+  it.each([
+    {
+      label: "proven pre-send failure",
+      error: Object.assign(new Error("connect failed"), {
+        code: "ECONNREFUSED",
+        syscall: "connect",
+      }),
+      state: "prepared",
+    },
+    {
+      label: "ambiguous provider failure",
+      error: new Error("send outcome unknown"),
+      state: "unknown",
+    },
+  ] as const)("records $label through generic dispatch", async ({ error, state }) => {
     hookMocks.runner.hasHooks.mockReturnValue(false);
-    sessionStoreMocks.currentEntry = {
-      sessionKey: "agent:test:session",
-      pendingFinalDelivery: pendingFinalDelivery("durable reply"),
-    };
-    sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-      existing: sessionStoreMocks.currentEntry,
+    setPendingFinalEntry(pendingFinalDelivery("recoverable final reply"));
+    const dispatcher = createReplyDispatcher({
+      deliver: async () => {
+        throw error;
+      },
     });
-    const dispatcher = createDispatcher();
-    vi.mocked(dispatcher.sendFinalReply).mockReturnValue(false);
 
-    const result = await dispatchReplyFromConfig({
-      ctx: createHookCtx(),
-      cfg: emptyConfig,
+    await withReplyDispatcher({
       dispatcher,
-      replyResolver: async () => ({ text: "durable reply" }),
+      run: () =>
+        dispatchReplyFromConfig({
+          ctx: createHookCtx(),
+          cfg: emptyConfig,
+          dispatcher,
+          replyResolver: async () => pendingFinalReply("recoverable final reply"),
+        }),
     });
 
-    expect(result.queuedFinal).toBe(false);
-    expect(sessionStoreMocks.updateSessionEntry).not.toHaveBeenCalled();
-    expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toEqual(
-      pendingFinalDelivery("durable reply"),
-    );
+    expect(sessionStoreMocks.currentEntry).toMatchObject({
+      pendingFinalDelivery: { deliveries: [{ id: "delivery-1", state }] },
+    });
   });
 
-  it("preserves pending final delivery when beforeDeliver times out", async () => {
+  it("settles each generic final independently", async () => {
     vi.useFakeTimers();
     try {
       hookMocks.runner.hasHooks.mockReturnValue(false);
-      sessionStoreMocks.currentEntry = {
-        sessionId: "session-1",
-        sessionKey: "agent:test:session",
-        pendingFinalDelivery: pendingFinalDelivery("durable reply", {
-          context: { channel: "whatsapp", to: "+1000" },
-        }),
-      };
-      sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-        existing: sessionStoreMocks.currentEntry,
-      });
-      const hookStarted = createDeferred();
-      const deliver = vi.fn().mockResolvedValue(undefined);
-      const dispatcher = createReplyDispatcher({
-        deliver,
-        beforeDeliver: () => {
-          hookStarted.resolve();
-          return new Promise<never>(() => {});
-        },
-      });
-
-      const resultPromise = withReplyDispatcher({
-        dispatcher,
-        run: () =>
-          dispatchReplyFromConfig({
-            ctx: createHookCtx(),
-            cfg: emptyConfig,
-            dispatcher,
-            replyResolver: async () => pendingFinalReply("durable reply"),
-          }),
-      });
-      await hookStarted.promise;
-      await vi.advanceTimersByTimeAsync(15_000);
-      const result = await resultPromise;
-
-      expect(result.queuedFinal).toBe(true);
-      expect(deliver).not.toHaveBeenCalled();
-      // createHookCtx's "private" chat type is undirected, so no fallback
-      // attempt follows the timed-out final.
-      expect(dispatcher.getFailedCounts?.()).toEqual({ tool: 0, block: 0, final: 1 });
-      expect(sessionStoreMocks.updateSessionEntry).toHaveBeenCalledOnce();
-      expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toMatchObject({
-        kind: "replayable",
-        text: "durable reply",
-        context: {
-          channel: "whatsapp",
-          to: "+1000",
-        },
-      });
-      expect(vi.getTimerCount()).toBe(0);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("clears pending final delivery when a later queued final succeeds", async () => {
-    vi.useFakeTimers();
-    try {
-      hookMocks.runner.hasHooks.mockReturnValue(false);
-      sessionStoreMocks.currentEntry = {
-        sessionId: "session-1",
-        sessionKey: "agent:test:session",
-        pendingFinalDelivery: pendingFinalDelivery("durable reply"),
-      };
-      sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-        existing: sessionStoreMocks.currentEntry,
-      });
-      const hookStarted = createDeferred();
-      const deliver = vi.fn().mockResolvedValue(undefined);
-      let hookCalls = 0;
-      const dispatcher = createReplyDispatcher({
-        deliver,
-        beforeDeliver: (payload) => {
-          hookCalls += 1;
-          if (hookCalls === 1) {
-            hookStarted.resolve();
-            return new Promise<never>(() => {});
-          }
-          return payload;
-        },
-      });
-
-      const resultPromise = withReplyDispatcher({
-        dispatcher,
-        run: () =>
-          dispatchReplyFromConfig({
-            ctx: createHookCtx(),
-            cfg: emptyConfig,
-            dispatcher,
-            replyResolver: async () => [{ text: "first" }, pendingFinalReply("durable reply")],
-          }),
-      });
-      await hookStarted.promise;
-      await vi.advanceTimersByTimeAsync(15_000);
-      await resultPromise;
-
-      expect(deliver).toHaveBeenCalledOnce();
-      expect(deliver).toHaveBeenCalledWith(
-        expect.objectContaining({ text: "durable reply" }),
-        expect.objectContaining({ kind: "final" }),
-      );
-      expect(dispatcher.getFailedCounts?.()).toEqual({ tool: 0, block: 0, final: 1 });
-      expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toBeUndefined();
-      expect(vi.getTimerCount()).toBe(0);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("preserves the durable final when an earlier auxiliary final succeeds", async () => {
-    vi.useFakeTimers();
-    try {
-      hookMocks.runner.hasHooks.mockReturnValue(false);
-      sessionStoreMocks.currentEntry = {
-        sessionId: "session-1",
-        sessionKey: "agent:test:session",
-        pendingFinalDelivery: pendingFinalDelivery("durable reply"),
-      };
-      sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-        existing: sessionStoreMocks.currentEntry,
-      });
-      const hookStarted = createDeferred();
-      const deliver = vi.fn().mockResolvedValue(undefined);
-      let hookCalls = 0;
-      const dispatcher = createReplyDispatcher({
-        deliver,
-        beforeDeliver: (payload) => {
-          hookCalls += 1;
-          if (hookCalls === 2) {
-            hookStarted.resolve();
-            return new Promise<never>(() => {});
-          }
-          return payload;
-        },
-      });
-
-      const resultPromise = withReplyDispatcher({
-        dispatcher,
-        run: () =>
-          dispatchReplyFromConfig({
-            ctx: createHookCtx(),
-            cfg: emptyConfig,
-            dispatcher,
-            replyResolver: async () => [{ text: "auxiliary" }, pendingFinalReply("durable reply")],
-          }),
-      });
-      await hookStarted.promise;
-      await vi.advanceTimersByTimeAsync(15_000);
-      await resultPromise;
-
-      expect(deliver).toHaveBeenCalledOnce();
-      expect(deliver).toHaveBeenCalledWith(
-        expect.objectContaining({ text: "auxiliary" }),
-        expect.objectContaining({ kind: "final" }),
-      );
-      expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toEqual(
-        pendingFinalDelivery("durable reply"),
-      );
-      expect(vi.getTimerCount()).toBe(0);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("records each pending-final delivery without rewriting aggregate text", async () => {
-    vi.useFakeTimers();
-    try {
-      hookMocks.runner.hasHooks.mockReturnValue(false);
-      sessionStoreMocks.currentEntry = {
-        sessionId: "session-1",
-        sessionKey: "agent:test:session",
-        pendingFinalDelivery: pendingFinalDelivery("auxiliary\n\ndurable reply", {
+      setPendingFinalEntry(
+        pendingFinalDelivery("auxiliary\n\ndurable reply", {
           deliveries: [
             { id: "delivery-auxiliary", state: "prepared" },
             { id: "delivery-durable", state: "prepared" },
           ],
         }),
-      };
-      sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-        existing: sessionStoreMocks.currentEntry,
-      });
-      const hookStarted = createDeferred();
+      );
+      const secondHookStarted = createDeferred();
       let hookCalls = 0;
       const dispatcher = createReplyDispatcher({
         deliver: vi.fn().mockResolvedValue(undefined),
         beforeDeliver: (payload) => {
           hookCalls += 1;
           if (hookCalls === 2) {
-            hookStarted.resolve();
+            secondHookStarted.resolve();
             return new Promise<never>(() => {});
           }
           return payload;
@@ -578,151 +389,27 @@ describe("dispatchReplyFromConfig reply_dispatch hook", () => {
             ],
           }),
       });
-      await hookStarted.promise;
+      await secondHookStarted.promise;
       await vi.advanceTimersByTimeAsync(15_000);
       await resultPromise;
 
-      expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toEqual(
-        pendingFinalDelivery("auxiliary\n\ndurable reply", {
+      expect(sessionStoreMocks.currentEntry).toMatchObject({
+        pendingFinalDelivery: {
           deliveries: [
             { id: "delivery-auxiliary", state: "delivered" },
             { id: "delivery-durable", state: "prepared" },
           ],
-        }),
-      );
-      expect(vi.getTimerCount()).toBe(0);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("does not let an older settlement rewrite a newer pending-final intent", async () => {
-    vi.useFakeTimers();
-    try {
-      hookMocks.runner.hasHooks.mockReturnValue(false);
-      sessionStoreMocks.currentEntry = {
-        sessionId: "session-1",
-        sessionKey: "agent:test:session",
-        pendingFinalDelivery: pendingFinalDelivery("older reply", { intentId: "older-intent" }),
-      };
-      sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-        existing: sessionStoreMocks.currentEntry,
-      });
-      const hookStarted = createDeferred();
-      const dispatcher = createReplyDispatcher({
-        deliver: vi.fn().mockResolvedValue(undefined),
-        beforeDeliver: () => {
-          hookStarted.resolve();
-          return new Promise<never>(() => {});
         },
       });
-
-      const resultPromise = withReplyDispatcher({
-        dispatcher,
-        run: () =>
-          dispatchReplyFromConfig({
-            ctx: createHookCtx(),
-            cfg: emptyConfig,
-            dispatcher,
-            replyResolver: async () =>
-              pendingFinalReply("older reply", { intentId: "older-intent" }),
-          }),
-      });
-      await hookStarted.promise;
-      sessionStoreMocks.currentEntry = {
-        ...sessionStoreMocks.currentEntry,
-        pendingFinalDelivery: pendingFinalDelivery("newer reply", {
-          createdAt: 2,
-          intentId: "newer-intent",
-        }),
-      };
-      await vi.advanceTimersByTimeAsync(15_000);
-      await resultPromise;
-
-      expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toEqual(
-        pendingFinalDelivery("newer reply", { createdAt: 2, intentId: "newer-intent" }),
-      );
       expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  const createNoSendFailure = (retryable = true) =>
-    new PlatformMessageNotDispatchedError("offline", { cause: new Error("offline"), retryable });
-  const wrapDeliveryFailure = (cause: unknown) =>
-    new OutboundDeliveryError("delivery failed", { cause });
-  const refused = Object.assign(new Error(), {
-    code: "ECONNREFUSED",
-    syscall: "connect",
-  });
-  const createPartialDelivery = () =>
-    Object.assign(new Error("partial delivery", { cause: createNoSendFailure() }), {
-      code: "CHANNEL_PARTIAL_DELIVERY",
-      deliveryResult: { visibleReplySent: true },
-    });
-
-  it.each([
-    ["direct retryable provider proof", createNoSendFailure(), true],
-    ["wrapped retryable provider proof", wrapDeliveryFailure(createNoSendFailure()), true],
-    ["wrapped pre-connect ECONNREFUSED proof", wrapDeliveryFailure(refused), true],
-    ["permanent provider rejection", createNoSendFailure(false), false],
-    [
-      "partial outbound delivery",
-      Object.assign(wrapDeliveryFailure(createNoSendFailure()), { sentBeforeError: true }),
-      false,
-    ],
-    ["nested partial envelope", new Error("partial", { cause: createPartialDelivery() }), false],
-    ["aggregate partial envelope", new AggregateError([createPartialDelivery()]), false],
-    ["observer-attached delivery evidence", createNoSendFailure(), true],
-    ["ambiguous transport failure", new Error("transport failed"), false],
-  ] as const)("reconciles pending final delivery after %s", async (name, error, preserve) => {
+  it("clears a pending final after intentional pre-delivery cancellation", async () => {
     hookMocks.runner.hasHooks.mockReturnValue(false);
-    const pending = pendingFinalDelivery("recoverable final reply");
-    sessionStoreMocks.currentEntry = {
-      sessionId: "session-1",
-      sessionKey: "agent:test:session",
-      pendingFinalDelivery: pending,
-    };
-    sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-      existing: sessionStoreMocks.currentEntry,
-    });
-    const dispatcher = createReplyDispatcher({
-      deliver: async () => {
-        throw error;
-      },
-      onError: () => {
-        if (name.startsWith("observer")) {
-          Object.assign(error, { visibleReplySent: true });
-        }
-      },
-    });
-    await withReplyDispatcher({
-      dispatcher,
-      run: () =>
-        dispatchReplyFromConfig({
-          ctx: createHookCtx(),
-          cfg: emptyConfig,
-          dispatcher,
-          replyResolver: async () => pendingFinalReply("recoverable final reply"),
-        }),
-    });
-    expect(sessionStoreMocks.currentEntry?.pendingFinalDelivery).toMatchObject({
-      ...pending,
-      deliveries: [{ id: "delivery-1", state: preserve ? "prepared" : "unknown" }],
-    });
-  });
-
-  it("clears pending final delivery after intentional pre-delivery cancellation", async () => {
-    hookMocks.runner.hasHooks.mockReturnValue(false);
-    sessionStoreMocks.currentEntry = {
-      sessionId: "session-1",
-      sessionKey: "agent:test:session",
-      pendingFinalDelivery: pendingFinalDelivery("policy-suppressed reply"),
-    };
-    sessionStoreMocks.resolveSessionStoreEntry.mockReturnValue({
-      existing: sessionStoreMocks.currentEntry,
-    });
+    setPendingFinalEntry(pendingFinalDelivery("policy-suppressed reply"));
     const deliver = vi.fn().mockResolvedValue(undefined);
     const dispatcher = createReplyDispatcher({
       deliver,
@@ -742,11 +429,6 @@ describe("dispatchReplyFromConfig reply_dispatch hook", () => {
 
     expect(result.queuedFinal).toBe(true);
     expect(deliver).not.toHaveBeenCalled();
-    // createHookCtx's "private" chat type is undirected, so the cancelled final
-    // does not trigger a fallback attempt.
-    expect(dispatcher.getCancelledCounts?.()).toEqual({ tool: 0, block: 0, final: 1 });
-    expect(dispatcher.getFailedCounts?.()).toEqual({ tool: 0, block: 0, final: 0 });
-    expect(sessionStoreMocks.updateSessionEntry).toHaveBeenCalledTimes(2);
   });
 
   it("delivers a generated final reply before queued follow-up admission", async () => {

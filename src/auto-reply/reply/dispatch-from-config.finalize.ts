@@ -21,6 +21,7 @@ import {
 } from "./dispatch-from-config.payloads.js";
 import {
   clearPendingFinalDeliveryAfterSuccess,
+  settlePendingFinalDeliveryAfterDispatch,
   suppressPendingFinalDelivery,
 } from "./dispatch-from-config.pending-final.js";
 import type { ReplyDispatchDeliveryOutcome } from "./reply-dispatcher.js";
@@ -72,7 +73,10 @@ export async function finalizeDispatchAndAudit(state: ExecuteDispatchReadyState)
   let routedFinalCount = 0;
   let attemptedFinalDelivery = false;
   let finalDeliveryFailed = false;
-  const finalDeliveries: Promise<ReplyDispatchDeliveryOutcome>[] = [];
+  const finalDeliveries: Array<{
+    outcome: Promise<ReplyDispatchDeliveryOutcome>;
+    payload: ReplyPayload;
+  }> = [];
   let allQueuedFinalsObserved = true;
   const sentFinalPayloadDedupeKeys = new Set<string>();
   let deferredTtsTextPending = state.progressState.accumulatedBlockTtsText;
@@ -138,7 +142,7 @@ export async function finalizeDispatchAndAudit(state: ExecuteDispatchReadyState)
     routedFinalCount += finalReply.routedFinalCount;
     if (finalReply.queuedFinal) {
       if (finalReply.dispatcherOutcome) {
-        finalDeliveries.push(finalReply.dispatcherOutcome);
+        finalDeliveries.push({ outcome: finalReply.dispatcherOutcome, payload: reply });
       } else {
         allQueuedFinalsObserved = false;
       }
@@ -152,7 +156,11 @@ export async function finalizeDispatchAndAudit(state: ExecuteDispatchReadyState)
     if (queuedFinal && allQueuedFinalsObserved) {
       // Delivery observers run from the queue itself, so direct low-level callers
       // reconcile too; the settle task only makes lifecycle owners await it.
-      const reconcilePendingFinal = Promise.all(finalDeliveries)
+      const reconcilePendingFinal = Promise.all(
+        finalDeliveries.map(async ({ outcome, payload }) => {
+          await settlePendingFinalDeliveryAfterDispatch(payload, await outcome);
+        }),
+      )
         .then(async () => {
           await clearPendingFinalDeliveryAfterSuccess(pendingFinalDeliveryIdentity);
         })
