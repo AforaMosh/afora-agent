@@ -68,7 +68,7 @@ export type QueuedFollowupReplyBatch = {
   payloads: ReplyPayload[];
 };
 
-export type QueuedFollowupReplyDisposition =
+type QueuedFollowupReplyDisposition =
   | {
       kind: "deliver";
       deliver: (batch: QueuedFollowupReplyBatch) => Promise<void> | void;
