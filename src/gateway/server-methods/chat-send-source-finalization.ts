@@ -85,7 +85,7 @@ export function createChatSendLateReplyFinalizer(
 }
 
 /** Persist and broadcast agent-run replies that bypass the original live run projection. */
-export async function finalizeChatSendAgentReplyPayloads(
+async function finalizeChatSendAgentReplyPayloads(
   params: FinalizeChatSendAgentRepliesBase & { payloads: readonly ReplyPayload[] },
 ): Promise<ChatSendAgentReplyFinalization> {
   const { accountId, context, emitFirstAssistantServerTiming, session } = params;
