@@ -39,7 +39,7 @@ const computerUseServiceMocks = vi.hoisted(() => ({
 
 const providerRuntimeMocks = vi.hoisted(() => ({
   formatProviderAuthProfileApiKeyWithPlugin: vi.fn(),
-  refreshProviderOAuthCredentialWithPlugin: vi.fn(
+  refreshOAuthCredential: vi.fn(
     async (params: { provider?: string; context: { refresh: string } }) => {
       const refreshed = await oauthMocks.refreshOpenAICodexToken(params.context.refresh);
       return refreshed
@@ -84,7 +84,7 @@ vi.mock("openclaw/plugin-sdk/agent-runtime", async (importOriginal) => {
       }
       let oauthCredential = credential;
       if (params.forceRefresh || (oauthCredential.expires ?? 0) <= Date.now()) {
-        const refreshed = await providerRuntimeMocks.refreshProviderOAuthCredentialWithPlugin({
+        const refreshed = await providerRuntimeMocks.refreshOAuthCredential({
           provider: oauthCredential.provider,
           context: oauthCredential,
         });
@@ -109,7 +109,7 @@ vi.mock("openclaw/plugin-sdk/agent-runtime", async (importOriginal) => {
     refreshOAuthCredentialForRuntime: async (
       params: Parameters<typeof actual.refreshOAuthCredentialForRuntime>[0],
     ) => {
-      const refreshed = await providerRuntimeMocks.refreshProviderOAuthCredentialWithPlugin({
+      const refreshed = await providerRuntimeMocks.refreshOAuthCredential({
         provider: params.credential.provider,
         context: params.credential,
       });
@@ -133,7 +133,7 @@ afterEach(() => {
   clearRuntimeAuthProfileStoreSnapshots();
   oauthMocks.refreshOpenAICodexToken.mockReset();
   providerRuntimeMocks.formatProviderAuthProfileApiKeyWithPlugin.mockReset();
-  providerRuntimeMocks.refreshProviderOAuthCredentialWithPlugin.mockClear();
+  providerRuntimeMocks.refreshOAuthCredential.mockClear();
   computerUseServiceMocks.ensureCodexComputerUseServiceApp.mockClear();
 });
 
@@ -2892,9 +2892,7 @@ describe("bridgeCodexAppServerStartOptions", () => {
           'Codex app-server auth profile "openai:work" must use the canonical OpenAI auth provider; run "openclaw doctor --fix" to migrate legacy provider IDs.',
         );
         expect(oauthMocks.refreshOpenAICodexToken).not.toHaveBeenCalled();
-        expect(
-          providerRuntimeMocks.refreshProviderOAuthCredentialWithPlugin,
-        ).not.toHaveBeenCalled();
+        expect(providerRuntimeMocks.refreshOAuthCredential).not.toHaveBeenCalled();
       } finally {
         await fs.rm(agentDir, { recursive: true, force: true });
       }

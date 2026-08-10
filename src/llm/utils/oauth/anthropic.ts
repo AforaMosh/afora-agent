@@ -27,6 +27,7 @@ import type {
   OAuthLoginCallbacks,
   OAuthPrompt,
   OAuthProviderInterface,
+  OAuthRefreshContext,
 } from "./types.js";
 
 type CallbackServerInfo = {
@@ -379,14 +380,21 @@ async function loginAnthropic(options: {
 /**
  * Refresh Anthropic OAuth token
  */
-async function refreshAnthropicToken(refreshToken: string): Promise<OAuthCredentials> {
+async function refreshAnthropicToken(
+  refreshToken: string,
+  context?: OAuthRefreshContext,
+): Promise<OAuthCredentials> {
   let responseBody: string;
   try {
-    responseBody = await postJson(TOKEN_URL, {
-      grant_type: "refresh_token",
-      client_id: CLIENT_ID,
-      refresh_token: refreshToken,
-    });
+    responseBody = await postJson(
+      TOKEN_URL,
+      {
+        grant_type: "refresh_token",
+        client_id: CLIENT_ID,
+        refresh_token: refreshToken,
+      },
+      context,
+    );
   } catch (error) {
     throw new Error(
       `Anthropic token refresh request failed. url=${TOKEN_URL}; details=${formatErrorDetails(error)}`,
@@ -415,8 +423,11 @@ export const anthropicOAuthProvider: OAuthProviderInterface = {
     });
   },
 
-  async refreshToken(credentials: OAuthCredentials): Promise<OAuthCredentials> {
-    return refreshAnthropicToken(credentials.refresh);
+  async refreshToken(
+    credentials: OAuthCredentials,
+    context?: OAuthRefreshContext,
+  ): Promise<OAuthCredentials> {
+    return refreshAnthropicToken(credentials.refresh, context);
   },
 
   getApiKey(credentials: OAuthCredentials): string {

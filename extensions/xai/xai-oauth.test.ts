@@ -123,6 +123,38 @@ describe("xAI OAuth", () => {
     expect(refreshed.expires).toBe(121_000);
   });
 
+  it("forwards caller cancellation to refresh requests", async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi.fn<typeof fetch>(
+      async (_input, init) =>
+        await new Promise((_resolve, reject) => {
+          const signal = init?.signal;
+          if (signal?.aborted) {
+            reject(signal.reason instanceof Error ? signal.reason : new Error("xAI OAuth aborted"));
+            return;
+          }
+          signal?.addEventListener(
+            "abort",
+            () => {
+              reject(
+                signal.reason instanceof Error ? signal.reason : new Error("xAI OAuth aborted"),
+              );
+            },
+            { once: true },
+          );
+        }),
+    );
+    const refresh = refreshXaiOAuthCredential(createXaiOAuthCredential(), {
+      fetchImpl,
+      signal: controller.signal,
+    });
+    const reason = new Error("cancelled by refresh owner");
+    controller.abort(reason);
+
+    await expect(refresh).rejects.toThrow("xAI OAuth refresh failed: cancelled by refresh owner");
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
   it("rediscovers the current token endpoint for stale xAI OAuth credentials", async () => {
     const fetchImpl = vi.fn<typeof fetch>(async (url, init) => {
       if (requestUrl(url) === XAI_OAUTH_DISCOVERY_URL) {

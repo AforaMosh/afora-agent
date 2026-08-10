@@ -1,6 +1,5 @@
 import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
 import type { ProviderAuthMethod } from "openclaw/plugin-sdk/plugin-entry";
-import type { OAuthCredential } from "openclaw/plugin-sdk/provider-auth";
 
 const PROVIDER_ID = "xai";
 const XAI_OAUTH_METHOD_ID = "oauth";
@@ -47,10 +46,4 @@ export function createXaiDeviceCodeAuthMethod(): ProviderAuthMethod {
     },
     run: async (ctx) => (await loadXaiOAuthRuntime()).loginXaiDeviceCode(ctx),
   };
-}
-
-export async function refreshXaiOAuthCredential(
-  credential: OAuthCredential,
-): Promise<OAuthCredential> {
-  return await (await loadXaiOAuthRuntime()).refreshXaiOAuthCredential(credential);
 }

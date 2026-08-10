@@ -387,6 +387,33 @@ describe("OpenAI Codex OAuth flow", () => {
       message: "OpenAI Codex token refresh response missing fields: expires_in",
     });
   });
+
+  it("preserves the input refresh token when OpenAI omits a replacement", async () => {
+    mockTokenResponse({
+      access_token: "new-access-token",
+      expires_in: 3600,
+    });
+
+    await expect(refreshOpenAIAccessToken("old-refresh-token")).resolves.toMatchObject({
+      type: "success",
+      access: "new-access-token",
+      refresh: "old-refresh-token",
+    });
+  });
+
+  it("uses a rotated refresh token when OpenAI returns one", async () => {
+    mockTokenResponse({
+      access_token: "new-access-token",
+      refresh_token: "rotated-refresh-token",
+      expires_in: 3600,
+    });
+
+    await expect(refreshOpenAIAccessToken("old-refresh-token")).resolves.toMatchObject({
+      type: "success",
+      access: "new-access-token",
+      refresh: "rotated-refresh-token",
+    });
+  });
 });
 
 async function listenLoopbackServer(server: Server): Promise<number> {

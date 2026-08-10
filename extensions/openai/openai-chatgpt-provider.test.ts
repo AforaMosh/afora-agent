@@ -295,6 +295,7 @@ describe("OpenAI provider Codex transport hooks", () => {
 
   it("refreshes ChatGPT OAuth credentials under the OpenAI provider", async () => {
     const provider = buildOpenAIProvider();
+    const controller = new AbortController();
     refreshOpenAICodexTokenMock.mockResolvedValueOnce({
       access: "new-access",
       refresh: "new-refresh",
@@ -302,18 +303,24 @@ describe("OpenAI provider Codex transport hooks", () => {
     });
 
     await expect(
-      provider.refreshOAuth?.({
-        type: "oauth",
-        provider: "openai",
-        access: "old-access",
-        refresh: "old-refresh",
-        expires: Date.now() - 60_000,
-      }),
+      provider.refreshOAuth?.(
+        {
+          type: "oauth",
+          provider: "openai",
+          access: "old-access",
+          refresh: "old-refresh",
+          expires: Date.now() - 60_000,
+        },
+        { signal: controller.signal },
+      ),
     ).resolves.toMatchObject({
       type: "oauth",
       provider: "openai",
       access: "new-access",
       refresh: "new-refresh",
+    });
+    expect(refreshOpenAICodexTokenMock).toHaveBeenCalledWith("old-refresh", {
+      signal: controller.signal,
     });
   });
 });

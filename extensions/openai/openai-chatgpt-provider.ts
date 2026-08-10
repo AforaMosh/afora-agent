@@ -47,6 +47,7 @@ import {
 import { resolveCodexAuthIdentity } from "./openai-chatgpt-auth-identity.js";
 import { loginOpenAICodexDeviceCode } from "./openai-chatgpt-device-code.js";
 import { loginOpenAICodexOAuth } from "./openai-chatgpt-oauth.runtime.js";
+import { refreshOpenAICodexToken } from "./openai-chatgpt-provider.runtime.js";
 import {
   buildOpenAIResponsesProviderHooks,
   buildOpenAISyntheticCatalogEntry,
@@ -437,10 +438,12 @@ function buildOpenAICodexAuthConfigPatch(): NonNullable<ProviderAuthResult["conf
   };
 }
 
-async function refreshOpenAICodexOAuthCredential(cred: OAuthCredential) {
+async function refreshOpenAICodexOAuthCredential(
+  cred: OAuthCredential,
+  context?: { signal?: AbortSignal },
+) {
   try {
-    const { refreshOpenAICodexToken } = await import("./openai-chatgpt-provider.runtime.js");
-    const refreshed = await refreshOpenAICodexToken(cred.refresh);
+    const refreshed = await refreshOpenAICodexToken(cred.refresh, context);
     const identity = resolveCodexAuthIdentity({
       accessToken: refreshed.access,
       email: cred.email,
@@ -679,7 +682,7 @@ export function buildOpenAICodexProviderHooks(): Pick<
     },
     resolveUsageAuth: resolveOpenAIUsageAuth,
     fetchUsageSnapshot: fetchOpenAIUsage,
-    refreshOAuth: async (cred) => await refreshOpenAICodexOAuthCredential(cred),
+    refreshOAuth: refreshOpenAICodexOAuthCredential,
     augmentModelCatalog: (ctx) => {
       const gpt54Template = findCatalogTemplate({
         entries: ctx.entries,
