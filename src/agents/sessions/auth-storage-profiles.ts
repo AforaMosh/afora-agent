@@ -22,6 +22,24 @@ const runtimeOverrideByStorage = new WeakMap<object, (provider: string) => strin
 const credentialFreeStorage = new WeakSet<object>();
 const liveDefaultStorage = new WeakSet<object>();
 
+export function collectStateOnlyAuthProfileIds(store: AuthProfileStore): string[] {
+  const referenced = new Set([
+    ...Object.values(store.order ?? {}).flat(),
+    ...Object.values(store.lastGood ?? {}),
+    ...Object.keys(store.usageStats ?? {}),
+  ]);
+  return [...referenced].filter((profileId) => !store.profiles[profileId]);
+}
+
+export function hasUnmaterializedDefaultAuthProfileSecret(store: AuthProfileStore): boolean {
+  return Object.entries(store.profiles).some(
+    ([profileId, credential]) =>
+      profileId === `${credential.provider}:default` &&
+      ((credential.type === "api_key" && Boolean(credential.keyRef) && !credential.key) ||
+        (credential.type === "token" && Boolean(credential.tokenRef) && !credential.token)),
+  );
+}
+
 export function registerAuthStorageRuntimeOverride(
   storage: object,
   resolve: (provider: string) => string | undefined,

@@ -47,6 +47,8 @@ import {
 } from "./auth-storage-oauth-registry.js";
 import {
   attachAuthStorageProfiles,
+  collectStateOnlyAuthProfileIds,
+  hasUnmaterializedDefaultAuthProfileSecret,
   isAuthStorageCredentialFree,
   registerAuthStorageRuntimeOverride,
 } from "./auth-storage-profiles.js";
@@ -158,19 +160,11 @@ function projectAuthStorageData(store: AuthProfileStore | null): AuthStorageData
 }
 
 function assertAuthStorageSecretRefsMaterialized(store: AuthProfileStore): void {
-  for (const [profileId, credential] of Object.entries(store.profiles)) {
-    if (profileId !== `${credential.provider}:default`) {
-      continue;
-    }
-    if (
-      (credential.type === "api_key" && credential.keyRef && !credential.key) ||
-      (credential.type === "token" && credential.tokenRef && !credential.token)
-    ) {
-      throw new AuthStoragePersistenceError(
-        "AuthStorage.forAgent requires the active secrets runtime to materialize SecretRef credentials.",
-        undefined,
-      );
-    }
+  if (hasUnmaterializedDefaultAuthProfileSecret(store)) {
+    throw new AuthStoragePersistenceError(
+      "AuthStorage.forAgent requires the active secrets runtime to materialize SecretRef credentials.",
+      undefined,
+    );
   }
 }
 
@@ -261,15 +255,6 @@ function applyAuthStorageData(
           : { ...credential, provider };
   }
   return { ...store, profiles };
-}
-
-function collectStateOnlyAuthProfileIds(store: AuthProfileStore): string[] {
-  const referenced = new Set([
-    ...Object.values(store.order ?? {}).flat(),
-    ...Object.values(store.lastGood ?? {}),
-    ...Object.keys(store.usageStats ?? {}),
-  ]);
-  return [...referenced].filter((profileId) => !store.profiles[profileId]);
 }
 
 function loadSqliteAuthStorageStore(
