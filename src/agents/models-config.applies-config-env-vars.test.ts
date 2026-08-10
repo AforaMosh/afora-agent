@@ -16,7 +16,10 @@ import {
 } from "./models-config.plan.test-support.js";
 import type { ProviderConfig } from "./models-config.providers.secrets.js";
 import { encodePluginModelCatalogRelativePath } from "./plugin-model-catalog.js";
-import { markAuthStorageCredentialFree } from "./sessions/auth-storage-profiles.js";
+import {
+  attachAuthStorageProfiles,
+  markAuthStorageCredentialFree,
+} from "./sessions/auth-storage-profiles.js";
 import { AuthStorage } from "./sessions/auth-storage.js";
 import { ModelRegistry } from "./sessions/model-registry.js";
 
@@ -592,24 +595,25 @@ describe("models-config", () => {
 
   it("serializes verified profile references instead of root or plugin secrets", async () => {
     const agentDir = "/tmp/openclaw-models-config-profile-persistence-test";
+    const canonicalStore = {
+      version: 1,
+      profiles: {
+        "custom:models-json": {
+          type: "api_key" as const,
+          provider: "custom",
+          key: "ABCDEF123456",
+        },
+        "zai:default": {
+          type: "api_key" as const,
+          provider: "zai",
+          key: "zai-profile-secret",
+        },
+      },
+    };
     replaceRuntimeAuthProfileStoreSnapshots([
       {
         agentDir,
-        store: {
-          version: 1,
-          profiles: {
-            "custom:models-json": {
-              type: "api_key",
-              provider: "custom",
-              key: "ABCDEF123456",
-            },
-            "zai:default": {
-              type: "api_key",
-              provider: "zai",
-              key: "zai-profile-secret",
-            },
-          },
-        },
+        store: canonicalStore,
       },
     ]);
     const pluginMetadataSnapshot = {
@@ -654,11 +658,24 @@ describe("models-config", () => {
       const root = JSON.parse(plan.contents) as {
         providers?: Record<string, { apiKey?: string }>;
       };
-      const plugin = JSON.parse(
-        plan.pluginCatalogWrites?.[encodePluginModelCatalogRelativePath("zai")] ?? "{}",
-      ) as { providers?: Record<string, { apiKey?: string }> };
+      const pluginContents =
+        plan.pluginCatalogWrites?.[encodePluginModelCatalogRelativePath("zai")] ?? "{}";
+      const plugin = JSON.parse(pluginContents) as {
+        providers?: Record<string, { apiKey?: string }>;
+      };
       expect(root.providers?.custom?.apiKey).toBe("custom:models-json");
       expect(plugin.providers?.zai?.apiKey).toBe("zai:default");
+
+      const authStorage = AuthStorage.inMemory();
+      attachAuthStorageProfiles(authStorage, canonicalStore);
+      const registry = ModelRegistry.create(authStorage, "/virtual/models.json", {
+        includePluginCatalogs: true,
+        modelsJsonContents: plan.contents,
+        pluginCatalogs: [{ pluginId: "zai", contents: pluginContents }],
+        pluginMetadataSnapshot,
+      });
+      await expect(registry.getApiKeyForProvider("custom")).resolves.toBe("ABCDEF123456");
+      await expect(registry.getApiKeyForProvider("zai")).resolves.toBe("zai-profile-secret");
     } finally {
       clearRuntimeAuthProfileStoreSnapshots();
     }
