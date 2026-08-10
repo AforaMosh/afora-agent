@@ -311,7 +311,7 @@ describe("openai transport stream", () => {
           baseUrl: `http://127.0.0.1:${address.port}/v1`,
           reasoning: false,
         });
-        const stream = createOpenAICompletionsTransportStreamFn()(
+        const stream = await createOpenAICompletionsTransportStreamFn()(
           model,
           {
             messages: [{ role: "user", content: "Reply partially", timestamp: Date.now() }],
