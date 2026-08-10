@@ -254,9 +254,9 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +1: worker desktop endpoint contract for desktop-capable worker leases.
       // +1: native command spec merger through the native-command-registry facade.
       // -2: remove unused WhatsApp-specific ack policy exports from channel-feedback.
-      // +56: versioned serializable memory-authorization contract and reusable backend-conformance
+      // +57: versioned serializable memory-authorization contract and reusable backend-conformance
       //      types, capability declarations, and helpers.
-      4903,
+      4904,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
