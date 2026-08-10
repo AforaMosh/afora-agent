@@ -4,7 +4,6 @@ import { render } from "lit";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildFocusedSettingPatch,
-  focusedSettingValue,
   parseFocusedSettingLookup,
   renderFocusedSetting,
 } from "./focused-setting.ts";
@@ -34,11 +33,7 @@ describe("focused setting", () => {
     expect(parseFocusedSettingLookup(lookupResponse, `${path}.other`)).toBeNull();
   });
 
-  it("reads the exact value and builds a leaf-only patch", () => {
-    const config = {
-      plugins: { entries: { codex: { config: { supervision: { enabled: false } } } } },
-    };
-    expect(focusedSettingValue(config, path)).toBe(false);
+  it("builds a leaf-only patch and rejects unsafe paths", () => {
     expect(buildFocusedSettingPatch(path, true)).toEqual({
       plugins: { entries: { codex: { config: { supervision: { enabled: true } } } } },
     });
@@ -52,7 +47,9 @@ describe("focused setting", () => {
       renderFocusedSetting({
         path,
         state: { phase: "ready", lookup: parseFocusedSettingLookup(lookupResponse, path)! },
-        config: {},
+        config: {
+          plugins: { entries: { codex: { config: { supervision: { enabled: true } } } } },
+        },
         pendingValue: null,
         saving: false,
         saved: false,
@@ -67,9 +64,10 @@ describe("focused setting", () => {
     expect(container.textContent).toContain("Changes apply without restarting the Gateway.");
     expect(container.querySelectorAll("wa-switch")).toHaveLength(1);
     const toggle = container.querySelector<HTMLElement & { checked: boolean }>("wa-switch")!;
-    toggle.checked = true;
+    expect(toggle.checked).toBe(true);
+    toggle.checked = false;
     toggle.dispatchEvent(new Event("change", { bubbles: true }));
-    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onChange).toHaveBeenCalledWith(false);
   });
 
   it("renders the setting read-only without administrator access", () => {

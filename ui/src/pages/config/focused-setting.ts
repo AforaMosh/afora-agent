@@ -12,7 +12,7 @@ import {
 import { t } from "../../i18n/index.ts";
 import { setPathValue } from "../../lib/config-form-utils.ts";
 
-export type FocusedSettingReloadKind = "restart" | "hot" | "none";
+type FocusedSettingReloadKind = "restart" | "hot" | "none";
 
 export type FocusedSettingLookup = {
   path: string;
@@ -28,7 +28,7 @@ export type FocusedSettingLookupState =
 
 const FORBIDDEN_PATH_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
 
-export function focusedSettingPathSegments(path: string): string[] | null {
+function focusedSettingPathSegments(path: string): string[] | null {
   const segments = path.split(".");
   return segments.length > 0 &&
     segments.every((segment) => segment.length > 0 && !FORBIDDEN_PATH_SEGMENTS.has(segment))
@@ -61,7 +61,7 @@ export function parseFocusedSettingLookup(
   };
 }
 
-export function focusedSettingValue(config: unknown, path: string): unknown {
+function focusedSettingValue(config: unknown, path: string): unknown {
   const segments = focusedSettingPathSegments(path);
   if (!segments) {
     return undefined;

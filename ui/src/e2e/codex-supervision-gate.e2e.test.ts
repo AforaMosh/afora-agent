@@ -132,7 +132,13 @@ suite.define(() => {
       await expect
         .poll(async () => (await gateway.getRequests("config.schema.lookup")).at(-1)?.params)
         .toEqual({ path: "plugins.entries.codex.config.supervision.enabled" });
-      await expect.poll(() => supervisionToggle.evaluate((element) => element.checked)).toBe(false);
+      await expect
+        .poll(() =>
+          supervisionToggle.evaluate(
+            (element) => (element as HTMLElement & { checked: boolean }).checked,
+          ),
+        )
+        .toBe(false);
       await supervisionToggle.click();
       await expect
         .poll(async () => {

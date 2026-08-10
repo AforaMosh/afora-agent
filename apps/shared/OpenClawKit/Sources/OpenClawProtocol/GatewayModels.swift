@@ -4302,6 +4302,8 @@ public struct SessionCatalogSession: Codable, Sendable {
     public let sessionkey: String?
     public let createdactor: SessionCreatedActor?
     public let cancontinue: Bool
+    public let continuedisabledreason: String?
+    public let continuesetupconfigpath: String?
     public let canarchive: Bool
     public let canopenterminal: Bool?
 
@@ -4323,6 +4325,8 @@ public struct SessionCatalogSession: Codable, Sendable {
         sessionkey: String? = nil,
         createdactor: SessionCreatedActor? = nil,
         cancontinue: Bool,
+        continuedisabledreason: String? = nil,
+        continuesetupconfigpath: String? = nil,
         canarchive: Bool,
         canopenterminal: Bool? = nil)
     {
@@ -4343,6 +4347,8 @@ public struct SessionCatalogSession: Codable, Sendable {
         self.sessionkey = sessionkey
         self.createdactor = createdactor
         self.cancontinue = cancontinue
+        self.continuedisabledreason = continuedisabledreason
+        self.continuesetupconfigpath = continuesetupconfigpath
         self.canarchive = canarchive
         self.canopenterminal = canopenterminal
     }
@@ -4365,6 +4371,8 @@ public struct SessionCatalogSession: Codable, Sendable {
         case sessionkey = "sessionKey"
         case createdactor = "createdActor"
         case cancontinue = "canContinue"
+        case continuedisabledreason = "continueDisabledReason"
+        case continuesetupconfigpath = "continueSetupConfigPath"
         case canarchive = "canArchive"
         case canopenterminal = "canOpenTerminal"
     }
