@@ -1,7 +1,7 @@
 /**
  * Shell execution helpers.
  *
- * Resolves platform shell commands, sanitizes binary output, and exposes process-tree cleanup.
+ * Resolves platform shell commands and sanitizes binary output.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";

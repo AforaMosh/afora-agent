@@ -1,11 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { execCommand } from "./exec.js";
 
 const cleanupPids = new Set<number>();
+const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function isProcessAlive(pid: number): boolean {
   try {
@@ -51,7 +52,7 @@ describe("execCommand process-tree cleanup", () => {
   });
 
   it("does not resolve a timeout while a SIGTERM-resistant descendant is alive", async () => {
-    const dir = mkdtempSync(join(realpathSync(tmpdir()), "openclaw-exec-tree-"));
+    const dir = tempDirs.make("openclaw-exec-tree-");
     const readyPath = join(dir, "ready.json");
     const descendantScript = [
       "process.on('SIGTERM', () => {});",
@@ -66,28 +67,24 @@ describe("execCommand process-tree cleanup", () => {
       "setInterval(() => {}, 1000);",
     ].join("\n");
 
-    try {
-      const resultPromise = execCommand(process.execPath, ["-e", parentScript], process.cwd(), {
-        timeout: 1_000,
-      });
-      await waitForFile(readyPath, 3_000);
-      const pids = JSON.parse(readFileSync(readyPath, "utf8")) as {
-        parentPid: number;
-        childPid: number;
-      };
-      cleanupPids.add(pids.parentPid);
-      cleanupPids.add(pids.childPid);
+    const resultPromise = execCommand(process.execPath, ["-e", parentScript], process.cwd(), {
+      timeout: 1_000,
+    });
+    await waitForFile(readyPath, 3_000);
+    const pids = JSON.parse(readFileSync(readyPath, "utf8")) as {
+      parentPid: number;
+      childPid: number;
+    };
+    cleanupPids.add(pids.parentPid);
+    cleanupPids.add(pids.childPid);
 
-      await expect(resultPromise).resolves.toMatchObject({ killed: true });
-      await vi.waitFor(
-        () => {
-          expect(isProcessAlive(pids.parentPid)).toBe(false);
-          expect(isProcessAlive(pids.childPid)).toBe(false);
-        },
-        { timeout: 500, interval: 25 },
-      );
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    await expect(resultPromise).resolves.toMatchObject({ killed: true });
+    await vi.waitFor(
+      () => {
+        expect(isProcessAlive(pids.parentPid)).toBe(false);
+        expect(isProcessAlive(pids.childPid)).toBe(false);
+      },
+      { timeout: 500, interval: 25 },
+    );
   }, 12_000);
 });
