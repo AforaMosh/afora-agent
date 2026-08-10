@@ -31,6 +31,16 @@ export function isSessionPresentationPatch(patch: SessionPatch): boolean {
 }
 
 /**
+ * Reads a row's identity at the moment the operator acted. Deferred actions —
+ * a rename behind a dialog, an archive Undo behind a toast — must spread this
+ * rather than look the key up again when they finally fire, or they would prove
+ * whatever holds the key by then instead of what the operator selected.
+ */
+export function sessionPatchIdentity(row: { sessionId?: string }): { expectedSessionId?: string } {
+  return row.sessionId ? { expectedSessionId: row.sessionId } : {};
+}
+
+/**
  * Reads the Gateway's refusal of a patch whose target moved; `null` for anything
  * else. `currentSessionId` present means the row survived a rotation, absent
  * means the entry is gone.

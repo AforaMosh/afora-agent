@@ -1,7 +1,7 @@
 import { t } from "../i18n/index.ts";
 import { readSessionMethodAccess } from "../lib/session-method-access.ts";
 import { moveSessionSection, normalizeSessionSectionOrder } from "../lib/sessions/grouping.ts";
-import { readSessionChangedTarget } from "../lib/sessions/patch.ts";
+import { readSessionChangedTarget, sessionPatchIdentity } from "../lib/sessions/patch.ts";
 import {
   buildAgentMainSessionKey,
   parseAgentSessionKey,
@@ -59,11 +59,9 @@ export async function patchSession(
     return "stale";
   }
   const agentId = sessionRowAgentId(session, scope);
-  // Identity travels with the patch so the Gateway, which owns the store, drops a
-  // target whose session was replaced instead of applying this to its successor.
-  const identifiedPatch = session.sessionId
-    ? { ...patch, expectedSessionId: session.sessionId }
-    : patch;
+  // Identity travels with the patch so the Gateway, which owns the store, decides
+  // what happened to the target instead of this layer guessing from a projection.
+  const identifiedPatch = { ...patch, ...sessionPatchIdentity(session) };
   const requestParams = {
     key: session.key,
     ...identifiedPatch,

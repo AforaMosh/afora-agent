@@ -107,17 +107,33 @@ describe("sessions page lifecycle", () => {
     document.body.append(toast);
     await toast.updateComplete;
 
-    await page.archiveSessionWithUndo({ key, pinned: true } as GatewaySessionRow);
+    await page.archiveSessionWithUndo({
+      key,
+      pinned: true,
+      sessionId: "sess-picked",
+    } as GatewaySessionRow);
     await toast.updateComplete;
+    // Undo waits on a click, and the row it acted on can be replaced in the
+    // meantime. Archiving is lifecycle, so it must keep proving the session the
+    // operator selected rather than whatever the page is showing by then.
+    page.result = {
+      count: 1,
+      sessions: [{ key, sessionId: "sess-successor" }],
+    } as SessionsListResult;
     toast.querySelector<HTMLButtonElement>(".app-toast__action")?.click();
     await vi.waitFor(() => expect(patch).toHaveBeenCalledTimes(2));
     expect(mutableGateway.setSessionKey).not.toHaveBeenCalled();
 
-    expect(patch).toHaveBeenNthCalledWith(1, key, { archived: true }, { agentId: undefined });
+    expect(patch).toHaveBeenNthCalledWith(
+      1,
+      key,
+      { archived: true, expectedSessionId: "sess-picked" },
+      { agentId: undefined },
+    );
     expect(patch).toHaveBeenNthCalledWith(
       2,
       key,
-      { archived: false, pinned: true },
+      { archived: false, pinned: true, expectedSessionId: "sess-picked" },
       { agentId: undefined },
     );
   });

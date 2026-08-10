@@ -46,7 +46,7 @@ import {
   type SessionPatch,
 } from "../../lib/sessions/index.ts";
 import { fetchPagedSessionRows } from "../../lib/sessions/paged-session-rows.ts";
-import { readSessionChangedTarget } from "../../lib/sessions/patch.ts";
+import { readSessionChangedTarget, sessionPatchIdentity } from "../../lib/sessions/patch.ts";
 import {
   resolveSessionPreferredFaceForKey,
   resolveSessionNavigationAgentId,
@@ -1153,7 +1153,10 @@ class SessionsPage extends OpenClawLightDomElement {
     if (value === null) {
       return;
     }
-    void this.patchSession(row.key, { label: normalizeOptionalString(value) ?? null });
+    void this.patchSession(row.key, {
+      label: normalizeOptionalString(value) ?? null,
+      ...sessionPatchIdentity(row),
+    });
   }
 
   private async patchSession(
@@ -1215,7 +1218,11 @@ class SessionsPage extends OpenClawLightDomElement {
     if (!scope) {
       return;
     }
-    const result = await this.patchSession(row.key, { archived: true }, scope);
+    const result = await this.patchSession(
+      row.key,
+      { archived: true, ...sessionPatchIdentity(row) },
+      scope,
+    );
     if (result !== "completed" || !this.isRequestScopeCurrent(scope)) {
       return;
     }
@@ -1229,7 +1236,11 @@ class SessionsPage extends OpenClawLightDomElement {
           }
           await this.patchSession(
             row.key,
-            { archived: false, ...(row.pinned === true ? { pinned: true } : {}) },
+            {
+              archived: false,
+              ...(row.pinned === true ? { pinned: true } : {}),
+              ...sessionPatchIdentity(row),
+            },
             scope,
           );
         })();
