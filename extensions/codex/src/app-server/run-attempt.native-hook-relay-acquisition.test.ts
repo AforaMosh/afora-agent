@@ -58,6 +58,12 @@ vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
 
 setupRunAttemptTestHooks();
 
+function threadRpcRequests(requests: Array<{ method: string }>) {
+  return requests.filter((request) =>
+    ["thread/start", "thread/resume", "turn/start"].includes(request.method),
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   relayMock.registrationGeneration = undefined;
@@ -106,16 +112,12 @@ describe("Codex native hook relay acquisition", () => {
         `Codex native hook relay is unavailable (${renewalStatus}); refusing to start or resume a thread without OpenClaw policy hooks`,
       );
 
-      expect(
-        harness.requests.filter((request) =>
-          ["thread/start", "thread/resume", "turn/start"].includes(request.method),
-        ),
-      ).toEqual([]);
+      expect(threadRpcRequests(harness.requests)).toEqual([]);
       expect(relayMock.unregister).toHaveBeenCalled();
     },
   );
 
-  it("blocks a same-generation resume while the old relay owner is uncertain", async () => {
+  it("blocks a persisted-generation resume with unknown ownership before Codex RPC", async () => {
     const sessionFile = path.join(tempDir, "relay-resume-unknown.jsonl");
     const workspaceDir = path.join(tempDir, "workspace-resume-unknown");
     relayMock.renewalStatus = "live";
@@ -130,8 +132,8 @@ describe("Codex native hook relay acquisition", () => {
       ?.nativeHookRelayGeneration;
     expect(persistedGeneration).toBeTruthy();
 
-    // Simulate a Gateway process replacement while the external app-server and
-    // its generation-bound hook command survive under the old bridge owner.
+    // Reset only the in-process route owner. This proves the persisted generation
+    // is reused and unknown bridge ownership fails before any Codex RPC.
     clearCodexNativeHookRelayOwners();
     vi.clearAllMocks();
     relayMock.renewalStatus = "unknown";
@@ -147,11 +149,7 @@ describe("Codex native hook relay acquisition", () => {
 
     expect(relayMock.registrationGeneration).toBe(persistedGeneration);
     expect(relayMock.commandForEvent).not.toHaveBeenCalled();
-    expect(
-      harness.requests.filter((request) =>
-        ["thread/start", "thread/resume", "turn/start"].includes(request.method),
-      ),
-    ).toEqual([]);
+    expect(threadRpcRequests(harness.requests)).toEqual([]);
     expect(relayMock.unregister).toHaveBeenCalled();
   });
 
@@ -212,19 +210,15 @@ describe("Codex native hook relay acquisition", () => {
       "Codex native hook relay is unavailable (unknown); refusing to start or resume a thread without OpenClaw policy hooks",
     );
 
-    expect(
-      harness.requests.filter((request) =>
-        ["thread/start", "thread/resume", "turn/start"].includes(request.method),
-      ),
-    ).toEqual([]);
+    expect(threadRpcRequests(harness.requests)).toEqual([]);
     expect(relayMock.rebindAttempt).toHaveBeenCalledTimes(rebindCount);
     expect(relayMock.rebindAttempt.mock.calls.at(-1)?.[0]).toBe(retiredBinding);
     expect(retiredBinding).toMatchObject({ runId: "old-run", requester: oldRequester });
     expect(
-      relayMock.registrations.map(({ agentId, sessionKey, generation }) => ({
+      relayMock.registrations.map(({ agentId, sessionKey, generation: registeredGeneration }) => ({
         agentId,
         sessionKey,
-        generation,
+        generation: registeredGeneration,
       })),
     ).toEqual([
       {

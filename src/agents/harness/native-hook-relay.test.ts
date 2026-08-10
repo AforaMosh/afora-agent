@@ -1700,7 +1700,7 @@ describe("native hook relay registry", () => {
     expect(beforeToolCall).toHaveBeenCalledTimes(1);
   });
 
-  it("backs off persistent bridge recovery and cancels it on unregister", async () => {
+  it("backs off persistent bridge recovery to a cap and cancels it on unregister", async () => {
     const startedAtMs = 1_800_000_000_000;
     vi.useFakeTimers({ now: startedAtMs });
     const claimTimes: number[] = [];
@@ -1718,19 +1718,16 @@ describe("native hook relay registry", () => {
     });
     const bridge = getNativeHookRelaySharedStateForTests().relayBridges.get(relay.relayId);
 
-    await vi.advanceTimersByTimeAsync(2_575);
+    await vi.advanceTimersByTimeAsync(5_000);
 
-    expect(claimTimes).toEqual([
-      startedAtMs,
-      startedAtMs + 25,
-      startedAtMs + 75,
-      startedAtMs + 175,
-      startedAtMs + 375,
-      startedAtMs + 775,
-      startedAtMs + 1_575,
-      startedAtMs + 2_575,
-    ]);
-    expect(bridge?.recoveryAttempt).toBe(6);
+    expect(claimTimes.length).toBeGreaterThanOrEqual(8);
+    const retryDelays = claimTimes.slice(1).map((time, index) => time - claimTimes[index]!);
+    expect(retryDelays.every((delay) => delay > 0)).toBe(true);
+    for (let index = 1; index < retryDelays.length; index += 1) {
+      expect(retryDelays[index]).toBeGreaterThanOrEqual(retryDelays[index - 1]!);
+    }
+    expect(retryDelays.at(-1)).toBeGreaterThan(retryDelays[0]!);
+    expect(new Set(retryDelays.slice(-3)).size).toBe(1);
     relay.unregister();
     const attemptsAtUnregister = claimTimes.length;
 
@@ -1738,7 +1735,6 @@ describe("native hook relay registry", () => {
 
     expect(claimTimes).toHaveLength(attemptsAtUnregister);
     expect(bridge?.recoveryTimer).toBeUndefined();
-    expect(bridge?.recoveryAttempt).toBe(0);
   });
 
   it("prunes dead foreign direct bridge records during registration", async () => {

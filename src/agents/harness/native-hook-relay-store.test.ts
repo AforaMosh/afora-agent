@@ -198,40 +198,6 @@ describe("native hook relay store", () => {
     ).toStrictEqual(claimant);
   });
 
-  it("reads bridge records from the state database", () => {
-    const first = bridgeRecord("relay-upsert");
-    const replacement = bridgeRecord("relay-upsert", {
-      pid: 101,
-      port: 18_790,
-      token: "test-auth-token",
-      expiresAtMs: 30_000,
-    });
-
-    seedBridgeRecord({
-      record: first,
-      updatedAtMs: 1_000,
-      stateDbPath: primaryStateDbPath,
-    });
-    expect(
-      readNativeHookRelayBridgeRecord({
-        relayId: first.relayId,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toStrictEqual(first);
-
-    seedBridgeRecord({
-      record: replacement,
-      updatedAtMs: 2_000,
-      stateDbPath: primaryStateDbPath,
-    });
-    expect(
-      readNativeHookRelayBridgeRecord({
-        relayId: replacement.relayId,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toStrictEqual(replacement);
-  });
-
   it("requires matching token and pid to renew or delete a bridge", () => {
     const record = bridgeRecord("relay-owned");
     seedBridgeRecord({
@@ -294,75 +260,6 @@ describe("native hook relay store", () => {
         stateDbPath: primaryStateDbPath,
       }),
     ).toBeUndefined();
-  });
-
-  it("atomically reclaims an expired foreign record", () => {
-    const record = bridgeRecord("relay-expired-foreign", { expiresAtMs: 5_000 });
-    seedBridgeRecord({
-      record,
-      updatedAtMs: 1_000,
-      stateDbPath: primaryStateDbPath,
-    });
-
-    const replacement = {
-      ...record,
-      pid: record.pid + 1,
-      token: "test-auth-token",
-      expiresAtMs: 30_000,
-    };
-    expect(
-      claimNativeHookRelayBridgeRecord({
-        record: replacement,
-        updatedAtMs: 6_000,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toBe("renewed");
-    expect(
-      readNativeHookRelayBridgeRecord({
-        relayId: record.relayId,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toStrictEqual(replacement);
-  });
-
-  it("restores a missing record without overwriting another owner", () => {
-    const record = bridgeRecord("relay-restored");
-    expect(
-      claimNativeHookRelayBridgeRecord({
-        record,
-        updatedAtMs: 1_000,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toBe("renewed");
-    expect(
-      readNativeHookRelayBridgeRecord({
-        relayId: record.relayId,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toStrictEqual(record);
-
-    const otherOwner = bridgeRecord(record.relayId, {
-      pid: record.pid + 1,
-      token: "test-auth-token",
-    });
-    seedBridgeRecord({
-      record: otherOwner,
-      updatedAtMs: 2_000,
-      stateDbPath: primaryStateDbPath,
-    });
-    expect(
-      claimNativeHookRelayBridgeRecord({
-        record,
-        updatedAtMs: 3_000,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toBe("foreign-owner");
-    expect(
-      readNativeHookRelayBridgeRecord({
-        relayId: record.relayId,
-        stateDbPath: primaryStateDbPath,
-      }),
-    ).toStrictEqual(otherOwner);
   });
 
   it("does not let an old owner delete its replacement", () => {

@@ -99,6 +99,22 @@ async function waitForBridge(relayId: string): Promise<BridgeRow> {
   return record;
 }
 
+async function createActiveRoute(generation: string) {
+  const relay = createRoute(generation);
+  const handle = relayCapture.handles[0];
+  if (!relay || !handle) {
+    throw new Error("Expected an active route with a captured native hook relay handle");
+  }
+  return { relay, handle, before: await waitForBridge(handle.relayId) };
+}
+
+function returnUnknownOnceThenRenewAuthoritatively(handle: ActiveNativeHookRelayHandle): void {
+  const authoritativeRenew = handle.renewStatus.bind(handle);
+  vi.spyOn(handle, "renewStatus")
+    .mockReturnValueOnce("unknown")
+    .mockImplementation((ttlMs) => authoritativeRenew(ttlMs));
+}
+
 function replaceWithForeignBridge(params: {
   relayId: string;
   nowMs: number;
@@ -129,31 +145,16 @@ function replaceWithForeignBridge(params: {
 
 describe("Codex native hook relay SQLite renewal recovery", () => {
   it("recovers the same route and bridge after renewal uncertainty crosses expiry", async () => {
-    const relay = createRoute("same-owner-recovery");
-    expect(relay).toBeDefined();
-    const handle = relayCapture.handles[0];
-    if (!handle) {
-      throw new Error("Expected captured native hook relay handle");
-    }
-    const before = await waitForBridge(handle.relayId);
-    let nowMs = Date.now();
-    vi.spyOn(Date, "now").mockImplementation(() => nowMs);
-    const authoritativeRenew = handle.renewStatus.bind(handle);
-    vi.spyOn(handle, "renewStatus")
-      .mockReturnValueOnce("unknown")
-      .mockImplementation((ttlMs) => authoritativeRenew(ttlMs));
+    const { relay, handle, before } = await createActiveRoute("same-owner-recovery");
+    vi.useFakeTimers({ now: Date.now() });
+    returnUnknownOnceThenRenewAuthoritatively(handle);
 
-    relay?.renew(20_000);
-    nowMs = before.expires_at_ms + 1;
+    relay.renew(20_000);
+    vi.setSystemTime(before.expires_at_ms + 1);
+    await vi.advanceTimersByTimeAsync(1_000);
 
-    await vi.waitFor(
-      () => {
-        const after = readBridge(handle.relayId);
-        expect(after?.expires_at_ms).toBeGreaterThan(before.expires_at_ms);
-      },
-      { timeout: 3_000 },
-    );
     const after = readBridge(handle.relayId);
+    expect(after?.expires_at_ms).toBeGreaterThan(before.expires_at_ms);
     expect(after).toMatchObject({
       relay_id: before.relay_id,
       pid: before.pid,
@@ -163,33 +164,25 @@ describe("Codex native hook relay SQLite renewal recovery", () => {
     expect(handle.generation).toBe("same-owner-recovery");
     expect(relayCapture.handles).toHaveLength(1);
     expect(codexNativeHookRelayOwnerCount()).toBe(1);
-    relay?.releaseParent();
+    relay.releaseParent();
   });
 
   it("preserves a foreign takeover and retires the route without policy ownership", async () => {
-    const relay = createRoute("foreign-takeover");
-    expect(relay).toBeDefined();
-    const handle = relayCapture.handles[0];
-    if (!handle) {
-      throw new Error("Expected captured native hook relay handle");
-    }
-    const before = await waitForBridge(handle.relayId);
-    let nowMs = Date.now();
-    vi.spyOn(Date, "now").mockImplementation(() => nowMs);
-    const authoritativeRenew = handle.renewStatus.bind(handle);
-    vi.spyOn(handle, "renewStatus")
-      .mockReturnValueOnce("unknown")
-      .mockImplementation((ttlMs) => authoritativeRenew(ttlMs));
+    const { relay, handle, before } = await createActiveRoute("foreign-takeover");
+    vi.useFakeTimers({ now: Date.now() });
+    returnUnknownOnceThenRenewAuthoritatively(handle);
 
-    relay?.renew(20_000);
-    nowMs = before.expires_at_ms + 1;
+    relay.renew(20_000);
+    const nowMs = before.expires_at_ms + 1;
+    vi.setSystemTime(nowMs);
     const foreign = replaceWithForeignBridge({
       relayId: handle.relayId,
       nowMs,
       expiresAtMs: nowMs + 60_000,
     });
+    await vi.advanceTimersByTimeAsync(1_000);
 
-    await vi.waitFor(() => expect(codexNativeHookRelayOwnerCount()).toBe(0), { timeout: 3_000 });
+    expect(codexNativeHookRelayOwnerCount()).toBe(0);
     expect(readBridge(handle.relayId)).toStrictEqual(foreign);
     expect(relayCapture.handles).toHaveLength(1);
     expect(handle.renewStatus(20_000)).toBe("dead");

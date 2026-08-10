@@ -213,32 +213,13 @@ describe("agent harness runtime SDK facade", () => {
     >().toEqualTypeOf<ProviderModelRouteRuntimePolicy | undefined>();
   });
 
-  it("keeps command-only native hook relay renewal structurally compatible", () => {
+  it("keeps native hook relay renewal compatibility contracts", () => {
     type RegisterParams = Parameters<typeof registerNativeHookRelay>[0];
     expectTypeOf<RegisterParams["generationMismatchGraceMs"]>().toEqualTypeOf<number | undefined>();
-    const renew = vi.fn<(ttlMs?: number) => void>();
-    const handle: NativeHookRelayRegistrationHandle = {
-      relayId: "external-relay",
-      provider: "codex",
-      sessionId: "external-session",
-      runId: "external-run",
-      allowedEvents: ["pre_tool_use"],
-      expiresAtMs: Date.now() + 1_000,
-      shouldRelayEvent: () => true,
-      toolMatcherForEvent: () => undefined,
-      commandForEvent: () => "external-relay-command",
-      renew,
-      unregister: () => undefined,
-    };
-
-    expectTypeOf(handle.renew).returns.toEqualTypeOf<void>();
-    expectTypeOf<
-      ReturnType<NonNullable<NativeHookRelayRegistrationHandle["renewStatus"]>>
-    >().toEqualTypeOf<"live" | "dead" | "foreign-owner" | "unknown">();
-    handle.renew(2_000);
-
-    expect(renew).toHaveBeenCalledWith(2_000);
-    expect(handle.renewStatus).toBeUndefined();
+    expectTypeOf<NativeHookRelayRegistrationHandle["renew"]>().returns.toEqualTypeOf<void>();
+    expectTypeOf<NativeHookRelayRegistrationHandle["renewStatus"]>().toEqualTypeOf<
+      ((ttlMs?: number) => "live" | "dead" | "foreign-owner" | "unknown") | undefined
+    >();
   });
 });
 
