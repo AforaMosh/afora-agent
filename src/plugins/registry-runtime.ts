@@ -23,7 +23,12 @@ import {
   type PluginStateKeyedStore,
   type PluginStateSyncKeyedStore,
 } from "../plugin-state/plugin-state-store.js";
-import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
+import {
+  classifySessionKeyShape,
+  isUnscopedSessionKeySentinel,
+  normalizeAgentId,
+  parseAgentSessionKey,
+} from "../routing/session-key.js";
 import {
   isAgentHarnessSessionKey,
   isAgentHarnessSessionKeyOwnedBy,
@@ -228,7 +233,8 @@ export function createPluginRuntimeResolver(state: PluginRegistryState) {
       // Logical plugin keys must resolve before the physical SQLite ownership read.
       // Otherwise a bare key fails before Gateway routing can bind its default agent.
       if (
-        !parseAgentSessionKey(params.sessionKey) &&
+        classifySessionKeyShape(params.sessionKey) === "legacy_or_alias" &&
+        !isUnscopedSessionKeySentinel(params.sessionKey) &&
         params.agentId === undefined &&
         params.storePath === undefined
       ) {

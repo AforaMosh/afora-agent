@@ -1,3 +1,4 @@
+import { listAgentIds } from "openclaw/plugin-sdk/agent-runtime";
 // Workboard API module exposes the plugin public contract.
 import type {
   PluginDoctorStateMigration,
@@ -294,20 +295,34 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
     label: "Workboard agent identity normalization",
     doctorOnly: true,
     async detectLegacyState(params) {
-      const { countAmbiguousWorkboardAgentIds } = await import("./src/sqlite-doctor-migrations.js");
-      const count = countAmbiguousWorkboardAgentIds(migrationEnv(params));
-      return count === 0
-        ? null
-        : {
-            preview: [
-              `- Workboard: ${count} ambiguous agent ${count === 1 ? "identity" : "identities"} → unassigned`,
-            ],
-          };
+      const { inspectAmbiguousWorkboardAgentIds } =
+        await import("./src/sqlite-doctor-migrations.js");
+      const counts = inspectAmbiguousWorkboardAgentIds(migrationEnv(params));
+      const preserveDispatcher = listAgentIds(params.config).includes("workboard-dispatcher");
+      const normalizeCount = counts.blank + (preserveDispatcher ? 0 : counts.dispatcher);
+      const preview = [
+        ...(normalizeCount > 0
+          ? [
+              `- Workboard: ${normalizeCount} ambiguous agent ${normalizeCount === 1 ? "identity" : "identities"} → unassigned`,
+            ]
+          : []),
+        ...(preserveDispatcher && counts.dispatcher > 0
+          ? [
+              `- Workboard: ${counts.dispatcher} workboard-dispatcher ${counts.dispatcher === 1 ? "identity" : "identities"} preserved because that agent is configured`,
+            ]
+          : []),
+      ];
+      return preview.length > 0 ? { preview } : null;
     },
     async migrateLegacyState(params) {
-      const { normalizeAmbiguousWorkboardAgentIds } =
+      const { inspectAmbiguousWorkboardAgentIds, normalizeAmbiguousWorkboardAgentIds } =
         await import("./src/sqlite-doctor-migrations.js");
-      const count = normalizeAmbiguousWorkboardAgentIds(migrationEnv(params));
+      const env = migrationEnv(params);
+      const counts = inspectAmbiguousWorkboardAgentIds(env);
+      const preserveDispatcher = listAgentIds(params.config).includes("workboard-dispatcher");
+      const count = normalizeAmbiguousWorkboardAgentIds(env, {
+        preserveDispatcherAgent: preserveDispatcher,
+      });
       return {
         changes:
           count === 0
@@ -315,7 +330,12 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
             : [
                 `Normalized ${count} Workboard agent ${count === 1 ? "identity" : "identities"} in SQLite.`,
               ],
-        warnings: [],
+        warnings:
+          preserveDispatcher && counts.dispatcher > 0
+            ? [
+                `Preserved ${counts.dispatcher} Workboard workboard-dispatcher ${counts.dispatcher === 1 ? "identity" : "identities"} because that agent id is configured; Doctor cannot distinguish legacy synthetic assignments from explicit assignments.`,
+              ]
+            : [],
       };
     },
   },

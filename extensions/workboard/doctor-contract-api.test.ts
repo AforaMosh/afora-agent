@@ -81,6 +81,62 @@ describe("workboard doctor contract", () => {
     }
   });
 
+  it("preserves dispatcher identities when that agent id is configured", async () => {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-workboard-doctor-"));
+    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    try {
+      const sqlite = createWorkboardSqliteStores({ env });
+      for (const [id, agentId] of [
+        ["dispatcher", "workboard-dispatcher"],
+        ["blank", "   "],
+      ] as const) {
+        await sqlite.cards.register(id, {
+          version: 1,
+          card: {
+            id,
+            title: id,
+            status: "blocked",
+            priority: "normal",
+            labels: [],
+            position: 1000,
+            createdAt: 1,
+            updatedAt: 2,
+            agentId,
+          },
+        });
+      }
+      sqlite.close();
+
+      const migration = expectDefined(stateMigrations[1], "workboard agent identity migration");
+      const params = {
+        config: { agents: { list: [{ id: "workboard-dispatcher", default: true }] } },
+        env,
+        stateDir,
+        oauthDir: path.join(stateDir, "oauth"),
+        context: createDoctorContext(env),
+      };
+      await expect(migration.detectLegacyState(params)).resolves.toMatchObject({
+        preview: [
+          expect.stringContaining("1 ambiguous agent identity"),
+          expect.stringContaining("preserved because that agent is configured"),
+        ],
+      });
+      await expect(migration.migrateLegacyState(params)).resolves.toEqual({
+        changes: ["Normalized 1 Workboard agent identity in SQLite."],
+        warnings: [expect.stringContaining("cannot distinguish legacy synthetic assignments")],
+      });
+
+      const reopened = createWorkboardSqliteStores({ env });
+      expect((await reopened.cards.lookup("dispatcher"))?.card.agentId).toBe(
+        "workboard-dispatcher",
+      );
+      expect((await reopened.cards.lookup("blank"))?.card.agentId).toBeUndefined();
+      reopened.close();
+    } finally {
+      fs.rmSync(stateDir, { recursive: true, force: true });
+    }
+  });
+
   it("migrates shipped .28 plugin-state workboard data into sqlite", async () => {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-workboard-doctor-"));
     const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };

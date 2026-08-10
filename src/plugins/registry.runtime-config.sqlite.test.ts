@@ -64,6 +64,13 @@ describe("plugin registry SQLite session ownership", () => {
           runId: "workboard-run",
         });
         expect(subagent.run).toHaveBeenCalledWith({ sessionKey, message: "start" });
+        await expect(
+          api.runtime.subagent.run({ sessionKey: "agent::malformed", message: "reject" }),
+        ).rejects.toThrow("Cannot resolve SQLite session scope without an agent id");
+        await expect(
+          api.runtime.subagent.run({ sessionKey: "global", message: "reject" }),
+        ).rejects.toThrow("Cannot resolve SQLite session scope without an agent id");
+        expect(subagent.run).toHaveBeenCalledOnce();
         await replaceSessionEntry(
           { agentId: "researcher", sessionKey: `agent:researcher:${lockedSessionKey}` },
           {
