@@ -491,13 +491,10 @@ export function createWorkerLiveEventReceiver(options: WorkerLiveEventReceiverOp
     }
     const lifecycleGeneration = getAgentEventLifecycleGeneration();
     const existingContext = getAgentRunContext(runId);
-    // A dispatch-owned turn context (e.g. a worker-routed turn) owns the run's
-    // Control UI visibility; adopt it so worker live events keep reaching the
-    // visible clients that started the turn. Identity still has to match, so a
-    // foreign run is rejected; only the visibility preference is inherited. With
-    // no pre-existing turn context we scope live events to this session.
+    // A dispatch-owned turn context owns visibility and terminal cleanup. Join
+    // it without excluding the outer Gateway lifecycle; worker-only runs remain
+    // exclusively owned here. Identity must still match before either claim.
     const controlUiVisible = existingContext?.isControlUiVisible ?? false;
-    const adoptExistingUnowned = existingContext !== undefined;
     if (
       existingContext &&
       (existingContext.sessionId !== window.sessionId ||
@@ -508,8 +505,8 @@ export function createWorkerLiveEventReceiver(options: WorkerLiveEventReceiverOp
     ) {
       return invalidEvent();
     }
-    let emissionMode: OwnedLiveRun["emissionMode"] = "exclusive";
-    let claimId = claimAgentRunContext(
+    const emissionMode: OwnedLiveRun["emissionMode"] = existingContext ? "shared" : "exclusive";
+    const claimId = claimAgentRunContext(
       runId,
       {
         ...(window.target.agentId ? { agentId: window.target.agentId } : {}),
@@ -520,44 +517,16 @@ export function createWorkerLiveEventReceiver(options: WorkerLiveEventReceiverOp
         sessionKey: window.target.sessionKey,
       },
       {
-        adoptExistingUnowned,
-        exclusive: true,
+        exclusive: existingContext === undefined,
         onClearRequested: (clearedClaimId) => {
           if (window.activeRuns.get(runId)?.claimId === clearedClaimId) {
             fenceReleasedRun(window, runId);
           }
         },
-        ownsContext: true,
+        ownsContext: existingContext === undefined,
         trackOwner: true,
       },
     );
-    if (!claimId && existingContext) {
-      // Cron and other Gateway-owned handoffs retain a non-exclusive claim while the
-      // assigned worker runs. Share only that corroborated identity; exclusive owners
-      // still reject this claim and prevent a foreign execution from joining the run.
-      claimId = claimAgentRunContext(
-        runId,
-        {
-          ...(window.target.agentId ? { agentId: window.target.agentId } : {}),
-          isControlUiVisible: controlUiVisible,
-          lifecycleGeneration,
-          projectSessionActive: true,
-          sessionId: window.sessionId,
-          sessionKey: window.target.sessionKey,
-        },
-        {
-          exclusive: false,
-          onClearRequested: (clearedClaimId) => {
-            if (window.activeRuns.get(runId)?.claimId === clearedClaimId) {
-              fenceReleasedRun(window, runId);
-            }
-          },
-          ownsContext: false,
-          trackOwner: true,
-        },
-      );
-      emissionMode = "shared";
-    }
     if (!claimId) {
       return invalidEvent();
     }
