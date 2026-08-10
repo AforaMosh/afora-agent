@@ -767,7 +767,7 @@ export class AuthStorage {
     // Runtime override takes highest priority
     const runtimeKey = this.runtimeOverrides.get(providerId);
     if (runtimeKey || isAuthStorageCredentialFree(this)) {
-      return runtimeKey || undefined;
+      return runtimeKey;
     }
 
     if (this.migrationOwnerAgentDir) {
