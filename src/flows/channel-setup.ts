@@ -2,6 +2,7 @@
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { getBundledChannelSetupPlugin } from "../channels/plugins/bundled.js";
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
+import { normalizeChannelId } from "../channels/plugins/index.js";
 import { listActiveChannelSetupPlugins } from "../channels/plugins/setup-registry.js";
 import type {
   ChannelOnboardingPostWriteHook,
@@ -13,6 +14,7 @@ import type {
   SetupChannelsOptions,
 } from "../channels/plugins/setup-wizard-types.js";
 import { formatCliCommand } from "../cli/command-format.js";
+import { resolveChannelTarget } from "../commands/channel-setup/channel-entry-resolution.js";
 import {
   resolveChannelSetupEntries,
   shouldShowChannelInSetup,
@@ -118,7 +120,6 @@ export async function setupChannels(
 ): Promise<OpenClawConfig> {
   let next = cfg;
   const deferStatusUntilSelection = options?.deferStatusUntilSelection === true;
-  const forceAllowFromChannels = new Set(options?.forceAllowFromChannels ?? []);
   const accountOverrides: Partial<Record<ChannelChoice, string>> = {
     ...options?.accountIds,
   };
@@ -245,13 +246,23 @@ export async function setupChannels(
     visibleChannelEntries ??= resolveVisibleChannelEntries().entries;
     return visibleChannelEntries;
   };
-  const targetedChannel =
-    requestedTargetedChannel &&
-    getVisibleChannelEntries().some((entry) => entry.id === requestedTargetedChannel)
-      ? requestedTargetedChannel
-      : undefined;
-  const pickerInitialSelection =
-    requestedTargetedChannel && !targetedChannel ? undefined : options?.initialSelection?.[0];
+  const resolveVisibleChannel = (raw: string) =>
+    resolveChannelTarget({
+      raw,
+      entries: getVisibleChannelEntries(),
+      registeredId: normalizeChannelId(raw),
+    })?.entry?.id;
+  const targetedChannel = requestedTargetedChannel
+    ? resolveVisibleChannel(requestedTargetedChannel)
+    : undefined;
+  const forceAllowFromChannels = new Set(
+    (options?.forceAllowFromChannels ?? []).map(
+      (channel) => resolveVisibleChannel(channel) ?? channel,
+    ),
+  );
+  const pickerInitialSelection = requestedTargetedChannel
+    ? targetedChannel
+    : options?.initialSelection?.[0];
   const shouldConfigure =
     options?.skipConfirm || targetedChannel
       ? true
@@ -263,14 +274,14 @@ export async function setupChannels(
     return cfg;
   }
 
-  if (!targetedChannel) {
-    const primerChannels = getVisibleChannelEntries().map((entry) => ({
-      id: entry.id,
-      label: entry.meta.label,
-      blurb: entry.meta.blurb,
-    }));
-    await noteChannelPrimer(prompter, primerChannels);
-  }
+  const primerChannels = targetedChannel
+    ? []
+    : getVisibleChannelEntries().map((entry) => ({
+        id: entry.id,
+        label: entry.meta.label,
+        blurb: entry.meta.blurb,
+      }));
+  await noteChannelPrimer(prompter, primerChannels);
 
   const quickstartDefault =
     pickerInitialSelection ??

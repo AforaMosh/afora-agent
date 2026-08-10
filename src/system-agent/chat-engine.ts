@@ -95,7 +95,7 @@ export type SystemAgentChatEngineOptions = {
     channel: string,
     prompter: WizardPrompterLike,
     beforePersistentApply: (runtime: RuntimeEnv) => Promise<void>,
-  ) => Promise<void>;
+  ) => Promise<void | HostedChannelSetupOutcome>;
   /** Test seam for workspace-skill dependency setup hosted by the chat bridge. */
   runSkillsSetupWizard?: (
     prompter: WizardPrompterLike,
@@ -150,11 +150,21 @@ type WizardPrompterLike = import("../wizard/prompts.js").WizardPrompter;
 
 type HostedWizardCompletion = "applied" | "kept-current";
 
+type HostedChannelSetupOutcome = {
+  kind: "channel-setup";
+  status: HostedWizardCompletion;
+  configuredChannels?: string[];
+};
+
 type HostedMemoryImportOutcome =
   | SetupMemoryImportOutcome
   | { status: "workspace-missing"; providers: []; workspace: string };
 
-type HostedWizardRunResult = void | HostedWizardCompletion | HostedMemoryImportOutcome;
+type HostedWizardRunResult =
+  | void
+  | HostedWizardCompletion
+  | HostedChannelSetupOutcome
+  | HostedMemoryImportOutcome;
 
 type ActiveWizardBridge = {
   session: WizardSession;
@@ -163,11 +173,10 @@ type ActiveWizardBridge = {
   label: string;
   completion: {
     status: HostedWizardCompletion;
+    configuredChannels?: string[];
     memoryImport?: HostedMemoryImportOutcome;
     memoryImportProviders?: MemoryImportProviderOutcome[];
   };
-  /** Channel to auto-answer in the first selection step ("connect telegram"). */
-  autoSelectChannel?: string;
 };
 
 type CaptureRuntime = RuntimeEnv & {
@@ -259,18 +268,18 @@ async function defaultChannelSetupWizardRunner(
   channel: string,
   prompter: WizardPrompterLike,
   beforePersistentApply: (runtime: RuntimeEnv) => Promise<void>,
-): Promise<HostedWizardCompletion> {
+): Promise<HostedChannelSetupOutcome> {
   const {
     createChannelOnboardingPostWriteHookCollector,
     runCollectedChannelOnboardingPostWriteHooks,
     setupChannels,
   } = await import("../commands/onboard-channels.js");
   const postWriteHooks = createChannelOnboardingPostWriteHookCollector();
-  return await runHostedConfigWizard({
+  let selection: string[] = [];
+  const status = await runHostedConfigWizard({
     label: "Channel setup",
     beforePersistentApply,
     run: async ({ baseConfig, runtime }) => {
-      let selection: string[] = [];
       const nextConfig = await setupChannels(baseConfig, runtime, prompter, {
         initialSelection: [channel],
         finishAfterInitialSelection: true,
@@ -303,6 +312,11 @@ async function defaultChannelSetupWizardRunner(
       };
     },
   });
+  return {
+    kind: "channel-setup",
+    status,
+    ...(selection.length > 0 ? { configuredChannels: [...selection] } : {}),
+  };
 }
 
 async function defaultSkillsSetupWizardRunner(
@@ -1609,7 +1623,6 @@ export class SystemAgentChatEngine {
     return await this.startHostedWizard({
       kind: "channel",
       label: channel,
-      autoSelectChannel: channel,
       run: (prompter) => runWizard(channel, prompter, beforePersistentApply),
     });
   }
@@ -1682,13 +1695,13 @@ export class SystemAgentChatEngine {
   private async startHostedWizard(params: {
     kind: ActiveWizardBridge["kind"];
     label: string;
-    autoSelectChannel?: string;
     memoryImportProviders?: MemoryImportProviderOutcome[];
     run: (prompter: WizardPrompterLike) => Promise<HostedWizardRunResult>;
   }): Promise<string> {
     this.lastSensitiveChannel = undefined;
     const completion: ActiveWizardBridge["completion"] = {
       status: "applied",
+      ...(params.kind === "channel" ? { configuredChannels: [params.label] } : {}),
       ...(params.memoryImportProviders
         ? { memoryImportProviders: params.memoryImportProviders }
         : {}),
@@ -1698,7 +1711,16 @@ export class SystemAgentChatEngine {
       if (typeof result === "string") {
         completion.status = result;
       } else if (result) {
-        completion.memoryImport = result;
+        if ("kind" in result) {
+          completion.status = result.status;
+          if (result.configuredChannels?.length) {
+            completion.configuredChannels = [...result.configuredChannels];
+          } else {
+            delete completion.configuredChannels;
+          }
+        } else {
+          completion.memoryImport = result;
+        }
       }
     });
     this.wizardBridge = {
@@ -1707,7 +1729,6 @@ export class SystemAgentChatEngine {
       kind: params.kind,
       label: params.label,
       completion,
-      ...(params.autoSelectChannel ? { autoSelectChannel: params.autoSelectChannel } : {}),
     };
     return await this.pumpWizardBridge();
   }
@@ -1721,29 +1742,6 @@ export class SystemAgentChatEngine {
       ].join("\n"),
       action: "none",
     };
-  }
-
-  /**
-   * "connect telegram" already names the channel; answer the wizard's channel
-   * selection step automatically instead of echoing the full channel wall.
-   */
-  private tryAutoSelectChannel(step: WizardStep): { value: unknown } | null {
-    const bridge = this.wizardBridge;
-    const channel = bridge?.autoSelectChannel;
-    if (!bridge || !channel) {
-      return null;
-    }
-    if (step.type !== "select" && step.type !== "multiselect") {
-      return null;
-    }
-    const match = (step.options ?? []).find(
-      (option) => typeof option.value === "string" && option.value.toLowerCase() === channel,
-    );
-    if (!match) {
-      return null;
-    }
-    bridge.autoSelectChannel = undefined;
-    return { value: step.type === "multiselect" ? [match.value] : match.value };
   }
 
   /** Advance the hosted wizard to the next interactive step (or completion). */
@@ -1763,13 +1761,26 @@ export class SystemAgentChatEngine {
         if (bridge.completion.status === "kept-current") {
           return `${label[0]?.toUpperCase() ?? "S"}${label.slice(1)} setup kept the current configuration. Nothing was changed.`;
         }
+        const configuredChannels = bridge.completion.configuredChannels ?? [];
         const audit =
           bridge.kind === "channel"
-            ? {
-                operation: "channels.setup",
-                summary: `Configured channel ${label} via chat setup`,
-                details: { channel: label },
-              }
+            ? configuredChannels.length === 1
+              ? {
+                  operation: "channels.setup",
+                  summary: `Configured channel ${configuredChannels[0]} via chat setup`,
+                  details: { channel: configuredChannels[0] },
+                }
+              : configuredChannels.length > 1
+                ? {
+                    operation: "channels.setup",
+                    summary: `Configured ${configuredChannels.length} channels via chat setup`,
+                    details: { channels: configuredChannels },
+                  }
+                : {
+                    operation: "channels.setup",
+                    summary: "Saved channel setup changes via chat",
+                    details: { capability: "channels" },
+                  }
             : bridge.kind === "skills"
               ? {
                   operation: "skills.setup",
@@ -1802,7 +1813,11 @@ export class SystemAgentChatEngine {
         const success =
           bridge.kind === "channel"
             ? [
-                `Done — ${label} is configured.`,
+                configuredChannels.length === 1
+                  ? `Done — ${configuredChannels[0]} is configured.`
+                  : configuredChannels.length > 1
+                    ? `Done — configured channels: ${configuredChannels.join(", ")}.`
+                    : "Done — channel setup changes were saved.",
                 "Say `restart gateway` to apply channel changes, or `channels` to review.",
               ]
             : bridge.kind === "skills"
@@ -1828,13 +1843,6 @@ export class SystemAgentChatEngine {
     }
     bridge.step = result.step ?? null;
     if (bridge.step) {
-      const auto = this.tryAutoSelectChannel(bridge.step);
-      if (auto) {
-        const step = bridge.step;
-        bridge.step = null;
-        await bridge.session.answer(step.id, auto.value);
-        return await this.pumpWizardBridge();
-      }
       if (this.opts.surface === "cli" && bridge.step.sensitive === true) {
         bridge.session.cancel();
         this.wizardBridge = null;

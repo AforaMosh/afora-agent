@@ -121,15 +121,6 @@ export async function channelsRemoveCommand(
       });
       return normalizeAccountId(choice);
     })();
-
-    const wantsDisable = await prompter.confirm({
-      message: `Disable ${channelLabel(selectedChannel)} account "${accountId}"? (keeps config)`,
-      initialValue: true,
-    });
-    if (!wantsDisable) {
-      await prompter.outro("Cancelled.");
-      return;
-    }
   } else {
     if (!rawChannel) {
       runtime.error(
@@ -137,17 +128,6 @@ export async function channelsRemoveCommand(
       );
       runtime.exit(1);
       return;
-    }
-    if (!deleteConfig) {
-      const confirm = createClackPrompter();
-      const channelPromptLabel = channel ? channelLabel(channel) : rawChannel;
-      const ok = await confirm.confirm({
-        message: `Disable ${channelPromptLabel} account "${accountId}"? (keeps config)`,
-        initialValue: true,
-      });
-      if (!ok) {
-        return;
-      }
     }
   }
 
@@ -193,6 +173,18 @@ export async function channelsRemoveCommand(
     accountId,
     action: deleteConfig ? "delete" : "disable",
   });
+
+  if (useWizard || !deleteConfig) {
+    const confirm = prompter ?? createClackPrompter();
+    const wantsDisable = await confirm.confirm({
+      message: `Disable ${plugin.meta.label} account "${preparedRemoval.accountKey}"? (keeps config)`,
+      initialValue: true,
+    });
+    if (!wantsDisable) {
+      await prompter?.outro("Cancelled.");
+      return;
+    }
+  }
 
   await stopGatewayRuntimeBeforeRemove({
     cfg,

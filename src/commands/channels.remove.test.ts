@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelPluginCatalogEntry } from "../channels/plugins/catalog.js";
 import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../plugins/runtime.js";
-import { createTestRegistry } from "../test-utils/channel-plugins.js";
+import { createChannelTestPluginBase, createTestRegistry } from "../test-utils/channel-plugins.js";
 import {
   ensureChannelSetupPluginInstalled,
   loadChannelSetupPluginRegistrySnapshotForChannel,
@@ -27,6 +27,10 @@ const registryRefreshMocks = vi.hoisted(() => ({
 
 const gatewayMocks = vi.hoisted(() => ({
   callGateway: vi.fn(async () => ({ stopped: true })),
+}));
+
+const promptMocks = vi.hoisted(() => ({
+  confirm: vi.fn(async () => true),
 }));
 
 vi.mock("../channels/plugins/catalog.js", async () => {
@@ -62,6 +66,10 @@ vi.mock("../plugins/registry-refresh.js", () => registryRefreshMocks);
 
 vi.mock("../gateway/call.js", () => ({
   callGateway: gatewayMocks.callGateway,
+}));
+
+vi.mock("../wizard/clack-prompter.js", () => ({
+  createClackPrompter: () => ({ confirm: promptMocks.confirm }),
 }));
 
 const runtime = createTestRuntime();
@@ -104,7 +112,94 @@ describe("channelsRemoveCommand", () => {
     registryRefreshMocks.refreshPluginRegistryAfterConfigMutation.mockClear();
     gatewayMocks.callGateway.mockClear();
     gatewayMocks.callGateway.mockResolvedValue({ stopped: true });
+    promptMocks.confirm.mockClear();
+    promptMocks.confirm.mockResolvedValue(true);
     setActivePluginRegistry(createTestRegistry());
+  });
+
+  it("confirms and disables the exact catalog channel when its id is an active alias", async () => {
+    const setAccountEnabled = vi.fn<
+      NonNullable<ChannelPlugin["config"]["setAccountEnabled"]>
+    >(({ cfg, enabled }) => ({
+      ...cfg,
+      channels: {
+        ...cfg.channels,
+        "exact-id": { enabled },
+      },
+    }));
+    const exactPlugin = createChannelTestPluginBase({
+      id: "exact-id",
+      label: "Exact ID",
+      config: { setAccountEnabled },
+    }) as ChannelPlugin;
+    const aliasOwner = createChannelTestPluginBase({
+      id: "alias-owner",
+      label: "Alias Owner",
+    });
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "alias-owner",
+          plugin: {
+            ...aliasOwner,
+            meta: { ...aliasOwner.meta, aliases: ["exact-id"] },
+          },
+          source: "test",
+        },
+      ]),
+    );
+    configMocks.readConfigFileSnapshot.mockResolvedValue({
+      ...baseConfigSnapshot,
+      config: {
+        channels: {
+          "alias-owner": { enabled: true },
+          "exact-id": { enabled: true },
+        },
+      },
+    });
+    const catalogEntry = createExternalChatCatalogEntry();
+    catalogMocks.listChannelPluginCatalogEntries.mockReturnValue([
+      {
+        ...catalogEntry,
+        id: "exact-id",
+        pluginId: "exact-plugin",
+        meta: {
+          ...catalogEntry.meta,
+          id: "exact-id",
+          label: "Exact ID",
+          selectionLabel: "Exact ID",
+        },
+      },
+    ]);
+    vi.mocked(loadChannelSetupPluginRegistrySnapshotForChannel).mockReturnValue(
+      createTestRegistry([
+        {
+          pluginId: "exact-plugin",
+          plugin: exactPlugin,
+          source: "test",
+        },
+      ]),
+    );
+
+    await channelsRemoveCommand({ channel: "exact-id" }, runtime, { hasFlags: true });
+
+    expect(promptMocks.confirm).toHaveBeenCalledWith({
+      message: 'Disable Exact ID account "default"? (keeps config)',
+      initialValue: true,
+    });
+    expect(setAccountEnabled).toHaveBeenCalledWith({
+      cfg: {
+        channels: {
+          "alias-owner": { enabled: true },
+          "exact-id": { enabled: true },
+        },
+      },
+      accountId: "default",
+      enabled: false,
+    });
+    const writtenConfig = firstWrittenChannelsConfig();
+    expect(writtenConfig?.channels?.["alias-owner"]).toEqual({ enabled: true });
+    expect(writtenConfig?.channels?.["exact-id"]).toEqual({ enabled: false });
   });
 
   it("asks users to add an external channel plugin before removing its account", async () => {

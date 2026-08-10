@@ -598,6 +598,123 @@ describe("channelsAddCommand", () => {
     expect(setupOptions().finishAfterInitialSelection).toBe(true);
   });
 
+  it("opens the active registry owner when catalog entries share an alias", async () => {
+    const config: OpenClawConfig = { channels: {} };
+    const activeOwner = createChannelTestPluginBase({
+      id: "active-chat",
+      label: "Active Chat",
+    });
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "active-chat",
+          plugin: {
+            ...activeOwner,
+            meta: { ...activeOwner.meta, aliases: ["shared"] },
+          },
+          source: "test",
+        },
+      ]),
+    );
+    configMocks.readConfigFileSnapshot.mockResolvedValue({
+      ...baseConfigSnapshot,
+      sourceConfig: config,
+      config,
+    });
+    const catalogEntry = createExternalChatCatalogEntry();
+    catalogMocks.listChannelPluginCatalogEntries.mockReturnValue([
+      {
+        ...catalogEntry,
+        id: "first-chat",
+        pluginId: "first-chat",
+        meta: { ...catalogEntry.meta, id: "first-chat", aliases: ["shared"] },
+      },
+      {
+        ...catalogEntry,
+        id: "active-chat",
+        pluginId: "active-chat",
+        meta: { ...catalogEntry.meta, id: "active-chat", aliases: ["shared"] },
+      },
+    ]);
+
+    await channelsAddCommand({ channel: "shared" }, runtime, { hasFlags: false });
+
+    expect(setupOptions().initialSelection).toEqual(["active-chat"]);
+    expect(setupOptions().finishAfterInitialSelection).toBe(true);
+  });
+
+  it("configures an exact catalog id instead of an active plugin alias", async () => {
+    const config: OpenClawConfig = { channels: {} };
+    const aliasOwnerBase = createChannelTestPluginBase({
+      id: "alias-owner",
+      label: "Alias Owner",
+    });
+    const exactBase = createChannelTestPluginBase({
+      id: "exact-id",
+      label: "Exact ID",
+    });
+    const applyAccountConfig = vi.fn(({ cfg, input }: ApplyAccountConfigParams) => ({
+      ...cfg,
+      channels: {
+        ...cfg.channels,
+        "exact-id": { enabled: true, token: input.token },
+      },
+    }));
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "alias-owner",
+          plugin: {
+            ...aliasOwnerBase,
+            meta: { ...aliasOwnerBase.meta, aliases: ["exact-id"] },
+            setup: {
+              applyAccountConfig: vi.fn(({ cfg }: ApplyAccountConfigParams) => ({
+                ...cfg,
+                channels: { ...cfg.channels, "alias-owner": { enabled: true } },
+              })),
+            },
+          },
+          source: "test",
+        },
+      ]),
+    );
+    configMocks.readConfigFileSnapshot.mockResolvedValue({
+      ...baseConfigSnapshot,
+      sourceConfig: config,
+      config,
+    });
+    const catalogEntry: ChannelPluginCatalogEntry = {
+      ...createExternalChatCatalogEntry(),
+      id: "exact-id",
+      pluginId: "exact-plugin",
+      meta: { ...createExternalChatCatalogEntry().meta, id: "exact-id", label: "Exact ID" },
+    };
+    catalogMocks.listChannelPluginCatalogEntries.mockReturnValue([catalogEntry]);
+    vi.mocked(loadChannelSetupPluginRegistrySnapshotForChannel).mockReturnValue(
+      createTestRegistry([
+        {
+          pluginId: "exact-plugin",
+          plugin: { ...exactBase, setup: { applyAccountConfig } },
+          source: "test",
+        },
+      ]),
+    );
+
+    await channelsAddCommand(
+      { channel: "exact-id", account: "default", token: "exact-token" },
+      runtime,
+      { hasFlags: true },
+    );
+
+    expect(installCall().entry).toBe(catalogEntry);
+    expect(snapshotCall().channel).toBe("exact-id");
+    expect(applyAccountConfig).toHaveBeenCalledOnce();
+    expect(writtenChannel("exact-id").token).toBe("exact-token");
+    expect(
+      requireRecord(writtenConfig().channels, "written channels")["alias-owner"],
+    ).toBeUndefined();
+  });
+
   it("exits quietly when guided channel setup is cancelled", async () => {
     const { WizardCancelledError } = await import("../wizard/prompts.js");
     configMocks.readConfigFileSnapshot.mockResolvedValue({

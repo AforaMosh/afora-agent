@@ -118,7 +118,7 @@ function shouldRegisterChannelSetupOptions(
 async function addChannelSetupOptions(
   command: Command,
   params: AddChannelSetupOptionsParams = {},
-): Promise<ChannelSetupOptionMode> {
+) {
   const { resolveChannelSetupCliOptionMetadata } = await loadChannelSetupCliOptions();
   const selected = params.channelId?.trim().toLowerCase();
   const { options, selectedChannel } = resolveChannelSetupCliOptionMetadata(selected, {
@@ -143,7 +143,7 @@ async function addChannelSetupOptions(
       addChannelSetupOption(command, option, seenFlags);
     }
   }
-  return mode;
+  return { mode, selectedChannelId: selectedChannel?.id };
 }
 
 export async function registerChannelsCli(
@@ -313,15 +313,18 @@ export async function registerChannelsCli(
     .option("--name <name>", "Display name for this account");
 
   let channelSetupOptionMode: ChannelSetupOptionMode = "none";
-  const selectedChannelId = await resolveChannelsAddChannelFromArgv(argv);
+  const selectedChannelInput = await resolveChannelsAddChannelFromArgv(argv);
+  let selectedChannelId = selectedChannelInput;
   if (
     shouldRegisterChannelSetupOptions(argv, options) &&
-    (selectedChannelId !== undefined || options.includeSetupOptions)
+    (selectedChannelInput !== undefined || options.includeSetupOptions)
   ) {
-    channelSetupOptionMode = await addChannelSetupOptions(addCommand, {
-      channelId: selectedChannelId,
+    const registration = await addChannelSetupOptions(addCommand, {
+      channelId: selectedChannelInput,
       includeAll: options.includeSetupOptions,
     });
+    channelSetupOptionMode = registration.mode;
+    selectedChannelId = registration.selectedChannelId ?? selectedChannelInput;
   }
 
   addCommand.action(async (channelArg: string | undefined, opts, command) => {
@@ -336,6 +339,7 @@ export async function registerChannelsCli(
           channelArg,
           opts,
           channelSetupOptionMode === "modern" ? command : undefined,
+          selectedChannelId,
         ),
         defaultRuntime,
         {

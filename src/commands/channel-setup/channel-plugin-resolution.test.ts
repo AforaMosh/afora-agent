@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
   listChannelPluginCatalogEntries: vi.fn(),
   getChannelPluginCatalogEntry: vi.fn(),
   getChannelPlugin: vi.fn(),
+  normalizeChannelId: vi.fn((value: unknown) =>
+    typeof value === "string" ? value.trim() || null : null,
+  ),
   loadChannelSetupPluginRegistrySnapshotForChannel: vi.fn(),
   ensureChannelSetupPluginInstalled: vi.fn(),
   createClackPrompter: vi.fn(() => ({}) as never),
@@ -26,7 +29,7 @@ vi.mock("../../channels/plugins/catalog.js", () => ({
 
 vi.mock("../../channels/plugins/index.js", () => ({
   getChannelPlugin: mocks.getChannelPlugin,
-  normalizeChannelId: (value: unknown) => (typeof value === "string" ? value.trim() || null : null),
+  normalizeChannelId: mocks.normalizeChannelId,
 }));
 
 vi.mock("./plugin-install.js", () => ({
@@ -78,6 +81,9 @@ function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown
 describe("resolveInstallableChannelPlugin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.normalizeChannelId.mockImplementation((value: unknown) =>
+      typeof value === "string" ? value.trim() || null : null,
+    );
     mocks.getChannelPlugin.mockReturnValue(undefined);
     mocks.getChannelPluginCatalogEntry.mockReturnValue(undefined);
     mocks.ensureChannelSetupPluginInstalled.mockResolvedValue({
@@ -168,6 +174,43 @@ describe("resolveInstallableChannelPlugin", () => {
     expect(snapshotRequest?.channel).toBe("telegram");
     expect(snapshotRequest?.pluginId).toBe("evil-telegram-shadow");
     expect(snapshotRequest?.workspaceDir).toBe("/tmp/workspace");
+  });
+
+  it("keeps an exact catalog id authoritative over an active plugin alias", async () => {
+    const catalogEntry = createCatalogEntry({
+      id: "exact-id",
+      pluginId: "exact-plugin",
+      origin: "bundled",
+    });
+    const aliasOwner = createPlugin("alias-owner");
+    const exactPlugin = createPlugin("exact-id");
+
+    mocks.listChannelPluginCatalogEntries.mockReturnValue([catalogEntry]);
+    mocks.normalizeChannelId.mockImplementation((value: unknown) =>
+      value === "exact-id" ? "alias-owner" : null,
+    );
+    mocks.getChannelPlugin.mockImplementation((id: string) =>
+      id === "alias-owner" ? aliasOwner : undefined,
+    );
+    mocks.loadChannelSetupPluginRegistrySnapshotForChannel.mockImplementation(
+      ({ channel }: { channel: string }) => ({
+        channels: channel === "exact-id" ? [{ plugin: exactPlugin }] : [],
+        channelSetups: [],
+      }),
+    );
+
+    const result = await resolveInstallableChannelPlugin({
+      cfg: { plugins: { enabled: true } },
+      runtime: {} as never,
+      rawChannel: "exact-id",
+      allowInstall: false,
+    });
+
+    expect(result.channelId).toBe("exact-id");
+    expect(result.catalogEntry).toBe(catalogEntry);
+    expect(result.plugin).toBe(exactPlugin);
+    expect(mocks.getChannelPlugin).toHaveBeenCalledWith("exact-id");
+    expect(mocks.getChannelPlugin).not.toHaveBeenCalledWith("alias-owner");
   });
 
   it("returns an existing plugin that lacks the requested capability without reinstalling", async () => {

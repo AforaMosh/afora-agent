@@ -491,22 +491,21 @@ export async function noteChannelPrimer(
       }),
     ),
   );
+  const safetyLines = [
+    t("wizard.channelsPrimer.inboundSafety"),
+    t("wizard.channelsPrimer.approveWith", {
+      command: formatCliCommand("openclaw pairing approve <channel> <code>"),
+    }),
+    t("wizard.channelsPrimer.openDm"),
+    t("wizard.channelsPrimer.multiUserDm", {
+      command: formatCliCommand('openclaw config set session.dmScope "per-channel-peer"'),
+    }),
+    t("wizard.channelsPrimer.docs", {
+      link: formatDocsLink("/channels/pairing", "channels/pairing"),
+    }),
+  ];
   await prompter.note(
-    [
-      t("wizard.channelsPrimer.inboundSafety"),
-      t("wizard.channelsPrimer.approveWith", {
-        command: formatCliCommand("openclaw pairing approve <channel> <code>"),
-      }),
-      t("wizard.channelsPrimer.openDm"),
-      t("wizard.channelsPrimer.multiUserDm", {
-        command: formatCliCommand('openclaw config set session.dmScope "per-channel-peer"'),
-      }),
-      t("wizard.channelsPrimer.docs", {
-        link: formatDocsLink("/channels/pairing", "channels/pairing"),
-      }),
-      "",
-      ...channelLines,
-    ].join("\n"),
+    [...safetyLines, ...(channelLines.length > 0 ? ["", ...channelLines] : [])].join("\n"),
     t("wizard.channelsPrimer.title"),
   );
 }

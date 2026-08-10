@@ -134,6 +134,7 @@ export function resolveChannelsAddOptions(
   channelArg: string | undefined,
   opts: Record<string, unknown>,
   command?: Pick<Command, "getOptionValueSource">,
+  resolvedChannel?: string,
 ): Record<string, unknown> {
   const forwardedOpts = command
     ? Object.fromEntries(
@@ -142,6 +143,6 @@ export function resolveChannelsAddOptions(
     : opts;
   return {
     ...forwardedOpts,
-    channel: forwardedOpts.channel ?? channelArg,
+    channel: resolvedChannel ?? forwardedOpts.channel ?? channelArg,
   };
 }

@@ -303,6 +303,81 @@ describe("registerChannelsCli", () => {
     expect(flags).not.toContain("--url <url>");
   });
 
+  it("carries the catalog-selected alias owner from option registration into execution", async () => {
+    listRawChannelPluginCatalogEntriesMock.mockReturnValue([
+      {
+        id: "first-chat",
+        pluginId: "first-chat",
+        origin: "global",
+        channel: {
+          id: "first-chat",
+          aliases: ["shared"],
+          order: 10,
+          setup: {
+            fields: [
+              {
+                key: "firstKey",
+                kind: "string",
+                cli: { flags: "--first-key <key>", description: "First key" },
+              },
+            ],
+          },
+        },
+        meta: {
+          id: "first-chat",
+          label: "First Chat",
+          selectionLabel: "First Chat",
+          docsPath: "/channels/first-chat",
+          blurb: "First test channel.",
+        },
+        install: { npmSpec: "@openclaw/first-chat" },
+      },
+      {
+        id: "active-chat",
+        pluginId: "active-chat",
+        origin: "global",
+        channel: {
+          id: "active-chat",
+          aliases: ["shared"],
+          order: 20,
+          setup: {
+            fields: [
+              {
+                key: "activeKey",
+                kind: "string",
+                cli: { flags: "--active-key <key>", description: "Active key" },
+              },
+            ],
+          },
+        },
+        meta: {
+          id: "active-chat",
+          label: "Active Chat",
+          selectionLabel: "Active Chat",
+          docsPath: "/channels/active-chat",
+          blurb: "Active test channel.",
+        },
+        install: { npmSpec: "@openclaw/active-chat" },
+      },
+    ]);
+    const program = await runChannelsAddCli([
+      "channels",
+      "add",
+      "--channel",
+      "shared",
+      "--first-key",
+      "secret",
+    ]);
+
+    expect(getChannelAddOptionFlags(program)).toContain("--first-key <key>");
+    expect(getChannelAddOptionFlags(program)).not.toContain("--active-key <key>");
+    expect(channelsAddCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: "first-chat", firstKey: "secret" }),
+      runtimeMock,
+      { hasFlags: true },
+    );
+  });
+
   it("projects channel-owned setup fields into Commander options", async () => {
     listBundledPackageChannelMetadataMock.mockReturnValueOnce([
       {

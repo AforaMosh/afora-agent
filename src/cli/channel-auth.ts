@@ -3,11 +3,7 @@ import { expectDefined } from "@openclaw/normalization-core";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
-import {
-  getChannelPlugin,
-  listChannelPlugins,
-  normalizeChannelId,
-} from "../channels/plugins/index.js";
+import { getChannelPlugin, listChannelPlugins } from "../channels/plugins/index.js";
 import { resolveInstallableChannelPlugin } from "../commands/channel-setup/channel-plugin-resolution.js";
 import { getRuntimeConfig, readConfigFileSnapshot, type OpenClawConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
@@ -102,17 +98,15 @@ async function resolveChannelPluginForMode(
 }> {
   const explicitChannel = opts.channel?.trim();
   const channelInput = explicitChannel || resolveConfiguredAuthChannelInput(cfg, mode);
-  const normalizedChannelId = normalizeChannelId(channelInput);
 
   const resolved = await resolveInstallableChannelPlugin({
     cfg,
     runtime,
     rawChannel: channelInput,
-    ...(normalizedChannelId ? { channelId: normalizedChannelId } : {}),
     allowInstall: true,
     supports: (candidate) => supportsChannelAuthMode(candidate, mode),
   });
-  const channelId = resolved.channelId ?? normalizedChannelId;
+  const channelId = resolved.channelId;
   if (!channelId) {
     throw new Error(
       `Unsupported channel "${channelInput}". Run ${formatCliCommand("openclaw channels list")} to see available channels.`,

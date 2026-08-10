@@ -445,6 +445,24 @@ describe("resolveChannelSetupSelectionContributions", () => {
     );
   });
 
+  it("keeps safety guidance when the channel catalogue is omitted", async () => {
+    const note = vi.fn(async () => undefined);
+
+    await noteChannelPrimer({ note } as never, []);
+
+    expect(formatChannelPrimerLine).not.toHaveBeenCalled();
+    expect(note).toHaveBeenCalledWith(
+      [
+        "Inbound DM safety defaults to pairing: unknown senders get a pairing code first.",
+        "Approve with: openclaw pairing approve <channel> <code>",
+        'Open/public DMs require dmPolicy="open" plus allowFrom=["*"].',
+        'For multi-user DMs, isolate sessions with: openclaw config set session.dmScope "per-channel-peer" (or "per-account-channel-peer" for multi-account channels).',
+        "Docs: https://docs.openclaw.ai/channels/pairing",
+      ].join("\n"),
+      "How channels work",
+    );
+  });
+
   it("localizes built-in channel primer copy", async () => {
     const note = vi.fn(async () => undefined);
 

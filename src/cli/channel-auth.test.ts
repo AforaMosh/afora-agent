@@ -227,6 +227,29 @@ describe("channel-auth", () => {
     });
   });
 
+  it("keeps an exact catalog id authoritative over an active plugin alias", async () => {
+    const exactPlugin = { ...plugin, id: "exact-id" };
+    mocks.listChannelPluginCatalogEntries.mockReturnValue([
+      {
+        id: "exact-id",
+        pluginId: "exact-plugin",
+        meta: { id: "exact-id", label: "Exact", aliases: [] },
+        origin: "bundled",
+      },
+    ]);
+    mocks.normalizeChannelId.mockReturnValue("alias-owner");
+    mocks.getChannelPlugin.mockImplementation((id) =>
+      id === "exact-id" ? exactPlugin : undefined,
+    );
+
+    await runChannelLogin({ channel: "exact-id", account: "acct-1" }, runtime);
+
+    expectFields(readFirstCallArg(mocks.login), { channelInput: "exact-id" });
+    expect(mocks.callGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { channel: "exact-id", accountId: "acct-1" } }),
+    );
+  });
+
   it("skips gateway runtime reconcile in remote mode and warns without failing login", async () => {
     mocks.loadConfig.mockReturnValue({
       gateway: { mode: "remote" },
