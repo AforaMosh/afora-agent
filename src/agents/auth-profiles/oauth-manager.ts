@@ -9,6 +9,7 @@ import { formatErrorMessage } from "../../infra/errors.js";
 import { withFileLock } from "../../infra/file-lock.js";
 import { redactSensitiveText } from "../../logging/redact.js";
 import { KeyedAsyncQueue } from "../../plugin-sdk/keyed-async-queue.js";
+import { createDeferred } from "../../shared/deferred.js";
 import { asDateTimestampMs } from "../../shared/number-coercion.js";
 import { OAUTH_REFRESH_CALL_TIMEOUT_MS, OAUTH_REFRESH_LOCK_OPTIONS, log } from "./constants.js";
 import { shouldMirrorRefreshedOAuthCredential } from "./oauth-identity.js";
@@ -52,12 +53,42 @@ type OAuthManagerAdapter = {
     credential: OAuthCredential;
   }) => OAuthCredential | null;
   isRefreshTokenReusedError: (error: unknown) => boolean;
+  refreshTimeoutMs?: number;
 };
 
 type ResolvedOAuthAccess = {
   apiKey: string;
   credential: OAuthCredential;
 };
+
+/** Bound one caller while retaining refresh ownership until the operation settles. */
+export async function runRetainedOAuthRefreshCall<T>(params: {
+  timeoutMs: number;
+  run: () => Promise<T>;
+  onTimeout: (error: Error) => void;
+}): Promise<T> {
+  let timeoutError: Error | undefined;
+  const operation = params.run();
+  const timeoutHandle = setTimeout(() => {
+    timeoutError = new Error(`OAuth refresh call exceeded caller deadline (${params.timeoutMs}ms)`);
+    params.onTimeout(timeoutError);
+  }, params.timeoutMs);
+  try {
+    return await operation;
+  } catch (error) {
+    throw timeoutError ?? error;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+}
+
+export async function runRetainedOAuthRefreshOwner<T>(
+  start: (onTimeout: (error: Error) => void) => Promise<T>,
+): Promise<T> {
+  const caller = createDeferred<T>();
+  void start(caller.reject).then(caller.resolve, caller.reject);
+  return await caller.promise;
+}
 
 /** Refresh failure that preserves a redacted refreshed store and credential. */
 export class OAuthManagerRefreshError extends OAuthRefreshFailureError {
@@ -355,26 +386,6 @@ export function createOAuthManager(adapter: OAuthManagerAdapter) {
     return `${provider}\u0000${profileId}`;
   }
 
-  async function withRefreshCallTimeout<T>(
-    label: string,
-    timeoutMs: number,
-    fn: () => Promise<T>,
-  ): Promise<T> {
-    let timeoutHandle: NodeJS.Timeout | undefined;
-    try {
-      return await new Promise<T>((resolve, reject) => {
-        timeoutHandle = setTimeout(() => {
-          reject(new Error(`OAuth refresh call "${label}" exceeded hard timeout (${timeoutMs}ms)`));
-        }, timeoutMs);
-        fn().then(resolve, reject);
-      });
-    } finally {
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle);
-      }
-    }
-  }
-
   async function mirrorRefreshedCredentialIntoMainStore(params: {
     profileId: string;
     refreshed: OAuthCredential;
@@ -491,6 +502,7 @@ export function createOAuthManager(adapter: OAuthManagerAdapter) {
     cfg?: OpenClawConfig;
     forceRefresh?: boolean;
     attemptedCredentials?: OAuthCredential[];
+    onCallTimeout: (error: Error) => void;
   }): Promise<ResolvedOAuthAccess | null> {
     const ownerAgentDir = resolvePersistedAuthProfileOwnerAgentDir(params);
     const authPath = resolveAuthProfileDatabasePath(ownerAgentDir);
@@ -606,10 +618,10 @@ export function createOAuthManager(adapter: OAuthManagerAdapter) {
         if (normalizeSecretInputString(credentialToRefresh.refresh) === undefined) {
           return null;
         }
-        const refreshedCredentials = await withRefreshCallTimeout(
-          `refreshOAuthCredential(${cred.provider})`,
-          OAUTH_REFRESH_CALL_TIMEOUT_MS,
-          async () => {
+        const refreshedCredentials = await runRetainedOAuthRefreshCall({
+          timeoutMs: adapter.refreshTimeoutMs ?? OAUTH_REFRESH_CALL_TIMEOUT_MS,
+          onTimeout: params.onCallTimeout,
+          run: async () => {
             params.attemptedCredentials?.push(credentialToRefresh);
             const refreshed = await adapter.refreshCredential(credentialToRefresh, {
               cfg: params.cfg,
@@ -623,7 +635,7 @@ export function createOAuthManager(adapter: OAuthManagerAdapter) {
                 } satisfies OAuthCredential)
               : null;
           },
-        );
+        });
         if (!refreshedCredentials) {
           return null;
         }
@@ -694,7 +706,14 @@ export function createOAuthManager(adapter: OAuthManagerAdapter) {
     attemptedCredentials?: OAuthCredential[];
   }): Promise<ResolvedOAuthAccess | null> {
     const key = refreshQueueKey(params.provider, params.profileId);
-    return await refreshQueue.enqueue(key, () => doRefreshOAuthTokenWithLock(params));
+    return await runRetainedOAuthRefreshOwner((onCallTimeout) =>
+      refreshQueue.enqueue(key, () =>
+        doRefreshOAuthTokenWithLock({
+          ...params,
+          onCallTimeout,
+        }),
+      ),
+    );
   }
 
   async function resolveOAuthAccess(params: {

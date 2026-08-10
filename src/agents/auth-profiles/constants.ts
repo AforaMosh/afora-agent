@@ -17,14 +17,12 @@ export const OPENAI_CODEX_DEFAULT_PROFILE_ID = "openai:default";
 /** @deprecated MiniMax provider-owned CLI profile id; do not use from third-party plugins. */
 export const MINIMAX_CLI_PROFILE_ID = "minimax-portal:minimax-cli";
 
-// Invariant: OAUTH_REFRESH_CALL_TIMEOUT_MS < OAUTH_REFRESH_LOCK_OPTIONS.stale
-// so a legitimate refresh's critical section always finishes well before
-// peers would treat the lock as reclaimable. Violating this invariant re-
-// introduces the `refresh_token_reused` race the lock is meant to prevent.
+// After caller timeout, file-lock liveness retains a non-cooperative owner until
+// possible token rotation settles and late success persists.
 //
 // Retry budget note: keep the MINIMUM cumulative retry window comfortably
 // above OAUTH_REFRESH_CALL_TIMEOUT_MS so waiters do not give up while a
-// legitimate slow refresh is still within its allowed runtime budget.
+// legitimate slow refresh is still within the caller deadline.
 /** Cross-agent lock policy for shared OAuth refresh operations. */
 export const OAUTH_REFRESH_LOCK_OPTIONS = {
   retries: {
@@ -37,12 +35,10 @@ export const OAUTH_REFRESH_LOCK_OPTIONS = {
   stale: 180_000,
 } as const;
 
-// Hard upper bound on a single OAuth refresh call (plugin hook + HTTP
-// token-exchange). Any refresh that runs longer than this is aborted and
-// surfaced as a refresh failure. Keep strictly below
-// OAUTH_REFRESH_LOCK_OPTIONS.stale so the lock is never treated as stale
-// by a waiter while the owner is still doing legitimate work.
-/** Maximum duration for one OAuth refresh call inside the refresh lock. */
+// Caller deadline for a single OAuth refresh call (plugin hook + HTTP
+// token-exchange). Non-cooperative I/O remains owned by the lock until it
+// settles so late token rotation persists.
+/** Maximum caller wait for one OAuth refresh call inside the refresh lock. */
 export const OAUTH_REFRESH_CALL_TIMEOUT_MS = 120_000;
 
 /** Freshness window for syncing external CLI auth into auth profiles. */
