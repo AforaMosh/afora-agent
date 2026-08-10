@@ -123,7 +123,7 @@ describe("workboard doctor contract", () => {
       });
       await expect(migration.migrateLegacyState(params)).resolves.toEqual({
         changes: ["Normalized 1 Workboard agent identity in SQLite."],
-        warnings: [expect.stringContaining("cannot distinguish legacy synthetic assignments")],
+        warnings: [expect.stringMatching(/workboard_reassign.*clear agentId.*configured default/)],
       });
 
       const reopened = createWorkboardSqliteStores({ env });

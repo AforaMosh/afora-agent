@@ -333,7 +333,7 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
         warnings:
           preserveDispatcher && counts.dispatcher > 0
             ? [
-                `Preserved ${counts.dispatcher} Workboard workboard-dispatcher ${counts.dispatcher === 1 ? "identity" : "identities"} because that agent id is configured; Doctor cannot distinguish legacy synthetic assignments from explicit assignments.`,
+                `Preserved ${counts.dispatcher} Workboard workboard-dispatcher ${counts.dispatcher === 1 ? "identity" : "identities"} because that agent id is configured; Doctor cannot distinguish legacy synthetic assignments from explicit assignments. Inspect each preserved card and use workboard_reassign to choose its intended agent, or clear agentId to use the configured default.`,
               ]
             : [],
       };
