@@ -81,15 +81,18 @@ final class RealtimeTalkRelaySession {
         let subscribeServerEvents: @Sendable (Int) async -> AsyncStream<EventFrame>
         let request: @Sendable (String, String?, Int) async throws -> Data
         let isCurrent: @Sendable () async -> Bool
+        let supportsOutputGeneration: @Sendable () async -> Bool
 
         init(
             subscribeServerEvents: @escaping @Sendable (Int) async -> AsyncStream<EventFrame>,
             request: @escaping @Sendable (String, String?, Int) async throws -> Data,
-            isCurrent: @escaping @Sendable () async -> Bool = { true })
+            isCurrent: @escaping @Sendable () async -> Bool = { true },
+            supportsOutputGeneration: @escaping @Sendable () async -> Bool = { false })
         {
             self.subscribeServerEvents = subscribeServerEvents
             self.request = request
             self.isCurrent = isCurrent
+            self.supportsOutputGeneration = supportsOutputGeneration
         }
 
         static func live(gateway: GatewayNodeSession, route: GatewayNodeSessionRoute) -> StartupTransport {
@@ -106,7 +109,12 @@ final class RealtimeTalkRelaySession {
                     guard await gateway.currentRoute() == route else { throw CancellationError() }
                     return response
                 },
-                isCurrent: { await gateway.currentRoute() == route })
+                isCurrent: { await gateway.currentRoute() == route },
+                supportsOutputGeneration: {
+                    await gateway.supportsServerCapability(
+                        .talkOutputGeneration,
+                        ifCurrentRoute: route) == true
+                })
         }
     }
 
@@ -391,7 +399,9 @@ final class RealtimeTalkRelaySession {
             if let turnId = outputIdentity.turnId {
                 payload["turnId"] = turnId
             }
-            if let outputGeneration = outputIdentity.outputGeneration {
+            if let outputGeneration = outputIdentity.outputGeneration,
+               await startupTransport.supportsOutputGeneration()
+            {
                 payload["outputGeneration"] = outputGeneration
             }
             let data = try? JSONSerialization.data(withJSONObject: payload)

@@ -177,6 +177,7 @@ struct RealtimeTalkRelaySessionTests {
         #expect(params == ["sessionId": "relay-1", "markName": "audio-1"])
     }
 
+    // swiftlint:disable:next function_body_length
     @Test func `output cancellation waits for clear and rejects delayed cancelled audio`() async throws {
         let barrier = RealtimeRelayStartupBarrier()
         let requests = RealtimeRelayStartupRequestLog()
@@ -189,7 +190,8 @@ struct RealtimeTalkRelaySessionTests {
                     await barrier.suspend()
                 }
                 return Data("{\"ok\":true}".utf8)
-            })
+            },
+            supportsOutputGeneration: { true })
         let session = RealtimeTalkRelaySession(
             gateway: GatewayNodeSession(),
             options: .init(sessionKey: "main", provider: "openai", model: nil, voice: nil),
@@ -339,6 +341,51 @@ struct RealtimeTalkRelaySessionTests {
             seq: nil,
             stateversion: nil))
         #expect(speakingStates == [true, false, true, false])
+    }
+
+    @Test func `legacy output cancellation preserves turn id without output generation`() async throws {
+        let barrier = RealtimeRelayStartupBarrier()
+        let requests = RealtimeRelayStartupRequestLog()
+        let transport = RealtimeTalkRelaySession.StartupTransport(
+            subscribeServerEvents: { _ in AsyncStream { $0.finish() } },
+            request: { method, paramsJSON, _ in
+                await requests.record(method: method, paramsJSON: paramsJSON)
+                if method == "talk.session.cancelOutput" {
+                    await barrier.suspend()
+                }
+                return Data("{\"ok\":true}".utf8)
+            })
+        let session = RealtimeTalkRelaySession(
+            gateway: GatewayNodeSession(),
+            options: .init(sessionKey: "main", provider: "openai", model: nil, voice: nil),
+            pcmPlayer: DrainingPCMStreamingAudioPlayer(),
+            onStatus: { _ in },
+            onSpeakingChanged: { _ in },
+            startupTransport: transport)
+        session._test_setRelaySessionId("relay-1")
+
+        await session._test_handleGatewayEvent(EventFrame(
+            type: "event",
+            event: "talk.event",
+            payload: AnyCodable([
+                "relaySessionId": "relay-1",
+                "type": "audio",
+                "audioBase64": Data([0x01]).base64EncodedString(),
+                "outputGeneration": 7,
+                "talkEvent": ["turnId": "turn-7"],
+            ]),
+            seq: nil,
+            stateversion: nil))
+        session.cancelOutput(reason: "barge-in")
+        await barrier.waitUntilEntered()
+
+        let request = try #require(await requests.snapshot().first)
+        let paramsData = try #require(request.paramsJSON?.data(using: .utf8))
+        let params = try #require(JSONSerialization.jsonObject(with: paramsData) as? [String: Any])
+        #expect(request.method == "talk.session.cancelOutput")
+        #expect(params["turnId"] as? String == "turn-7")
+        #expect(params["outputGeneration"] == nil)
+        await barrier.release()
     }
 
     @Test func `idle output cancellation blocks audio until relay clear`() async {
