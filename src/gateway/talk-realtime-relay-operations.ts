@@ -107,6 +107,8 @@ export function closeRelaySession(session: RelaySession, reason: "completed" | "
   session.harness.close();
   session.activeOutputOwner = undefined;
   relaySessions.delete(session.id);
+  session.unregisterConnectionCleanup?.();
+  session.unregisterConnectionCleanup = undefined;
   forgetUnifiedTalkSession(session.id);
   clearTimeout(session.cleanupTimer);
   detachRelayAgentRuns(session);
