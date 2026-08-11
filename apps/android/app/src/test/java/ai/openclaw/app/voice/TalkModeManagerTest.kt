@@ -47,6 +47,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -451,6 +453,142 @@ class TalkModeManagerTest {
   }
 
   @Test
+  fun realtimeOutputIdentityPropagatesIntoCancelPayload() {
+    val event =
+      kotlinx.serialization.json.Json
+        .parseToJsonElement(
+          """{"type":"audio","outputGeneration":7,"talkEvent":{"turnId":"turn-7"}}""",
+        ) as kotlinx.serialization.json.JsonObject
+
+    val identity = parseRealtimeOutputIdentity(event)
+
+    assertEquals(RealtimeOutputIdentity(turnId = "turn-7", outputGeneration = 7L), identity)
+    assertEquals(
+      """{"sessionId":"relay-1","turnId":"turn-7","outputGeneration":7,"reason":"barge-in"}""",
+      buildRealtimeOutputCancellationParams(
+        "relay-1",
+        "barge-in",
+        identity,
+        includeOutputGeneration = true,
+      ),
+    )
+  }
+
+  @Test
+  fun realtimeCancelOmitsOutputGenerationForLegacyServerCapability() {
+    val identity = RealtimeOutputIdentity(turnId = "turn-7", outputGeneration = 7L)
+
+    assertEquals(
+      """{"sessionId":"relay-1","turnId":"turn-7","reason":"barge-in"}""",
+      buildRealtimeOutputCancellationParams(
+        "relay-1",
+        "barge-in",
+        identity,
+        includeOutputGeneration = false,
+      ),
+    )
+  }
+
+  @Test
+  fun realtimeAdmissionAndClearAreGenerationOwned() {
+    val manager = createManager(realtimePlaybackDispatcher = StandardTestDispatcher())
+    setPrivateField(manager, "realtimeSessionId", "relay-1")
+    val capturePauseLock = readPrivateField(manager, "realtimeCapturePauseLock")!!
+    val workerStarted = CountDownLatch(1)
+    val workerFinished = CountDownLatch(1)
+    val staleWorker =
+      Thread {
+        workerStarted.countDown()
+        manager.realtimeEvent(realtimeAudioPayload(turnId = "turn-1", outputGeneration = 1))
+        workerFinished.countDown()
+      }
+
+    synchronized(capturePauseLock) {
+      staleWorker.start()
+      assertTrue(workerStarted.await(5, TimeUnit.SECONDS))
+      val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+      while (staleWorker.state != Thread.State.BLOCKED && System.nanoTime() < deadline) {
+        Thread.yield()
+      }
+      assertEquals(Thread.State.BLOCKED, staleWorker.state)
+      setPrivateField(manager, "realtimeOutputSuppressed", true)
+    }
+
+    assertTrue(workerFinished.await(5, TimeUnit.SECONDS))
+    assertNull(readPrivateField(manager, "realtimeAudioQueue"))
+    assertNull(readPrivateField(manager, "realtimePlaybackIdentity"))
+    assertEquals(0L, readPrivateField(manager, "realtimePlaybackGeneration"))
+
+    synchronized(capturePauseLock) {
+      setPrivateField(manager, "realtimeOutputSuppressed", false)
+    }
+    manager.realtimeEvent(realtimeAudioPayload(turnId = "turn-1", outputGeneration = 1))
+    assertTrue(stopRealtimePlayback(manager, expectedGeneration = 1))
+
+    val staleCompletion = CompletableDeferred<Unit>()
+    synchronized(capturePauseLock) {
+      setPrivateField(manager, "pendingRealtimeOutputClear", PendingRealtimeOutputClear(1, 1, staleCompletion))
+    }
+    manager.realtimeEvent(realtimeAudioPayload(turnId = "turn-2", outputGeneration = 2))
+    manager.realtimeEvent("""{"relaySessionId":"relay-1","type":"mark","markName":"gen-2"}""")
+
+    manager.realtimeEvent("""{"relaySessionId":"relay-1","type":"clear","outputGeneration":2}""")
+
+    assertFalse(staleCompletion.isCompleted)
+    assertNull(readPrivateField(manager, "realtimeAudioQueue"))
+    assertNull(readPrivateField(manager, "realtimePlaybackIdentity"))
+    assertTrue((readPrivateField(manager, "pendingRealtimePlaybackMarks") as Map<*, *>).isEmpty())
+
+    manager.realtimeEvent(realtimeAudioPayload(turnId = "turn-2", outputGeneration = 2))
+    manager.realtimeEvent("""{"relaySessionId":"relay-1","type":"mark","markName":"gen-2-replacement"}""")
+    val replacementQueue = readPrivateField(manager, "realtimeAudioQueue")
+
+    manager.realtimeEvent("""{"relaySessionId":"relay-1","type":"clear"}""")
+    assertFalse(staleCompletion.isCompleted)
+    assertTrue(replacementQueue === readPrivateField(manager, "realtimeAudioQueue"))
+    assertEquals(3L, readPrivateField(manager, "realtimePlaybackGeneration"))
+
+    manager.realtimeEvent("""{"relaySessionId":"relay-1","type":"clear","outputGeneration":1}""")
+
+    assertTrue(staleCompletion.isCompleted)
+    assertTrue(replacementQueue === readPrivateField(manager, "realtimeAudioQueue"))
+    assertEquals(3L, readPrivateField(manager, "realtimePlaybackGeneration"))
+    assertEquals(
+      RealtimeOutputIdentity(turnId = "turn-2", outputGeneration = 2L),
+      readPrivateField(manager, "realtimePlaybackIdentity"),
+    )
+    assertTrue(
+      (readPrivateField(manager, "pendingRealtimePlaybackMarks") as Map<*, *>).containsKey("gen-2-replacement"),
+    )
+
+    val matchingCompletion = CompletableDeferred<Unit>()
+    synchronized(capturePauseLock) {
+      setPrivateField(manager, "pendingRealtimeOutputClear", PendingRealtimeOutputClear(3, 2, matchingCompletion))
+    }
+
+    manager.realtimeEvent("""{"relaySessionId":"relay-1","type":"clear","outputGeneration":2}""")
+
+    assertTrue(matchingCompletion.isCompleted)
+    assertNull(readPrivateField(manager, "realtimeAudioQueue"))
+    assertNull(readPrivateField(manager, "realtimePlaybackIdentity"))
+    assertTrue((readPrivateField(manager, "pendingRealtimePlaybackMarks") as Map<*, *>).isEmpty())
+  }
+
+  @Test
+  fun taggedClearCompletesPendingOutputWithUnknownGeneration() {
+    val manager = createManager(realtimePlaybackDispatcher = StandardTestDispatcher())
+    setPrivateField(manager, "realtimeSessionId", "relay-1")
+    val completion = CompletableDeferred<Unit>()
+    val capturePauseLock = readPrivateField(manager, "realtimeCapturePauseLock")!!
+    synchronized(capturePauseLock) {
+      setPrivateField(manager, "pendingRealtimeOutputClear", PendingRealtimeOutputClear(1, null, completion))
+    }
+
+    manager.realtimeEvent("""{"relaySessionId":"relay-1","type":"clear","outputGeneration":7}""")
+    assertTrue(completion.isCompleted)
+  }
+
+  @Test
   fun localizedOffStatusDoesNotBecomeRealtimeStartFailure() =
     runTest {
       val manager = createManager(scope = this)
@@ -847,6 +985,68 @@ class TalkModeManagerTest {
     }
 
   @Test
+  fun generationCapableIdleStopAndPushToTalkRetainRelayWithoutCancellation() =
+    runTest {
+      val requests = mutableListOf<Pair<String, String?>>()
+      val manager =
+        createManager(
+          scope = this,
+          requestGateway = { method, paramsJson, _ ->
+            requests += method to paramsJson
+            "{}"
+          },
+          supportsRealtimeOutputGeneration = { true },
+        )
+      setPrivateField(manager, "realtimeSessionId", "relay-1")
+      setMutableStateFlow(manager, "_isEnabled", true)
+
+      manager.stopTts()
+      advanceUntilIdle()
+      manager.pauseRealtimeCaptureForPushToTalk("capture-1")
+
+      assertTrue(requests.isEmpty())
+      assertEquals("relay-1", readPrivateField(manager, "realtimeSessionId"))
+      assertEquals("relay-1", readPrivateField(readPrivateField(manager, "realtimeCapturePause")!!, "sessionId"))
+    }
+
+  @Test
+  fun generationCapableActivePushToTalkCancelsExactOutput() =
+    runTest {
+      val requests = mutableListOf<Pair<String, String?>>()
+      lateinit var manager: TalkModeManager
+      manager =
+        createManager(
+          scope = this,
+          requestGateway = { method, paramsJson, _ ->
+            requests += method to paramsJson
+            manager.realtimeEvent(
+              """{"relaySessionId":"relay-1","type":"clear","outputGeneration":7}""",
+            )
+            "{}"
+          },
+          supportsRealtimeOutputGeneration = { true },
+        )
+      setPrivateField(manager, "realtimeSessionId", "relay-1")
+      setPrivateField(
+        manager,
+        "realtimePlaybackIdentity",
+        RealtimeOutputIdentity(turnId = "turn-7", outputGeneration = 7L),
+      )
+      setPrivateField(manager, "realtimePlaybackGeneration", 1L)
+
+      manager.pauseRealtimeCaptureForPushToTalk("capture-1")
+
+      assertEquals(
+        listOf(
+          "talk.session.cancelOutput" to
+            """{"sessionId":"relay-1","turnId":"turn-7","outputGeneration":7,"reason":"android-push-to-talk"}""",
+        ),
+        requests,
+      )
+      assertEquals("relay-1", readPrivateField(manager, "realtimeSessionId"))
+    }
+
+  @Test
   fun stalePushToTalkCompletionCannotResumeNewerPause() =
     runTest {
       val manager = createManager()
@@ -1077,6 +1277,8 @@ class TalkModeManagerTest {
     realtimeCaptureDispatcher: CoroutineDispatcher = Dispatchers.IO,
     realtimePlaybackDispatcher: CoroutineDispatcher = Dispatchers.IO,
     realtimeMarkAcknowledger: (suspend (String, String) -> Unit)? = null,
+    requestGateway: (suspend (String, String?, Long) -> String)? = null,
+    supportsRealtimeOutputGeneration: () -> Boolean = { false },
   ): TalkModeManager {
     val app = RuntimeEnvironment.getApplication()
     val session =
@@ -1099,6 +1301,8 @@ class TalkModeManagerTest {
       realtimeCaptureDispatcher = realtimeCaptureDispatcher,
       realtimePlaybackDispatcher = realtimePlaybackDispatcher,
       realtimeMarkAcknowledger = realtimeMarkAcknowledger,
+      requestGatewayOverride = requestGateway,
+      supportsRealtimeOutputGeneration = supportsRealtimeOutputGeneration,
     )
   }
 
@@ -1125,6 +1329,11 @@ class TalkModeManagerTest {
   ) = handleGatewayEvent("talk.event", realtimeTranscriptPayload(role, text, final))
 
   private fun TalkModeManager.realtimeEvent(payload: String) = handleGatewayEvent("talk.event", payload)
+
+  private fun realtimeAudioPayload(
+    turnId: String,
+    outputGeneration: Long,
+  ): String = """{"relaySessionId":"relay-1","type":"audio","audioBase64":"AAE=","outputGeneration":$outputGeneration,"talkEvent":{"turnId":"$turnId"}}"""
 
   private fun installSpeechRecognitionService() {
     val app = RuntimeEnvironment.getApplication()
@@ -1156,6 +1365,15 @@ class TalkModeManagerTest {
     val field = target.javaClass.getDeclaredField(name)
     field.isAccessible = true
     return field.get(target)
+  }
+
+  private fun stopRealtimePlayback(
+    manager: TalkModeManager,
+    expectedGeneration: Long,
+  ): Boolean {
+    val method = manager.javaClass.getDeclaredMethod("stopRealtimePlayback", Long::class.javaObjectType)
+    method.isAccessible = true
+    return method.invoke(manager, expectedGeneration) as Boolean
   }
 
   private fun setTalkFailure(

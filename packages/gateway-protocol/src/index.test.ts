@@ -850,7 +850,22 @@ describe("validateTalkSessionRelayParams", () => {
     expectAccepted(validateTalkSessionAppendAudioParams, [
       talkSession({ audioBase64: "aGVsbG8=", timestamp: 123 }),
     ]);
-    expectAccepted(validateTalkSessionCancelOutputParams, [talkSession({ reason: "barge-in" })]);
+    expectAccepted(validateTalkSessionCancelOutputParams, [
+      talkSession({
+        turnId: "turn-1",
+        reason: "legacy-barge-in",
+      }),
+      talkSession({
+        turnId: "turn-1",
+        outputGeneration: 2,
+        reason: "barge-in",
+      }),
+    ]);
+    expectRejected(validateTalkSessionCancelOutputParams, [
+      talkSession({ outputGeneration: 0 }),
+      talkSession({ outputGeneration: 1.5 }),
+      talkSession({ outputGeneration: Number.MAX_SAFE_INTEGER + 1 }),
+    ]);
     expectAccepted(validateTalkSessionSubmitToolResultParams, [
       talkSession({
         callId: "call-1",

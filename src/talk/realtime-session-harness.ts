@@ -20,6 +20,7 @@ import type {
   RealtimeVoiceResponseOutcome,
   RealtimeVoiceRole,
 } from "./provider-types.js";
+import { matchRealtimeOutputIdentity } from "./realtime-output-identity.js";
 import {
   extendRealtimeVoiceOutputEchoSuppression,
   getRealtimeVoiceBridgeEventHealth,
@@ -292,12 +293,23 @@ function createRealtimeVoiceSessionHarnessImplementation<TForcedConsultContext =
   };
 
   const claimResponseEvent = (event: RealtimeVoiceBridgeEvent): void => {
-    if (event.direction !== "server" || event.type !== "response.created") {
+    if (event.direction !== "server" || !event.responseId) {
       return;
     }
-    responseOwnerTurnId = ensureTurnWithEvents().turnId;
-    responseOwnerId = event.responseId;
-    suppressNextUnkeyedLegacyTerminal = false;
+    if (event.type === "response.created") {
+      responseOwnerTurnId = ensureTurnWithEvents().turnId;
+      responseOwnerId = event.responseId;
+      suppressNextUnkeyedLegacyTerminal = false;
+      return;
+    }
+    if (
+      event.type === "conversation.output_audio.delta" ||
+      event.type === "response.audio.delta" ||
+      event.type === "response.output_audio.delta"
+    ) {
+      responseOwnerTurnId ??= ensureTurnWithEvents().turnId;
+      responseOwnerId ??= event.responseId;
+    }
   };
 
   const finishResponse = (
@@ -307,7 +319,13 @@ function createRealtimeVoiceSessionHarnessImplementation<TForcedConsultContext =
     if (outcome.responseId && settledResponseIds.has(outcome.responseId)) {
       return { ok: false, reason: "no_active_turn" };
     }
-    if (outcome.responseId && responseOwnerId && outcome.responseId !== responseOwnerId) {
+    if (
+      responseOwnerId &&
+      matchRealtimeOutputIdentity(
+        { responseId: responseOwnerId },
+        { responseId: outcome.responseId },
+      ) !== "same"
+    ) {
       return { ok: false, reason: "stale_turn" };
     }
     const turnId = responseOwnerTurnId ?? talk.activeTurnId;

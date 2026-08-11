@@ -41,6 +41,7 @@ const {
   emitCompletedToolCalls,
   connectReadyBridge,
   expectedResponseCreateEvent,
+  expectedResponseCancelEvent,
   requireNestedRecord,
   expectRecordFields,
   resetTestState,
@@ -361,6 +362,33 @@ describe("OpenAI realtime voice response control", () => {
     emitServerEvent(socket, { type: "response.cancelled" });
 
     expect(parseSent(socket).slice(-1)).toEqual([expectedResponseCreateEvent()]);
+  });
+
+  it("uses the request-scoped clear for externally interrupted playback", async () => {
+    const onClearAudio = vi.fn();
+    const requestClearAudio = vi.fn();
+    const bridge = createNativeBridge({ onClearAudio });
+    const socket = await connectReadyBridge(bridge);
+    bridge.setMediaTimestamp(1000);
+    emitAssistantPlayback(socket);
+    bridge.setMediaTimestamp(1300);
+
+    bridge.handleBargeIn?.({
+      audioPlaybackActive: true,
+      onClearAudio: requestClearAudio,
+    });
+
+    expect(requestClearAudio).toHaveBeenCalledWith("barge-in");
+    expect(onClearAudio).not.toHaveBeenCalled();
+    expect(parseSent(socket).slice(-2)).toEqual([
+      expectedResponseCancelEvent(),
+      {
+        type: "conversation.item.truncate",
+        item_id: "item_1",
+        content_index: 0,
+        audio_end_ms: 300,
+      },
+    ]);
   });
 
   it("drains deferred response.create after a no-active-response cancellation error", async () => {

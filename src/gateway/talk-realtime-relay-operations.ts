@@ -4,7 +4,10 @@ import {
   type RealtimeVoiceAgentControlResult,
 } from "../talk/agent-run-control.js";
 import { registerClientVoiceConsultRun } from "../talk/client-voice-session.js";
-import type { RealtimeVoiceToolResultOptions } from "../talk/provider-types.js";
+import type {
+  RealtimeVoiceAudioClearReason,
+  RealtimeVoiceToolResultOptions,
+} from "../talk/provider-types.js";
 import type { TalkEvent } from "../talk/talk-session-controller.js";
 import { abortChatRunById } from "./chat-abort.js";
 import { formatError } from "./server-utils.js";
@@ -28,6 +31,7 @@ import {
   MAX_RELAY_SESSIONS_PER_CONN,
   broadcastRelayTurnStarted,
   broadcastToOwner,
+  clearTalkRealtimeRelayOutputGeneration,
   drainingRelaySessions,
   ensureRelayTurn,
   noFallbackRelayOutputFlush,
@@ -95,6 +99,7 @@ export function pruneInactiveRelayAgentRuns(session: RelaySession): number {
 
 export function closeRelaySession(session: RelaySession, reason: "completed" | "error"): void {
   session.harness.close();
+  session.activeOutputOwner = undefined;
   relaySessions.delete(session.id);
   forgetUnifiedTalkSession(session.id);
   clearTimeout(session.cleanupTimer);
@@ -539,12 +544,45 @@ export function cancelTalkRealtimeRelayTurn(params: {
   });
 }
 
+/** Cancels provider/playback output without aborting the owning Talk turn or agent work. */
+export function cancelTalkRealtimeRelayOutput(params: {
+  relaySessionId: string;
+  connId: string;
+  turnId?: string;
+  outputGeneration: number;
+  reason?: string;
+}): void {
+  const session = getRelaySession(params.relaySessionId, params.connId);
+  const requestedTurnId = params.turnId?.trim();
+  const activeTurnId = session.harness.talk.activeTurnId;
+  if (requestedTurnId && requestedTurnId !== activeTurnId) {
+    return;
+  }
+  if (params.outputGeneration !== session.outputGeneration) {
+    return;
+  }
+  const reason = params.reason ?? "output-cancelled";
+  const clearOutput = (providerReason?: RealtimeVoiceAudioClearReason): void => {
+    clearTalkRealtimeRelayOutputGeneration({
+      session,
+      generation: params.outputGeneration,
+      reason,
+      ...(providerReason ? { providerReason } : {}),
+    });
+  };
+  session.harness.handleBargeIn(
+    { audioPlaybackActive: true, onClearAudio: clearOutput },
+    clearOutput,
+  );
+}
+
 /** Drops one provider generation without sending cancellation into its replacement. */
 export function resetTalkRealtimeRelayContinuity(
   session: RelaySession,
   reason = "session.continuity.reset",
 ): TalkEvent | undefined {
   session.toolResultEpoch += 1;
+  session.activeOutputOwner = undefined;
   const retiredCallIds = new Set<string>([
     ...session.activeAgentToolCalls.keys(),
     ...session.toolCalls.cancelledCallIds(),

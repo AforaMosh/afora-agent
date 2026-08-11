@@ -144,6 +144,47 @@ describe("realtime voice session harness", () => {
       1,
     );
   });
+
+  it("does not settle identified output from an unkeyed terminal event", () => {
+    let callbacks: Parameters<RealtimeVoiceProviderPlugin["createBridge"]>[0] | undefined;
+    const onResponseDone = vi.fn();
+    const provider: RealtimeVoiceProviderPlugin = {
+      id: "test",
+      label: "Test",
+      isConfigured: () => true,
+      createBridge: (request) => {
+        callbacks = request;
+        return makeBridge();
+      },
+    };
+    const harness = createHarness();
+    harness.createBridge({
+      provider,
+      providerConfig: {},
+      audioSink: { sendAudio: vi.fn() },
+      onResponseDone,
+    });
+    callbacks?.onEvent?.({
+      direction: "server",
+      type: "response.audio.delta",
+      responseId: "resp-1",
+    });
+    callbacks?.onEvent?.({ direction: "server", type: "response.done" });
+
+    expect(onResponseDone).not.toHaveBeenCalled();
+    expect(harness.talk.activeTurnId).toBeDefined();
+
+    callbacks?.onEvent?.({
+      direction: "server",
+      type: "response.done",
+      responseId: "resp-1",
+    });
+    expect(onResponseDone).toHaveBeenCalledWith({
+      status: "completed",
+      responseId: "resp-1",
+    });
+  });
+
   it("keeps legacy helpers compatible while ordering Talk events", () => {
     const harness = createHarness();
 

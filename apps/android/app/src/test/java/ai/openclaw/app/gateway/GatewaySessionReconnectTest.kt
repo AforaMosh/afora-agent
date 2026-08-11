@@ -239,6 +239,31 @@ class GatewaySessionReconnectTest {
     }
 
   @Test
+  fun connectedHelloPublishesTalkOutputGenerationCapability() =
+    runBlocking {
+      val capabilities = setOf("talk-output-generation")
+      val json = Json { ignoreUnknownKeys = true }
+      val hello = CompletableDeferred<GatewayHelloSummary>()
+      val server =
+        startGatewayServer(json = json) { webSocket, id, method ->
+          if (method == "connect") {
+            webSocket.send(connectResponseFrame(id, capabilities = capabilities))
+          }
+        }
+      val harness = createReconnectHarness(onHello = hello::complete)
+
+      try {
+        connectNodeSession(harness.session, server.port)
+        assertEquals(
+          capabilities,
+          withTimeout(LIFECYCLE_TEST_TIMEOUT_MS) { hello.await() }.capabilities,
+        )
+      } finally {
+        shutdownReconnectHarness(harness, server)
+      }
+    }
+
+  @Test
   fun disconnectAndJoinWaitsForNaturalFailureCallback() =
     runBlocking {
       val json = Json { ignoreUnknownKeys = true }
@@ -1101,9 +1126,11 @@ class GatewaySessionReconnectTest {
   private fun connectResponseFrame(
     id: String,
     methods: Set<String> = emptySet(),
+    capabilities: Set<String> = emptySet(),
   ): String {
     val encodedMethods = methods.joinToString(",") { JsonPrimitive(it).toString() }
-    return """{"type":"res","id":"$id","ok":true,"payload":{"features":{"methods":[$encodedMethods]},"snapshot":{"sessionDefaults":{"mainSessionKey":"main"}}}}"""
+    val encodedCapabilities = capabilities.joinToString(",") { JsonPrimitive(it).toString() }
+    return """{"type":"res","id":"$id","ok":true,"payload":{"features":{"methods":[$encodedMethods],"capabilities":[$encodedCapabilities]},"snapshot":{"sessionDefaults":{"mainSessionKey":"main"}}}}"""
   }
 
   private fun startGatewayServer(

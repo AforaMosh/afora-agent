@@ -476,6 +476,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: "AAAA",
+      outputGeneration: 1,
     });
     pumpMicrophone(new Float32Array(4096));
 
@@ -487,7 +488,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
     transport.stop();
   });
 
-  it("cancels overflowing playback and ignores late audio until provider clear", async () => {
+  it("admits a replacement generation after overflowing playback", async () => {
     const client = createClient();
     const transport = createTransport({ client });
 
@@ -497,15 +498,17 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
         relaySessionId: "relay-1",
         type: "audio",
         audioBase64: "AAAA",
+        outputGeneration: 1,
       });
     }
 
     await waitForFast(() =>
-      expect(requestCallsFor(client, "talk.session.cancelOutput")).toEqual([
+      expect(requestCallsFor(client, "talk.session.cancelOutput")).toStrictEqual([
         [
           "talk.session.cancelOutput",
           {
             sessionId: "relay-1",
+            outputGeneration: 1,
             reason: "playback-overflow",
           },
         ],
@@ -514,21 +517,35 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
     expect(createdSources).toHaveLength(320);
     expect(createdSources.every((source) => source.stop.mock.calls.length === 1)).toBe(true);
 
-    emitTalkEvent({
-      relaySessionId: "relay-1",
-      type: "audio",
-      audioBase64: "AAAA",
-    });
-    expect(createdSources).toHaveLength(320);
-
     emitTalkEvent({ relaySessionId: "relay-1", type: "clear" });
     emitTalkEvent({
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: "AAAA",
+      outputGeneration: 1,
+    });
+    emitTalkEvent({ relaySessionId: "relay-1", type: "audio", audioBase64: "AAAA" });
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: "AAAA",
+      outputGeneration: 0,
+    });
+    expect(createdSources).toHaveLength(320);
+
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: "AAAA",
+      outputGeneration: 2,
     });
     expect(createdSources).toHaveLength(321);
     expect(createdSources.at(-1)?.start).toHaveBeenCalledOnce();
+
+    emitTalkEvent({ relaySessionId: "relay-1", type: "clear", outputGeneration: 1 });
+    expect(createdSources.at(-1)?.stop).not.toHaveBeenCalled();
+    emitTalkEvent({ relaySessionId: "relay-1", type: "clear", outputGeneration: 2 });
+    expect(createdSources.at(-1)?.stop).toHaveBeenCalledOnce();
 
     transport.stop();
   });
@@ -542,14 +559,29 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: zeroPcmBase64(24000 * 11),
+      outputGeneration: 7,
+      talkEvent: {
+        id: "relay-1:2",
+        type: "output.audio.delta",
+        sessionId: "relay-1",
+        turnId: "turn-authoritative",
+        seq: 2,
+        timestamp: "2026-08-05T00:00:00.000Z",
+        mode: "realtime",
+        transport: "gateway-relay",
+        brain: "agent-consult",
+        payload: { byteLength: 48_000 },
+      } satisfies RealtimeTalkEvent,
     });
 
     await waitForFast(() =>
-      expect(requestCallsFor(client, "talk.session.cancelOutput")).toEqual([
+      expect(requestCallsFor(client, "talk.session.cancelOutput")).toStrictEqual([
         [
           "talk.session.cancelOutput",
           {
             sessionId: "relay-1",
+            turnId: "turn-authoritative",
+            outputGeneration: 7,
             reason: "playback-overflow",
           },
         ],
@@ -557,6 +589,93 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
     );
     expect(createdSources).toHaveLength(0);
 
+    transport.stop();
+  });
+
+  it("reopens an overflowed generation after its matching clear", async () => {
+    const transport = createTransport({ client: createClient() });
+
+    await startTransport(transport);
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: zeroPcmBase64(24000 * 11),
+      outputGeneration: 3,
+    });
+    emitTalkEvent({ relaySessionId: "relay-1", type: "clear", outputGeneration: 3 });
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: "AAAA",
+      outputGeneration: 3,
+    });
+
+    expect(createdSources).toHaveLength(1);
+    expect(createdSources[0]?.start).toHaveBeenCalledOnce();
+    transport.stop();
+  });
+
+  it("clears the overflow latch when the transport restarts", async () => {
+    const transport = createTransport({ client: createClient() });
+
+    await startTransport(transport);
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: zeroPcmBase64(24000 * 11),
+      outputGeneration: 4,
+    });
+    transport.stop();
+
+    await startTransport(transport);
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: "AAAA",
+      outputGeneration: 4,
+    });
+
+    expect(createdSources).toHaveLength(1);
+    expect(createdSources[0]?.start).toHaveBeenCalledOnce();
+    transport.stop();
+  });
+
+  it("ignores a stale clear for replacement playback", async () => {
+    const transport = createTransport({ client: createClient() });
+
+    await startTransport(transport);
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: "AAAA",
+      outputGeneration: 1,
+    });
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: "AAAA",
+      outputGeneration: 2,
+    });
+
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "clear",
+    });
+    expect(createdSources.every((source) => source.stop.mock.calls.length === 0)).toBe(true);
+
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "clear",
+      outputGeneration: 1,
+    });
+    expect(createdSources.every((source) => source.stop.mock.calls.length === 0)).toBe(true);
+
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "clear",
+      outputGeneration: 2,
+    });
+    expect(createdSources.every((source) => source.stop.mock.calls.length === 1)).toBe(true);
     transport.stop();
   });
 
@@ -570,6 +689,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: zeroPcmBase64(24000),
+      outputGeneration: 1,
     });
     emitTalkEvent({ relaySessionId: "relay-1", type: "mark", markName: "mark-1" });
 
@@ -883,6 +1003,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: "AAAA",
+      outputGeneration: 1,
     });
     pumpMicrophone(speech);
     expect(requestCallsFor(client, "talk.session.cancelOutput")).toHaveLength(0);
@@ -898,6 +1019,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
         "talk.session.cancelOutput",
         {
           sessionId: "relay-1",
+          outputGeneration: 1,
           reason: "barge-in",
         },
       ],
@@ -1101,6 +1223,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: zeroPcmBase64(24000),
+      outputGeneration: 2,
     });
     emitTalkEvent({
       relaySessionId: "relay-1",
@@ -1118,7 +1241,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
     });
     await Promise.resolve();
 
-    emitTalkEvent({ relaySessionId: "relay-1", type: "clear" });
+    emitTalkEvent({ relaySessionId: "relay-1", type: "clear", outputGeneration: 2 });
 
     await waitForFast(() =>
       expect(client["request"]).toHaveBeenCalledWith("talk.session.submitToolResult", {
@@ -1234,6 +1357,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: zeroPcmBase64(24000),
+      outputGeneration: 1,
     });
     emitTalkEvent({
       relaySessionId: "relay-1",
@@ -1256,6 +1380,7 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
         "talk.session.cancelOutput",
         {
           sessionId: "relay-1",
+          outputGeneration: 1,
           reason: "barge-in",
         },
       ],
@@ -1264,11 +1389,29 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
       relaySessionId: "relay-1",
       type: "audio",
       audioBase64: zeroPcmBase64(24000),
+      outputGeneration: 2,
     });
     pumpMicrophone(speech);
     pumpMicrophone(speech);
     pumpMicrophone(speech);
-    expect(requestCallsFor(client, "talk.session.cancelOutput")).toHaveLength(2);
+    expect(requestCallsFor(client, "talk.session.cancelOutput")).toEqual([
+      [
+        "talk.session.cancelOutput",
+        {
+          sessionId: "relay-1",
+          outputGeneration: 1,
+          reason: "barge-in",
+        },
+      ],
+      [
+        "talk.session.cancelOutput",
+        {
+          sessionId: "relay-1",
+          outputGeneration: 2,
+          reason: "barge-in",
+        },
+      ],
+    ]);
     emitGatewayFrame({
       event: "chat",
       payload: { runId: "run-1", state: "final", message: { text: "ready" } },

@@ -28,16 +28,28 @@ export const noFallbackRelayOutputFlush = () => {};
 export type TalkRealtimeRelayEventPayload =
   | { relaySessionId: string; type: "ready" }
   | { relaySessionId: string; type: "inputAudio"; byteLength: number }
-  | { relaySessionId: string; type: "audioStarted" }
+  | { relaySessionId: string; type: "audioStarted"; outputGeneration: number }
   | {
       relaySessionId: string;
       type: "audio";
       audioBase64: string;
+      outputGeneration: number;
       itemId?: string;
       responseId?: string;
     }
-  | { relaySessionId: string; type: "audioDone"; itemId?: string; responseId?: string }
-  | { relaySessionId: string; type: "clear"; reason?: RealtimeVoiceAudioClearReason }
+  | {
+      relaySessionId: string;
+      type: "audioDone";
+      outputGeneration: number;
+      itemId?: string;
+      responseId?: string;
+    }
+  | {
+      relaySessionId: string;
+      type: "clear";
+      outputGeneration?: number;
+      reason?: RealtimeVoiceAudioClearReason;
+    }
   | { relaySessionId: string; type: "mark"; markName: string }
   | {
       relaySessionId: string;
@@ -71,6 +83,11 @@ export type TalkRealtimeRelayEventPayload =
   | { relaySessionId: string; type: "close"; reason: "completed" | "error" };
 
 type TalkRealtimeRelayEvent = TalkRealtimeRelayEventPayload & { talkEvent?: TalkEvent };
+type RelayOutputOwner = {
+  itemId?: string;
+  responseId?: string;
+  outputGeneration: number;
+};
 
 export type ForcedTerminalProviderResult = {
   result: unknown;
@@ -110,6 +127,9 @@ export type RelaySession = {
   forcedTerminalProviderResults: Map<string, ForcedTerminalProviderResult>;
   // Turn cancellation invalidates async acceptance callbacks from the prior turn.
   toolResultEpoch: number;
+  outputGeneration: number;
+  activeOutputOwner?: RelayOutputOwner;
+  clearedOutputGeneration?: number;
   voiceConfig?: OpenClawConfig;
   voiceSessionCreated: boolean;
   voiceTranscriptSeq: number;
@@ -192,6 +212,33 @@ export function broadcastToOwner(
   // for transient tool progress by individual provider callback paths.
   const delivery = relayEventDeliveryOptions(event, event.talkEvent);
   context.broadcastToConnIds(RELAY_EVENT, event, new Set([connId]), delivery);
+}
+
+export function clearTalkRealtimeRelayOutputGeneration(params: {
+  session: RelaySession;
+  generation: number;
+  reason: string;
+  providerReason?: RealtimeVoiceAudioClearReason;
+}): TalkEvent | undefined {
+  const { session, generation } = params;
+  if (generation !== session.outputGeneration || session.clearedOutputGeneration === generation) {
+    return undefined;
+  }
+  const outputGeneration = session.activeOutputOwner?.outputGeneration ?? generation;
+  session.activeOutputOwner = undefined;
+  session.clearedOutputGeneration = generation;
+  let outputDone: TalkEvent | undefined;
+  session.harness.flushOutput(() => {
+    outputDone = session.harness.finishOutputAudio(params.reason);
+  });
+  broadcastToOwner(session.context, session.connId, {
+    relaySessionId: session.id,
+    type: "clear",
+    outputGeneration,
+    ...(params.providerReason ? { reason: params.providerReason } : {}),
+    ...(outputDone ? { talkEvent: outputDone } : {}),
+  });
+  return outputDone;
 }
 
 function relayEventDeliveryOptions(

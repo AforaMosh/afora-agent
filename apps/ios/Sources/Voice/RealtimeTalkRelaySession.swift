@@ -120,6 +120,39 @@ final class RealtimeTalkRelaySession {
         let failed: Bool
     }
 
+    private struct OutputIdentity {
+        enum Relation {
+            case same
+            case different
+            case unknown
+        }
+
+        let turnId: String?, outputGeneration: Int?
+
+        init(_ payload: [String: AnyCodable]) {
+            self.turnId = RealtimeTalkRelaySession.nonEmpty(
+                payload["talkEvent"]?.dictionaryValue?["turnId"]?.stringValue)
+            self.outputGeneration = RealtimeTalkRelaySession.outputGeneration(payload["outputGeneration"])
+        }
+
+        func isEmpty() -> Bool {
+            self.turnId == nil && self.outputGeneration == nil
+        }
+
+        func relation(to other: OutputIdentity) -> Relation {
+            if self.isEmpty() || other.isEmpty() {
+                return self.isEmpty() == other.isEmpty() ? .same : .different
+            }
+            if let outputGeneration, let otherGeneration = other.outputGeneration {
+                return outputGeneration == otherGeneration ? .same : .different
+            }
+            if let turnId, let otherTurnId = other.turnId {
+                return turnId == otherTurnId ? .same : .different
+            }
+            return .unknown
+        }
+    }
+
     private enum StartupWaitResult {
         case ready
         case failed(TalkRuntimeIssue)
@@ -171,8 +204,13 @@ final class RealtimeTalkRelaySession {
     private var pendingPlaybackMarks: [String] = []
     private var audioSender: RealtimeAudioSender?
     private var isClosed = false
-    private var lifecycleGeneration: UInt64 = 0
+    private var lifecycleGeneration: UInt64 = 0, outputCancellationGeneration: UInt64 = 0
     private var isOutputPlaying = false
+    private var outputIdentity: OutputIdentity?
+    private var suppressedOutputIdentity: OutputIdentity?
+    private var awaitingOutputClear = false
+    private var cancelledOutputGenerationWatermark: Int?
+    private var outputCancellationTask: Task<Void, Never>?
     private var outputStartedAtMs: Double?
     private var outputPlaybackExpectedEndMs: Double = 0
     private var lastBargeInAtMs: Double = 0
@@ -311,6 +349,8 @@ final class RealtimeTalkRelaySession {
         let audioSender = self.audioSender
         self.audioSender = nil
         Task { await audioSender?.close() }
+        self.retireOutputCancellation()
+        self.cancelledOutputGenerationWatermark = nil
         self.stopOutputPlayback()
         if sendClose, let relaySessionId = self.relaySessionId, let startupTransport = self.startupTransport {
             Task { [startupTransport] in
@@ -335,17 +375,49 @@ final class RealtimeTalkRelaySession {
     }
 
     func cancelOutput(reason: String = "user") {
-        self.stopOutputPlayback()
         guard let relaySessionId, let startupTransport else { return }
-        Task { [startupTransport] in
-            let payload: [String: Any] = [
+        let outputIdentity = self.outputIdentity ?? OutputIdentity([:])
+        self.outputCancellationGeneration &+= 1
+        let cancellationGeneration = self.outputCancellationGeneration
+        self.outputCancellationTask?.cancel()
+        self.suppressedOutputIdentity = outputIdentity
+        self.awaitingOutputClear = true
+        self.stopOutputPlayback()
+        self.outputCancellationTask = Task { [weak self, startupTransport] in
+            var payload: [String: Any] = [
                 "sessionId": relaySessionId,
                 "reason": reason,
             ]
+            if let turnId = outputIdentity.turnId {
+                payload["turnId"] = turnId
+            }
+            if let outputGeneration = outputIdentity.outputGeneration {
+                payload["outputGeneration"] = outputGeneration
+            }
             let data = try? JSONSerialization.data(withJSONObject: payload)
             let json = data.flatMap { String(data: $0, encoding: .utf8) }
-            _ = try? await startupTransport.request("talk.session.cancelOutput", json, 8)
+            do {
+                _ = try await startupTransport.request("talk.session.cancelOutput", json, 8)
+            } catch {
+                guard let self, self.isCurrentOutputCancellation(cancellationGeneration) else { return }
+                let issue = TalkRuntimeIssue(
+                    code: .realtimeOutputCancelFailed,
+                    message: error.localizedDescription,
+                    provider: self.options.provider,
+                    model: self.options.model,
+                    transport: "gateway-relay",
+                    phase: "output-cancel")
+                self.onIssue(issue)
+                self.onStatus(issue.displayMessage)
+                // A failed current cancellation leaves remote output ownership unknown.
+                // Keep the fence until terminal teardown makes late audio impossible.
+                self.close(sendClose: true)
+            }
         }
+    }
+
+    private func isCurrentOutputCancellation(_ generation: UInt64) -> Bool {
+        generation == self.outputCancellationGeneration && !self.isClosed
     }
 
     private func createRelaySession() async throws -> TalkSessionCreateResult {
@@ -355,13 +427,13 @@ final class RealtimeTalkRelaySession {
             "transport": "gateway-relay",
             "brain": "agent-consult",
         ]
-        if let provider = self.nonEmpty(self.options.provider) {
+        if let provider = Self.nonEmpty(self.options.provider) {
             payload["provider"] = provider
         }
-        if let model = self.nonEmpty(self.options.model) {
+        if let model = Self.nonEmpty(self.options.model) {
             payload["model"] = model
         }
-        if let voice = self.nonEmpty(self.options.voice) {
+        if let voice = Self.nonEmpty(self.options.voice) {
             payload["voice"] = voice
         }
         let data = try JSONSerialization.data(withJSONObject: payload)
@@ -421,25 +493,11 @@ final class RealtimeTalkRelaySession {
             self.finishStartupWait(.ready)
             self.onStatus("Listening (Realtime)")
         case "audio":
-            guard let base64 = payload["audioBase64"]?.stringValue,
-                  let data = Data(base64Encoded: base64)
-            else { return }
-            self.recordOutputAudioChunk(byteCount: data.count)
-            self.markOutputAudioStarted(byteCount: data.count, nowMs: ProcessInfo.processInfo.systemUptime * 1000)
-            self.onSpeakingChanged(true)
-            if self.outputContinuation == nil, self.outputTask != nil {
-                self.pendingOutputChunks.append(data)
-                return
-            }
-            self.ensureOutputPlaybackStarted()
-            self.outputEnvelope?.append(data)
-            self.outputContinuation?.yield(data)
+            self.handleOutputAudio(payload)
         case "audioDone":
             self.finishOutputPlaybackStream()
         case "clear":
-            let marks = self.takePendingPlaybackMarks()
-            self.stopOutputPlayback()
-            self.acknowledgePlaybackMarks(marks)
+            self.handleOutputClear(payload)
         case "mark":
             self.handlePlaybackMark(payload)
         case "transcript":
@@ -564,6 +622,15 @@ final class RealtimeTalkRelaySession {
         guard self.outputAudioChunkCount == 1 || self.outputAudioChunkCount % 20 == 0 else { return }
         GatewayDiagnostics.log(
             "talk realtime audio: chunks=\(self.outputAudioChunkCount) bytes=\(self.outputAudioByteCount)")
+    }
+
+    private nonisolated static func outputGeneration(_ value: AnyCodable?) -> Int? {
+        guard let raw = value?.doubleValue,
+              raw > 0,
+              raw <= Double(Int.max),
+              raw.rounded(.towardZero) == raw
+        else { return nil }
+        return Int(raw)
     }
 
     private func markOutputAudioStarted(byteCount: Int, nowMs: Double) {
@@ -897,6 +964,7 @@ final class RealtimeTalkRelaySession {
         self.isOutputPlaying = false
         self.outputStartedAtMs = nil
         self.outputPlaybackExpectedEndMs = 0
+        self.outputIdentity = nil
         self.outputEnvelope?.cancel()
         self.onSpeakingChanged(false)
         self.acknowledgePlaybackMarks(self.takePendingPlaybackMarks())
@@ -939,6 +1007,58 @@ final class RealtimeTalkRelaySession {
             }
         }
     }
+}
+
+extension RealtimeTalkRelaySession {
+    private func handleOutputAudio(_ payload: [String: AnyCodable]) {
+        guard let base64 = payload["audioBase64"]?.stringValue,
+              let data = Data(base64Encoded: base64)
+        else { return }
+        let incomingIdentity = OutputIdentity(payload)
+        guard !self.awaitingOutputClear else { return }
+        if let watermark = self.cancelledOutputGenerationWatermark {
+            guard let generation = incomingIdentity.outputGeneration, generation > watermark else { return }
+        }
+        if !incomingIdentity.isEmpty() {
+            self.outputIdentity = incomingIdentity
+        }
+        self.recordOutputAudioChunk(byteCount: data.count)
+        self.markOutputAudioStarted(byteCount: data.count, nowMs: ProcessInfo.processInfo.systemUptime * 1000)
+        self.onSpeakingChanged(true)
+        if self.outputContinuation == nil, self.outputTask != nil {
+            self.pendingOutputChunks.append(data)
+            return
+        }
+        self.ensureOutputPlaybackStarted()
+        self.outputEnvelope?.append(data)
+        self.outputContinuation?.yield(data)
+    }
+
+    private func handleOutputClear(_ payload: [String: AnyCodable]) {
+        let clearIdentity = OutputIdentity(payload)
+        if self.awaitingOutputClear,
+           let suppressed = self.suppressedOutputIdentity
+        {
+            let clearsSuppressed = clearIdentity.isEmpty()
+                ? suppressed.isEmpty()
+                : suppressed.isEmpty() || suppressed.relation(to: clearIdentity) == .same
+            if clearsSuppressed {
+                if let generation = clearIdentity.outputGeneration ?? suppressed.outputGeneration {
+                    self.cancelledOutputGenerationWatermark = max(
+                        self.cancelledOutputGenerationWatermark ?? 0,
+                        generation)
+                }
+                self.retireOutputCancellation()
+            }
+        }
+        let currentMatches = clearIdentity.isEmpty()
+            ? self.outputIdentity == nil
+            : self.outputIdentity?.relation(to: clearIdentity) == .same
+        guard currentMatches else { return }
+        let marks = self.takePendingPlaybackMarks()
+        self.stopOutputPlayback()
+        self.acknowledgePlaybackMarks(marks)
+    }
 
     private func stopOutputPlayback() {
         self.outputSessionId += 1
@@ -954,8 +1074,17 @@ final class RealtimeTalkRelaySession {
         self.isOutputPlaying = false
         self.outputStartedAtMs = nil
         self.outputPlaybackExpectedEndMs = 0
+        self.outputIdentity = nil
         self.outputEnvelope?.cancel()
         self.onSpeakingChanged(false)
+    }
+
+    private func retireOutputCancellation() {
+        self.outputCancellationGeneration &+= 1
+        self.outputCancellationTask?.cancel()
+        self.outputCancellationTask = nil
+        self.suppressedOutputIdentity = nil
+        self.awaitingOutputClear = false
     }
 
     fileprivate nonisolated static func encodePCM16(
@@ -999,13 +1128,11 @@ final class RealtimeTalkRelaySession {
         return String(singleLine.prefix(180)) + "..."
     }
 
-    private func nonEmpty(_ value: String?) -> String? {
+    private nonisolated static func nonEmpty(_ value: String?) -> String? {
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed?.isEmpty == false ? trimmed : nil
     }
-}
 
-extension RealtimeTalkRelaySession {
     private func startMicrophonePump(lifecycleGeneration: UInt64) throws {
         self.stopMicrophonePump()
         let input = self.audioEngine.inputNode

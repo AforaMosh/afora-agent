@@ -25,7 +25,7 @@ import { resolveRequestedSessionAgentId } from "../session-request-agent.js";
 import { resolveSessionKeyFromResolveParams } from "../sessions-resolve.js";
 import { createTalkHandoff, getTalkHandoff, revokeTalkHandoff } from "../talk-handoff.js";
 import {
-  cancelTalkRealtimeRelayTurn,
+  cancelTalkRealtimeRelayOutput,
   createTalkRealtimeRelaySession,
   sendTalkRealtimeRelayAudio,
   steerTalkRealtimeRelayAgentRun,
@@ -417,6 +417,13 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
     ) {
       return;
     }
+    if (params.outputGeneration === undefined) {
+      respondInvalidRequest(
+        respond,
+        "talk.session.cancelOutput requires outputGeneration; upgrade the client before retrying output cancellation",
+      );
+      return;
+    }
     try {
       const session = getUnifiedTalkSession(params.sessionId);
       if (session.kind !== "realtime-relay") {
@@ -424,9 +431,11 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
         return;
       }
       const connId = requireUnifiedTalkSessionConn(session, client?.connId);
-      cancelTalkRealtimeRelayTurn({
+      cancelTalkRealtimeRelayOutput({
         relaySessionId: session.relaySessionId,
         connId,
+        turnId: normalizeOptionalString(params.turnId),
+        outputGeneration: params.outputGeneration,
         reason: normalizeOptionalString(params.reason) ?? "output-cancelled",
       });
       respondOk(respond);

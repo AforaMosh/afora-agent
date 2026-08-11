@@ -325,4 +325,6 @@ export type RealtimeVoiceBargeInOptions = {
   audioPlaybackActive?: boolean;
   /** Interrupt even when normal barge-in audio-duration guards would treat the event as echo. */
   force?: boolean;
+  /** Clear the specific output that requested this interruption. */
+  onClearAudio?: (reason?: RealtimeVoiceAudioClearReason) => void;
 };

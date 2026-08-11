@@ -168,6 +168,7 @@ export function registerDefaultAuthTokenSuite(): void {
       expect(payload?.features?.capabilities).toContain(
         GATEWAY_SERVER_CAPS.TASK_SUGGESTIONS_ACCEPT_MODES,
       );
+      expect(payload?.features?.capabilities).toContain(GATEWAY_SERVER_CAPS.TALK_OUTPUT_GENERATION);
       expect(payload?.snapshot?.configPath).toBe(createConfigIO().configPath);
       expect(payload?.snapshot?.stateDir).toBe(STATE_DIR);
       expect(payload?.policy?.allowedSessionVisibilities).toEqual([
