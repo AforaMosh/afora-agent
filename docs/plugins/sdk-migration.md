@@ -974,10 +974,15 @@ await gateway.request("talk.session.create", {
   sessionKey: "main",
 });
 await gateway.request("talk.session.appendAudio", { sessionId, audioBase64 });
+const supportsOutputGeneration =
+  connectionHelloOk.features.capabilities?.includes("talk-output-generation") === true;
 await gateway.request("talk.session.cancelOutput", {
   sessionId,
-  outputGeneration: currentOutputGeneration,
   reason: "barge-in",
+  ...(currentTurnId !== undefined ? { turnId: currentTurnId } : {}),
+  ...(supportsOutputGeneration && currentOutputGeneration !== undefined
+    ? { outputGeneration: currentOutputGeneration }
+    : {}),
 });
 await gateway.request("talk.session.submitToolResult", {
   sessionId,
@@ -1006,8 +1011,10 @@ await gateway.request("talk.client.steer", { sessionKey, text, mode: "steer" });
 ```
 
 Use the generation from the current output audio event for fenced, output-only
-cancellation. Omitting `outputGeneration` preserves the legacy destructive
-full-turn cancellation path, including agent work.
+cancellation. Capture `connectionHelloOk` from the current connection's
+`GatewayClientOptions.onHelloOk` callback. Treat a missing capability list or
+absent capability as unsupported: preserve `turnId`, but omit `outputGeneration`
+to use the legacy destructive full-turn cancellation path, including agent work.
 
 Browser-owned WebRTC/provider-websocket sessions use `talk.client.create`,
 because the browser owns provider negotiation and media transport while the
