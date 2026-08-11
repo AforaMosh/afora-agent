@@ -53,7 +53,7 @@ export type CodexNativeHookRelayLease = Omit<
   releaseParent: (options?: { delay?: boolean }) => void;
 };
 
-export type CodexNativeHookRelayAcquisition =
+type CodexNativeHookRelayAcquisition =
   | { status: "disabled" }
   | { status: "active"; lease: CodexNativeHookRelayLease }
   | {
