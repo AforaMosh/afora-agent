@@ -10,10 +10,8 @@ import {
   onInternalDiagnosticEvent,
   type DiagnosticEventPayload,
 } from "openclaw/plugin-sdk/diagnostic-runtime";
-import { initializeGlobalHookRunner } from "openclaw/plugin-sdk/hook-runtime";
 import {
   createEmptyPluginRegistry,
-  createMockPluginRegistry,
   setActivePluginRegistry,
 } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -282,16 +280,19 @@ describe("runCodexAppServerAttempt native hook relay", () => {
     expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toBeUndefined();
   });
 
-  it("auto-answers promoted command and workspace file approvals when the hook allows", async () => {
-    const approvalSpy = vi.spyOn(approvalBridge, "handleCodexAppServerApprovalRequest");
-    const beforeToolCall = vi.fn(() => undefined);
-    initializeGlobalHookRunner(
-      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
-    );
+  it("auto-answers command and workspace file approvals when host policy allows", async () => {
+    const runBeforeToolCall = vi.fn(async (request) => ({
+      blocked: false as const,
+      params: request.params,
+    }));
     const sessionFile = path.join(tempDir, "policy-allow.jsonl");
     const workspaceDir = path.join(tempDir, "workspace-policy-allow");
     const harness = createStartedThreadHarness();
     const params = createParams(sessionFile, workspaceDir);
+    params.hostCapabilities = Object.freeze({
+      ...params.hostCapabilities,
+      runBeforeToolCall,
+    });
     params.trigger = "user";
     params.approvalReviewerDeviceId = "device-tui-reviewer";
 
@@ -300,7 +301,6 @@ describe("runCodexAppServerAttempt native hook relay", () => {
     });
     await harness.waitForMethod("turn/start");
     const startRequest = harness.requests.find((request) => request.method === "thread/start");
-    expect((startRequest?.params as { approvalPolicy?: string })?.approvalPolicy).toBe("untrusted");
     const relayId = extractRelayIdFromThreadRequest(startRequest?.params);
     expect(nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(relayId)).toMatchObject({
       approvalContext: {
@@ -320,10 +320,7 @@ describe("runCodexAppServerAttempt native hook relay", () => {
         cwd: workspaceDir,
       },
     });
-    expect(approvalSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ autoApproveOpenClawToolPolicy: true }),
-    );
-    expect(commandResponse).toEqual({ decision: "accept" });
+    expect(commandResponse).toEqual({ decision: "acceptForSession" });
     await expect(
       harness.handleServerRequest({
         id: "request-file-policy-allow",
@@ -336,37 +333,32 @@ describe("runCodexAppServerAttempt native hook relay", () => {
           grantRoot: workspaceDir,
         },
       }),
-    ).resolves.toEqual({ decision: "accept" });
+    ).resolves.toEqual({ decision: "acceptForSession" });
 
-    expect(beforeToolCall).toHaveBeenCalledWith(
+    expect(runBeforeToolCall).toHaveBeenCalledWith(
       expect.objectContaining({ toolName: "apply_patch" }),
-      expect.any(Object),
     );
     await harness.completeTurn({ threadId: "thread-1", turnId: "turn-1" });
     await run;
     testing.flushPendingCodexNativeHookRelayUnregistersForTests();
   });
 
-  it("fails a promoted unattended approval immediately when the hook requires review", async () => {
-    const onResolution = vi.fn();
-    initializeGlobalHookRunner(
-      createMockPluginRegistry([
-        {
-          hookName: "before_tool_call",
-          handler: vi.fn(() => ({
-            requireApproval: {
-              title: "Operator review required",
-              description: "Command needs an interactive approver",
-              onResolution,
-            },
-          })),
-        },
-      ]),
-    );
+  it("fails an unattended approval immediately when host policy requires review", async () => {
     const sessionFile = path.join(tempDir, "policy-unattended.jsonl");
     const workspaceDir = path.join(tempDir, "workspace-policy-unattended");
     const harness = createStartedThreadHarness();
     const params = createParams(sessionFile, workspaceDir);
+    const runBeforeToolCall = vi.fn(async () => ({
+      blocked: true as const,
+      kind: "failure" as const,
+      disposition: "blocked" as const,
+      deniedReason: "plugin-approval" as const,
+      reason: "Plugin approval unavailable: cron runs have no approval-capable initiating surface.",
+    }));
+    params.hostCapabilities = Object.freeze({
+      ...params.hostCapabilities,
+      runBeforeToolCall,
+    });
     params.trigger = "cron";
     params.onAgentEvent = vi.fn();
 
@@ -389,7 +381,7 @@ describe("runCodexAppServerAttempt native hook relay", () => {
 
     expect(response).toEqual({ decision: "decline" });
     expect(Date.now() - startedAtMs).toBeLessThan(1_000);
-    expect(onResolution).toHaveBeenCalledWith("cancelled");
+    expect(runBeforeToolCall).toHaveBeenCalledWith(expect.objectContaining({ toolName: "exec" }));
     expect(params.onAgentEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         stream: "approval",
