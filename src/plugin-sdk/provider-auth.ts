@@ -10,10 +10,7 @@ import {
   resolveApiKeyForProfile,
   resolveOAuthCredentialForProfile,
 } from "../agents/auth-profiles/oauth.js";
-import {
-  resolveAuthProfileEligibility,
-  resolveAuthProfileOrderWithMetadata,
-} from "../agents/auth-profiles/order.js";
+import { resolveAuthProfileOrderWithMetadata } from "../agents/auth-profiles/order.js";
 import { listProfilesForProvider } from "../agents/auth-profiles/profiles.js";
 import { resolveStoredCredentialReadOnlyAvailability } from "../agents/auth-profiles/read-only-availability.js";
 import {
@@ -38,7 +35,6 @@ import {
   resolveUsableCustomProviderApiKey,
 } from "../agents/model-auth-provider-config.js";
 import { resolveManagedSecretRefRuntimeProviderAuth } from "../agents/model-auth-runtime-config.js";
-import { resolveProviderIdForAuth } from "../agents/provider-auth-aliases.js";
 import { readProviderJsonResponse } from "../agents/provider-http-errors.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { cancelUnreadResponseBody } from "../infra/http-body.js";
@@ -589,9 +585,7 @@ export function isProviderAuthProfileConfigured(params: {
   return listUsableProviderAuthProfileIds(params).profileIds.length > 0;
 }
 
-/**
- * Resolves requested credential-type selection state and whether authored order owns it.
- */
+/** Resolves requested credential-type selection state and whether authored order owns it. */
 export function resolveProviderAuthProfileSelectionState(params: {
   provider: string;
   cfg?: OpenClawConfig;
@@ -604,46 +598,11 @@ export function resolveProviderAuthProfileSelectionState(params: {
   status: "missing" | "selected" | "unresolved" | "unselected";
 } {
   try {
-    const { hasExplicitOrder, profileIds, store } = resolveUsableProviderAuthProfiles({
+    const { selectionState } = resolveUsableProviderAuthProfiles({
       ...params,
       readinessMode: "read-only",
     });
-    const selectedProfileId = filterAuthProfileIdsByType(store, profileIds, params)[0];
-    if (selectedProfileId) {
-      const selected = resolveAuthProfileEligibility({
-        cfg: params.cfg,
-        store,
-        provider: params.provider,
-        profileId: selectedProfileId,
-      });
-      return {
-        explicit: hasExplicitOrder,
-        status: selected.reasonCode === "unresolved_ref" ? "unresolved" : "selected",
-      };
-    }
-    if (!hasExplicitOrder) {
-      return { explicit: false, status: "unselected" };
-    }
-
-    const providerAuthKey = resolveProviderIdForAuth(params.provider, { config: params.cfg });
-    const explicitOrder = [store.order, params.cfg?.auth?.order]
-      .map(
-        (order) =>
-          Object.entries(order ?? {}).find(
-            ([provider]) =>
-              resolveProviderIdForAuth(provider, { config: params.cfg }) === providerAuthKey,
-          )?.[1],
-      )
-      .find((order) => order !== undefined);
-    const allowedTypes = new Set(params.profileTypes);
-    const selectsRequestedType = explicitOrder?.some((profileId) => {
-      const storedType = store.profiles[profileId]?.type;
-      const configuredMode = params.cfg?.auth?.profiles?.[profileId]?.mode;
-      const configuredType = configuredMode === "aws-sdk" ? undefined : configuredMode;
-      const selectedType = storedType ?? configuredType;
-      return selectedType !== undefined && allowedTypes.has(selectedType);
-    });
-    return { explicit: true, status: selectsRequestedType ? "missing" : "unselected" };
+    return selectionState ?? { explicit: false, status: "unselected" };
   } catch {
     return { explicit: false, status: "unselected" };
   }
@@ -728,11 +687,14 @@ function resolveUsableProviderAuthProfiles(params: {
   agentDir?: string;
   allowKeychainPrompt?: boolean;
   includeExternalCliAuth?: boolean;
+  profileTypes?: readonly AuthProfileCredential["type"][];
   readinessMode?: "execution" | "read-only";
 }): {
   agentDir: string;
-  hasExplicitOrder: boolean;
   profileIds: string[];
+  selectionState?: NonNullable<
+    ReturnType<typeof resolveAuthProfileOrderWithMetadata>["selectionState"]
+  >;
   store: AuthProfileStore;
 } {
   const agentDir = params.agentDir?.trim() || resolveDefaultAgentDir(params.cfg ?? {});
@@ -750,6 +712,7 @@ function resolveUsableProviderAuthProfiles(params: {
     cfg: params.cfg,
     store,
     provider: params.provider,
+    profileTypes: params.profileTypes,
     readinessMode: params.readinessMode,
   });
   if (resolution.profileIds.length > 0) {
@@ -763,12 +726,13 @@ function resolveUsableProviderAuthProfiles(params: {
     cfg: params.cfg,
     store: fallbackStore,
     provider: params.provider,
+    profileTypes: params.profileTypes,
     readinessMode: params.readinessMode,
   });
   return {
     agentDir,
-    hasExplicitOrder: resolution.hasExplicitOrder || fallbackResolution.hasExplicitOrder,
     profileIds: fallbackResolution.profileIds,
+    selectionState: fallbackResolution.selectionState ?? resolution.selectionState,
     store: fallbackStore,
   };
 }

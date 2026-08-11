@@ -17,6 +17,7 @@ import {
   isProviderApiKeyConfigured,
   normalizeGithubCopilotDomain,
   resolveCopilotApiToken,
+  resolveProviderAuthProfileSelectionState,
 } from "./provider-auth.js";
 
 const TEST_GITHUB_TOKEN = ["github", "token"].join("-");
@@ -61,11 +62,12 @@ function resolveMockAuthProfileOrder(params: { provider: string; store: AuthProf
   hasExplicitOrder: false;
   profileIds: string[];
 } {
+  const profileIds = Object.entries(params.store.profiles)
+    .filter(([, profile]) => profile.provider === params.provider)
+    .map(([profileId]) => profileId);
   return {
     hasExplicitOrder: false,
-    profileIds: Object.entries(params.store.profiles)
-      .filter(([, profile]) => profile.provider === params.provider)
-      .map(([profileId]) => profileId),
+    profileIds,
   };
 }
 
@@ -496,6 +498,69 @@ describe("provider auth profile helpers", () => {
     vi.doUnmock("../agents/auth-profiles/order.js");
     vi.doUnmock("../agents/auth-profiles/store.js");
     vi.resetModules();
+  });
+
+  it("reports a bare explicit missing profile as selected-but-missing", async () => {
+    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-provider-auth-order-"));
+    try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", agentDir);
+      saveAuthProfileStore({ version: 1, profiles: {} }, agentDir, {
+        filterExternalAuthProfiles: false,
+        syncExternalCli: false,
+      });
+
+      expect(
+        resolveProviderAuthProfileSelectionState({
+          provider: "openai",
+          agentDir,
+          cfg: { auth: { order: { openai: ["openai:missing"] } } },
+          profileTypes: ["api_key"],
+        }),
+      ).toEqual({ explicit: true, status: "missing" });
+    } finally {
+      vi.unstubAllEnvs();
+      clearRuntimeAuthProfileStoreSnapshots();
+      await fs.rm(agentDir, { force: true, recursive: true });
+    }
+  });
+
+  it("reports an explicitly selected unresolved ref as unresolved", async () => {
+    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-provider-auth-ref-"));
+    try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", agentDir);
+      saveAuthProfileStore(
+        {
+          version: 1,
+          profiles: {
+            "openai:selected": {
+              type: "api_key",
+              provider: "openai",
+              keyRef: {
+                source: "env",
+                provider: "default",
+                id: "OPENAI_SELECTED_PROFILE_KEY",
+              },
+            },
+          },
+        },
+        agentDir,
+        { filterExternalAuthProfiles: false, syncExternalCli: false },
+      );
+      vi.stubEnv("OPENAI_SELECTED_PROFILE_KEY", "");
+
+      expect(
+        resolveProviderAuthProfileSelectionState({
+          provider: "openai",
+          agentDir,
+          cfg: { auth: { order: { openai: ["openai:selected"] } } },
+          profileTypes: ["api_key"],
+        }),
+      ).toEqual({ explicit: true, status: "unresolved" });
+    } finally {
+      vi.unstubAllEnvs();
+      clearRuntimeAuthProfileStoreSnapshots();
+      await fs.rm(agentDir, { force: true, recursive: true });
+    }
   });
 
   it("resolves API keys from the fallback store that supplied usable profile ids", () => {

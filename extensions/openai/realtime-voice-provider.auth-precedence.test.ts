@@ -60,6 +60,7 @@ function createTestJwt(payload: Record<string, unknown>): string {
 async function expectSelectedProfileFailure(
   agentDir: string,
   expectedError: RegExp,
+  cfg: OpenClawConfig = createConfig(agentDir),
 ): Promise<void> {
   const createBrowserSession = vi.fn(async () => {
     throw new Error("unexpected realtime browser broker side effect");
@@ -71,8 +72,6 @@ async function expectSelectedProfileFailure(
       cancelBrowserSession: vi.fn(),
     },
   });
-  const cfg = createConfig(agentDir);
-
   await expect(
     provider.createBrowserSession?.({
       cfg,
@@ -113,6 +112,7 @@ describe("OpenAI realtime configured profile precedence", () => {
   it("fails closed for an explicitly selected missing profile before realtime side effects", async () => {
     const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-openai-realtime-auth-"));
     try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", agentDir);
       saveAuthProfileStore({ version: 1, profiles: {} }, agentDir, {
         filterExternalAuthProfiles: false,
         syncExternalCli: false,
@@ -131,9 +131,35 @@ describe("OpenAI realtime configured profile precedence", () => {
     }
   });
 
+  it("fails closed for bare auth.order without profile metadata before realtime side effects", async () => {
+    const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-openai-realtime-auth-"));
+    try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", agentDir);
+      saveAuthProfileStore({ version: 1, profiles: {} }, agentDir, {
+        filterExternalAuthProfiles: false,
+        syncExternalCli: false,
+      });
+      vi.stubEnv("OPENAI_API_KEY", "sk-ambient-must-not-be-used"); // pragma: allowlist secret
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          throw new Error("unexpected realtime fetch side effect");
+        }),
+      );
+
+      await expectSelectedProfileFailure(agentDir, /requires an OpenAI Platform API key/u, {
+        agents: { list: [{ id: "voice", agentDir }] },
+        auth: { order: { openai: [PROFILE_ID] } },
+      });
+    } finally {
+      fs.rmSync(agentDir, { force: true, recursive: true });
+    }
+  });
+
   it("fails closed for an explicitly selected unresolved ref before realtime side effects", async () => {
     const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-openai-realtime-auth-"));
     try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", agentDir);
       saveAuthProfileStore(
         {
           version: 1,
@@ -170,6 +196,7 @@ describe("OpenAI realtime configured profile precedence", () => {
   it("keeps explicit subscription OAuth ahead of an ambient Platform key", async () => {
     const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-openai-realtime-auth-"));
     try {
+      vi.stubEnv("OPENCLAW_STATE_DIR", agentDir);
       const access = createTestJwt({
         "https://api.openai.com/auth": { chatgpt_account_id: "account-123" },
       });
