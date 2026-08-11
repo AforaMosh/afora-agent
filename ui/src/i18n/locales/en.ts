@@ -152,6 +152,7 @@ export const en: TranslationMap = {
     comments: "{count} comments",
     pullRequest: "pull request",
     issue: "issue",
+    openOnGitHub: "Open on GitHub",
     ariaLabel: "{state} {kind} {repo} #{number}: {title}, by {author}",
   },
   channels: {

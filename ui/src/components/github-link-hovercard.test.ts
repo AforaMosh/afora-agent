@@ -107,6 +107,7 @@ describe("openclaw-github-link-hovercard-provider", () => {
     );
 
     leave(anchor);
+    await vi.advanceTimersByTimeAsync(150);
     expect(document.querySelector(".github-link-hovercard")).toBeNull();
     await hover(anchor);
     expect(request).toHaveBeenCalledTimes(1);
@@ -140,6 +141,77 @@ describe("openclaw-github-link-hovercard-provider", () => {
     expect(document.querySelector(".github-link-hovercard")?.textContent).toContain("Open");
     anchor.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     expect(document.querySelector(".github-link-hovercard")).toBeNull();
+  });
+
+  it("stays open while the pointer crosses from the link into the interactive card", async () => {
+    const request = vi.fn().mockResolvedValue({
+      closedAt: null,
+      comments: 4,
+      createdAt: "2026-07-05T08:00:00Z",
+      kind: "issue",
+      login: "octocat",
+      number: 99815,
+      owner: "openclaw",
+      repo: "openclaw",
+      state: "open",
+      stateReason: null,
+      title: "Keep hover previews compact",
+      updatedAt: "2026-07-05T09:55:00Z",
+    });
+    const href = "https://github.com/openclaw/openclaw/issues/99815";
+    const { anchor, provider } = createLink(href, "#99815");
+    provider.client = { request } as unknown as GatewayBrowserClient;
+    await hover(anchor);
+
+    const card = document.querySelector<HTMLElement>(".github-link-hovercard");
+    const action = card?.querySelector<HTMLAnchorElement>(".github-link-hovercard__action");
+    expect(card?.getAttribute("role")).toBe("dialog");
+    expect(action?.href).toBe(href);
+    expect(action?.target).toBe("_blank");
+    expect(action?.rel).toBe("noopener noreferrer");
+
+    leave(anchor);
+    await vi.advanceTimersByTimeAsync(50);
+    card?.dispatchEvent(new MouseEvent("pointerenter"));
+    await vi.advanceTimersByTimeAsync(150);
+    expect(document.querySelector(".github-link-hovercard")).toBe(card);
+
+    card?.dispatchEvent(new MouseEvent("pointerleave"));
+    await vi.advanceTimersByTimeAsync(150);
+    expect(document.querySelector(".github-link-hovercard")).toBeNull();
+  });
+
+  it("keeps the card open when its action receives focus and restores the source on Escape", async () => {
+    const request = vi.fn().mockResolvedValue({
+      closedAt: null,
+      comments: 4,
+      createdAt: "2026-07-05T08:00:00Z",
+      kind: "issue",
+      login: "octocat",
+      number: 99815,
+      owner: "openclaw",
+      repo: "openclaw",
+      state: "open",
+      stateReason: null,
+      title: "Keep hover previews compact",
+      updatedAt: "2026-07-05T09:55:00Z",
+    });
+    const { anchor, provider } = createLink(
+      "https://github.com/openclaw/openclaw/issues/99815",
+      "#99815",
+    );
+    provider.client = { request } as unknown as GatewayBrowserClient;
+
+    anchor.focus();
+    await vi.advanceTimersByTimeAsync(0);
+    const action = document.querySelector<HTMLAnchorElement>(".github-link-hovercard__action");
+    action?.focus();
+    expect(document.activeElement).toBe(action);
+    expect(document.querySelector(".github-link-hovercard")).not.toBeNull();
+
+    action?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.querySelector(".github-link-hovercard")).toBeNull();
+    expect(document.activeElement).toBe(anchor);
   });
 
   it("ignores unsupported GitHub links and shows a quiet unavailable state", async () => {
@@ -265,6 +337,7 @@ describe("openclaw-github-link-hovercard-provider", () => {
         comments: "{count} comentários",
         pullRequest: "pull request",
         issue: "issue",
+        openOnGitHub: "Abrir no GitHub",
         ariaLabel: "{state} {kind} {repo} #{number}: {title}, por {author}",
       },
     });

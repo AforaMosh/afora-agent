@@ -732,7 +732,6 @@ openclaw-session-owner-chip {
   box-shadow: var(--shadow-lg);
   color: var(--text);
   font-family: var(--font-body);
-  pointer-events: none;
   opacity: 0;
   transform: translateY(-5px) scale(0.99);
   transform-origin: bottom left;
@@ -875,6 +874,22 @@ openclaw-session-owner-chip {
 
 .github-link-hovercard__metric--deletions {
   color: var(--danger);
+}
+
+.github-link-hovercard__action {
+  display: block;
+  width: fit-content;
+  margin: 12px 0 0 auto;
+  color: var(--accent);
+  font-size: var(--control-ui-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.github-link-hovercard__action:hover,
+.github-link-hovercard__action:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .github-link-hovercard__loading,

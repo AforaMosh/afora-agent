@@ -5,11 +5,13 @@ import { ReactiveElement } from "lit";
 import type { ControlUiGitHubPreview } from "../../../src/gateway/control-ui-contract.js";
 import type { GatewayBrowserClient } from "../api/gateway.ts";
 import { i18n, t } from "../i18n/index.ts";
+import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../lib/external-link.ts";
 import { formatRelativeTimestamp } from "../lib/format.ts";
 import { parseGitHubItemPath, type GitHubItemTarget } from "./github-link-target.ts";
 
 const GITHUB_HOST = "github.com";
 const OPEN_DELAY_MS = 250;
+const CLOSE_DELAY_MS = 150;
 const SUCCESS_CACHE_MS = 5 * 60_000;
 const FAILURE_CACHE_MS = 30_000;
 const CACHE_LIMIT = 100;
@@ -151,14 +153,26 @@ function appendMetric(parent: HTMLElement, className: string, text: string): voi
   appendTextElement(parent, "span", `github-link-hovercard__metric ${className}`, text);
 }
 
-function renderLoading(card: HTMLDivElement): void {
+function appendOpenAction(card: HTMLDivElement, href: string): void {
+  const action = document.createElement("a");
+  action.className = "github-link-hovercard__action";
+  action.href = href;
+  action.target = EXTERNAL_LINK_TARGET;
+  action.rel = buildExternalLinkRel();
+  action.textContent = t("githubPreview.openOnGitHub");
+  card.append(action);
+}
+
+function renderLoading(card: HTMLDivElement, href: string): void {
   card.replaceChildren();
   card.dataset.loading = "true";
   card.removeAttribute("data-state");
   appendTextElement(card, "div", "github-link-hovercard__loading", t("githubPreview.loading"));
+  appendOpenAction(card, href);
+  card.setAttribute("aria-label", t("githubPreview.loading"));
 }
 
-function renderUnavailable(card: HTMLDivElement): void {
+function renderUnavailable(card: HTMLDivElement, href: string): void {
   card.replaceChildren();
   card.dataset.loading = "false";
   card.dataset.state = "unavailable";
@@ -168,6 +182,8 @@ function renderUnavailable(card: HTMLDivElement): void {
     "github-link-hovercard__unavailable",
     t("githubPreview.unavailable"),
   );
+  appendOpenAction(card, href);
+  card.setAttribute("aria-label", t("githubPreview.unavailable"));
 }
 
 function renderPreview(card: HTMLDivElement, preview: GitHubPreview): void {
@@ -244,6 +260,7 @@ function renderPreview(card: HTMLDivElement, preview: GitHubPreview): void {
   }
   footer.append(metrics);
   card.append(header, title, footer);
+  appendOpenAction(card, preview.href);
   card.setAttribute(
     "aria-label",
     t("githubPreview.ariaLabel", {
@@ -276,6 +293,7 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
   private activeAnchor: HTMLAnchorElement | null = null;
   private activeTarget: GitHubLinkTarget | null = null;
   private card: HTMLDivElement | null = null;
+  private closeTimer: number | null = null;
   private describedBy: string | null = null;
   private focusInside = false;
   private openTimer: number | null = null;
@@ -298,11 +316,12 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
     },
     onError: () => {
       const card = this.card;
-      if (!card) {
+      const target = this.activeTarget;
+      if (!card || !target) {
         return;
       }
       this.renderedUnavailable = true;
-      renderUnavailable(card);
+      renderUnavailable(card, target.href);
       this.positionCard();
     },
   });
@@ -346,15 +365,16 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
 
   private readonly handleLocaleChange = () => {
     const card = this.card;
-    if (!card) {
+    const target = this.activeTarget;
+    if (!card || !target) {
       return;
     }
     if (this.renderedPreview) {
       renderPreview(card, this.renderedPreview);
     } else if (this.renderedUnavailable) {
-      renderUnavailable(card);
+      renderUnavailable(card, target.href);
     } else {
-      renderLoading(card);
+      renderLoading(card, target.href);
     }
     this.positionCard();
   };
@@ -369,6 +389,7 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
     if (!anchor || !target) {
       return;
     }
+    this.clearCloseTimer();
     this.activate(anchor, target, OPEN_DELAY_MS);
     this.pointerInside = true;
   };
@@ -383,7 +404,7 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
     }
     this.pointerInside = false;
     if (!this.focusInside) {
-      this.close();
+      this.closeSoon();
     }
   };
 
@@ -401,7 +422,10 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
     if (!this.activeAnchor) {
       return;
     }
-    if (event.relatedTarget instanceof Node && this.activeAnchor.contains(event.relatedTarget)) {
+    if (
+      event.relatedTarget instanceof Node &&
+      (this.activeAnchor.contains(event.relatedTarget) || this.card?.contains(event.relatedTarget))
+    ) {
       return;
     }
     this.focusInside = false;
@@ -412,6 +436,46 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
+      if (this.card?.contains(document.activeElement)) {
+        this.activeAnchor?.focus({ preventScroll: true });
+      }
+      this.close();
+      event.preventDefault();
+    }
+  };
+
+  private readonly handleCardPointerEnter = () => {
+    this.clearCloseTimer();
+    this.pointerInside = true;
+  };
+
+  private readonly handleCardPointerLeave = () => {
+    this.pointerInside = false;
+    if (!this.focusInside) {
+      this.closeSoon();
+    }
+  };
+
+  private readonly handleCardFocusIn = () => {
+    this.focusInside = true;
+  };
+
+  private readonly handleCardFocusOut = (event: FocusEvent) => {
+    const relatedTarget = event.relatedTarget;
+    if (
+      relatedTarget instanceof Node &&
+      (this.card?.contains(relatedTarget) || this.activeAnchor?.contains(relatedTarget))
+    ) {
+      return;
+    }
+    this.focusInside = false;
+    if (!this.pointerInside) {
+      this.close();
+    }
+  };
+
+  private readonly handleCardClick = (event: MouseEvent) => {
+    if (event.target instanceof Element && event.target.closest("a")) {
       this.close();
     }
   };
@@ -444,11 +508,17 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
     card.id = `openclaw-github-hovercard-${nextHovercardId}`;
     card.className = "github-link-hovercard";
     card.dataset.open = "true";
-    card.setAttribute("role", "tooltip");
+    card.setAttribute("role", "dialog");
     card.setAttribute("aria-live", "polite");
+    card.addEventListener("pointerenter", this.handleCardPointerEnter);
+    card.addEventListener("pointerleave", this.handleCardPointerLeave);
+    card.addEventListener("focusin", this.handleCardFocusIn);
+    card.addEventListener("focusout", this.handleCardFocusOut);
+    card.addEventListener("keydown", this.handleKeyDown);
+    card.addEventListener("click", this.handleCardClick);
     this.renderedPreview = null;
     this.renderedUnavailable = false;
-    renderLoading(card);
+    renderLoading(card, target.href);
     document.body.append(card);
     this.card = card;
     anchor.setAttribute(
@@ -512,6 +582,7 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
   }
 
   private close(): void {
+    this.clearCloseTimer();
     if (this.openTimer !== null) {
       window.clearTimeout(this.openTimer);
       this.openTimer = null;
@@ -535,6 +606,23 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
     this.focusInside = false;
     this.pointerInside = false;
     this.stopListeningForViewportChanges();
+  }
+
+  private closeSoon(): void {
+    this.clearCloseTimer();
+    this.closeTimer = window.setTimeout(() => {
+      this.closeTimer = null;
+      if (!this.pointerInside && !this.focusInside) {
+        this.close();
+      }
+    }, CLOSE_DELAY_MS);
+  }
+
+  private clearCloseTimer(): void {
+    if (this.closeTimer !== null) {
+      window.clearTimeout(this.closeTimer);
+      this.closeTimer = null;
+    }
   }
 
   private readonly handleViewportChange = () => {

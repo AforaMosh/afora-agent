@@ -203,6 +203,19 @@ describeControlUiE2e("GitHub link hover cards", () => {
     expect(pullBox!.x + pullBox!.width).toBeLessThanOrEqual(1180);
     expect(pullBox!.y + pullBox!.height).toBeLessThanOrEqual(800);
 
+    const openOnGitHub = card.getByRole("link", { name: "Open on GitHub" });
+    await openOnGitHub.hover();
+    await page.clock.runFor(200);
+    await expect.poll(() => card.count()).toBe(1);
+    expect(await openOnGitHub.getAttribute("href")).toBe(
+      "https://github.com/openclaw/openclaw/pull/99816",
+    );
+    const cardPopupPromise = page.waitForEvent("popup");
+    await openOnGitHub.click();
+    const cardPopup = await cardPopupPromise;
+    await cardPopup.waitForLoadState("domcontentloaded");
+    expect(cardPopup.url()).toBe("https://github.com/openclaw/openclaw/pull/99816");
+
     const issueLink = page.getByRole("link", { name: "openclaw/openclaw#99815" });
     await issueLink.hover();
     await expectText(card, "Keep hover previews compact");
