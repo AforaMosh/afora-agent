@@ -1,8 +1,9 @@
 /** Registry state for plugin memory runtimes, prompt supplements, and flush planning. */
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { listAgentIds } from "../agents/agent-scope-config.js";
+import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { isMemoryIsolationCutoverAgent } from "./memory-cutover.js";
 import type {
   MemoryCorpusSupplement,
   MemoryCorpusSupplementRegistration,
@@ -18,7 +19,6 @@ import type {
   MemoryPromptSupplementRegistration,
   PreparedMemoryPromptSection,
 } from "./registry-contribution-types.js";
-import { isMemoryIsolationCutoverAgent } from "./memory-cutover.js";
 import type { PluginRegistry } from "./registry-types.js";
 import { requireActivePluginRegistry, resolveDirectPluginRegistrationOwner } from "./runtime.js";
 
@@ -173,11 +173,16 @@ function buildSynchronousMemoryPromptSection(params: MemoryPromptSectionParams):
   primary: string[];
   supplements: Array<{ pluginId: string; lines: string[] }>;
 } {
+  if (params.memoryReadEnforced && !params.authorizedMemoryRead) {
+    // Agent/session strings are routing hints, never authority. Do not let an
+    // unbound prompt contributor turn a missing host invocation into content.
+    return { primary: [], supplements: [] };
+  }
   const registry = requireActivePluginRegistry();
   const primary = normalizeMemoryPromptLines(
     resolveSelectedMemoryCapabilityRegistration(registry)?.capability.promptBuilder?.(params) ?? [],
   );
-  const supplements = registry.memoryPromptSupplements
+  const supplements = (params.memoryReadEnforced ? [] : registry.memoryPromptSupplements)
     // Keep supplement order stable even if plugin registration order changes.
     .toSorted((left, right) => left.pluginId.localeCompare(right.pluginId))
     .map((registration) => ({
@@ -196,7 +201,10 @@ function cloneMemoryPromptSectionParams(
     agentId: params.agentId,
     agentSessionKey: params.agentSessionKey,
     sandboxed: params.sandboxed,
-    memoryReadEnforced: params.memoryReadEnforced,
+    memoryReadEnforced:
+      params.memoryReadEnforced ??
+      (params.agentId && isMemoryIsolationCutoverAgent(params.agentId) ? true : undefined),
+    authorizedMemoryRead: params.authorizedMemoryRead,
   };
 }
 
@@ -210,6 +218,7 @@ function snapshotMemoryPromptContext(
     agentSessionKey: params.agentSessionKey,
     sandboxed: params.sandboxed === true,
     memoryReadEnforced: params.memoryReadEnforced === true,
+    ...(params.authorizedMemoryRead ? { authorizedMemoryRead: params.authorizedMemoryRead } : {}),
   });
 }
 
@@ -220,10 +229,11 @@ function preparedMemoryPromptContextMatches(
   const current = snapshotMemoryPromptContext(params);
   return (
     prepared.context.citationsMode === current.citationsMode &&
-      prepared.context.agentId === current.agentId &&
-      prepared.context.agentSessionKey === current.agentSessionKey &&
-      prepared.context.sandboxed === current.sandboxed &&
-      prepared.context.memoryReadEnforced === current.memoryReadEnforced &&
+    prepared.context.agentId === current.agentId &&
+    prepared.context.agentSessionKey === current.agentSessionKey &&
+    prepared.context.sandboxed === current.sandboxed &&
+    prepared.context.memoryReadEnforced === current.memoryReadEnforced &&
+    prepared.context.authorizedMemoryRead === current.authorizedMemoryRead &&
     prepared.context.availableTools.length === current.availableTools.length &&
     prepared.context.availableTools.every((tool, index) => tool === current.availableTools[index])
   );
@@ -239,8 +249,11 @@ export async function prepareMemoryPromptSection(
     cloneMemoryPromptSectionParams(runParams),
   );
   const preparationRegistrations = [...requireActivePluginRegistry().memoryPromptPreparations];
+  // Registered preparations are supplemental paths. Until a contributor can
+  // project through the selected runtime, it stays unavailable after cutover.
+  const canPrepare = !runParams.memoryReadEnforced;
   const preparedSupplements = await Promise.all(
-    preparationRegistrations.map(async (registration) => ({
+    (canPrepare ? preparationRegistrations : []).map(async (registration) => ({
       pluginId: registration.pluginId,
       lines: normalizeMemoryPromptLines(
         await registration.prepare(cloneMemoryPromptSectionParams(runParams)),
@@ -282,13 +295,13 @@ export function buildMemoryPromptSection(
     // Run-scoped prompt state must never cross agent/session/tool boundaries.
     if (
       !preparedMemoryPromptSections.has(prepared) ||
-      !preparedMemoryPromptContextMatches(prepared, params)
+      !preparedMemoryPromptContextMatches(prepared, cloneMemoryPromptSectionParams(params))
     ) {
       throw new Error("prepared memory prompt section does not match the current run");
     }
     return [...prepared.lines];
   }
-  const synchronous = buildSynchronousMemoryPromptSection(params);
+  const synchronous = buildSynchronousMemoryPromptSection(cloneMemoryPromptSectionParams(params));
   return [...synchronous.primary, ...synchronous.supplements.flatMap((entry) => entry.lines)];
 }
 

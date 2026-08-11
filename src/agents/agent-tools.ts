@@ -65,7 +65,6 @@ import {
   filterLocalModelLeanTools,
   resolveLocalModelLeanPreserveToolNames,
 } from "./local-model-lean.js";
-import { createMemoryFileMutationGuard } from "./memory-file-mutation-guard.js";
 import { createMemoryWriteProvenanceObserver } from "./memory-write-provenance.js";
 import type { ModelAuthMode } from "./model-auth.js";
 import { resolveOpenClawPluginToolsForOptions } from "./openclaw-plugin-tools.js";
@@ -525,9 +524,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   const runtimeRoot = capabilityProfile.workspace.runtimeRoot;
   const codingRoot = sandboxRoot ?? runtimeRoot;
   const memoryFlushWriteRoot = sandboxRoot ?? workspaceRoot;
-  const memoryFileMutationGuard = isMemoryIsolationCutoverAgent(agentId)
-    ? createMemoryFileMutationGuard({ mutationRoot: memoryFlushWriteRoot })
-    : undefined;
+  const memoryIsolationCutover = Boolean(agentId && isMemoryIsolationCutoverAgent(agentId));
   // Flush exposes one append-only target; its fallback records inherited taint after success.
   const memoryWriteProvenance = isMemoryFlushRun
     ? undefined
@@ -549,7 +546,10 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
     includePluginTools: true,
   };
   const includeBaseCodingTools = includeCoreTools && toolConstructionPlan.includeBaseCodingTools;
-  const includeShellTools = includeCoreTools && toolConstructionPlan.includeShellTools;
+  // P1C's selected-memory pilot is read-only. Hiding both the shell and its process controller
+  // closes the generic durable-write bypass without pretending this is P1D virtual-FS confinement.
+  const includeShellTools =
+    includeCoreTools && toolConstructionPlan.includeShellTools && !memoryIsolationCutover;
   const includeOpenClawTools = includeCoreTools && toolConstructionPlan.includeOpenClawTools;
   const includeChannelTools = toolConstructionPlan.includeChannelTools;
   const includePluginTools = toolConstructionPlan.includePluginTools;
@@ -579,7 +579,6 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
     skillsSnapshot: options?.skillsSnapshot,
     modelContextWindowTokens: options?.modelContextWindowTokens,
     imageSanitization,
-    memoryFileMutationGuard,
     memoryWriteProvenance,
     ...(includeBaseCodingTools
       ? { baseToolNames: createCodingTools(codingRoot).map((tool) => tool.name) }
@@ -929,19 +928,25 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
       !options?.swarmCollector ||
       (tool.name !== "ask_user" && tool.name !== "sessions_send" && tool.name !== "sessions_yield"),
   );
+  // P1C has no authorized mutation or execution path. Apply this after every contributor and
+  // policy layer so a future core, plugin, or ring-zero tool cannot reopen a durable-write bypass.
+  const surfaceTools = memoryIsolationCutover
+    ? authorizedTools.filter((tool) => tool.name === "read")
+    : authorizedTools;
   if (
     swarmStructuredOutputTool &&
-    !authorizedTools.some((tool) => tool.name === swarmStructuredOutputTool.name)
+    !memoryIsolationCutover &&
+    !surfaceTools.some((tool) => tool.name === swarmStructuredOutputTool.name)
   ) {
     // Collector output is a run contract, not an operator-configurable capability.
-    authorizedTools.push(swarmStructuredOutputTool);
+    surfaceTools.push(swarmStructuredOutputTool);
   }
   if (shouldInheritEffectiveToolAllowlist) {
-    // Snapshot exporter only: this copies authorizedTools for descendants and
+    // Snapshot exporter only: this copies surfaceTools for descendants and
     // never filters the mandatory structured_output tool from this turn.
-    replaceWithEffectiveToolAllowlist(inheritedToolAllowlist, authorizedTools);
+    replaceWithEffectiveToolAllowlist(inheritedToolAllowlist, surfaceTools);
   }
-  replaceWithEffectiveCronCreatorToolAllowlist(cronCreatorToolAllowlist, authorizedTools, (tool) =>
+  replaceWithEffectiveCronCreatorToolAllowlist(cronCreatorToolAllowlist, surfaceTools, (tool) =>
     getPluginToolMeta(tool),
   );
   options?.recordToolPrepStage?.("authorization-policy");
@@ -983,7 +988,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   };
   // NOTE: Keep canonical (lowercase) tool names here. Provider transports remap on the wire.
   return finalizeAgentTools({
-    tools: authorizedTools,
+    tools: surfaceTools,
     modelProvider: options?.modelProvider,
     modelId: options?.modelId,
     modelCompat: options?.modelCompat,
