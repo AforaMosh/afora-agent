@@ -4,17 +4,12 @@ import {
   invokeNativeHookRelay,
   nativeHookRelayTesting,
   registerNativeHookRelay,
+  type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
 } from "openclaw/plugin-sdk/agent-harness-runtime";
 import {
   onInternalDiagnosticEvent,
   type DiagnosticEventPayload,
 } from "openclaw/plugin-sdk/diagnostic-runtime";
-import { initializeGlobalHookRunner } from "openclaw/plugin-sdk/hook-runtime";
-import {
-  createEmptyPluginRegistry,
-  createMockPluginRegistry,
-  setActivePluginRegistry,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readAttemptTerminal } from "./attempt-terminal.test-helper.js";
 import { nativeHookRelayUnregisterQueue } from "./native-hook-relay-state.js";
@@ -37,7 +32,6 @@ import {
 } from "./run-attempt-test-harness.js";
 
 setupRunAttemptTestHooks();
-afterEach(() => setActivePluginRegistry(createEmptyPluginRegistry()));
 
 const flushRelayCleanup = () => nativeHookRelayUnregisterQueue.flush();
 
@@ -46,10 +40,11 @@ type DirectRelayOptions = {
   signal?: AbortSignal;
   generation?: string;
   runId?: string;
+  runBeforeToolCall?: EmbeddedRunAttemptParams["hostCapabilities"]["runBeforeToolCall"];
   onPreToolUseFailure?: (failure: CodexNativePreToolUseFailure) => void;
 };
 
-function createDirectRelayResult(ttlMs: number, options: DirectRelayOptions = {}) {
+function acquireDirectRelay(ttlMs: number, options: DirectRelayOptions = {}) {
   const params = createParams(
     path.join(tempDir, "direct-relay-session.jsonl"),
     path.join(tempDir, "direct-relay-workspace"),
@@ -68,8 +63,17 @@ function createDirectRelayResult(ttlMs: number, options: DirectRelayOptions = {}
     turnStartTimeoutMs: 5_000,
     loopDetectionPreToolUseRelay: true,
     signal: options.signal ?? new AbortController().signal,
+    hostCapabilities: {
+      ...params.hostCapabilities,
+      ...(options.runBeforeToolCall ? { runBeforeToolCall: options.runBeforeToolCall } : {}),
+    },
     onPreToolUseFailure: options.onPreToolUseFailure ?? vi.fn(),
   });
+  return acquisition;
+}
+
+function createDirectRelayResult(ttlMs: number, options: DirectRelayOptions = {}) {
+  const acquisition = acquireDirectRelay(ttlMs, options);
   return acquisition.status === "active" ? acquisition.lease : undefined;
 }
 
@@ -180,7 +184,10 @@ function getRoute(harness: ReturnType<typeof createStartedThreadHarness>) {
 
 async function startRelayAttempt(
   name: string,
-  relayOptions: { ttlMs?: number } = {},
+  relayOptions: {
+    ttlMs?: number;
+    runBeforeToolCall?: EmbeddedRunAttemptParams["hostCapabilities"]["runBeforeToolCall"];
+  } = {},
   censusThreadIds: readonly string[] = [],
 ) {
   const harness = createStartedThreadHarness(async (method) =>
@@ -191,17 +198,33 @@ async function startRelayAttempt(
         }
       : undefined,
   );
-  const run = runCodexAppServerAttempt(
-    createParams(path.join(tempDir, `${name}.jsonl`), path.join(tempDir, `${name}-workspace`)),
-    { nativeHookRelay: { enabled: true, events: ["pre_tool_use"], ...relayOptions } },
+  const params = createParams(
+    path.join(tempDir, `${name}.jsonl`),
+    path.join(tempDir, `${name}-workspace`),
   );
+  if (relayOptions.runBeforeToolCall) {
+    params.hostCapabilities = {
+      ...params.hostCapabilities,
+      runBeforeToolCall: relayOptions.runBeforeToolCall,
+    };
+  }
+  const { runBeforeToolCall: _runBeforeToolCall, ...nativeHookRelayOptions } = relayOptions;
+  const run = runCodexAppServerAttempt(params, {
+    nativeHookRelay: { enabled: true, events: ["pre_tool_use"], ...nativeHookRelayOptions },
+  });
   await harness.waitForMethod("turn/start");
   return { harness, run, route: getRoute(harness) };
 }
 
 describe("Codex native hook relay lifecycle", () => {
-  it("keeps the canonical route generation strict", async () => {
+  it("keeps the shipped v1 locator stable while fencing generations", async () => {
     const relay = createDirectRelay(60_000, { generation: "canonical-generation" });
+    expect(relay.relayId).toBe("codex-140662fcf72995e354cb7ecb42dbd4595a462354");
+    expect(acquireDirectRelay(60_000, { generation: "replacement-generation" })).toEqual({
+      status: "unavailable",
+      reason: "foreign-owner",
+    });
+    expect(codexNativeHookRelayOwnerCount()).toBe(1);
 
     await expect(
       invokeChildTool({
@@ -210,6 +233,13 @@ describe("Codex native hook relay lifecycle", () => {
         toolCallId: "legacy-generation-tool",
       }),
     ).rejects.toThrow("native hook relay bridge stale registration");
+    await expect(
+      invokeChildTool({
+        relayId: relay.relayId,
+        generation: "canonical-generation",
+        toolCallId: "canonical-generation-tool",
+      }),
+    ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
 
     relay.releaseParent();
     expect(codexNativeHookRelayOwnerCount()).toBe(0);
@@ -280,15 +310,21 @@ describe("Codex native hook relay lifecycle", () => {
   });
 
   it("keeps policy enforcement alive after the parent completes", async () => {
-    const beforeToolCall = vi
-      .fn()
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce({ block: true, blockReason: "blocked after parent completion" });
-    initializeGlobalHookRunner(
-      createMockPluginRegistry([{ hookName: "before_tool_call", handler: beforeToolCall }]),
+    const beforeToolCall = vi.fn<EmbeddedRunAttemptParams["hostCapabilities"]["runBeforeToolCall"]>(
+      async (request) =>
+        request.toolName === "exec"
+          ? {
+              blocked: true,
+              kind: "veto",
+              deniedReason: "plugin-before-tool-call",
+              reason: "blocked after parent completion",
+              params: request.params,
+            }
+          : { blocked: false, params: request.params },
     );
     const { harness, run, route } = await startRelayAttempt("parent-complete", {
       ttlMs: 40_000,
+      runBeforeToolCall: beforeToolCall,
     });
     vi.useFakeTimers({ shouldAdvanceTime: true });
     await harness.notify(spawned("thread-1", "child-thread"));
@@ -308,6 +344,7 @@ describe("Codex native hook relay lifecycle", () => {
       toolCallId: "child-deny-after-parent",
       command: "git push",
     });
+    expect(beforeToolCall).toHaveBeenCalledWith(expect.objectContaining({ toolName: "exec" }));
     expect(JSON.parse(denied.stdout)).toMatchObject({
       hookSpecificOutput: { permissionDecision: "deny" },
     });
@@ -648,22 +685,21 @@ describe("Codex native hook relay lifecycle", () => {
     const beforeToolCallGate = new Promise<void>((resolve) => {
       releaseBeforeToolCall = resolve;
     });
-    initializeGlobalHookRunner(
-      createMockPluginRegistry([
-        {
-          hookName: "before_tool_call",
-          handler: async () => {
-            await beforeToolCallGate;
-            throw new Error("hook crashed");
-          },
-        },
-      ]),
-    );
     const startingAttemptFailures = vi.fn();
     const adoptingAttemptFailures = vi.fn();
     const first = createDirectRelay(60_000, {
       generation,
       onPreToolUseFailure: startingAttemptFailures,
+      runBeforeToolCall: async (request) => {
+        await beforeToolCallGate;
+        return {
+          blocked: true,
+          kind: "failure",
+          disposition: "failed",
+          reason: "hook crashed",
+          params: request.params,
+        };
+      },
     });
     const releaseWorker = first.acquireChild("worker-1");
 

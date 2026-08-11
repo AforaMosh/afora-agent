@@ -182,7 +182,6 @@ export function createCodexNativeHookRelay(
     agentId: params.agentId,
     sessionId: params.sessionId,
     sessionKey: params.sessionKey,
-    generation,
   });
   const liveRoute = codexNativeHookRelayOwners.get(relayId);
   const route = liveRoute ?? new CodexNativeHookRelayRoute(attempt, relayId);
@@ -287,6 +286,10 @@ class CodexNativeHookRelayRoute {
 
   adoptAttempt(attempt: CodexNativeHookRelayAttempt): CodexNativeHookRelayLease | undefined {
     if (this.released) {
+      return undefined;
+    }
+    if (this.attempt.generation !== attempt.generation) {
+      this.unavailableReason = "foreign-owner";
       return undefined;
     }
     if (this.principal !== codexNativeHookRelayPrincipal(attempt)) {
@@ -713,15 +716,12 @@ function buildCodexNativeHookRelayId(params: {
   agentId: string | undefined;
   sessionId: string;
   sessionKey: string | undefined;
-  generation: string;
 }): string {
   const hash = createHash("sha256");
-  hash.update("openclaw:codex:native-hook-relay:v2");
+  hash.update("openclaw:codex:native-hook-relay:v1");
   hash.update("\0");
   hash.update(params.agentId?.trim() || "");
   hash.update("\0");
   hash.update(params.sessionKey?.trim() || params.sessionId);
-  hash.update("\0");
-  hash.update(params.generation);
   return `codex-${hash.digest("hex").slice(0, 40)}`;
 }
