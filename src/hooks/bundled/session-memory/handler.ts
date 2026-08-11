@@ -26,6 +26,7 @@ import type { OpenClawConfig } from "../../../config/types.openclaw.js";
 import { isVitestRuntimeEnv } from "../../../infra/env.js";
 import { root } from "../../../infra/fs-safe.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
+import { isMemoryIsolationCutoverAgent } from "../../../plugins/memory-cutover.js";
 import { runWithGatewayIndependentRootWorkContinuation } from "../../../process/gateway-work-admission.js";
 import {
   parseAgentSessionKey,
@@ -228,6 +229,12 @@ async function saveSessionMemoryNow(
       typeof context.agentId === "string" && context.agentId.trim()
         ? context.agentId.trim()
         : resolveAgentIdFromSessionKey(event.sessionKey, resolveDefaultAgentId(cfg ?? {}));
+    // Phase 1C makes enforced agents read-only. Do this before either transcript
+    // projection or workspace creation so reset capture cannot recreate legacy memory.
+    if (isMemoryIsolationCutoverAgent(agentId)) {
+      log.debug("Skipping session-memory capture for enforced memory isolation", { agentId });
+      return;
+    }
     const contextStorePath =
       typeof context.storePath === "string" && context.storePath.trim()
         ? context.storePath.trim()
@@ -399,6 +406,9 @@ const saveSessionToMemory: HookHandler = (event) => {
         typeof context.agentId === "string" && context.agentId.trim()
           ? context.agentId.trim()
           : resolveAgentIdFromSessionKey(event.sessionKey, resolveDefaultAgentId(cfg ?? {}));
+      if (isMemoryIsolationCutoverAgent(agentId)) {
+        return undefined;
+      }
       const storePath =
         typeof context.storePath === "string" && context.storePath.trim()
           ? context.storePath.trim()
