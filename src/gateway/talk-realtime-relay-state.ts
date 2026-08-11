@@ -10,7 +10,7 @@ import type {
   RealtimeVoiceTool,
   RealtimeVoiceToolResultOptions,
 } from "../talk/provider-types.js";
-import type { RealtimeVoiceSessionHarness } from "../talk/realtime-session-harness.js";
+import type { RealtimeVoiceEventCapturingSessionHarness } from "../talk/realtime-session-harness.js";
 import type { RealtimeVoiceBridgeSession } from "../talk/session-runtime.js";
 import type { TalkEvent } from "../talk/talk-session-controller.js";
 import type { GatewayRequestContext } from "./server-methods/shared-types.js";
@@ -28,6 +28,7 @@ export const noFallbackRelayOutputFlush = () => {};
 export type TalkRealtimeRelayEventPayload =
   | { relaySessionId: string; type: "ready" }
   | { relaySessionId: string; type: "inputAudio"; byteLength: number }
+  | { relaySessionId: string; type: "audioStarted" }
   | {
       relaySessionId: string;
       type: "audio";
@@ -88,7 +89,7 @@ export type RelaySession = {
   connId: string;
   context: GatewayRequestContext;
   bridge: RealtimeVoiceBridgeSession;
-  harness: RealtimeVoiceSessionHarness;
+  harness: RealtimeVoiceEventCapturingSessionHarness;
   sessionKey?: string;
   agentId?: string;
   expiresAtMs: number;
@@ -214,14 +215,22 @@ function relayEventDeliveryOptions(
 }
 
 export function ensureRelayTurn(session: RelaySession): string {
-  const turn = session.harness.talk.ensureTurn();
-  if (turn.event) {
-    broadcastToOwner(session.context, session.connId, {
-      relaySessionId: session.id,
-      type: "inputAudio",
-      byteLength: 0,
-      talkEvent: turn.event,
-    });
-  }
+  const turn = session.harness.ensureTurn();
+  broadcastRelayTurnStarted(session, turn.event);
   return turn.turnId;
+}
+
+export function broadcastRelayTurnStarted(
+  session: RelaySession,
+  event: TalkEvent | undefined,
+): void {
+  if (!event) {
+    return;
+  }
+  broadcastToOwner(session.context, session.connId, {
+    relaySessionId: session.id,
+    type: "inputAudio",
+    byteLength: 0,
+    talkEvent: event,
+  });
 }

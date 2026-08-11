@@ -26,6 +26,7 @@ import {
   MAX_AUDIO_BASE64_BYTES,
   MAX_RELAY_SESSIONS_GLOBAL,
   MAX_RELAY_SESSIONS_PER_CONN,
+  broadcastRelayTurnStarted,
   broadcastToOwner,
   drainingRelaySessions,
   ensureRelayTurn,
@@ -186,18 +187,20 @@ export function sendTalkRealtimeRelayAudio(params: {
   }
   const session = getRelaySession(params.relaySessionId, params.connId);
   const audio = decodeTalkRelayAudioBase64(params.audioBase64, "Realtime relay");
-  const turnId = ensureRelayTurn(session);
-  session.bridge.sendAudio(audio);
+  const recorded = session.harness.recordInputAudio(audio);
+  if (!recorded) {
+    return;
+  }
+  broadcastRelayTurnStarted(session, recorded.turn.event);
   broadcastToOwner(session.context, session.connId, {
     relaySessionId: session.id,
     type: "inputAudio",
     byteLength: audio.byteLength,
-    talkEvent: session.harness.talk.emit({
-      type: "input.audio.delta",
-      turnId,
-      payload: { byteLength: audio.byteLength },
-    }),
+    talkEvent: recorded.inputAudioDelta,
   });
+  // Publish the recorded input before provider code can synchronously re-enter
+  // with output events, preserving the harness's authoritative sequence order.
+  session.bridge.sendAudio(audio);
   if (typeof params.timestamp === "number" && Number.isFinite(params.timestamp)) {
     session.bridge.setMediaTimestamp(params.timestamp);
   }
