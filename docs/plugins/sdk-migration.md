@@ -1005,9 +1005,9 @@ await gateway.request("talk.client.toolCall", { sessionKey, callId, name, args }
 await gateway.request("talk.client.steer", { sessionKey, text, mode: "steer" });
 ```
 
-Use the generation from the current output audio event. A current gateway
-rejects cancellation without one with `INVALID_REQUEST`; wait for generation
-metadata or upgrade the client instead of sending an ambiguous cancellation.
+Use the generation from the current output audio event for fenced, output-only
+cancellation. Omitting `outputGeneration` preserves the legacy destructive
+full-turn cancellation path, including agent work.
 
 Browser-owned WebRTC/provider-websocket sessions use `talk.client.create`,
 because the browser owns provider negotiation and media transport while the
