@@ -691,6 +691,45 @@ describe("runCodexAppServerAttempt native hook relay", () => {
     testing.flushPendingCodexNativeHookRelayUnregistersForTests();
   });
 
+  it("accepts only the first frozen generation when resuming a pre-generation binding", async () => {
+    const sessionFile = path.join(tempDir, "session.jsonl");
+    const workspaceDir = path.join(tempDir, "workspace");
+    await writeCodexAppServerBinding(sessionFile, {
+      threadId: "thread-existing",
+      cwd: workspaceDir,
+      model: "gpt-5.4-codex",
+      modelProvider: "openai",
+      dynamicToolsFingerprint: "[]",
+    });
+    const harness = createResumeHarness();
+    const run = runCodexAppServerAttempt(createParams(sessionFile, workspaceDir), {
+      nativeHookRelay: { enabled: true, events: ["pre_tool_use"] },
+    });
+    await harness.waitForMethod("turn/start");
+
+    const resumeRequest = harness.requests.find((request) => request.method === "thread/resume");
+    const relayId = extractRelayIdFromThreadRequest(resumeRequest?.params);
+    const invokeFrozenGeneration = (generation: string) =>
+      invokeNativeHookRelay({
+        provider: "codex",
+        relayId,
+        generation,
+        event: "pre_tool_use",
+        requireGeneration: true,
+        rawPayload: { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: {} },
+      });
+    await expect(invokeFrozenGeneration("legacy-generation")).resolves.toMatchObject({
+      exitCode: 0,
+    });
+    await expect(invokeFrozenGeneration("different-legacy-generation")).rejects.toThrow(
+      "native hook relay bridge stale registration",
+    );
+
+    await harness.completeTurn({ threadId: "thread-existing", turnId: "turn-1" });
+    await run;
+    testing.flushPendingCodexNativeHookRelayUnregistersForTests();
+  });
+
   it.each([
     {
       surface: "widened",

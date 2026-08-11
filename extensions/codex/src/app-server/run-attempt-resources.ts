@@ -14,6 +14,7 @@ import {
   buildCodexNativeHookRelayDisabledConfig,
 } from "./native-hook-relay-config.js";
 import {
+  CODEX_NATIVE_HOOK_RELAY_TTL_GRACE_MS,
   createCodexNativeHookRelay,
   emitCodexNativePreToolUseFailureDiagnostic,
   type CodexNativeHookRelayLease,
@@ -217,6 +218,10 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
       options: options.nativeHookRelay,
       generation:
         decision.action === "resume" ? decision.binding.nativeHookRelayGeneration : undefined,
+      generationMismatchGraceMs:
+        decision.action === "resume" && !decision.binding.nativeHookRelayGeneration
+          ? CODEX_NATIVE_HOOK_RELAY_TTL_GRACE_MS
+          : undefined,
       events: nativeHookRelayEvents,
       agentId: sessionAgentId,
       sessionId: params.sessionId,

@@ -71,6 +71,7 @@ type CodexNativeHookRelayParams = {
       }
     | undefined;
   generation?: string;
+  generationMismatchGraceMs?: number;
   events: readonly NativeHookRelayEvent[];
   agentId: string | undefined;
   sessionId: string;
@@ -280,6 +281,9 @@ class CodexNativeHookRelayRoute {
     embeddedAgentLog.debug("Codex native hook relay route registered", {
       relayId,
       generation: attempt.generation,
+      ...(attempt.generationMismatchGraceMs
+        ? { generationMismatchGraceMs: attempt.generationMismatchGraceMs }
+        : {}),
       runId: attempt.runId,
     });
   }
@@ -326,6 +330,9 @@ class CodexNativeHookRelayRoute {
       provider: "codex",
       relayId: this.relayId,
       generation: attempt.generation,
+      ...(attempt.generationMismatchGraceMs
+        ? { generationMismatchGraceMs: attempt.generationMismatchGraceMs }
+        : {}),
       ...(attempt.agentId ? { agentId: attempt.agentId } : {}),
       sessionId: attempt.sessionId,
       ...(attempt.sessionKey ? { sessionKey: attempt.sessionKey } : {}),
