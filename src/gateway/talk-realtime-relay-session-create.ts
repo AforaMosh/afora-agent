@@ -27,13 +27,12 @@ import {
   createTalkRealtimeRelayIssue as realtimeRelayIssue,
 } from "./talk-realtime-relay-issues.js";
 import {
-  abortRelayAgentRuns,
   cancelTalkRealtimeRelayProviderToolCall,
   closeRelaySession,
   closeTalkRealtimeRelaySessionsForConnection,
+  detachRelayAgentRuns,
   enforceRelaySessionLimits,
   pruneInactiveRelayAgentRuns,
-  registerTalkRealtimeRelayAgentRun,
   resetTalkRealtimeRelayContinuity,
   steerTalkRealtimeRelayAgentRun,
 } from "./talk-realtime-relay-operations.js";
@@ -59,7 +58,9 @@ import {
 } from "./talk-realtime-relay-tool-call-ledger.js";
 import {
   closeRelayVoiceSession,
+  captureRelayVoiceConsultOwner,
   enqueueRelayVoiceTranscript,
+  registerRelayVoiceConsultRun,
 } from "./talk-realtime-relay-voice.js";
 import {
   forgetUnifiedTalkSession,
@@ -129,38 +130,39 @@ export function createTalkRealtimeRelaySession(
   const relayAgentId = relaySessionKey
     ? resolveTalkSessionAgentId(params.cfg ?? params.context.getRuntimeConfig(), relaySessionKey)
     : undefined;
-  const consultRunner = relaySessionKey
-    ? createTalkClientAgentConsultRunner({
-        config: params.cfg ?? params.context.getRuntimeConfig(),
-        context: params.context,
-        agentId:
-          relayAgentId ??
-          resolveTalkSessionAgentId(
-            params.cfg ?? params.context.getRuntimeConfig(),
-            relaySessionKey,
-          ),
-        sessionKey: relaySessionKey,
-        ownerConnId: params.connId,
-        getVoiceSessionId: () => relaySessionId,
-        initialItems: [],
-        runIdPrefix: "talk-realtime-relay-consult",
-        surface: "a gateway-relay Talk session",
-        registerRun: ({ runId }) =>
-          registerTalkRealtimeRelayAgentRun({
-            relaySessionId,
-            connId: params.connId,
-            sessionKey: relaySessionKey,
-            runId,
-          }),
-      })
-    : undefined;
   const runAgentConsult = async ({ prompt, signal }: { prompt: string; signal?: AbortSignal }) => {
-    if (!getActiveRelay()) {
+    const relay = getActiveRelay();
+    if (!relay) {
       throw new Error("Realtime gateway-relay session is closed");
     }
-    if (!consultRunner) {
+    if (!relaySessionKey || !relayAgentId) {
       throw new Error("Realtime gateway-relay agent consult requires a pinned session key");
     }
+    // Admission can outlive the transport. Capture the durable owner and cancel
+    // generation before the runner waits on session lifecycle serialization.
+    const voiceOwner = captureRelayVoiceConsultOwner(relay, relaySessionKey);
+    const cancellationGeneration = relay.agentConsultCancellationGeneration;
+    const consultRunner = createTalkClientAgentConsultRunner({
+      config: params.cfg ?? params.context.getRuntimeConfig(),
+      context: params.context,
+      agentId: relayAgentId,
+      sessionKey: relaySessionKey,
+      ownerConnId: params.connId,
+      getVoiceSessionId: () => relaySessionId,
+      initialItems: [],
+      runIdPrefix: "talk-realtime-relay-consult",
+      surface: "a gateway-relay Talk session",
+      registerRun: ({ runId }) => {
+        signal?.throwIfAborted();
+        if (relay.agentConsultCancellationGeneration !== cancellationGeneration) {
+          throw new Error("Realtime relay agent consult was cancelled before run registration");
+        }
+        registerRelayVoiceConsultRun(voiceOwner, runId);
+        if (getActiveRelay() === relay) {
+          relay.activeAgentRuns.set(runId, voiceOwner.sessionKey);
+        }
+      },
+    });
     return await consultRunner.runPrompt({ prompt, signal });
   };
   const runControl = createTalkRealtimeRunControlOwner({
@@ -519,7 +521,7 @@ export function createTalkRealtimeRelaySession(
       relaySessions.delete(relaySessionId);
       forgetUnifiedTalkSession(relaySessionId);
       clearTimeout(active.cleanupTimer);
-      abortRelayAgentRuns(active, "relay-closed");
+      detachRelayAgentRuns(active);
       void closeRelayVoiceSession(active);
       if (!ready && !failureEmitted) {
         const issue = realtimeRelayIssue({
@@ -614,6 +616,7 @@ export function createTalkRealtimeRelaySession(
     pendingWorkingToolResults: new Map(),
     forcedTerminalProviderResults: new Map(),
     toolResultEpoch: 0,
+    agentConsultCancellationGeneration: 0,
     outputGeneration: 0,
     ...(params.cfg ? { voiceConfig: params.cfg } : {}),
     voiceSessionCreated: false,

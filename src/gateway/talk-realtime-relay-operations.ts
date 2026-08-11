@@ -3,7 +3,6 @@ import {
   controlRealtimeVoiceAgentRun,
   type RealtimeVoiceAgentControlResult,
 } from "../talk/agent-run-control.js";
-import { registerClientVoiceConsultRun } from "../talk/client-voice-session.js";
 import type {
   RealtimeVoiceAudioClearReason,
   RealtimeVoiceToolResultOptions,
@@ -41,10 +40,11 @@ import {
 } from "./talk-realtime-relay-state.js";
 import {
   bindRelaySessionKey,
+  captureRelayVoiceConsultOwner,
   closeRelayVoiceSession,
   enqueueRelayVoiceTranscript,
   ensureRelayVoiceSession,
-  resolveRelayAgentId,
+  registerRelayVoiceConsultRun,
 } from "./talk-realtime-relay-voice.js";
 import { decodeTalkRelayAudioBase64 } from "./talk-relay-audio-base64.js";
 import {
@@ -71,7 +71,7 @@ export function ensureTalkRealtimeRelayVoiceSession(params: {
   }
 }
 
-export function abortRelayAgentRuns(session: RelaySession, reason: string): void {
+function abortRelayAgentRuns(session: RelaySession, reason: string): void {
   for (const [runId, sessionKey] of session.activeAgentRuns) {
     abortChatRunById(session.context, {
       runId,
@@ -79,6 +79,12 @@ export function abortRelayAgentRuns(session: RelaySession, reason: string): void
       stopReason: reason,
     });
   }
+  session.activeAgentRuns.clear();
+  session.activeAgentToolCalls.clear();
+}
+
+/** Releases relay-local correlation without cancelling durable voice-bound agent runs. */
+export function detachRelayAgentRuns(session: RelaySession): void {
   session.activeAgentRuns.clear();
   session.activeAgentToolCalls.clear();
 }
@@ -103,7 +109,7 @@ export function closeRelaySession(session: RelaySession, reason: "completed" | "
   relaySessions.delete(session.id);
   forgetUnifiedTalkSession(session.id);
   clearTimeout(session.cleanupTimer);
-  abortRelayAgentRuns(session, reason === "error" ? "relay-error" : "relay-closed");
+  detachRelayAgentRuns(session);
   try {
     session.bridge.close();
   } finally {
@@ -362,26 +368,12 @@ export function registerTalkRealtimeRelayAgentRun(params: {
   if (callId && !session.toolCalls.tryAdmit([callId])) {
     throw new Error("Realtime relay tool-call session limit exceeded");
   }
-  if (!session.sessionKey) {
-    bindRelaySessionKey(session, params.sessionKey);
-  }
+  const owner = captureRelayVoiceConsultOwner(session, params.sessionKey);
+  registerRelayVoiceConsultRun(owner, params.runId);
   session.activeAgentRuns.set(params.runId, params.sessionKey);
   if (callId) {
     session.activeAgentToolCalls.set(callId, params.runId);
   }
-  if (!ensureRelayVoiceSession(session)) {
-    throw new Error("Realtime relay voice session could not be created for agent consult");
-  }
-  const voiceSessionKey = session.sessionKey;
-  if (!voiceSessionKey) {
-    throw new Error("Realtime relay voice session has no pinned session key");
-  }
-  registerClientVoiceConsultRun({
-    agentId: resolveRelayAgentId(session, voiceSessionKey),
-    sessionKey: voiceSessionKey,
-    voiceSessionId: session.id,
-    runId: params.runId,
-  });
 }
 
 /** Retires one provider-owned tool call and aborts its exact relay consult, if started. */
@@ -510,6 +502,7 @@ export function cancelTalkRealtimeRelayTurn(params: {
 }): void {
   const session = getRelaySession(params.relaySessionId, params.connId);
   session.toolResultEpoch += 1;
+  session.agentConsultCancellationGeneration += 1;
   session.forcedTerminalProviderResults.clear();
   const turnId = ensureRelayTurn(session);
   const reason = params.reason ?? "client-cancelled";
@@ -611,7 +604,9 @@ export function resetTalkRealtimeRelayContinuity(
   session.pendingWorkingToolResults.clear();
   session.forcedTerminalProviderResults.clear();
   session.harness.forcedConsults.clear();
-  abortRelayAgentRuns(session, reason);
+  // The provider generation no longer owns these calls, but the durable voice
+  // session still owns any running consult and its eventual mutation evidence.
+  session.activeAgentToolCalls.clear();
   const turnId = session.harness.talk.activeTurnId;
   session.harness.flushOutput(noFallbackRelayOutputFlush);
   session.harness.finishOutputAudio(reason);
