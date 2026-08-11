@@ -22,6 +22,7 @@ const deprecatedTargetParserCompatFiles = new Set([
   "src/plugins/compat/registry.test.ts",
 ]);
 const removalDatePendingCompatCodes = new Set<PluginCompatCode>([
+  "plugin-sdk-inbound-reply-dispatch-subpath",
   "plugin-sdk-tool-plugin-public-demotion",
   "agent-harness-sdk-alias",
 ]);
