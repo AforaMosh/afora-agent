@@ -176,7 +176,7 @@ function registerParent(
 
 function createNativeHookRelayLease(
   relayId = "native-hook-relay",
-  options: { released?: boolean } = {},
+  options: { generation?: string; released?: boolean } = {},
 ) {
   const releases = new Map<string, ReturnType<typeof vi.fn>>();
   const acquireChild = vi.fn((childThreadId: string) => {
@@ -194,7 +194,12 @@ function createNativeHookRelayLease(
     acquireDiscovery,
     releaseDiscovery,
     releases,
-    lease: { relayId, acquireChild, acquireDiscovery } as unknown as CodexNativeHookRelayLease,
+    lease: {
+      relayId,
+      generation: options.generation ?? "generation-1",
+      acquireChild,
+      acquireDiscovery,
+    } as unknown as CodexNativeHookRelayLease,
   };
 }
 
@@ -1588,6 +1593,62 @@ describe("CodexNativeSubagentMonitor", () => {
     ]);
     expect(releaseUnloaded).toHaveBeenCalledOnce();
     client.close();
+  });
+
+  it("reconciles adopted route leases without crossing the relay generation fence", async () => {
+    for (const [generation, shouldRelease] of [
+      ["generation-1", true],
+      ["generation-2", false],
+    ] as const) {
+      const client = createClient();
+      client.setThreadListResponses({
+        data: [{ id: "child-thread", status: { type: "notLoaded" } }],
+        nextCursor: null,
+      });
+      client.setThreadRead(
+        "child-thread",
+        threadRead({ childThreadId: "child-thread", threadStatus: "notLoaded" }),
+      );
+      const ownerRelay = createNativeHookRelayLease("native-hook-relay", {
+        generation: "generation-1",
+      });
+      ownerRelay.acquireDiscovery.mockReturnValue(undefined);
+      const adoptedRelay = createNativeHookRelayLease("native-hook-relay", { generation });
+      const releaseClient = vi.fn();
+      const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime(), {
+        retainClient: () => releaseClient,
+      });
+      const owner = registerParent(
+        monitor,
+        "parent-thread",
+        "agent:main:discord:channel:C123",
+        ownerRelay.lease,
+      );
+      await notifyChildStarted(client);
+      const releaseChild = ownerRelay.releases.get("child-thread");
+      owner.unregister();
+
+      const adoption = registerParent(
+        monitor,
+        "parent-thread",
+        "agent:main:discord:channel:C123",
+        adoptedRelay.lease,
+      );
+      adoption.setTurnId("turn-parent");
+      await client.notify(
+        childTurnCompletedNotification({
+          childThreadId: "parent-thread",
+          turnId: "turn-parent",
+          status: "completed",
+        }),
+      );
+      adoption.unregister();
+      await vi.waitFor(() => expect(adoptedRelay.releaseDiscovery).toHaveBeenCalledOnce());
+
+      expect(releaseChild).toHaveBeenCalledTimes(shouldRelease ? 1 : 0);
+      expect(releaseClient).toHaveBeenCalledTimes(shouldRelease ? 1 : 0);
+      client.close();
+    }
   });
 
   it("retains discovery after a census failure and retries without a timeout release", async () => {

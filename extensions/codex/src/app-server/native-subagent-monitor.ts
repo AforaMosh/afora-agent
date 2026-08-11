@@ -113,6 +113,16 @@ type WorkerRelayClaim = {
   release: () => void;
 };
 
+function isSameNativeHookRelayRoute(
+  left: CodexNativeHookRelayLease | undefined,
+  right: CodexNativeHookRelayLease | undefined,
+): boolean {
+  // Adoption returns a fresh attempt lease; relay id plus generation is its stable route fence.
+  return Boolean(
+    left?.generation && left.relayId === right?.relayId && left.generation === right.generation,
+  );
+}
+
 type ChildAssistantMessages = {
   texts: Map<string, string>;
   order: string[];
@@ -720,8 +730,10 @@ class Monitor {
       if (
         !this.isCurrentDiscoveryRegistration(registration, censusTurnId) ||
         this.childStates.get(childState.childThreadId) !== childState ||
-        this.workerRelayClaims.get(childState.childThreadId)?.lease !==
-          registration.nativeHookRelay ||
+        !isSameNativeHookRelayRoute(
+          this.workerRelayClaims.get(childState.childThreadId)?.lease,
+          registration.nativeHookRelay,
+        ) ||
         !statusRead.isCurrent()
       ) {
         return undefined;
@@ -743,8 +755,10 @@ class Monitor {
         if (
           !this.isCurrentDiscoveryRegistration(registration, censusTurnId) ||
           this.childStates.get(childState.childThreadId) !== childState ||
-          this.workerRelayClaims.get(childState.childThreadId)?.lease !==
-            registration.nativeHookRelay ||
+          !isSameNativeHookRelayRoute(
+            this.workerRelayClaims.get(childState.childThreadId)?.lease,
+            registration.nativeHookRelay,
+          ) ||
           !statusRead.isCurrent()
         ) {
           return;
