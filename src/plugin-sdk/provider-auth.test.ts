@@ -57,6 +57,18 @@ type FallbackStoreCaseResult = {
   resolveApiKeyCalls: unknown[][];
 };
 
+function resolveMockAuthProfileOrder(params: { provider: string; store: AuthProfileStore }): {
+  hasExplicitOrder: false;
+  profileIds: string[];
+} {
+  return {
+    hasExplicitOrder: false,
+    profileIds: Object.entries(params.store.profiles)
+      .filter(([, profile]) => profile.provider === params.provider)
+      .map(([profileId]) => profileId),
+  };
+}
+
 async function runFallbackStoreCase(): Promise<FallbackStoreCaseResult> {
   vi.resetModules();
 
@@ -96,10 +108,7 @@ async function runFallbackStoreCase(): Promise<FallbackStoreCaseResult> {
     resolveOAuthCredentialForProfile: vi.fn(),
   }));
   vi.doMock("../agents/auth-profiles/order.js", () => ({
-    resolveAuthProfileOrder: ({ provider, store }: { provider: string; store: AuthProfileStore }) =>
-      Object.entries(store.profiles)
-        .filter(([, profile]) => profile.provider === provider)
-        .map(([profileId]) => profileId),
+    resolveAuthProfileOrderWithMetadata: resolveMockAuthProfileOrder,
   }));
   vi.doMock("../agents/auth-profiles/store.js", () => ({
     ensureAuthProfileStore: vi.fn(() => primaryStore),
@@ -556,16 +565,7 @@ describe("provider auth profile helpers", () => {
       resolveOAuthCredentialForProfile: vi.fn(),
     }));
     vi.doMock("../agents/auth-profiles/order.js", () => ({
-      resolveAuthProfileOrder: ({
-        provider,
-        store: profileStore,
-      }: {
-        provider: string;
-        store: AuthProfileStore;
-      }) =>
-        Object.entries(profileStore.profiles)
-          .filter(([, profile]) => profile.provider === provider)
-          .map(([profileId]) => profileId),
+      resolveAuthProfileOrderWithMetadata: resolveMockAuthProfileOrder,
     }));
     vi.doMock("../agents/auth-profiles/store.js", () => ({
       ensureAuthProfileStore: vi.fn(() => store),
@@ -622,7 +622,10 @@ describe("provider auth profile helpers", () => {
       resolveOAuthCredentialForProfile,
     }));
     vi.doMock("../agents/auth-profiles/order.js", () => ({
-      resolveAuthProfileOrder: () => ["openai:key", "openai:oauth"],
+      resolveAuthProfileOrderWithMetadata: () => ({
+        hasExplicitOrder: false,
+        profileIds: ["openai:key", "openai:oauth"],
+      }),
     }));
     vi.doMock("../agents/auth-profiles/store.js", () => ({
       ensureAuthProfileStore: vi.fn(() => store),
@@ -680,16 +683,7 @@ describe("provider auth profile helpers", () => {
       resolveOAuthCredentialForProfile: vi.fn(),
     }));
     vi.doMock("../agents/auth-profiles/order.js", () => ({
-      resolveAuthProfileOrder: ({
-        provider,
-        store,
-      }: {
-        provider: string;
-        store: AuthProfileStore;
-      }) =>
-        Object.entries(store.profiles)
-          .filter(([, profile]) => profile.provider === provider)
-          .map(([profileId]) => profileId),
+      resolveAuthProfileOrderWithMetadata: resolveMockAuthProfileOrder,
     }));
     vi.doMock("../agents/auth-profiles/store.js", () => ({
       ensureAuthProfileStore: vi.fn(() => primaryStore),
