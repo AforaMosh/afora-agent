@@ -419,11 +419,12 @@ export const zalouserAuthAdapter = {
     }
 
     const qrPath = await writeQrDataUrlToTempFile(started.qrDataUrl, account.profile);
-    if (qrPath) {
-      runtime.log(`Scan QR image: ${qrPath}`);
-    } else {
-      runtime.log("QR generated but could not be written to a temp file.");
+    if (!qrPath) {
+      // The direct CLI path has no prompt-level recovery. Stop before polling so
+      // an unusable vendor image cannot leave the operator waiting with nothing to scan.
+      throw new Error("Zalo QR login returned an unusable image. Start login again.");
     }
+    runtime.log(`Scan QR image: ${qrPath}`);
 
     const waited = await waitForZaloQrLogin({ profile: account.profile, timeoutMs: 180_000 });
     if (!waited.connected) {
