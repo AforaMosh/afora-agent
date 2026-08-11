@@ -42,9 +42,9 @@ import {
   RELAY_TRANSCRIPT_ECHO_LOOKBACK_MS,
   adoptRelayProviderToolCallId,
   broadcastRelayTurnStarted,
-  broadcastToOwner,
   clearTalkRealtimeRelayOutputGeneration,
   ensureRelayTurn,
+  publishTalkRealtimeRelayEvent,
   relaySessions,
   type CreateTalkRealtimeRelaySessionParams,
   type RelaySession,
@@ -75,7 +75,8 @@ function isRelayAssistantEchoTranscript(session: RelaySession | undefined, text:
 export function createTalkRealtimeRelaySession(
   params: CreateTalkRealtimeRelaySessionParams,
 ): TalkRealtimeRelaySessionResult {
-  enforceRelaySessionLimits(params.connId);
+  const quotaOwnerId = params.quotaOwnerId ?? params.connId;
+  enforceRelaySessionLimits(quotaOwnerId);
   const forceAgentConsultOnFinalTranscript = params.forceAgentConsultOnFinalTranscript === true;
   const relaySessionId = randomUUID();
   const expiresAtMs = resolveExpiresAtMsFromDurationMs(RELAY_SESSION_TTL_MS);
@@ -104,8 +105,13 @@ export function createTalkRealtimeRelaySession(
     transcriptLookbackMs: RELAY_TRANSCRIPT_ECHO_LOOKBACK_MS,
     captureBridgeEvents: false,
   });
+  const eventOwner = {
+    context: params.context,
+    connId: params.connId,
+    ...(params.eventSink ? { eventSink: params.eventSink } : {}),
+  };
   const broadcastEvent = (event: TalkRealtimeRelayEventPayload, talkEvent?: TalkEvent) =>
-    broadcastToOwner(params.context, params.connId, {
+    publishTalkRealtimeRelayEvent(eventOwner, {
       ...event,
       ...(talkEvent ? { talkEvent } : {}),
     });
@@ -297,7 +303,7 @@ export function createTalkRealtimeRelaySession(
           return;
         }
         const clearEvent = { relaySessionId, type: "clear" as const };
-        broadcastToOwner(params.context, params.connId, {
+        publishTalkRealtimeRelayEvent(eventOwner, {
           ...clearEvent,
           ...(talkEvent ? { talkEvent } : {}),
         });
@@ -317,7 +323,7 @@ export function createTalkRealtimeRelaySession(
             type: "toolCallCancelled" as const,
             callId: relayCallId,
           };
-          broadcastToOwner(params.context, params.connId, cancelledEvent);
+          publishTalkRealtimeRelayEvent(eventOwner, cancelledEvent);
         }
         return;
       }
@@ -349,7 +355,7 @@ export function createTalkRealtimeRelaySession(
       const outputGeneration = owner?.outputGeneration ?? relay.outputGeneration;
       const itemId = currentOutputItemId ?? owner?.itemId;
       const terminalTalkEvent = harness.talk.recentEvents.at(-1);
-      broadcastToOwner(params.context, params.connId, {
+      publishTalkRealtimeRelayEvent(eventOwner, {
         relaySessionId,
         type: "audioDone",
         outputGeneration,
@@ -373,7 +379,7 @@ export function createTalkRealtimeRelaySession(
         const errorTalkEvent = harness.talk.recentEvents.findLast(
           (event) => event.type === "session.error" && event.payload === outcome,
         );
-        broadcastToOwner(params.context, params.connId, {
+        publishTalkRealtimeRelayEvent(eventOwner, {
           ...relayIssuePayload(relaySessionId, issue),
           ...(errorTalkEvent ? { talkEvent: errorTalkEvent } : {}),
         });
@@ -581,7 +587,9 @@ export function createTalkRealtimeRelaySession(
   const relay: RelaySession = {
     id: relaySessionId,
     connId: params.connId,
+    quotaOwnerId,
     context: params.context,
+    ...(params.eventSink ? { eventSink: params.eventSink } : {}),
     bridge,
     harness,
     sessionKey: initialSessionKey,

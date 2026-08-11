@@ -385,8 +385,10 @@ two-party event loops that do not go through the shared inbound reply runner.
     PCM and renders the returned events.
 
     ```typescript
+    const connection = new AbortController();
     const session = await api.runtime.talk.openSession({
       sessionKey: "agent:main:avatar",
+      signal: connection.signal,
       onEvent: (event) => renderVoiceEvent(event),
     });
 
@@ -394,6 +396,9 @@ two-party event loops that do not go through the shared inbound reply runner.
     session.cancelOutput("barge-in");
     session.close();
     ```
+
+    Bind `signal` to the browser or socket displaying the session. Aborting it releases the Talk
+    session if that connection disappears.
 
     `sessionKey` selects the agent conversation and workspace. `provider`, `model`, `voice`, and
     `language` optionally override its configured Talk defaults. Input and output use signed
