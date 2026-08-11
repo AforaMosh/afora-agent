@@ -442,6 +442,37 @@ describe("resolveJidMapping", () => {
       arrange: (mappingPath: string) => fs.writeFileSync(mappingPath, JSON.stringify({ nope: 1 })),
       errorKind: "invalid",
     },
+    {
+      name: "mixed-text",
+      lid: "910009",
+      arrange: (mappingPath: string) =>
+        fs.writeFileSync(mappingPath, JSON.stringify("garbage1555text")),
+      errorKind: "invalid",
+    },
+    {
+      name: "decimal-number",
+      lid: "910010",
+      arrange: (mappingPath: string) => fs.writeFileSync(mappingPath, "1555.5"),
+      errorKind: "invalid",
+    },
+    {
+      name: "unsafe-number",
+      lid: "910011",
+      arrange: (mappingPath: string) => fs.writeFileSync(mappingPath, "9007199254740992"),
+      errorKind: "invalid",
+    },
+    {
+      name: "nonpositive-number",
+      lid: "910012",
+      arrange: (mappingPath: string) => fs.writeFileSync(mappingPath, "0"),
+      errorKind: "invalid",
+    },
+    {
+      name: "nonfinite-number",
+      lid: "910013",
+      arrange: (mappingPath: string) => fs.writeFileSync(mappingPath, "1e400"),
+      errorKind: "invalid",
+    },
   ])("reports $name local mapping files as errors", async ({ lid, arrange, errorKind }) => {
     await withTempDir("openclaw-lid-error-", async (authDir) => {
       arrange(path.join(authDir, `lid-mapping-${lid}_reverse.json`));

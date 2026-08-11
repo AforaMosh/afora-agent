@@ -196,6 +196,53 @@ describe("web auto-reply routing", () => {
     await store.cleanup();
   });
 
+  it("updates the default-main last route for an exact LID allowlist owner", async () => {
+    const now = Date.now();
+    const mainSessionKey = "agent:main:main";
+    const store = await makeSessionStore({
+      [mainSessionKey]: { sessionId: "sid", updatedAt: now - 1 },
+    });
+    const cfg: OpenClawConfig = {
+      channels: {
+        whatsapp: {
+          dmPolicy: "allowlist",
+          allowFrom: ["999@lid"],
+        },
+      },
+      session: { store: store.storePath },
+    };
+    const { handler, backgroundTasks } = createHandlerForTest({
+      cfg,
+      replyResolver: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await handler(
+      buildInboundMessage({
+        id: "lid-1",
+        from: "999@lid",
+        conversationId: "999@lid",
+        chatType: "direct",
+        chatId: "999@lid",
+        timestamp: now,
+      }),
+    );
+
+    await Promise.allSettled(backgroundTasks);
+    backgroundTasks.clear();
+
+    expect(updateLastRouteInBackgroundMock).toHaveBeenCalledTimes(1);
+    expect(updateLastRouteInBackgroundMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionKey: mainSessionKey,
+        channel: "whatsapp",
+        to: "999@lid",
+        accountId: "default",
+      }),
+    );
+
+    await store.cleanup();
+  });
+
   it("updates last-route for group chats with account id", async () => {
     const now = Date.now();
     const groupSessionKey = "agent:main:whatsapp:group:123@g.us";

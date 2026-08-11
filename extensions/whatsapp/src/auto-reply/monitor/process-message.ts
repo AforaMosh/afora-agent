@@ -20,7 +20,12 @@ import {
 } from "openclaw/plugin-sdk/hook-runtime";
 import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
 import { resolveBatchedReplyThreadingPolicy } from "openclaw/plugin-sdk/reply-reference";
-import { getPrimaryIdentityId, getSelfIdentity, getSenderIdentity } from "../../identity.js";
+import {
+  getPrimaryIdentityId,
+  getSelfIdentity,
+  getSenderIdentity,
+  normalizeWhatsAppDirectIdentity,
+} from "../../identity.js";
 import {
   resolveWhatsAppCommandAuthorized,
   resolveWhatsAppInboundPolicy,
@@ -183,7 +188,7 @@ function resolvePinnedMainDmRecipient(params: {
   return resolvePinnedMainDmOwnerFromAllowlist({
     dmScope: params.cfg.session?.dmScope,
     allowFrom: params.allowFrom,
-    normalizeEntry: (entry) => normalizeE164(entry),
+    normalizeEntry: (entry) => normalizeWhatsAppDirectIdentity(entry) ?? undefined,
   });
 }
 

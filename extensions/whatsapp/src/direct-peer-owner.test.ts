@@ -1,6 +1,7 @@
 // Whatsapp tests cover durable direct-peer compatibility ownership.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setWhatsAppRuntime } from "./runtime.js";
+import type { WhatsAppJidMappingOutcome } from "./targets-runtime.js";
 
 const pairingState = vi.hoisted(() => ({
   entries: [] as string[],
@@ -59,12 +60,12 @@ function openKeyedStore(options: { namespace: string }) {
   };
 }
 
-const noMatch = { kind: "no-match", evidence: [] } as const;
-const mapped = {
+const noMatch: WhatsAppJidMappingOutcome = { kind: "no-match", evidence: [] };
+const mapped: WhatsAppJidMappingOutcome = {
   kind: "mapped",
   e164: "+15550001111",
   evidence: [{ source: "baileys", outcome: "mapped" }],
-} as const;
+};
 
 describe("direct-peer owner", () => {
   beforeEach(() => {

@@ -264,7 +264,9 @@ function resolveLidMappingDirs(params: { opts?: JidToE164Options }): string[] {
 }
 
 function normalizeMappedPhone(value: unknown): string | null {
-  if (typeof value !== "string" && typeof value !== "number") {
+  const isDigitString = typeof value === "string" && /^\+?\d+$/u.test(value);
+  const isValidNumber = typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+  if (!isDigitString && !isValidNumber) {
     return null;
   }
   const normalized = normalizeE164(String(value));
