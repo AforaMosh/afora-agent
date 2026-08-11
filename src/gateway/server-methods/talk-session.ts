@@ -26,6 +26,7 @@ import { resolveSessionKeyFromResolveParams } from "../sessions-resolve.js";
 import { createTalkHandoff, getTalkHandoff, revokeTalkHandoff } from "../talk-handoff.js";
 import {
   cancelTalkRealtimeRelayOutput,
+  cancelTalkRealtimeRelayTurn,
   createTalkRealtimeRelaySession,
   sendTalkRealtimeRelayAudio,
   steerTalkRealtimeRelayAgentRun,
@@ -417,13 +418,6 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
     ) {
       return;
     }
-    if (params.outputGeneration === undefined) {
-      respondInvalidRequest(
-        respond,
-        "talk.session.cancelOutput requires outputGeneration; upgrade the client before retrying output cancellation",
-      );
-      return;
-    }
     try {
       const session = getUnifiedTalkSession(params.sessionId);
       if (session.kind !== "realtime-relay") {
@@ -431,13 +425,19 @@ export const talkSessionHandlers: GatewayRequestHandlers = {
         return;
       }
       const connId = requireUnifiedTalkSessionConn(session, client?.connId);
-      cancelTalkRealtimeRelayOutput({
-        relaySessionId: session.relaySessionId,
-        connId,
-        turnId: normalizeOptionalString(params.turnId),
-        outputGeneration: params.outputGeneration,
-        reason: normalizeOptionalString(params.reason) ?? "output-cancelled",
-      });
+      const reason = normalizeOptionalString(params.reason) ?? "output-cancelled";
+      if (params.outputGeneration === undefined) {
+        // Deployed clients used this RPC for full-turn cancellation before output generations.
+        cancelTalkRealtimeRelayTurn({ relaySessionId: session.relaySessionId, connId, reason });
+      } else {
+        cancelTalkRealtimeRelayOutput({
+          relaySessionId: session.relaySessionId,
+          connId,
+          turnId: normalizeOptionalString(params.turnId),
+          outputGeneration: params.outputGeneration,
+          reason,
+        });
+      }
       respondOk(respond);
     } catch (err) {
       respondUnavailable(respond, err);

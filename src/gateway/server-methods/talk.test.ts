@@ -9,6 +9,7 @@ import { createDeferred } from "../../../test/helpers/promise.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { normalizeResolvedSecretInputString } from "../../config/types.secrets.js";
 import { REALTIME_VOICE_DESCRIBE_VIEW_TOOL_NAME } from "../../talk/describe-view-tool.js";
+import { forgetUnifiedTalkSession, rememberUnifiedTalkSession } from "../talk-session-registry.js";
 import { buildTalkRealtimeConfig } from "./talk-shared.js";
 import { talkHandlers } from "./talk.js";
 
@@ -1613,6 +1614,69 @@ describe("talk.session unified handlers", () => {
     });
   });
 
+  it("preserves legacy full-turn cancellation when outputGeneration is omitted", async () => {
+    rememberUnifiedTalkSession("relay-legacy-cancel", {
+      kind: "realtime-relay",
+      connId: "conn-1",
+      relaySessionId: "relay-legacy-cancel",
+    });
+    const respond = vi.fn();
+    try {
+      await callTalkHandler("talk.session.cancelOutput", {
+        params: {
+          sessionId: "relay-legacy-cancel",
+          turnId: "turn-legacy",
+          reason: "legacy-barge-in",
+        },
+        respond,
+        context: {},
+      });
+    } finally {
+      forgetUnifiedTalkSession("relay-legacy-cancel");
+    }
+
+    expect(mocks.cancelTalkRealtimeRelayTurn).toHaveBeenCalledWith({
+      relaySessionId: "relay-legacy-cancel",
+      connId: "conn-1",
+      reason: "legacy-barge-in",
+    });
+    expect(mocks.cancelTalkRealtimeRelayOutput).not.toHaveBeenCalled();
+    expectRespondOk(respond, { ok: true });
+  });
+
+  it("uses generation-fenced output cancellation when outputGeneration is present", async () => {
+    rememberUnifiedTalkSession("relay-generation-cancel", {
+      kind: "realtime-relay",
+      connId: "conn-1",
+      relaySessionId: "relay-generation-cancel",
+    });
+    const respond = vi.fn();
+    try {
+      await callTalkHandler("talk.session.cancelOutput", {
+        params: {
+          sessionId: "relay-generation-cancel",
+          turnId: "turn-1",
+          outputGeneration: 3,
+          reason: "barge-in",
+        },
+        respond,
+        context: {},
+      });
+    } finally {
+      forgetUnifiedTalkSession("relay-generation-cancel");
+    }
+
+    expect(mocks.cancelTalkRealtimeRelayOutput).toHaveBeenCalledWith({
+      relaySessionId: "relay-generation-cancel",
+      connId: "conn-1",
+      turnId: "turn-1",
+      outputGeneration: 3,
+      reason: "barge-in",
+    });
+    expect(mocks.cancelTalkRealtimeRelayTurn).not.toHaveBeenCalled();
+    expectRespondOk(respond, { ok: true });
+  });
+
   it("creates and drives a realtime gateway-relay session through the unified API", async () => {
     const provider = {
       id: "openai",
@@ -1722,45 +1786,6 @@ describe("talk.session unified handlers", () => {
       audioBase64: "aGVsbG8=",
       timestamp: 42,
     });
-
-    const cancelRespond = vi.fn();
-    await callTalkHandler("talk.session.cancelOutput", {
-      params: {
-        sessionId: "relay-unified-1",
-        turnId: "turn-1",
-        outputGeneration: 3,
-        reason: "barge-in",
-      },
-      id: "3",
-      respond: cancelRespond,
-      context: {},
-    });
-    expect(mocks.cancelTalkRealtimeRelayOutput).toHaveBeenCalledWith({
-      relaySessionId: "relay-unified-1",
-      connId: "conn-1",
-      turnId: "turn-1",
-      outputGeneration: 3,
-      reason: "barge-in",
-    });
-    expect(mocks.cancelTalkRealtimeRelayTurn).not.toHaveBeenCalled();
-
-    const legacyCancelRespond = vi.fn();
-    await callTalkHandler("talk.session.cancelOutput", {
-      params: {
-        sessionId: "relay-unified-1",
-        turnId: "turn-1",
-        reason: "legacy-barge-in",
-      },
-      id: "3-legacy",
-      respond: legacyCancelRespond,
-      context: {},
-    });
-    const legacyCancelError = expectRespondError(legacyCancelRespond, {
-      code: ErrorCodes.INVALID_REQUEST,
-    });
-    expect(legacyCancelError.message).toContain("requires outputGeneration");
-    expect(legacyCancelError.message).toContain("upgrade the client");
-    expect(mocks.cancelTalkRealtimeRelayOutput).toHaveBeenCalledTimes(1);
 
     const markRespond = vi.fn();
     await callTalkHandler("talk.session.acknowledgeMark", {
