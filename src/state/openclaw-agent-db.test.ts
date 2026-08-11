@@ -45,6 +45,7 @@ import {
   inspectOpenClawAgentDatabaseOwner,
   listOpenClawRegisteredAgentDatabases,
   migrateOpenClawAgentDatabaseForMaintenance,
+  OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
   OPENCLAW_AGENT_SCHEMA_VERSION,
   openOpenClawAgentDatabase as openOpenClawAgentDatabaseRuntime,
   resolveOpenClawAgentSqlitePath,
@@ -1624,7 +1625,7 @@ describe("openclaw agent database", () => {
     `);
     legacy.close();
 
-    const migrated = migrateAndOpenLegacyAgentDatabaseForTest({ agentId: "worker-1", env });
+    const migrated = openOpenClawAgentDatabase({ agentId: "worker-1", env });
     expect(readSqliteNumberPragma(migrated.db, "user_version")).toBe(OPENCLAW_AGENT_SCHEMA_VERSION);
     expect(
       migrated.db
@@ -4201,7 +4202,7 @@ describe("openclaw agent database", () => {
     );
   });
 
-  it.each([0, OPENCLAW_AGENT_SCHEMA_VERSION - 1])(
+  it.each([0, OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION - 1])(
     "rechecks the media version guard at v%d after a validated handle is physically reopened",
     (version) => {
       const stateDir = createTempStateDir();

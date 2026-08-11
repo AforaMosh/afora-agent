@@ -23,6 +23,7 @@ import { normalizeAgentId } from "../routing/session-key.js";
 import { VERSION } from "../version.js";
 import { ensureOpenClawAgentBoardSchemaInTransaction } from "./openclaw-agent-board-schema.js";
 import {
+  OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
   OPENCLAW_AGENT_SCHEMA_VERSION,
   type OpenClawAgentDatabaseOptions,
 } from "./openclaw-agent-db-contract.js";
@@ -726,7 +727,7 @@ export function migrateOpenClawAgentDatabaseToMediaPrerequisiteSchema(
   db: DatabaseSync,
   options: OpenClawAgentDatabaseOptions,
 ): void {
-  const targetVersion = OPENCLAW_AGENT_SCHEMA_VERSION - 1;
+  const targetVersion = OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION - 1;
   const userVersion = readSqliteUserVersion(db);
   if (userVersion > targetVersion) {
     return;

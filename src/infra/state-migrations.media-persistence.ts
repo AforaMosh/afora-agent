@@ -26,6 +26,7 @@ import {
 } from "../state/openclaw-agent-db-schema.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
 import {
+  OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
   OPENCLAW_AGENT_SCHEMA_VERSION,
   type OpenClawAgentDatabase,
 } from "../state/openclaw-agent-db.js";
@@ -46,7 +47,7 @@ import { readSqliteUserVersion } from "./sqlite-user-version.js";
 import { resolveAgentDatabaseMediaMigrationTargets } from "./state-migrations.media-persistence-targets.js";
 import type { MigrationMessages } from "./state-migrations.types.js";
 
-const PREVIOUS_MEDIA_SCHEMA_VERSION = OPENCLAW_AGENT_SCHEMA_VERSION - 1;
+const PREVIOUS_MEDIA_SCHEMA_VERSION = OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION - 1;
 const ARCHIVE_TEMP_MARKER = ".media-retirement";
 
 type MediaMigrationDatabase = Pick<
@@ -330,10 +331,11 @@ function migrateAgentDatabase(params: {
     }
     if (
       userVersion !== PREVIOUS_MEDIA_SCHEMA_VERSION &&
+      userVersion !== OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION &&
       userVersion !== OPENCLAW_AGENT_SCHEMA_VERSION
     ) {
       throw new Error(
-        `${params.pathname} uses schema version ${userVersion}; expected ${PREVIOUS_MEDIA_SCHEMA_VERSION} or ${OPENCLAW_AGENT_SCHEMA_VERSION}`,
+        `${params.pathname} uses schema version ${userVersion}; expected ${PREVIOUS_MEDIA_SCHEMA_VERSION}, ${OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION}, or ${OPENCLAW_AGENT_SCHEMA_VERSION}`,
       );
     }
     if (metadata.schemaVersion !== userVersion) {
@@ -341,13 +343,18 @@ function migrateAgentDatabase(params: {
         `${params.pathname} metadata schema version ${metadata.schemaVersion ?? "invalid"} does not match ${userVersion}`,
       );
     }
-    if (userVersion === OPENCLAW_AGENT_SCHEMA_VERSION) {
+    if (userVersion >= OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION) {
       // Doctor can encounter a current-version database before newly additive schema exists.
       // Converge it through the canonical agent-schema owner before media validation.
       ensureOpenClawAgentDatabaseSchema(database, {
         agentId: params.agentId,
         path: params.pathname,
       });
+      metadata = assertOpenClawAgentDatabaseOwner(database, {
+        agentId: params.agentId,
+        pathname: params.pathname,
+      });
+      userVersion = readSqliteUserVersion(database);
     }
     // Remove after 2026-10-12: drop the v15-to-v16 media cutover once schema 16 is the support floor.
     if (userVersion === PREVIOUS_MEDIA_SCHEMA_VERSION) {
@@ -420,14 +427,16 @@ function migrateAgentDatabase(params: {
           );
         }
         if (versionAdvanced) {
-          database.exec(`PRAGMA user_version = ${OPENCLAW_AGENT_SCHEMA_VERSION};`);
+          database.exec(
+            `PRAGMA user_version = ${OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION};`,
+          );
           executeSqliteQuerySync(
             database,
             db
               .updateTable("schema_meta")
               .set({
                 app_version: VERSION,
-                schema_version: OPENCLAW_AGENT_SCHEMA_VERSION,
+                schema_version: OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
                 updated_at: Date.now(),
               })
               .where("meta_key", "=", "primary"),
@@ -440,6 +449,12 @@ function migrateAgentDatabase(params: {
         operationLabel: "media-persistence-retirement",
       },
     );
+    if (versionAdvanced) {
+      ensureOpenClawAgentDatabaseSchema(database, {
+        agentId: params.agentId,
+        path: params.pathname,
+      });
+    }
     return {
       rewrittenSessions: changedSessions.length,
       rewrittenTrajectoryRows: changedTrajectoryRows.length,

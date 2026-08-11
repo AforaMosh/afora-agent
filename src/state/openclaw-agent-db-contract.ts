@@ -20,6 +20,8 @@ import type { OpenClawStateDatabaseOptions } from "./openclaw-state-db.js";
 // change is folded in structure-gated migrations, so v2 main DBs and
 // pre-merge v4 flip DBs both converge on this schema.
 export const OPENCLAW_AGENT_SCHEMA_VERSION = 17;
+/** Oldest schema whose persisted transcript media is canonical for steady-state reads. */
+export const OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION = 16;
 
 /** Open per-agent SQLite database handle plus lifecycle maintenance. */
 export type OpenClawAgentDatabase = {
