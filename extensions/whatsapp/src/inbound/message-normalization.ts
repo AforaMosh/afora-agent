@@ -1,5 +1,10 @@
 // Whatsapp plugin module normalizes inbound identity and access facts.
 import type { AnyMessageContent, WAMessage } from "baileys";
+import {
+  resolveWhatsAppDirectPeer,
+  type WhatsAppDirectPeerResolutionError,
+} from "../direct-peer-owner.js";
+import { normalizeWhatsAppLidJid } from "../identity.js";
 import type { OpenClawConfig } from "../runtime-api.js";
 import {
   checkInboundAccessControl,
@@ -16,6 +21,7 @@ export type WhatsAppNormalizedInboundMessage = {
   remoteJid: string;
   group: boolean;
   participantJid?: string;
+  senderJid?: string;
   from: string;
   senderE164: string | null;
   groupSubject?: string;
@@ -23,6 +29,11 @@ export type WhatsAppNormalizedInboundMessage = {
   messageTimestampMs?: number;
   access: AcceptedInboundAccessControlResult;
 };
+
+export type WhatsAppInboundNormalizationResult =
+  | WhatsAppNormalizedInboundMessage
+  | { kind: "retryable-error"; error: WhatsAppDirectPeerResolutionError }
+  | null;
 
 export function createWhatsAppInboundMessageNormalizer(options: {
   cfg: OpenClawConfig;
@@ -55,7 +66,7 @@ export function createWhatsAppInboundMessageNormalizer(options: {
     return true;
   };
 
-  const normalize = async (msg: WAMessage): Promise<WhatsAppNormalizedInboundMessage | null> => {
+  const normalize = async (msg: WAMessage): Promise<WhatsAppInboundNormalizationResult> => {
     const id = msg.key?.id ?? undefined;
     const remoteJid = msg.key?.remoteJid;
     if (!remoteJid || remoteJid.endsWith("@status") || remoteJid.endsWith("@broadcast")) {
@@ -75,7 +86,23 @@ export function createWhatsAppInboundMessageNormalizer(options: {
     }
 
     const participantJid = msg.key?.participant ?? undefined;
-    const from = group ? remoteJid : await socketSession.resolveInboundJid(remoteJid);
+    const directLid = group ? null : normalizeWhatsAppLidJid(remoteJid);
+    const canonicalRemoteJid = directLid ?? remoteJid;
+    const directPeer = directLid
+      ? await resolveWhatsAppDirectPeer({
+          accountId: options.accountId,
+          jid: directLid,
+          mapping: await socketSession.resolveInboundJidMapping(remoteJid),
+        })
+      : null;
+    if (directPeer?.kind === "error") {
+      return { kind: "retryable-error", error: directPeer.error };
+    }
+    const from = group
+      ? remoteJid
+      : directPeer?.kind === "resolved"
+        ? directPeer.peerId
+        : await socketSession.resolveInboundJid(remoteJid);
     if (!from) {
       return null;
     }
@@ -83,7 +110,10 @@ export function createWhatsAppInboundMessageNormalizer(options: {
       ? participantJid
         ? await socketSession.resolveInboundJid(participantJid)
         : null
-      : from;
+      : directPeer?.kind === "resolved"
+        ? directPeer.e164
+        : from;
+    const senderJid = group ? participantJid : (directLid ?? remoteJid);
 
     let groupSubject: string | undefined;
     let groupParticipants: string[] | undefined;
@@ -101,7 +131,7 @@ export function createWhatsAppInboundMessageNormalizer(options: {
       from,
       selfE164: socketSession.self.e164 ?? null,
       senderE164,
-      senderJid: participantJid,
+      senderJid,
       group,
       pushName: msg.pushName ?? undefined,
       isFromMe: Boolean(msg.key?.fromMe),
@@ -112,7 +142,7 @@ export function createWhatsAppInboundMessageNormalizer(options: {
         sendMessage: (jid: string, content: AnyMessageContent) =>
           socketSession.sendTrackedMessage(jid, content),
       },
-      remoteJid,
+      remoteJid: canonicalRemoteJid,
     });
     if (!access.allowed) {
       return null;
@@ -120,9 +150,10 @@ export function createWhatsAppInboundMessageNormalizer(options: {
 
     return {
       id,
-      remoteJid,
+      remoteJid: canonicalRemoteJid,
       group,
       participantJid,
+      senderJid,
       from,
       senderE164,
       groupSubject,

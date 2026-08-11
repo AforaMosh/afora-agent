@@ -22,6 +22,7 @@ import {
 } from "./channel-runtime-loader.js";
 import { whatsappCommandPolicy } from "./command-policy.js";
 import { formatWhatsAppConfigAllowFromEntries } from "./config-accessors.js";
+import { clearWhatsAppDirectPeerOwners } from "./direct-peer-owner.js";
 import { resolveWhatsAppMentionStripRegexes } from "./group-intro.js";
 import {
   resolveWhatsAppGroupRequireMention,
@@ -135,7 +136,12 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> =
         inferTargetChatType: ({ to }) => resolveWhatsAppTargetInfo(to)?.chatType,
         targetResolver: {
           looksLikeId: looksLikeWhatsAppTargetId,
-          hint: "<E.164|group JID|newsletter JID>",
+          hint: "<E.164|LID JID|group JID|newsletter JID>",
+        },
+      },
+      lifecycle: {
+        onAccountRemoved: async ({ accountId }) => {
+          await clearWhatsAppDirectPeerOwners(accountId);
         },
       },
       message: whatsappMessageAdapter,

@@ -1,5 +1,6 @@
 // Whatsapp plugin module implements inbound policy behavior.
 import { resolveStableChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
+import { readChannelAllowFromStore } from "openclaw/plugin-sdk/channel-pairing";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
@@ -12,7 +13,12 @@ import type {
 } from "openclaw/plugin-sdk/config-contracts";
 import { resolveDefaultGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
 import { resolveWhatsAppAccount, type ResolvedWhatsAppAccount } from "./accounts.js";
-import { getSelfIdentity, getSenderIdentity } from "./identity.js";
+import {
+  getSelfIdentity,
+  getSenderIdentity,
+  normalizeWhatsAppDirectIdentity,
+  normalizeWhatsAppLidJid,
+} from "./identity.js";
 import { requireWhatsAppInboundAdmission } from "./inbound/admission.js";
 import { resolveWhatsAppGroupConversationId } from "./inbound/group-conversation.js";
 import type { AdmittedWebInboundMessage } from "./inbound/types.js";
@@ -35,7 +41,7 @@ type ResolvedWhatsAppInboundPolicy = {
 
 function normalizeWhatsAppIngressPhone(value: string): string | null {
   const trimmed = value.trim();
-  if (!trimmed) {
+  if (!trimmed || trimmed.includes("@")) {
     return null;
   }
   return normalizeE164(trimmed);
@@ -120,21 +126,41 @@ export async function resolveWhatsAppIngressAccess(params: {
   isGroup: boolean;
   conversationId: string;
   senderId?: string | null;
+  senderE164?: string | null;
+  senderJid?: string | null;
   includeCommand?: boolean;
 }) {
   return await resolveStableChannelMessageIngress({
     channelId: "whatsapp",
     accountId: params.policy.account.accountId,
     identity: {
-      key: "whatsapp-sender-phone",
-      kind: "phone",
-      normalize: normalizeWhatsAppIngressPhone,
+      key: "whatsapp-sender-id",
+      kind: "stable-id",
+      normalize: normalizeWhatsAppDirectIdentity,
       sensitivity: "pii",
+      aliases: [
+        {
+          key: "phone",
+          kind: "phone",
+          normalize: normalizeWhatsAppIngressPhone,
+          sensitivity: "pii",
+        },
+        {
+          key: "lid",
+          kind: "plugin:whatsapp-lid",
+          normalize: normalizeWhatsAppLidJid,
+          sensitivity: "pii",
+        },
+      ],
       entryIdPrefix: "whatsapp-entry",
     },
     cfg: params.cfg,
-    useDefaultPairingStore: true,
-    subject: { stableId: params.senderId ?? "" },
+    readStoreAllowFrom: async ({ accountId }) =>
+      await readChannelAllowFromStore("whatsapp", process.env, accountId),
+    subject: {
+      stableId: params.senderId ?? "",
+      aliases: { phone: params.senderE164, lid: params.senderJid },
+    },
     conversation: {
       kind: params.isGroup ? "group" : "direct",
       id: params.conversationId,
@@ -180,9 +206,8 @@ export async function resolveWhatsAppCommandAuthorized(params: {
     });
   const isGroup = admission.conversation.kind === "group";
   const sender = getSenderIdentity(params.msg, params.authDir);
-  const dmSender = sender.e164 ?? admission.conversation.id;
-  const groupSender = sender.e164 ?? "";
-  if (!normalizeE164(isGroup ? groupSender : dmSender)) {
+  const stableSender = isGroup ? (sender.e164 ?? sender.lid ?? sender.jid) : admission.sender.id;
+  if (!stableSender) {
     return false;
   }
 
@@ -191,7 +216,9 @@ export async function resolveWhatsAppCommandAuthorized(params: {
     policy,
     isGroup,
     conversationId: admission.conversation.id,
-    senderId: isGroup ? groupSender : dmSender,
+    senderId: stableSender,
+    senderE164: sender.e164,
+    senderJid: sender.lid ?? sender.jid,
     includeCommand: true,
   });
   return access.commandAccess.authorized;

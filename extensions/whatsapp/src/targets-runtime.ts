@@ -106,6 +106,37 @@ export type JidToE164Options = {
   logMissing?: boolean;
 };
 
+type WhatsAppJidMappingSource =
+  | "jid"
+  | "auth"
+  | "configured"
+  | "config"
+  | "credentials"
+  | "baileys";
+
+type WhatsAppJidMappingEvidence = {
+  source: WhatsAppJidMappingSource;
+  outcome: "mapped" | "no-match" | "error";
+  errorKind?: "read" | "parse" | "invalid" | "lookup";
+};
+
+export type WhatsAppJidMappingOutcome =
+  | {
+      kind: "mapped";
+      e164: string;
+      evidence: WhatsAppJidMappingEvidence[];
+    }
+  | {
+      kind: "no-match";
+      evidence: WhatsAppJidMappingEvidence[];
+    }
+  | {
+      kind: "error";
+      reason: "mapping-conflict" | "mapping-unavailable";
+      distinctValueCount: number;
+      evidence: WhatsAppJidMappingEvidence[];
+    };
+
 type LidLookup = {
   getLIDForPN?: (jid: string) => Promise<string | null>;
   getPNForLID?: (jid: string) => Promise<string | null>;
@@ -198,40 +229,96 @@ export async function resolveEquivalentWhatsAppDirectChatJids(
   return candidates;
 }
 
-function resolveLidMappingDirs(params: { opts?: JidToE164Options }): string[] {
-  const dirs = new Set<string>();
-  const addDir = (dir?: string | null) => {
+type LidMappingLocation = {
+  dir: string;
+  sources: WhatsAppJidMappingSource[];
+};
+
+function resolveLidMappingLocations(params: { opts?: JidToE164Options }): LidMappingLocation[] {
+  const locations = new Map<string, LidMappingLocation>();
+  const addDir = (source: WhatsAppJidMappingSource, dir?: string | null) => {
     if (!dir) {
       return;
     }
-    dirs.add(resolveUserPath(dir));
+    const resolved = resolveUserPath(dir);
+    const existing = locations.get(resolved);
+    if (existing) {
+      if (!existing.sources.includes(source)) {
+        existing.sources.push(source);
+      }
+      return;
+    }
+    locations.set(resolved, { dir: resolved, sources: [source] });
   };
-  addDir(params.opts?.authDir);
+  addDir("auth", params.opts?.authDir);
   for (const dir of params.opts?.lidMappingDirs ?? []) {
-    addDir(dir);
+    addDir("configured", dir);
   }
-  addDir(CONFIG_DIR);
-  addDir(path.join(CONFIG_DIR, "credentials"));
-  return [...dirs];
+  addDir("config", CONFIG_DIR);
+  addDir("credentials", path.join(CONFIG_DIR, "credentials"));
+  return [...locations.values()];
+}
+
+function resolveLidMappingDirs(params: { opts?: JidToE164Options }): string[] {
+  return resolveLidMappingLocations(params).map((location) => location.dir);
+}
+
+function normalizeMappedPhone(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return null;
+  }
+  const normalized = normalizeE164(String(value));
+  return /^\+\d+$/u.test(normalized) ? normalized : null;
+}
+
+function mappingFileEvidence(
+  sources: WhatsAppJidMappingSource[],
+  outcome: WhatsAppJidMappingEvidence["outcome"],
+  errorKind?: WhatsAppJidMappingEvidence["errorKind"],
+): WhatsAppJidMappingEvidence[] {
+  return sources.map((source) => ({ source, outcome, ...(errorKind ? { errorKind } : {}) }));
+}
+
+function readLidReverseMappingEvidence(params: {
+  lid: string;
+  opts?: JidToE164Options;
+}): Array<{ evidence: WhatsAppJidMappingEvidence[]; e164?: string }> {
+  const mappingFilename = `lid-mapping-${params.lid}_reverse.json`;
+  return resolveLidMappingLocations({ opts: params.opts }).map((location) => {
+    try {
+      const data = fs.readFileSync(path.join(location.dir, mappingFilename), "utf8");
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        return { evidence: mappingFileEvidence(location.sources, "error", "parse") };
+      }
+      if (parsed === null || parsed === undefined) {
+        return { evidence: mappingFileEvidence(location.sources, "no-match") };
+      }
+      const e164 = normalizeMappedPhone(parsed);
+      return e164
+        ? { evidence: mappingFileEvidence(location.sources, "mapped"), e164 }
+        : { evidence: mappingFileEvidence(location.sources, "error", "invalid") };
+    } catch (error) {
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? (error as { code?: unknown }).code
+          : undefined;
+      return code === "ENOENT"
+        ? { evidence: mappingFileEvidence(location.sources, "no-match") }
+        : { evidence: mappingFileEvidence(location.sources, "error", "read") };
+    }
+  });
 }
 
 function readLidReverseMapping(params: { lid: string; opts?: JidToE164Options }): string | null {
-  const mappingFilename = `lid-mapping-${params.lid}_reverse.json`;
-  const mappingDirs = resolveLidMappingDirs({ opts: params.opts });
-  for (const dir of mappingDirs) {
-    const mappingPath = path.join(dir, mappingFilename);
-    try {
-      const data = fs.readFileSync(mappingPath, "utf8");
-      const phone = JSON.parse(data) as string | number | null;
-      if (phone === null || phone === undefined) {
-        continue;
-      }
-      return normalizeE164(String(phone));
-    } catch {
-      // next location
-    }
-  }
-  return null;
+  const values = new Set(
+    readLidReverseMappingEvidence(params)
+      .map((result) => result.e164)
+      .filter((value): value is string => Boolean(value)),
+  );
+  return values.size === 1 ? ([...values][0] ?? null) : null;
 }
 
 function readLidForwardMapping(params: {
@@ -292,28 +379,83 @@ export async function resolveJidToE164(
   jid: string | null | undefined,
   opts?: JidToE164Options & { lidLookup?: LidLookup },
 ): Promise<string | null> {
-  if (!jid) {
-    return null;
+  const outcome = await resolveJidMapping(jid, opts);
+  return outcome.kind === "mapped" ? outcome.e164 : null;
+}
+
+export async function resolveJidMapping(
+  jid: string | null | undefined,
+  opts?: JidToE164Options & { lidLookup?: LidLookup },
+): Promise<WhatsAppJidMappingOutcome> {
+  const normalizedJid = jid?.trim();
+  if (!normalizedJid) {
+    return { kind: "no-match", evidence: [{ source: "jid", outcome: "no-match" }] };
   }
-  const direct = jidToE164(jid, opts);
-  if (direct) {
-    return direct;
+  const directMatch = normalizedJid.match(DIRECT_PN_JID_RE);
+  if (directMatch?.[1]) {
+    return {
+      kind: "mapped",
+      e164: `+${directMatch[1]}`,
+      evidence: [{ source: "jid", outcome: "mapped" }],
+    };
   }
-  if (!/(@lid|@hosted\.lid)$/.test(jid) || !opts?.lidLookup?.getPNForLID) {
-    return null;
+  const lidMatch = normalizedJid.match(DIRECT_LID_JID_RE);
+  if (!lidMatch?.[1]) {
+    return { kind: "no-match", evidence: [{ source: "jid", outcome: "no-match" }] };
   }
-  try {
-    const pnJid = await opts.lidLookup.getPNForLID(jid);
-    if (!pnJid) {
-      return null;
+
+  const canonicalLidJid = `${lidMatch[1]}@${lidMatch[2]?.toLowerCase()}`;
+
+  const candidates = readLidReverseMappingEvidence({ lid: lidMatch[1], opts });
+  if (opts?.lidLookup?.getPNForLID) {
+    try {
+      const pnJid = await opts.lidLookup.getPNForLID(canonicalLidJid);
+      if (!pnJid) {
+        candidates.push({ evidence: [{ source: "baileys", outcome: "no-match" }] });
+      } else {
+        const e164 = jidToE164(pnJid, { logMissing: false });
+        candidates.push(
+          e164
+            ? { evidence: [{ source: "baileys", outcome: "mapped" }], e164 }
+            : {
+                evidence: [{ source: "baileys", outcome: "error", errorKind: "invalid" }],
+              },
+        );
+      }
+    } catch {
+      candidates.push({
+        evidence: [{ source: "baileys", outcome: "error", errorKind: "lookup" }],
+      });
     }
-    return jidToE164(pnJid, opts);
-  } catch (err) {
-    if (shouldLogVerbose()) {
-      logVerbose(`LID mapping lookup failed for ${jid}: ${String(err)}`);
-    }
-    return null;
   }
+
+  const evidence = candidates.flatMap((candidate) => candidate.evidence);
+  const distinctValues = new Set(
+    candidates
+      .map((candidate) => candidate.e164)
+      .filter((value): value is string => Boolean(value)),
+  );
+  if (distinctValues.size > 1) {
+    return {
+      kind: "error",
+      reason: "mapping-conflict",
+      distinctValueCount: distinctValues.size,
+      evidence,
+    };
+  }
+  const mapped = [...distinctValues][0];
+  if (mapped) {
+    return { kind: "mapped", e164: mapped, evidence };
+  }
+  if (evidence.some((entry) => entry.outcome === "error")) {
+    return {
+      kind: "error",
+      reason: "mapping-unavailable",
+      distinctValueCount: 0,
+      evidence,
+    };
+  }
+  return { kind: "no-match", evidence };
 }
 
 function protectWhatsAppEscapedMarkers(text: string): {

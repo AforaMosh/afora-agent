@@ -439,7 +439,6 @@ export async function processMessage(params: {
   const commandBody = params.msg.payload.commandBody ?? params.msg.payload.body;
   const dmRouteTarget = resolveWhatsAppDmRouteTarget({
     msg: params.msg,
-    senderE164: sender.e164 ?? undefined,
     normalizeE164,
   });
   const shouldCheckCommandAuth = shouldComputeCommandAuthorized(commandBody, params.cfg);

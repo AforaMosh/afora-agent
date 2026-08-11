@@ -49,10 +49,14 @@ vi.mock("../../group-session-key.js", () => ({
   resolveWhatsAppGroupSessionRoute: (route: unknown) => route,
 }));
 
-vi.mock("../../identity.js", () => ({
-  getPrimaryIdentityId: () => "+15551234567",
-  getSenderIdentity: () => ({ e164: "+15551234567", name: "Alice" }),
-}));
+vi.mock("../../identity.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../identity.js")>();
+  return {
+    ...actual,
+    getPrimaryIdentityId: () => "+15551234567",
+    getSenderIdentity: () => ({ e164: "+15551234567", name: "Alice" }),
+  };
+});
 
 vi.mock("./broadcast.js", () => ({
   maybeBroadcastMessage: (...args: unknown[]) => maybeBroadcastMessageMock(...args),

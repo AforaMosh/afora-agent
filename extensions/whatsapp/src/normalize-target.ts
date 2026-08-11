@@ -5,10 +5,11 @@ import {
   normalizeLowercaseStringOrEmpty,
   uniqueStrings,
 } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeWhatsAppLidJid } from "./identity.js";
 
 const WHATSAPP_USER_JID_RE = /^(\d+)(?::\d+)?@s\.whatsapp\.net$/i;
 const WHATSAPP_LEGACY_USER_JID_RE = /^(\d+)@c\.us$/i;
-const WHATSAPP_LID_RE = /^(\d+)@lid$/i;
+const WHATSAPP_LID_RE = /^(\d+)(?::\d+)?@(lid|hosted\.lid)$/i;
 const NON_WHATSAPP_PROVIDER_PREFIX_RE = /^[a-z][a-z0-9-]*:/i;
 const WHATSAPP_NEWSLETTER_JID_RE = /^([0-9]+)@newsletter$/i;
 
@@ -67,11 +68,6 @@ function extractUserJidPhone(jid: string): string | null {
     const phone = legacyUserMatch[1];
     return phone ? phone : null;
   }
-  const lidMatch = jid.match(WHATSAPP_LID_RE);
-  if (lidMatch) {
-    const phone = lidMatch[1];
-    return phone ? phone : null;
-  }
   return null;
 }
 
@@ -87,6 +83,10 @@ export function normalizeWhatsAppTarget(value: string): string | null {
   if (isWhatsAppNewsletterJid(candidate)) {
     const match = candidate.match(WHATSAPP_NEWSLETTER_JID_RE);
     return match ? `${match[1]}@newsletter` : null;
+  }
+  const lidJid = normalizeWhatsAppLidJid(candidate);
+  if (lidJid) {
+    return lidJid;
   }
   if (isWhatsAppUserTarget(candidate)) {
     const phone = extractUserJidPhone(candidate);

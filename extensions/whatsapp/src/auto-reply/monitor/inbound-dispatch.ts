@@ -18,6 +18,7 @@ import {
   normalizeOptionalString,
   normalizeStringEntries,
 } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeWhatsAppDirectIdentity } from "../../identity.js";
 import { requireWhatsAppInboundAdmission } from "../../inbound/admission.js";
 import type { AdmittedWebInboundMessage } from "../../inbound/types.js";
 import {
@@ -38,7 +39,6 @@ import type { GroupHistoryEntry } from "./inbound-context.js";
 import {
   createChannelMessageReplyPipeline,
   getAgentScopedMediaLocalRoots,
-  jidToE164,
   logVerbose,
   resolveChunkMode,
   resolveIdentityNamePrefix,
@@ -526,21 +526,14 @@ export async function prepareWhatsAppInboundContext(params: {
 
 export function resolveWhatsAppDmRouteTarget(params: {
   msg: AdmittedWebInboundMessage;
-  senderE164?: string;
   normalizeE164: (value: string) => string | null;
 }): string | undefined {
   const admission = requireWhatsAppInboundAdmission(params.msg);
-  const conversationId = admission.conversation.id;
   if (admission.conversation.kind === "group") {
     return undefined;
   }
-  if (params.senderE164) {
-    return params.normalizeE164(params.senderE164) ?? undefined;
-  }
-  if (conversationId.includes("@")) {
-    return jidToE164(conversationId) ?? undefined;
-  }
-  return params.normalizeE164(conversationId) ?? undefined;
+  const ownerId = admission.sender.id;
+  return normalizeWhatsAppDirectIdentity(ownerId) ?? params.normalizeE164(ownerId) ?? undefined;
 }
 
 export function updateWhatsAppMainLastRoute(params: {

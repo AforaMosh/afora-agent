@@ -4,6 +4,7 @@ import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { upsertChannelPairingRequest } from "openclaw/plugin-sdk/conversation-runtime";
 import { defaultRuntime } from "openclaw/plugin-sdk/runtime-env";
 import { warnMissingProviderGroupPolicyFallbackOnce } from "openclaw/plugin-sdk/runtime-group-policy";
+import { normalizeWhatsAppLidJid } from "../identity.js";
 import { resolveWhatsAppInboundPolicy, resolveWhatsAppIngressAccess } from "../inbound-policy.js";
 import { buildWhatsAppInboundAdmission, type WhatsAppInboundAdmission } from "./admission.js";
 
@@ -101,6 +102,8 @@ export async function checkInboundAccessControl(params: {
     isGroup: params.group,
     conversationId,
     senderId: accessSenderId,
+    senderE164: params.senderE164,
+    senderJid: params.senderJid,
   });
   const { senderAccess } = access;
   if (params.group && senderAccess.decision !== "allow") {
@@ -135,6 +138,7 @@ export async function checkInboundAccessControl(params: {
     }
     if (senderAccess.decision === "pairing" && !policy.isSamePhone(params.from)) {
       const candidate = params.from;
+      const candidateIsLid = normalizeWhatsAppLidJid(candidate) !== null;
       if (suppressPairingReply) {
         logWhatsAppVerbose(
           params.verbose,
@@ -153,7 +157,9 @@ export async function checkInboundAccessControl(params: {
             }),
         })({
           senderId: candidate,
-          senderIdLine: `Your WhatsApp phone number: ${candidate}`,
+          senderIdLine: candidateIsLid
+            ? `Your WhatsApp ID: ${candidate}`
+            : `Your WhatsApp phone number: ${candidate}`,
           meta: { name: (params.pushName ?? "").trim() || undefined },
           onCreated: () => {
             logWhatsAppVerbose(

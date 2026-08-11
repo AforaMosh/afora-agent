@@ -9,6 +9,7 @@ import {
   markdownToWhatsApp,
   markdownToWhatsAppChunks,
   resolveEquivalentWhatsAppDirectChatJids,
+  resolveJidMapping,
   resolveJidToE164,
   toWhatsappJid,
   toWhatsappJidWithLid,
@@ -387,6 +388,140 @@ describe("resolveJidToE164", () => {
     };
     await expect(resolveJidToE164("777@lid", { lidLookup })).resolves.toBeNull();
     expect(lidLookup.getPNForLID).toHaveBeenCalledWith("777@lid");
+  });
+});
+
+describe("resolveJidMapping", () => {
+  it("distinguishes a clean no-match from mapping lookup failure", async () => {
+    await withTempDir("openclaw-lid-outcome-", async (authDir) => {
+      await expect(
+        resolveJidMapping("910001@lid", {
+          authDir,
+          lidLookup: { getPNForLID: vi.fn().mockResolvedValue(null) },
+        }),
+      ).resolves.toMatchObject({
+        kind: "no-match",
+        evidence: expect.arrayContaining([
+          { source: "auth", outcome: "no-match" },
+          { source: "baileys", outcome: "no-match" },
+        ]),
+      });
+
+      await expect(
+        resolveJidMapping("910002@lid", {
+          authDir,
+          lidLookup: { getPNForLID: vi.fn().mockRejectedValue(new Error("offline")) },
+        }),
+      ).resolves.toMatchObject({
+        kind: "error",
+        reason: "mapping-unavailable",
+        distinctValueCount: 0,
+        evidence: expect.arrayContaining([
+          { source: "baileys", outcome: "error", errorKind: "lookup" },
+        ]),
+      });
+    });
+  });
+
+  it.each([
+    {
+      name: "unreadable",
+      lid: "910003",
+      arrange: (mappingPath: string) => fs.mkdirSync(mappingPath),
+      errorKind: "read",
+    },
+    {
+      name: "malformed",
+      lid: "910004",
+      arrange: (mappingPath: string) => fs.writeFileSync(mappingPath, "{"),
+      errorKind: "parse",
+    },
+    {
+      name: "invalid",
+      lid: "910005",
+      arrange: (mappingPath: string) => fs.writeFileSync(mappingPath, JSON.stringify({ nope: 1 })),
+      errorKind: "invalid",
+    },
+  ])("reports $name local mapping files as errors", async ({ lid, arrange, errorKind }) => {
+    await withTempDir("openclaw-lid-error-", async (authDir) => {
+      arrange(path.join(authDir, `lid-mapping-${lid}_reverse.json`));
+      await expect(resolveJidMapping(`${lid}@lid`, { authDir })).resolves.toMatchObject({
+        kind: "error",
+        reason: "mapping-unavailable",
+        evidence: expect.arrayContaining([{ source: "auth", outcome: "error", errorKind }]),
+      });
+    });
+  });
+
+  it("rejects conflicts between local mapping sources", async () => {
+    await withTempDir("openclaw-lid-conflict-a-", async (first) => {
+      await withTempDir("openclaw-lid-conflict-b-", async (second) => {
+        fs.writeFileSync(
+          path.join(first, "lid-mapping-910006_reverse.json"),
+          JSON.stringify("111"),
+        );
+        fs.writeFileSync(
+          path.join(second, "lid-mapping-910006_reverse.json"),
+          JSON.stringify("222"),
+        );
+        await expect(
+          resolveJidMapping("910006@lid", { lidMappingDirs: [first, second] }),
+        ).resolves.toMatchObject({
+          kind: "error",
+          reason: "mapping-conflict",
+          distinctValueCount: 2,
+        });
+      });
+    });
+  });
+
+  it("rejects conflicts between local and Baileys mapping sources", async () => {
+    await withTempDir("openclaw-lid-conflict-", async (authDir) => {
+      fs.writeFileSync(
+        path.join(authDir, "lid-mapping-910007_reverse.json"),
+        JSON.stringify("111"),
+      );
+      await expect(
+        resolveJidMapping("910007@lid", {
+          authDir,
+          lidLookup: { getPNForLID: vi.fn().mockResolvedValue("222@s.whatsapp.net") },
+        }),
+      ).resolves.toMatchObject({
+        kind: "error",
+        reason: "mapping-conflict",
+        distinctValueCount: 2,
+        evidence: expect.arrayContaining([
+          { source: "auth", outcome: "mapped" },
+          { source: "baileys", outcome: "mapped" },
+        ]),
+      });
+    });
+  });
+
+  it("uses one agreed mapping while retaining all source evidence", async () => {
+    await withTempDir("openclaw-lid-agree-a-", async (first) => {
+      await withTempDir("openclaw-lid-agree-b-", async (second) => {
+        fs.writeFileSync(
+          path.join(first, "lid-mapping-910008_reverse.json"),
+          JSON.stringify("333"),
+        );
+        fs.writeFileSync(path.join(second, "lid-mapping-910008_reverse.json"), "{");
+        await expect(
+          resolveJidMapping("910008@lid", {
+            lidMappingDirs: [first, second],
+            lidLookup: { getPNForLID: vi.fn().mockResolvedValue("333@s.whatsapp.net") },
+          }),
+        ).resolves.toMatchObject({
+          kind: "mapped",
+          e164: "+333",
+          evidence: expect.arrayContaining([
+            { source: "configured", outcome: "mapped" },
+            { source: "configured", outcome: "error", errorKind: "parse" },
+            { source: "baileys", outcome: "mapped" },
+          ]),
+        });
+      });
+    });
   });
 });
 

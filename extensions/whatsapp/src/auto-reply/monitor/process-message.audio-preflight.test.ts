@@ -24,11 +24,15 @@ vi.mock("../../accounts.js", () => ({
   }),
 }));
 
-vi.mock("../../identity.js", () => ({
-  getPrimaryIdentityId: () => undefined,
-  getSelfIdentity: () => ({ e164: "+15550000001" }),
-  getSenderIdentity: () => ({ e164: "+15550000002", name: "Alice" }),
-}));
+vi.mock("../../identity.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../identity.js")>();
+  return {
+    ...actual,
+    getPrimaryIdentityId: () => undefined,
+    getSelfIdentity: () => ({ e164: "+15550000001" }),
+    getSenderIdentity: () => ({ e164: "+15550000002", name: "Alice" }),
+  };
+});
 
 vi.mock("../../reconnect.js", () => ({
   newConnectionId: () => "test-conn-id",

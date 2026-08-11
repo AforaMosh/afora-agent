@@ -11,6 +11,8 @@ import {
 import {
   buildNotifyMessageUpsert,
   getAuthDir,
+  getRecordChannelActivityMock,
+  settleInboundWork,
   startInboxMonitor,
   waitForMessageCalls,
   type InboxOnMessage,
@@ -148,6 +150,125 @@ describe("web monitor inbox reply context", () => {
     await listener.close();
   });
 
+  it("admits an unmapped LID as its provider identity", async () => {
+    const onMessage = vi.fn(async (msg) => {
+      await msg.platform.reply("pong");
+    });
+
+    const { listener, sock } = await startInboxMonitor(onMessage as InboxOnMessage);
+    sock.ev.emit(
+      "messages.upsert",
+      buildNotifyMessageUpsert({
+        id: nextMessageId("unmapped-lid"),
+        remoteJid: "999@lid",
+        text: "ping",
+        timestamp: 1_700_000_000,
+        pushName: "Tester",
+      }),
+    );
+    await waitForMessageCalls(onMessage, 1);
+
+    const inbound = inboundMessage(onMessage);
+    expect(inbound.admission?.conversation.id).toBe("999@lid");
+    expect(inbound.platform.sender).toMatchObject({ lid: "999@lid", e164: null });
+    expect(sock.sendMessage).toHaveBeenCalledWith("999@lid", { text: "pong" });
+
+    await listener.close();
+  });
+
+  it("canonicalizes a device-qualified hosted LID through reply delivery", async () => {
+    const onMessage = vi.fn(async (msg) => {
+      await msg.platform.reply("pong");
+    });
+    const { listener, sock } = await startInboxMonitor(onMessage as InboxOnMessage);
+
+    sock.ev.emit(
+      "messages.upsert",
+      buildNotifyMessageUpsert({
+        id: nextMessageId("hosted-lid"),
+        remoteJid: "999:2@hosted.lid",
+        text: "ping",
+        timestamp: 1_700_000_000,
+        pushName: "Tester",
+      }),
+    );
+    await waitForMessageCalls(onMessage, 1);
+
+    const inbound = inboundMessage(onMessage);
+    expect(inbound.admission?.conversation.id).toBe("999@hosted.lid");
+    expect(inbound.platform.chatJid).toBe("999@hosted.lid");
+    expect(inbound.platform.sender).toMatchObject({ lid: "999@hosted.lid", e164: null });
+    expect(sock.signalRepository.lidMapping.getPNForLID).toHaveBeenCalledWith("999@hosted.lid");
+    expect(sock.sendMessage).toHaveBeenCalledWith("999@hosted.lid", { text: "pong" });
+
+    await listener.close();
+  });
+
+  it("retries the same durable LID row after mapping lookup recovers", async () => {
+    const onMessage = vi.fn(async () => {});
+    const { listener, sock } = await startInboxMonitor(onMessage as InboxOnMessage);
+    const getPNForLID = vi
+      .spyOn(sock.signalRepository.lidMapping, "getPNForLID")
+      .mockRejectedValue(new Error("mapping store offline"));
+
+    sock.ev.emit(
+      "messages.upsert",
+      buildNotifyMessageUpsert({
+        id: nextMessageId("lid-retry"),
+        remoteJid: "999@lid",
+        text: "ping",
+        timestamp: 1_700_000_000,
+        pushName: "Tester",
+      }),
+    );
+    await vi.waitFor(() => expect(getPNForLID).toHaveBeenCalled());
+    await settleInboundWork();
+    expect(onMessage).not.toHaveBeenCalled();
+    expect(getRecordChannelActivityMock()).not.toHaveBeenCalled();
+    expect(sock.sendMessage).not.toHaveBeenCalled();
+
+    getPNForLID.mockResolvedValue("999@s.whatsapp.net");
+    await waitForMessageCalls(onMessage, 1);
+
+    expect(inboundMessage(onMessage).admission?.conversation.id).toBe("+999");
+    expect(getRecordChannelActivityMock()).toHaveBeenCalledTimes(1);
+    await listener.close();
+  });
+
+  it("retries a conflicting mapping row after sources are reconciled", async () => {
+    const onMessage = vi.fn(async () => {});
+    fsSync.writeFileSync(
+      path.join(getAuthDir(), "lid-mapping-555_reverse.json"),
+      JSON.stringify("1555"),
+    );
+    const { listener, sock } = await startInboxMonitor(onMessage as InboxOnMessage);
+    const getPNForLID = vi
+      .spyOn(sock.signalRepository.lidMapping, "getPNForLID")
+      .mockResolvedValue("2555@s.whatsapp.net");
+
+    sock.ev.emit(
+      "messages.upsert",
+      buildNotifyMessageUpsert({
+        id: nextMessageId("lid-conflict-retry"),
+        remoteJid: "555@lid",
+        text: "ping",
+        timestamp: 1_700_000_000,
+        pushName: "Tester",
+      }),
+    );
+    await vi.waitFor(() => expect(getPNForLID).toHaveBeenCalled());
+    await settleInboundWork();
+    expect(onMessage).not.toHaveBeenCalled();
+    expect(getRecordChannelActivityMock()).not.toHaveBeenCalled();
+
+    getPNForLID.mockResolvedValue("1555@s.whatsapp.net");
+    await waitForMessageCalls(onMessage, 1);
+
+    expect(inboundMessage(onMessage).admission?.conversation.id).toBe("+1555");
+    expect(getRecordChannelActivityMock()).toHaveBeenCalledTimes(1);
+    await listener.close();
+  });
+
   it("resolves LID JIDs via authDir mapping files", async () => {
     const onMessage = vi.fn(async () => {});
     fsSync.writeFileSync(
@@ -172,7 +293,7 @@ describe("web monitor inbox reply context", () => {
     expect(inbound.payload.body).toBe("ping");
     expect(inbound.admission?.conversation.id).toBe("+1555");
     expect(inbound.platform.recipientJid).toBe("+123");
-    expect(getPNForLID).not.toHaveBeenCalled();
+    expect(getPNForLID).toHaveBeenCalledWith("555@lid");
 
     await listener.close();
   });

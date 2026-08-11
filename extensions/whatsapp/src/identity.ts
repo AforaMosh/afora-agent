@@ -68,8 +68,19 @@ function normalizeDeviceScopedJid(jid: string | null | undefined): string | null
   return jid ? jid.replace(/:\d+/, "") : null;
 }
 
-function isLidJid(jid: string | null | undefined): boolean {
+function isWhatsAppLidJid(jid: string | null | undefined): boolean {
   return Boolean(jid && WHATSAPP_LID_RE.test(jid));
+}
+
+export function normalizeWhatsAppLidJid(jid: string | null | undefined): string | null {
+  const normalized = normalizeDeviceScopedJid(jid?.trim());
+  return isWhatsAppLidJid(normalized) && /^\d+@(lid|hosted\.lid)$/iu.test(normalized ?? "")
+    ? (normalized?.toLowerCase() ?? null)
+    : null;
+}
+
+export function normalizeWhatsAppDirectIdentity(value: string): string | null {
+  return normalizeWhatsAppLidJid(value) ?? jidToE164(value) ?? normalizeE164(value);
 }
 
 export function resolveComparableIdentity(
@@ -78,8 +89,8 @@ export function resolveComparableIdentity(
 ): WhatsAppIdentity {
   const rawJid = normalizeDeviceScopedJid(identity?.jid);
   const rawLid = normalizeDeviceScopedJid(identity?.lid);
-  const lid = rawLid ?? (isLidJid(rawJid) ? rawJid : null);
-  const jid = rawJid && !isLidJid(rawJid) ? rawJid : null;
+  const lid = normalizeWhatsAppLidJid(rawLid ?? rawJid);
+  const jid = rawJid && !isWhatsAppLidJid(rawJid) ? rawJid : null;
   const e164 =
     identity?.e164 != null
       ? normalizeE164(identity.e164)

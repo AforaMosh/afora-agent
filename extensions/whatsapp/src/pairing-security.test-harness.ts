@@ -19,6 +19,17 @@ export function resetPairingSecurityMocks(config: Record<string, unknown>) {
   upsertPairingRequestMock.mockReset().mockResolvedValue({ code: "PAIRCODE", created: true });
 }
 
+vi.mock("openclaw/plugin-sdk/channel-pairing", async () => {
+  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/channel-pairing")>(
+    "openclaw/plugin-sdk/channel-pairing",
+  );
+  return {
+    ...actual,
+    readChannelAllowFromStore: async (provider: string, _env: unknown, accountId: string) =>
+      await readAllowFromStoreMock(provider, accountId),
+  };
+});
+
 vi.mock("openclaw/plugin-sdk/runtime-config-snapshot", async () => {
   const actual = await vi.importActual<
     typeof import("openclaw/plugin-sdk/runtime-config-snapshot")

@@ -134,7 +134,7 @@ A separate WhatsApp number is recommended (setup and metadata are optimized for 
 - Outbound sends require an active WhatsApp listener for the target account; sends fail fast otherwise.
 - Group sends attach native mention metadata for `@+<digits>` and `@<digits>` tokens (in text and media captions) when the token matches current participant metadata, including LID-backed groups.
 - Status and broadcast chats (`@status`, `@broadcast`) are ignored.
-- Direct chats use DM session rules (`session.dmScope`; default `main` collapses DMs into the agent main session). Group sessions are isolated per JID (`agent:<agentId>:whatsapp:group:<jid>`).
+- Direct chats use DM session rules (`session.dmScope`; default `main` routes DMs into the agent main session without merging sender identities). Group sessions are isolated per JID (`agent:<agentId>:whatsapp:group:<jid>`).
 - WhatsApp Channels/Newsletters can be explicit outbound targets via their native `@newsletter` JID, using channel session metadata (`agent:<agentId>:whatsapp:channel:<jid>`) rather than DM semantics.
 - WhatsApp Web transport honors standard proxy environment variables on the gateway host (`HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, lowercase variants). Prefer host-level proxy config over per-channel settings.
 
@@ -266,7 +266,7 @@ Scope the opt-in to one account under `channels.whatsapp.accounts.<id>.pluginHoo
     | `open` | Requires `allowFrom` to include `"*"` |
     | `disabled` | Block all DMs |
 
-    `allowFrom` accepts E.164-style numbers (normalized internally). It is a DM sender access-control list only — it does not gate explicit outbound sends to group JIDs or `@newsletter` channel JIDs.
+    `allowFrom` accepts E.164-style numbers (normalized internally) and exact WhatsApp LID JIDs such as `123456789@lid`. Phone numbers and LID JIDs are separate typed identities: matching digits do not make `+123456789` authorize `123456789@lid`. It is a DM sender access-control list only — it does not gate explicit outbound sends to group JIDs or `@newsletter` channel JIDs.
 
     Multi-account override: `channels.whatsapp.accounts.<id>.dmPolicy` (and `.allowFrom`) take precedence over channel-level defaults for that account.
 
@@ -339,7 +339,7 @@ WhatsApp supports persistent ACP bindings via top-level `bindings[]`:
 }
 ```
 
-Direct chats match E.164 numbers; groups match WhatsApp group JIDs. Group allowlists, sender policy, and mention/activation gating run before OpenClaw ensures the bound ACP session exists. A matched binding owns the route — broadcast groups do not fan that turn out to ordinary WhatsApp sessions.
+Direct chats match their established compatibility identity: E.164 for mapped-first peers, or the exact LID JID for opaque-first or explicitly LID-paired peers. Groups match WhatsApp group JIDs. Group allowlists, sender policy, and mention/activation gating run before OpenClaw ensures the bound ACP session exists. A matched binding owns the route — broadcast groups do not fan that turn out to ordinary WhatsApp sessions.
 
 ## Personal-number and self-chat behavior
 
@@ -348,6 +348,19 @@ When the linked self number is also present in `allowFrom`, self-chat safeguards
 ## Message normalization and context
 
 <AccordionGroup>
+  <Accordion title="Direct LID identity and mapping">
+    WhatsApp can deliver a direct chat using an opaque LID JID instead of a phone-number JID. OpenClaw checks every available mapping source (account auth files, configured mapping directories, standard credential directories, and the live Baileys mapping store) and classifies the result as mapped, no match, or error.
+
+    - **Mapped before first contact:** the E.164 number owns the direct peer.
+    - **No match on first contact:** the exact LID owns the direct peer and is persisted. A later phone mapping adds useful sender metadata but does not rename that peer or move its session.
+    - **Exact LID pairing before first contact:** the approved LID establishes the same persistent LID owner, even if a phone mapping is already available.
+
+    Pairing and ownership have different lifecycles. Revoking a pairing entry removes authorization; it does not rename a previously established peer. Relinking or restarting the gateway also keeps the persisted owner. OpenClaw does not automatically merge an LID-owned peer with a phone-owned peer, including when `session.dmScope` is `main`.
+
+    A mapping lookup failure, unreadable or malformed mapping file, or disagreement between sources is an error rather than an unmapped identity. OpenClaw records an actionable warning, performs no access, routing, activity, read-receipt, or reply side effect for that attempt, and leaves the durable inbound message eligible for retry. Repair the failing source or make all sources agree; the same queued message can then continue normally.
+
+  </Accordion>
+
   <Accordion title="Inbound envelope and reply context">
     Incoming messages are wrapped in the shared inbound envelope. A quoted reply appends context in this form:
 
@@ -593,6 +606,13 @@ openclaw channels status
     Check in this order: `groupPolicy`, `groupAllowFrom`/`allowFrom`, `groups` allowlist entries, mention gating (`requireMention` + mention patterns), and duplicate keys in `openclaw.json` (JSON5 later entries override earlier ones — keep a single `groupPolicy` per scope).
 
     If `channels.whatsapp.groups` is present, WhatsApp can still observe messages from other groups, but OpenClaw drops them before session routing. Add the group JID to `channels.whatsapp.groups`, or add `groups["*"]` to admit all groups while keeping sender authorization under `groupPolicy`/`groupAllowFrom`.
+
+  </Accordion>
+
+  <Accordion title="LID mapping conflict or lookup failure">
+    Symptom: logs report a WhatsApp LID mapping conflict or unavailable mapping source, and the inbound DM has not dispatched.
+
+    OpenClaw keeps the durable message queued and names the source categories involved. Inspect the account auth directory plus configured and standard credential mapping directories, repair unreadable or malformed `lid-mapping-*_reverse.json` files, and make their phone value agree with the live WhatsApp/Baileys mapping. Do not delete the queued message merely to bypass the check; after the sources are healthy and consistent, OpenClaw retries that same row.
 
   </Accordion>
 

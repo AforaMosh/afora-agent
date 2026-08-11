@@ -76,10 +76,14 @@ vi.mock("../../group-session-key.js", () => ({
   resolveWhatsAppGroupSessionRoute: (route: unknown) => route,
 }));
 
-vi.mock("../../identity.js", () => ({
-  getPrimaryIdentityId: () => undefined,
-  getSenderIdentity: () => ({ e164: "+15550000002", name: "Alice" }),
-}));
+vi.mock("../../identity.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../identity.js")>();
+  return {
+    ...actual,
+    getPrimaryIdentityId: () => undefined,
+    getSenderIdentity: () => ({ e164: "+15550000002", name: "Alice" }),
+  };
+});
 
 vi.mock("../../text-runtime.js", () => ({
   normalizeE164: (value: string) => value,

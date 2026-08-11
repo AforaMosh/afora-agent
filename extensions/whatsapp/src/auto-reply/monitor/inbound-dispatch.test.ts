@@ -2223,21 +2223,20 @@ describe("whatsapp inbound dispatch", () => {
     expect(updateLastRoute).toHaveBeenCalledTimes(expectedCalls);
   });
 
-  it("resolves DM route targets from the sender first and the chat JID second", async () => {
+  it("resolves DM route targets from the selected compatibility owner", async () => {
     expect(
       resolveWhatsAppDmRouteTarget({
-        msg: makeMsg({ admission: directAdmission("15550003333@s.whatsapp.net") }),
-        senderE164: "+15550002222",
+        msg: makeMsg({ admission: directAdmission("+15550003333") }),
         normalizeE164: (value) => value,
       }),
-    ).toBe("+15550002222");
+    ).toBe("+15550003333");
 
     expect(
       resolveWhatsAppDmRouteTarget({
-        msg: makeMsg({ admission: directAdmission("15550003333@s.whatsapp.net") }),
+        msg: makeMsg({ admission: directAdmission("999@lid") }),
         normalizeE164: () => null,
       }),
-    ).toBe("+15550003333");
+    ).toBe("999@lid");
   });
 });
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

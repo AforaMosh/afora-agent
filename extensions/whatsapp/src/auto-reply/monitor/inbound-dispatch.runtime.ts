@@ -2,7 +2,6 @@
 export {
   createChannelMessageReplyPipeline,
   getAgentScopedMediaLocalRoots,
-  jidToE164,
   logVerbose,
   resolveChunkMode,
   resolveIdentityNamePrefix,

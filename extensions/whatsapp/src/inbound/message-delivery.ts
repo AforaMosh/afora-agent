@@ -41,6 +41,7 @@ import {
 } from "./message-enrichment.js";
 import {
   createWhatsAppInboundMessageNormalizer,
+  type WhatsAppInboundNormalizationResult,
   type WhatsAppNormalizedInboundMessage,
 } from "./message-normalization.js";
 import { addWhatsAppOutboundMentionsToContent } from "./outbound-mentions.js";
@@ -50,6 +51,12 @@ import type { WebInboundMessageInput } from "./types.js";
 
 const INBOUND_CLOSE_DRAIN_TIMEOUT_MS = 5_000;
 const WHATSAPP_INGRESS_DRAIN_INTERVAL_MS = 1_000;
+
+function isWhatsAppRetryableNormalizationError(
+  result: WhatsAppInboundNormalizationResult,
+): result is Extract<WhatsAppInboundNormalizationResult, { kind: "retryable-error" }> {
+  return result !== null && "kind" in result && result.kind === "retryable-error";
+}
 
 function parseWhatsAppTimestampSeconds(value: unknown): number | undefined {
   if (value == null) {
@@ -224,8 +231,8 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
 
   // Live rows keep receive-time identity facts until their first drain attempt.
   // Restart replay has no entry and re-normalizes from the persisted payload.
-  type PreparedInbound = NonNullable<Awaited<ReturnType<typeof normalizeInboundMessage>>>;
-  const preparedInboundByDurableId = new Map<string, Promise<PreparedInbound | null | undefined>>();
+  type PreparedInbound = WhatsAppInboundNormalizationResult | undefined;
+  const preparedInboundByDurableId = new Map<string, Promise<PreparedInbound>>();
 
   const enqueueInboundMessage = async (
     msg: WAMessage,
@@ -357,11 +364,11 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
           recipientJid: self.e164 ?? "me",
           pushName: senderName,
           sender: resolveComparableIdentity({
-            jid: inbound.participantJid,
+            jid: inbound.senderJid,
             e164: inbound.senderE164 ?? undefined,
             name: senderName,
           }),
-          senderJid: inbound.participantJid,
+          senderJid: inbound.senderJid,
           senderE164: inbound.senderE164 ?? undefined,
           senderName,
           self,
@@ -416,7 +423,7 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
   const processDurableInboundMessage = async (
     admission: WhatsAppIngressAdmission,
     lifecycle: WhatsAppIngressLifecycle,
-  ): Promise<"completed" | "deferred"> => {
+  ) => {
     const { message: msg, ...context } = admission;
     rememberBaileysMessage(msg.key?.remoteJid, msg.key?.id, msg.message);
     const remoteJid = msg.key?.remoteJid;
@@ -430,15 +437,25 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
       preparedInboundByDurableId.delete(durableId);
     }
     if (context.skipRecentOutboundEcho === true) {
-      return "completed";
+      return { kind: "completed" as const };
     }
     const prepared = await preparation;
     if (prepared === null) {
-      return "completed";
+      return { kind: "completed" as const };
     }
     const inbound = prepared ?? (await normalizeInboundMessage(msg));
     if (!inbound) {
-      return "completed";
+      return { kind: "completed" as const };
+    }
+    if (isWhatsAppRetryableNormalizationError(inbound)) {
+      inboundLogger.warn(
+        { code: inbound.error.code },
+        `${inbound.error.message} The durable message remains eligible for retry.`,
+      );
+      inboundConsoleLog.warn(
+        `${inbound.error.message} The durable message remains eligible for retry.`,
+      );
+      return { kind: "failed-retryable" as const, error: inbound.error };
     }
     if (
       await maybeResolveWhatsAppQuestionReaction({
@@ -450,13 +467,13 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
         logDebug: (message) => logWhatsAppVerbose(options.verbose, message),
       })
     ) {
-      return "completed";
+      return { kind: "completed" as const };
     }
     const readReceipt = buildReadReceiptTarget(inbound);
     const deliveryReadReceipt = inbound.access.isSelfChat ? undefined : readReceipt;
     if (context.skipStaleAppend === true) {
       await maybeMarkNonSelfChatReadReceipt(inbound, readReceipt);
-      return "completed";
+      return { kind: "completed" as const };
     }
 
     const enriched = await enrichWhatsAppInboundMessage({
@@ -467,7 +484,7 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
     });
     if (!enriched) {
       await maybeMarkNonSelfChatReadReceipt(inbound, deliveryReadReceipt);
-      return "completed";
+      return { kind: "completed" as const };
     }
 
     recordAcceptedInboundActivity(options.accountId);
@@ -476,14 +493,12 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
       receiveOrder: context.receiveOrder ?? context.receivedAt,
       turnAdoptionLifecycle: lifecycle,
     });
-    return "deferred";
+    return { kind: "deferred" as const };
   };
 
   const durableInboundMonitor = createWhatsAppIngressMonitor({
     queue: durableInboundQueue,
-    dispatch: async (admission, lifecycle) => ({
-      kind: await processDurableInboundMessage(admission, lifecycle),
-    }),
+    dispatch: processDurableInboundMessage,
     pollIntervalMs: WHATSAPP_INGRESS_DRAIN_INTERVAL_MS,
     onLog: (message) => inboundLogger.warn({ message }, "whatsapp ingress drain"),
     onError: (error) =>
@@ -581,7 +596,7 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
       if (result.kind === "durable" && result.queueResult.kind === "completed") {
         finishPreparation(undefined);
         const inbound = await normalizeInboundMessage(msg);
-        if (inbound) {
+        if (inbound && !isWhatsAppRetryableNormalizationError(inbound)) {
           await maybeMarkNonSelfChatReadReceipt(inbound, buildReadReceiptTarget(inbound));
         }
       } else if (result.kind === "durable" && result.queueResult.kind === "accepted") {

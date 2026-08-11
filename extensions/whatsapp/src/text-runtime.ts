@@ -12,6 +12,7 @@ export {
   markdownToWhatsApp,
   markdownToWhatsAppChunks,
   resolveEquivalentWhatsAppDirectChatJids,
+  resolveJidMapping,
   resolveJidToE164,
   toWhatsappJid,
   toWhatsappJidWithLid,

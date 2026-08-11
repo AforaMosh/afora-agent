@@ -25,6 +25,7 @@ import {
 } from "../socket-timing.js";
 import {
   resolveEquivalentWhatsAppDirectChatJids,
+  resolveJidMapping,
   resolveJidToE164,
   toWhatsappJid,
   toWhatsappJidWithLid,
@@ -178,6 +179,8 @@ export async function createWhatsAppAttachedSocketSession(options: SocketSession
   };
 
   const lidLookup = sock.signalRepository?.lidMapping;
+  const resolveInboundJidMapping = (jid: string | null | undefined) =>
+    resolveJidMapping(jid, { authDir: options.authDir, lidLookup });
   const resolveInboundJid = async (jid: string | null | undefined): Promise<string | null> =>
     resolveJidToE164(jid, { authDir: options.authDir, lidLookup });
   const resolveReactionTargetJids = async (jid: string): Promise<string[]> =>
@@ -474,6 +477,7 @@ export async function createWhatsAppAttachedSocketSession(options: SocketSession
     closeSocket,
     listen: attachSockListener,
     getCurrentSock,
+    resolveInboundJidMapping,
     resolveInboundJid,
     resolveReactionTargetJids,
     rememberBaileysMessage,
