@@ -2776,7 +2776,7 @@ private fun ChatContextMeter(
 }
 
 @Composable
-internal fun ChatInputPill(
+private fun ChatInputPill(
   value: String,
   onValueChange: (String) -> Unit,
   onPickImages: () -> Unit,
