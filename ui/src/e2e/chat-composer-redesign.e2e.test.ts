@@ -575,19 +575,11 @@ suite.define(() => {
     });
   });
 
-  it("refreshes the configured usable catalog after advertised chat metadata", async () => {
+  it("uses the live usable catalog instead of unavailable metadata models", async () => {
     await suite.withPage({ viewport: { width: 1280, height: 900 } }, async ({ page }) => {
       const gateway = await installMockGateway(page, {
-        agentModel: "openai/gpt-5.3-codex-spark",
-        models: [
-          { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true },
-          {
-            id: "gpt-5.3-codex-spark",
-            name: "GPT-5.3 Codex Spark",
-            provider: "codex",
-            available: false,
-          },
-        ],
+        agentModel: "openai/gpt-5.6-sol",
+        models: [{ id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true }],
         methodResponses: {
           "chat.startup": {
             agentsList: {
@@ -605,9 +597,9 @@ suite.define(() => {
             models: [
               { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true },
               {
-                id: "gpt-5.3-codex-spark",
-                name: "GPT-5.3 Codex Spark",
-                provider: "codex",
+                id: "gpt-5.6-sol",
+                name: "GPT-5.6 Sol",
+                provider: "openai",
                 available: false,
               },
             ],
@@ -616,7 +608,7 @@ suite.define(() => {
             count: 1,
             defaults: {
               contextTokens: 200_000,
-              model: "gpt-5.3-codex-spark",
+              model: "gpt-5.6-sol",
               modelProvider: "openai",
             },
             path: "",
@@ -642,7 +634,10 @@ suite.define(() => {
 
       await page.goto(`${suite.server.baseUrl}chat`);
       await gateway.waitForRequest("chat.metadata");
-      expect(await gateway.getRequests("models.list")).toHaveLength(0);
+      await gateway.waitForRequest("models.list");
+      expect(await gateway.getRequests("models.list")).toEqual([
+        expect.objectContaining({ params: { view: "configured" } }),
+      ]);
 
       const composer = page.locator(".agent-chat__input");
       const modelPicker = composer.locator("wa-select.chat-controls__model-picker");
@@ -653,6 +648,18 @@ suite.define(() => {
       // The catalog default is unavailable, but the empty-string sentinel must
       // remain so an existing session override can still be cleared.
       await expect.poll(() => modelPicker.locator('wa-option[value=""]').count()).toBe(1);
+      await expect
+        .poll(() => modelPicker.locator('wa-option[value="openai/gpt-5.6-sol"]').count())
+        .toBe(0);
+      const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+      if (artifactDir) {
+        await modelPicker.click();
+        await page.screenshot({
+          animations: "disabled",
+          fullPage: true,
+          path: `${artifactDir}/usable-model-picker.png`,
+        });
+      }
     });
   });
 

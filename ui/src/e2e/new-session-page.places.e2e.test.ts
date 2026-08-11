@@ -359,6 +359,7 @@ suite.define(() => {
       featureMethods: [
         "chat.metadata",
         "chat.startup",
+        "models.list",
         "sessions.create",
         "sessions.dispatch",
         "projects.list",
@@ -480,6 +481,7 @@ suite.define(() => {
       featureMethods: [
         "chat.metadata",
         "chat.startup",
+        "models.list",
         "fs.listDir",
         "projects.list",
         "projects.register",
@@ -543,7 +545,13 @@ suite.define(() => {
       workspace: WORKSPACE,
       workspaceGit: true,
       operatorScopes: ["operator.read", "operator.write"],
-      featureMethods: ["chat.metadata", "chat.startup", "projects.list", "sessions.create"],
+      featureMethods: [
+        "chat.metadata",
+        "chat.startup",
+        "models.list",
+        "projects.list",
+        "sessions.create",
+      ],
       methodResponses: { "projects.list": { projects: [] } },
     });
 
@@ -567,7 +575,13 @@ suite.define(() => {
     const gateway = await installMockGateway(page, {
       workspace: WORKSPACE,
       workspaceGit: true,
-      featureMethods: ["chat.metadata", "chat.startup", "sessions.create", "system.info"],
+      featureMethods: [
+        "chat.metadata",
+        "chat.startup",
+        "models.list",
+        "sessions.create",
+        "system.info",
+      ],
       methodResponses: {
         "system.info": {
           machineName: "Peters-Mac-Studio",

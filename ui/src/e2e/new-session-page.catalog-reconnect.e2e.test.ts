@@ -35,8 +35,8 @@ function requestHasParam(request: { params?: unknown }, key: string, value: unkn
 }
 
 const TERMINAL_START_FEATURE_METHODS = [
-  "chat.metadata",
   "chat.startup",
+  "models.list",
   "sessions.catalog.list",
   "sessions.catalog.startTerminal",
   "sessions.create",
@@ -78,8 +78,8 @@ suite.define(() => {
     const gateway = await installMockGateway(page, {
       cliAgentsEnabled: true,
       featureMethods: [
-        "chat.metadata",
         "chat.startup",
+        "models.list",
         "sessions.create",
         "sessions.dispatch",
         "sessions.catalog.list",
@@ -455,7 +455,7 @@ suite.define(() => {
     const gateway = await installMockGateway(page, {
       agentModel: "openai/gpt-5.6-luna",
       methodResponses: {
-        "chat.metadata": {
+        "models.list": {
           sequence: [
             {
               __mockError: {
@@ -463,7 +463,7 @@ suite.define(() => {
                 message: "metadata request timed out",
               },
             },
-            { commands: [], models },
+            { models },
           ],
         },
       },
@@ -472,7 +472,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}new`);
-      await gateway.waitForRequest("chat.metadata");
+      await gateway.waitForRequest("models.list");
 
       const modelSelect = page.locator("wa-select.chat-controls__model-picker");
       await expect.poll(() => modelSelect.textContent()).toContain("Models unavailable");
@@ -484,7 +484,7 @@ suite.define(() => {
 
       await page.locator('[data-chat-model-catalog-retry="true"]').click();
 
-      await expect.poll(async () => (await gateway.getRequests("chat.metadata")).length).toBe(2);
+      await expect.poll(async () => (await gateway.getRequests("models.list")).length).toBe(2);
       await expect.poll(() => modelSelect.locator("wa-option").count()).toBe(3);
       expect(await page.locator('[data-chat-model-catalog-state="error"]').count()).toBe(0);
     } finally {
@@ -508,7 +508,7 @@ suite.define(() => {
     };
     const gateway = await installMockGateway(page, {
       methodResponses: {
-        "chat.metadata": {
+        "models.list": {
           sequence: [
             {
               __mockError: {
@@ -519,7 +519,7 @@ suite.define(() => {
                 retryAfterMs: 100,
               },
             },
-            { commands: [], models: [recoveredModel] },
+            { models: [recoveredModel] },
           ],
         },
       },
@@ -527,7 +527,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}new`);
-      await expect.poll(async () => (await gateway.getRequests("chat.metadata")).length).toBe(2);
+      await expect.poll(async () => (await gateway.getRequests("models.list")).length).toBe(2);
 
       const modelSelect = page.locator(
         ".new-session-page__composer wa-select.chat-controls__model-picker",
@@ -541,9 +541,9 @@ suite.define(() => {
         )
         .toContain(recoveredModel.name);
 
-      expect(await gateway.getRequests("chat.metadata")).toEqual([
-        expect.objectContaining({ params: { agentId: "main" } }),
-        expect.objectContaining({ params: { agentId: "main" } }),
+      expect(await gateway.getRequests("models.list")).toEqual([
+        expect.objectContaining({ params: { agentId: "main", view: "configured" } }),
+        expect.objectContaining({ params: { agentId: "main", view: "configured" } }),
       ]);
     } finally {
       await context.close();

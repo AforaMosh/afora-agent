@@ -13,6 +13,7 @@ async function openDraft(
   featureMethods = [
     "chat.metadata",
     "chat.startup",
+    "models.list",
     "projects.list",
     "sessions.create",
     "sessions.dispatch",
@@ -41,7 +42,14 @@ suite.define(() => {
   it("keeps read-scoped operators out of new-session entry and submission paths", async () => {
     const { context, gateway, page } = await openDraft(
       ["operator.read"],
-      ["chat.metadata", "chat.startup", "projects.list", "sessions.create", "sessions.dispatch"],
+      [
+        "chat.metadata",
+        "chat.startup",
+        "models.list",
+        "projects.list",
+        "sessions.create",
+        "sessions.dispatch",
+      ],
     );
     try {
       const sidebarCreate = page.locator(".sidebar-brand__new-thread");
@@ -136,6 +144,7 @@ suite.define(() => {
       featureMethods: [
         "chat.metadata",
         "chat.startup",
+        "models.list",
         "fs.listDir",
         "sessions.create",
         "worktrees.branches",
@@ -197,6 +206,7 @@ suite.define(() => {
       featureMethods: [
         "chat.metadata",
         "chat.startup",
+        "models.list",
         "fs.listDir",
         "sessions.create",
         "worktrees.branches",
@@ -264,6 +274,7 @@ suite.define(() => {
       featureMethods: [
         "chat.metadata",
         "chat.startup",
+        "models.list",
         "fs.listDir",
         "sessions.create",
         "worktrees.branches",
@@ -328,7 +339,7 @@ suite.define(() => {
   it("blocks creation when the connected Gateway explicitly omits sessions.create", async () => {
     const { context, gateway, page } = await openDraft(
       ["operator.admin", "operator.read", "operator.write"],
-      ["chat.metadata", "chat.startup"],
+      ["chat.metadata", "chat.startup", "models.list"],
     );
     try {
       await expect.poll(() => page.locator(".sidebar-brand__new-thread").isDisabled()).toBe(true);
