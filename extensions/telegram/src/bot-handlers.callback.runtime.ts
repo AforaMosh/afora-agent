@@ -115,6 +115,7 @@ export function registerTelegramCallbackQueryHandler(
       const isGroup =
         callbackMessage.chat.type === "group" || callbackMessage.chat.type === "supergroup";
       const nativeCallbackCommand = parseTelegramNativeCommandCallbackData(data);
+      const hasReservedModelPrefix = data.startsWith("mdl1~");
       const hasReservedOpaquePrefix = hasTelegramOpaqueCallbackPrefix(data);
       const opaqueCallbackData = parseTelegramOpaqueCallbackData(data);
       const genericCallbackText = data.startsWith("/") ? data : `callback_data: ${data}`;
@@ -143,7 +144,8 @@ export function registerTelegramCallbackQueryHandler(
         !isRuntimeControlCallback &&
         inlineButtonsUnavailable &&
         !nativeCallbackCommand &&
-        !hasReservedOpaquePrefix
+        !hasReservedOpaquePrefix &&
+        !hasReservedModelPrefix
       ) {
         return;
       }
@@ -199,7 +201,9 @@ export function registerTelegramCallbackQueryHandler(
 
       if (
         inlineButtonsUnavailable &&
-        ((nativeCallbackCommand && !legacyApprovalCallback) || hasReservedOpaquePrefix)
+        ((nativeCallbackCommand && !legacyApprovalCallback) ||
+          hasReservedOpaquePrefix ||
+          hasReservedModelPrefix)
       ) {
         await terminalizeUnavailableCallback();
         return;
@@ -328,6 +332,10 @@ export function registerTelegramCallbackQueryHandler(
           authorizeCallback,
         })
       ) {
+        return;
+      }
+      if (hasReservedModelPrefix) {
+        await terminalizeUnavailableCallback();
         return;
       }
 

@@ -53,6 +53,7 @@ import {
   TELEGRAM_MESSAGE_CACHE_PERSISTENT_MAX_MESSAGES,
   TELEGRAM_MESSAGE_CACHE_PERSISTENT_NAMESPACE,
 } from "./message-cache-persistence.js";
+import { buildModelSelectionCallbackData, buildProviderKeyboard } from "./model-buttons.js";
 import { buildTelegramOpaqueCallbackData } from "./native-command-callback-data.js";
 import { recordTelegramPollRegistryEntry } from "./poll-registry.js";
 import { setTelegramRuntime } from "./runtime.js";
@@ -1631,6 +1632,8 @@ describe("createTelegramBot", () => {
 
   it("blocks DM model-selection callbacks for unpaired users when inline buttons are DM-scoped", async () => {
     const storePath = createTelegramTestStorePath("callback-authz");
+    const buildModelsProviderDataMock = vi.mocked(telegramBotDepsForTest.buildModelsProviderData);
+    buildModelsProviderDataMock.mockClear();
     const config = makeModelPickerConfig(storePath, {
       telegram: { dmPolicy: "pairing", capabilities: { inlineButtons: "dm" } },
     });
@@ -1647,7 +1650,10 @@ describe("createTelegramBot", () => {
     await callbackHandler(
       createTelegramCallbackContext({
         id: "cbq-model-authz-bypass-1",
-        data: "mdl_sel_openai/gpt-5.4",
+        data: buildModelSelectionCallbackData({
+          provider: "ollama",
+          model: "xentriom/gemma-4-12B-agentic-fable5-composer2.5-v2:latest",
+        }),
         from: { id: 999, first_name: "Mallory", username: "mallory" },
         message: { message_id: 19 },
       }),
@@ -1655,6 +1661,7 @@ describe("createTelegramBot", () => {
 
     expect(replySpy).not.toHaveBeenCalled();
     expect(editMessageTextSpy).not.toHaveBeenCalled();
+    expect(buildModelsProviderDataMock).not.toHaveBeenCalled();
     expect(listSessionEntries({ storePath })).toStrictEqual([]);
     expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-model-authz-bypass-1");
   });
@@ -2611,6 +2618,169 @@ describe("createTelegramBot", () => {
     },
   );
 
+  it("routes opaque model callbacks through the current catalog and session mutation owner", async () => {
+    const storePath = createTelegramTestStorePath("model-opaque");
+    const provider = "ollama";
+    const model = "xentriom/gemma-4-12B-agentic-fable5-composer2.5-v2:latest";
+    const collidingPluginHandler = vi.fn(async () => ({ handled: true }));
+    registerPluginInteractiveHandler("model-namespace-collision", {
+      channel: "telegram",
+      namespace: "mdl1",
+      handler: collidingPluginHandler,
+    });
+    const config = makeModelPickerConfig(storePath, {
+      models: {
+        "anthropic/claude-opus-4-6": {},
+        [`${provider}/${model}`]: {},
+      },
+    });
+    const buildModelsProviderDataMock = vi.mocked(telegramBotDepsForTest.buildModelsProviderData);
+    buildModelsProviderDataMock.mockClear();
+
+    loadConfig.mockReturnValue(config);
+    createTelegramBot({ token: "tok", config });
+    await getTelegramCallbackHandlerForTests()(
+      createTelegramCallbackContext({
+        id: "cbq-model-opaque-1",
+        data: buildModelSelectionCallbackData({ provider, model }),
+        message: { message_id: 15 },
+      }),
+    );
+
+    expect(buildModelsProviderDataMock).toHaveBeenCalled();
+    expect(collidingPluginHandler).not.toHaveBeenCalled();
+    expect(readOnlySessionEntry(storePath)).toMatchObject({
+      providerOverride: provider,
+      modelOverride: model,
+      modelOverrideSource: "user",
+      liveModelSwitchPending: true,
+    });
+    expect(String(firstEditMessageTextArg(2))).toContain(
+      `${CHECK_MARK_EMOJI} Model changed to <b>${provider}/${model}</b>`,
+    );
+    expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-model-opaque-1");
+  });
+
+  it("terminalizes opaque model callbacks after inline buttons are disabled", async () => {
+    const storePath = createTelegramTestStorePath("model-opaque-disabled");
+    const provider = "ollama";
+    const model = "xentriom/gemma-4-12B-agentic-fable5-composer2.5-v2:latest";
+    const callbackData = buildModelSelectionCallbackData({ provider, model });
+    const config = makeModelPickerConfig(storePath, {
+      telegram: {
+        dmPolicy: "open",
+        allowFrom: ["*"],
+        capabilities: { inlineButtons: "off" },
+      },
+    });
+
+    loadConfig.mockReturnValue(config);
+    createTelegramBot({ token: "tok", config });
+    await getTelegramCallbackHandlerForTests()(
+      createTelegramCallbackContext({
+        id: "cbq-model-opaque-disabled",
+        data: callbackData,
+        message: {
+          message_id: 16,
+          reply_markup: { inline_keyboard: [[{ text: "Model", callback_data: callbackData }]] },
+        },
+      }),
+    );
+
+    expect(telegramBotDepsForTest.buildModelsProviderData).not.toHaveBeenCalled();
+    expect(editMessageReplyMarkupSpy).toHaveBeenCalledWith(1234, 16, {
+      reply_markup: { inline_keyboard: [] },
+    });
+    expect(sendMessageSpy).toHaveBeenCalledWith(
+      1234,
+      "This action is no longer available.",
+      undefined,
+    );
+    expect(listSessionEntries({ storePath })).toStrictEqual([]);
+    expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-model-opaque-disabled");
+  });
+
+  it.each([
+    {
+      name: "missing",
+      providers: ["ollama"],
+      byProvider: new Map([["ollama", new Set(["different-model"])]]),
+    },
+    {
+      name: "duplicate",
+      providers: ["ollama", "ollama"],
+      byProvider: new Map([
+        ["ollama", new Set(["xentriom/gemma-4-12B-agentic-fable5-composer2.5-v2:latest"])],
+      ]),
+    },
+  ])("rejects $name opaque model callbacks without mutating the session", async (testCase) => {
+    const storePath = createTelegramTestStorePath(`model-opaque-${testCase.name}`);
+    const provider = "ollama";
+    const model = "xentriom/gemma-4-12B-agentic-fable5-composer2.5-v2:latest";
+    const config = makeModelPickerConfig(storePath);
+    vi.mocked(telegramBotDepsForTest.buildModelsProviderData).mockResolvedValueOnce({
+      byProvider: testCase.byProvider,
+      providers: testCase.providers,
+      resolvedDefault: { provider: "anthropic", model: "claude-opus-4-6" },
+      modelNames: new Map(),
+    });
+
+    loadConfig.mockReturnValue(config);
+    createTelegramBot({ token: "tok", config });
+    await getTelegramCallbackHandlerForTests()(
+      createTelegramCallbackContext({
+        id: `cbq-model-opaque-${testCase.name}`,
+        data: buildModelSelectionCallbackData({ provider, model }),
+        message: { message_id: 17 },
+      }),
+    );
+
+    expect(listSessionEntries({ storePath })).toStrictEqual([]);
+    expect(firstEditMessageTextArg(2)).toBe(
+      "This model picker is stale or ambiguous. Reopen /model and try again.",
+    );
+    expect(answerCallbackQuerySpy).toHaveBeenCalledWith(`cbq-model-opaque-${testCase.name}`);
+  });
+
+  it("resolves opaque provider pagination and renders only bounded callbacks", async () => {
+    const storePath = createTelegramTestStorePath("provider-opaque");
+    const provider = "team/provider/研究所";
+    const model = "model";
+    const config = makeModelPickerConfig(storePath);
+    vi.mocked(telegramBotDepsForTest.buildModelsProviderData).mockResolvedValueOnce({
+      byProvider: new Map([[provider, new Set([model])]]),
+      providers: [provider],
+      resolvedDefault: { provider, model },
+      modelNames: new Map(),
+    });
+
+    loadConfig.mockReturnValue(config);
+    createTelegramBot({ token: "tok", config });
+    const callbackData = buildProviderKeyboard([{ id: provider, count: 1 }])[0]?.[0]?.callback_data;
+    if (!callbackData) {
+      throw new Error("Expected a rendered provider callback");
+    }
+    await getTelegramCallbackHandlerForTests()(
+      createTelegramCallbackContext({
+        id: "cbq-provider-opaque-1",
+        data: callbackData,
+        message: { message_id: 18 },
+      }),
+    );
+
+    const params = firstEditMessageTextArg(3) as {
+      reply_markup?: {
+        inline_keyboard?: Array<Array<{ callback_data: string }>>;
+      };
+    };
+    for (const row of params.reply_markup?.inline_keyboard ?? []) {
+      for (const button of row) {
+        expect(Buffer.byteLength(button.callback_data, "utf8")).toBeLessThanOrEqual(64);
+      }
+    }
+    expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-provider-opaque-1");
+  });
+
   it("reports when selecting the default clears an incompatible runtime", async () => {
     const storePath = createTelegramTestStorePath("model-default-runtime");
     const config = makeModelPickerConfig(storePath);
@@ -3058,7 +3228,9 @@ describe("createTelegramBot", () => {
 
     expect(replySpy).not.toHaveBeenCalled();
     expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
-    expect(String(firstEditMessageTextArg(2))).toContain('Could not resolve model "shared-model".');
+    expect(firstEditMessageTextArg(2)).toBe(
+      "This model picker is stale or ambiguous. Reopen /model and try again.",
+    );
     expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-model-compact-2");
   });
 

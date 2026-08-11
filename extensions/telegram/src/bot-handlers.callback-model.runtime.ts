@@ -24,6 +24,7 @@ import {
   calculateTotalPages,
   getModelsPageSize,
   parseModelCallbackData,
+  resolveModelListCallback,
   resolveModelSelection,
   type ProviderInfo,
 } from "./model-buttons.js";
@@ -131,6 +132,10 @@ export async function handleTelegramModelCallback(params: {
     throw new TelegramRetryableCallbackError(err);
   }
   const { byProvider, providers, modelNames, resolvedDefault: activeResolvedDefault } = modelData;
+  const providerInfos: ProviderInfo[] = providers.map((provider) => ({
+    id: provider,
+    count: byProvider.get(provider)?.size ?? 0,
+  }));
 
   const editMessageWithButtons = async (
     text: string,
@@ -153,6 +158,11 @@ export async function handleTelegramModelCallback(params: {
       }
     }
   };
+  const editStaleModelPicker = () =>
+    editMessageWithButtons(
+      "This model picker is stale or ambiguous. Reopen /model and try again.",
+      buildTelegramModelsMenuButtons({ providers: providerInfos }),
+    );
 
   if (modelCallback.type === "providers" || modelCallback.type === "back") {
     if (providers.length === 0) {
@@ -163,10 +173,6 @@ export async function handleTelegramModelCallback(params: {
       }
       return true;
     }
-    const providerInfos: ProviderInfo[] = providers.map((provider) => ({
-      id: provider,
-      count: byProvider.get(provider)?.size ?? 0,
-    }));
     try {
       await editMessageWithButtons(
         "Select a provider:",
@@ -178,19 +184,24 @@ export async function handleTelegramModelCallback(params: {
     return true;
   }
 
-  if (modelCallback.type === "list") {
-    const { provider, page } = modelCallback;
+  if (modelCallback.type === "list" || modelCallback.type === "list-ref") {
+    const listSelection = resolveModelListCallback({
+      callback: modelCallback,
+      providers,
+    });
+    if (listSelection.kind !== "resolved") {
+      try {
+        await editStaleModelPicker();
+      } catch (err) {
+        throw new TelegramRetryableCallbackError(err);
+      }
+      return true;
+    }
+    const { provider, page } = listSelection;
     const modelSet = byProvider.get(provider);
     if (!modelSet || modelSet.size === 0) {
-      const providerInfos: ProviderInfo[] = providers.map((providerId) => ({
-        id: providerId,
-        count: byProvider.get(providerId)?.size ?? 0,
-      }));
       try {
-        await editMessageWithButtons(
-          `Unknown provider: ${provider}\n\nSelect a provider:`,
-          buildTelegramModelsMenuButtons({ providers: providerInfos }),
-        );
+        await editStaleModelPicker();
       } catch (err) {
         throw new TelegramRetryableCallbackError(err);
       }
@@ -226,20 +237,13 @@ export async function handleTelegramModelCallback(params: {
     return true;
   }
 
-  if (modelCallback.type !== "select") {
+  if (modelCallback.type !== "select" && modelCallback.type !== "select-ref") {
     return true;
   }
   const selection = resolveModelSelection({ callback: modelCallback, providers, byProvider });
   if (selection.kind !== "resolved") {
-    const providerInfos: ProviderInfo[] = providers.map((provider) => ({
-      id: provider,
-      count: byProvider.get(provider)?.size ?? 0,
-    }));
     try {
-      await editMessageWithButtons(
-        `Could not resolve model "${selection.model}".\n\nSelect a provider:`,
-        buildTelegramModelsMenuButtons({ providers: providerInfos }),
-      );
+      await editStaleModelPicker();
     } catch (err) {
       throw new TelegramRetryableCallbackError(err);
     }
@@ -247,10 +251,7 @@ export async function handleTelegramModelCallback(params: {
   }
   if (!byProvider.get(selection.provider)?.has(selection.model)) {
     try {
-      await editMessageWithButtons(
-        `❌ Model "${selection.provider}/${selection.model}" is not allowed.`,
-        [],
-      );
+      await editStaleModelPicker();
     } catch (err) {
       throw new TelegramRetryableCallbackError(err);
     }
