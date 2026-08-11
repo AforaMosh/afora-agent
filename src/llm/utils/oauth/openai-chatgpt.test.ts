@@ -206,11 +206,10 @@ describe("OpenAI Codex OAuth compatibility provider", () => {
 
   it("captures one facade refresh callable and reuses it with rotated tokens and signals", async () => {
     const controller = new AbortController();
-    const prepareRefresh = openaiCodexOAuthProvider.prepareRefreshToken;
-    if (!prepareRefresh) {
+    const refresh = openaiCodexOAuthProvider.prepareRefreshToken?.();
+    if (!refresh) {
       throw new Error("OpenAI OAuth provider does not prepare refresh calls");
     }
-    const refresh = prepareRefresh();
     mocks.refreshOpenAICodexToken
       .mockResolvedValueOnce({
         access: "first-access",

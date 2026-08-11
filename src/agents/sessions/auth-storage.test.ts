@@ -324,8 +324,8 @@ describe("SQLite auth storage", () => {
   it("keeps deprecated async backend calls serialized", async () => {
     const agentDir = makeAgentDir();
     const backend = new FileAuthStorageBackend(path.join(agentDir, "auth.json"));
-    const entered = createDeferred<void>();
-    const release = createDeferred<void>();
+    const entered = createDeferred();
+    const release = createDeferred();
     const secondUpdate = vi.fn(async () => ({ result: "second" }));
     const first = backend.withLockAsync(async () => {
       entered.resolve();
@@ -348,8 +348,8 @@ describe("SQLite auth storage", () => {
   it("rejects a stale deprecated async backend write", async () => {
     const agentDir = makeAgentDir();
     const backend = new FileAuthStorageBackend(path.join(agentDir, "auth.json"));
-    const entered = createDeferred<void>();
-    const release = createDeferred<void>();
+    const entered = createDeferred();
+    const release = createDeferred();
     const pending = backend.withLockAsync(async (current) => {
       entered.resolve();
       await release.promise;

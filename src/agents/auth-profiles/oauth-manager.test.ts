@@ -802,7 +802,7 @@ describe("createOAuthManager", () => {
       saveAuthProfileStore({ version: 1, profiles: { [profileId]: credential } }, agentDir, {
         filterExternalAuthProfiles: false,
       });
-      const gate = createDeferred<void>();
+      const gate = createDeferred();
       const refresh = vi.fn(async () => ({
         access: "winner-access",
         refresh: "winner-refresh",
