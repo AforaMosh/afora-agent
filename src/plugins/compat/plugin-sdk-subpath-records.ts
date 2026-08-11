@@ -24,6 +24,7 @@ const DEPRECATED_PLUGIN_SDK_SUBPATH_SEEDS = [
     code: "plugin-sdk-inbound-reply-dispatch-subpath",
     subpath: "inbound-reply-dispatch",
     owner: "channel",
+    removeAfter: undefined,
     replacement:
       "`openclaw/plugin-sdk/channel-inbound` and `openclaw/plugin-sdk/channel-outbound`; retain this shim through the next Plugin SDK major for `openclaw/skills` openclaw-zulip and `tloncorp/tlon-apps`",
   },
