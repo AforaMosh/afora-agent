@@ -70,7 +70,8 @@ export type TranscriptSearchState =
       truncated: boolean;
     };
 
-export type SessionsProps = {
+/** Local to this module: the page builds it inline and tests derive it from `renderSessions`. */
+type SessionsProps = {
   loading: boolean;
   result: SessionsListResult | null;
   error: string | null;

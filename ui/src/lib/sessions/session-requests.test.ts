@@ -16,7 +16,7 @@ function rotationRefusal(currentSessionId?: string) {
 }
 
 function clientRefusingOnce(error: unknown) {
-  const request = vi.fn(async () => {
+  const request = vi.fn(async (_method: string, _params: unknown) => {
     if (request.mock.calls.length === 1) {
       throw error;
     }

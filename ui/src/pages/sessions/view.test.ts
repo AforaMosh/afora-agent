@@ -3,7 +3,9 @@
 import { render } from "lit";
 import { describe, expect, it, vi } from "vitest";
 import type { SessionsListResult } from "../../api/types.ts";
-import { renderSessions, type SessionsProps } from "./view.ts";
+import { renderSessions } from "./view.ts";
+
+type SessionsProps = Parameters<typeof renderSessions>[0];
 
 function buildResult(
   session: SessionsListResult["sessions"][number],
