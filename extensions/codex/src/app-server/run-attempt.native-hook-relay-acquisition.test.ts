@@ -153,12 +153,21 @@ describe("Codex native hook relay acquisition", () => {
     expect(relayMock.unregister).toHaveBeenCalled();
   });
 
-  it("rejects uncertain adoption before rebinding a child-owned resume route", async () => {
+  it("rejects incompatible adoption before rebinding a child-owned resume route", async () => {
     const sessionFile = path.join(tempDir, "relay-live-route-resume-unknown.jsonl");
     const workspaceDir = path.join(tempDir, "workspace-live-route-resume-unknown");
+    const oldRequester = {
+      senderId: "old-sender",
+      senderIsOwner: false,
+      roleIds: ["role-b", "role-a", "role-a"],
+    };
     relayMock.renewalStatus = "live";
     const firstHarness = createStartedThreadHarness();
-    const firstRun = runCodexAppServerAttempt(createParams(sessionFile, workspaceDir), {
+    const firstParams = createParams(sessionFile, workspaceDir);
+    firstParams.senderId = oldRequester.senderId;
+    firstParams.senderIsOwner = oldRequester.senderIsOwner;
+    firstParams.memberRoleIds = oldRequester.roleIds;
+    const firstRun = runCodexAppServerAttempt(firstParams, {
       nativeHookRelay: { enabled: true, events: ["pre_tool_use"] },
     });
     await firstHarness.waitForMethod("turn/start");
@@ -170,7 +179,6 @@ describe("Codex native hook relay acquisition", () => {
       throw new Error("Expected persisted native hook relay generation");
     }
 
-    const oldRequester = { senderId: "old-sender", senderIsOwner: false };
     const holder = createCodexNativeHookRelay({
       options: { enabled: true, ttlMs: 2_000 },
       generation,
@@ -186,6 +194,7 @@ describe("Codex native hook relay acquisition", () => {
       turnStartTimeoutMs: 1_000,
       loopDetectionPreToolUseRelay: true,
       signal: new AbortController().signal,
+      hostCapabilities: firstParams.hostCapabilities,
       onPreToolUseFailure: vi.fn(),
     });
     expect(holder.status).toBe("active");
@@ -207,7 +216,7 @@ describe("Codex native hook relay acquisition", () => {
         nativeHookRelay: { enabled: true, events: ["pre_tool_use"] },
       }),
     ).rejects.toThrow(
-      "Codex native hook relay is unavailable (unknown); refusing to start or resume a thread without OpenClaw policy hooks",
+      "Codex native hook relay is unavailable (principal-mismatch); refusing to start or resume a thread without OpenClaw policy hooks. Start a fresh session for this requester before retrying.",
     );
 
     expect(threadRpcRequests(harness.requests)).toEqual([]);
@@ -240,12 +249,13 @@ describe("Codex native hook relay acquisition", () => {
       sessionKey: "agent:main:session-1",
       config: undefined,
       runId: "recovered-run",
-      requester: { senderId: "recovered-owner", senderIsOwner: true },
+      requester: { senderId: "old-sender", senderIsOwner: false, roleIds: ["role-a", "role-b"] },
       attemptTimeoutMs: 1_000,
       startupTimeoutMs: 1_000,
       turnStartTimeoutMs: 1_000,
       loopDetectionPreToolUseRelay: true,
       signal: new AbortController().signal,
+      hostCapabilities: firstParams.hostCapabilities,
       onPreToolUseFailure: vi.fn(),
     });
     expect(recovered.status).toBe("active");

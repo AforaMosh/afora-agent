@@ -256,7 +256,9 @@ export function prepareCodexAttemptResources(prompt: CodexAttemptPrompt) {
       const recovery =
         relayAcquisition.reason === "foreign-owner"
           ? "Stop the competing Gateway process or wait for its relay lease to expire, then retry."
-          : "Restart the Gateway or retry the turn after relay recovery.";
+          : relayAcquisition.reason === "principal-mismatch"
+            ? "Start a fresh session for this requester before retrying."
+            : "Restart the Gateway or retry the turn after relay recovery.";
       throw new Error(
         `Codex native hook relay is unavailable (${relayAcquisition.reason}); refusing to start or resume a thread without OpenClaw policy hooks. ${recovery}`,
       );

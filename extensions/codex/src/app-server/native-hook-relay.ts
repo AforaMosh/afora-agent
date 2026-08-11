@@ -58,7 +58,7 @@ export type CodexNativeHookRelayAcquisition =
   | { status: "active"; lease: CodexNativeHookRelayLease }
   | {
       status: "unavailable";
-      reason: "dead" | "foreign-owner" | "route-released" | "unknown";
+      reason: "dead" | "foreign-owner" | "principal-mismatch" | "route-released" | "unknown";
     };
 
 type CodexNativeHookRelayParams = {
@@ -196,6 +196,18 @@ type CodexNativeHookRelayHandle = ReturnType<typeof registerNativeHookRelay>;
 type CodexNativeHookRelayRenewal = ReturnType<CodexNativeHookRelayHandle["renewStatus"]>;
 
 type CodexNativeHookRelayAttempt = CodexNativeHookRelayParams & { generation: string };
+function codexNativeHookRelayPrincipal(attempt: CodexNativeHookRelayAttempt): string {
+  const { approvalContext, requester } = attempt;
+  return JSON.stringify([
+    requester?.channel,
+    requester?.accountId,
+    requester?.senderId,
+    requester?.senderIsOwner,
+    requester?.roleIds ? [...new Set(requester.roleIds)].sort() : requester?.roleIds,
+    approvalContext?.trigger,
+    approvalContext?.approvalReviewerDeviceId,
+  ]);
+}
 
 type CodexNativeHookRelayAttemptClaim = {
   readonly attempt: CodexNativeHookRelayAttempt;
@@ -230,11 +242,12 @@ function resolveCodexNativeHookRelayAttemptTtlMs(attempt: CodexNativeHookRelayAt
 
 class CodexNativeHookRelayRoute {
   readonly attemptLease: CodexNativeHookRelayLease | undefined;
-  unavailableReason: "dead" | "foreign-owner" | "unknown" | undefined;
+  unavailableReason: "dead" | "foreign-owner" | "principal-mismatch" | "unknown" | undefined;
 
   private readonly childThreadIds = new Set<string>();
   private discoveryClaimCount = 0;
   private readonly relayId: string;
+  private readonly principal: string;
   private readonly lifetimeAbortController = new AbortController();
   private attempt: CodexNativeHookRelayAttempt;
   private relay: CodexNativeHookRelayHandle;
@@ -248,6 +261,7 @@ class CodexNativeHookRelayRoute {
 
   constructor(attempt: CodexNativeHookRelayAttempt, relayId: string) {
     this.relayId = relayId;
+    this.principal = codexNativeHookRelayPrincipal(attempt);
     this.attempt = attempt;
     this.ttlMs = resolveCodexNativeHookRelayAttemptTtlMs(attempt);
     this.hookTimeoutSec = attempt.options?.hookTimeoutSec;
@@ -273,6 +287,10 @@ class CodexNativeHookRelayRoute {
 
   adoptAttempt(attempt: CodexNativeHookRelayAttempt): CodexNativeHookRelayLease | undefined {
     if (this.released) {
+      return undefined;
+    }
+    if (this.principal !== codexNativeHookRelayPrincipal(attempt)) {
+      this.unavailableReason = "principal-mismatch";
       return undefined;
     }
     const candidateTtlMs = resolveCodexNativeHookRelayAttemptTtlMs(attempt);

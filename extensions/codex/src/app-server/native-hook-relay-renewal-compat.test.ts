@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createCodexTestHostCapabilities } from "./host-capability.test-support.js";
 import {
-  createCodexNativeHookRelay as acquireCodexNativeHookRelay,
+  createCodexNativeHookRelay as acquireCodexNativeHookRelayRaw,
   type CodexNativeHookRelayLease,
 } from "./native-hook-relay.js";
 import {
@@ -14,6 +15,13 @@ const relayMocks = vi.hoisted(() => ({
   renewStatus: vi.fn(),
   unregister: vi.fn(),
 }));
+
+function acquireCodexNativeHookRelay(params: Parameters<typeof acquireCodexNativeHookRelayRaw>[0]) {
+  return acquireCodexNativeHookRelayRaw({
+    ...params,
+    hostCapabilities: params.hostCapabilities ?? createCodexTestHostCapabilities(),
+  });
+}
 
 vi.mock("openclaw/plugin-sdk/agent-harness-runtime", () => ({
   embeddedAgentLog: { debug: vi.fn() },
@@ -333,7 +341,7 @@ describe("Codex native hook relay renewal compatibility", () => {
         ...routeIdentity,
         options: { enabled: true, ttlMs: 20_000 },
         runId: "rejected-run",
-        requester: { senderId: "new-owner", senderIsOwner: true },
+        requester: oldRequester,
       }),
     ).toEqual({ status: "unavailable", reason: "unknown" });
 
@@ -348,7 +356,7 @@ describe("Codex native hook relay renewal compatibility", () => {
       ...routeIdentity,
       options: { enabled: true, ttlMs: 30_000 },
       runId: "recovered-run",
-      requester: { senderId: "recovered-owner", senderIsOwner: true },
+      requester: oldRequester,
     });
     expect(recovered.status).toBe("active");
     if (recovered.status === "active") {
