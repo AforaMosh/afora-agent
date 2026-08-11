@@ -190,9 +190,9 @@ describe("legacy media persistence Doctor migration from historical v15/v16", ()
         }),
       ]);
       expect(
-        listSessionEntries({ agentId: "main", env }).map(({ entry, sessionKey }) => ({
+        listSessionEntries({ agentId: "main", env }).map(({ entry, sessionKey: listedKey }) => ({
           sessionId: entry.sessionId,
-          sessionKey,
+          sessionKey: listedKey,
         })),
       ).toContainEqual({ sessionId, sessionKey });
       closeOpenClawAgentDatabasesForTest();
