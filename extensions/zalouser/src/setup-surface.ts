@@ -292,15 +292,23 @@ async function runZalouserQrLogin(params: {
       : {}),
   });
   if (!start.qrDataUrl) {
-    cancelZaloQrLogin(params.profile);
     await params.prompter.note(start.message, t("wizard.zalouser.loginPendingTitle"));
     return;
   }
 
-  let qrPath: string | null = null;
-  let presented = false;
+  let qrPath: string | null;
   try {
     qrPath = await writeQrDataUrlToTempFile(start.qrDataUrl, params.profile);
+  } catch (error) {
+    cancelZaloQrLogin(params.profile);
+    throw error;
+  }
+  if (!qrPath) {
+    // Retire ownership before awaiting the operator-visible failure note; the
+    // vendor worker must not persist credentials during that await.
+    cancelZaloQrLogin(params.profile);
+  }
+  try {
     await params.prompter.note(
       [
         start.message,
@@ -311,13 +319,9 @@ async function runZalouserQrLogin(params: {
       ].join("\n"),
       t("wizard.zalouser.qrLoginTitle"),
     );
-    presented = qrPath !== null;
-  } finally {
-    if (!presented) {
-      // Failed presentation must retire the vendor login before setup returns;
-      // otherwise its worker can persist credentials after reporting failure.
-      cancelZaloQrLogin(params.profile);
-    }
+  } catch (error) {
+    cancelZaloQrLogin(params.profile);
+    throw error;
   }
   if (!qrPath) {
     return;

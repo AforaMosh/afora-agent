@@ -610,4 +610,37 @@ describe("zalouser account resolution", () => {
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
     expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("work-profile");
   });
+
+  it("cancels direct qr login when writing its image throws", async () => {
+    const login = zalouserAuthAdapter.login;
+    if (!login) {
+      throw new Error("zalouser auth.login unavailable");
+    }
+
+    startZaloQrLoginMock.mockResolvedValue({
+      message: "qr ready",
+      qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+    } as never);
+    writeQrDataUrlToTempFileMock.mockRejectedValueOnce(new Error("disk full"));
+
+    await expect(
+      login({
+        cfg: {
+          channels: {
+            zalouser: {
+              defaultAccount: "work",
+              accounts: {
+                work: {
+                  profile: "work-profile",
+                },
+              },
+            },
+          },
+        } as never,
+        runtime: createNonExitingRuntimeEnv(),
+      }),
+    ).rejects.toThrow("disk full");
+    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("work-profile");
+    expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
+  });
 });

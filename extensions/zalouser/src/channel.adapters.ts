@@ -417,7 +417,7 @@ export const zalouserAuthAdapter = {
     });
     if (!started.qrDataUrl) {
       cancelZaloQrLogin(account.profile);
-      throw new Error(started.message || "Failed to start QR login");
+      throw new Error("Zalo QR login did not produce a scannable image. Start login again.");
     }
 
     let qrPath: string | null = null;

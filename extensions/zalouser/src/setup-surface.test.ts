@@ -251,9 +251,31 @@ describe("zalouser setup wizard", () => {
       expect.stringContaining("Scan + approve on phone, then continue."),
       "QR Login",
     );
+    expect(cancelZaloQrLoginMock.mock.invocationCallOrder[0]).toBeLessThan(
+      note.mock.invocationCallOrder.at(-1)!,
+    );
     expect(confirmations).not.toContain("Did you scan and approve the QR on your phone?");
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
     expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+  });
+
+  it("cancels the active QR login when writing its image throws", async () => {
+    checkZaloAuthenticatedMock.mockResolvedValueOnce(false);
+    cancelZaloQrLoginMock.mockClear();
+    startZaloQrLoginMock.mockResolvedValueOnce({
+      message: "qr ready",
+      qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+    });
+    writeQrDataUrlToTempFileMock.mockRejectedValueOnce(new Error("disk full"));
+    const prompter = createTestWizardPrompter({
+      confirm: vi.fn(
+        async ({ message }: { message: string }) => message === "Login via QR code now?",
+      ),
+    });
+
+    await expect(runSetup({ prompter })).rejects.toThrow("disk full");
+    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+    expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
   });
 
   it("cancels the active QR login when scan confirmation is declined", async () => {
