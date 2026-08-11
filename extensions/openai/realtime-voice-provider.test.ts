@@ -61,6 +61,7 @@ const {
   fetchWithSsrFGuardMock,
   isProviderAuthProfileConfiguredMock,
   resolveProviderAuthProfileApiKeyMock,
+  resolveProviderAuthProfileSelectionStateMock,
 } = vi.hoisted(() => {
   type Listener = (...args: unknown[]) => void;
 
@@ -129,6 +130,7 @@ const {
     fetchWithSsrFGuardMock: vi.fn(),
     isProviderAuthProfileConfiguredMock: vi.fn(),
     resolveProviderAuthProfileApiKeyMock: vi.fn(),
+    resolveProviderAuthProfileSelectionStateMock: vi.fn(),
   };
 });
 
@@ -151,6 +153,7 @@ vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
 vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
   isProviderAuthProfileConfigured: isProviderAuthProfileConfiguredMock,
   resolveProviderAuthProfileApiKey: resolveProviderAuthProfileApiKeyMock,
+  resolveProviderAuthProfileSelectionState: resolveProviderAuthProfileSelectionStateMock,
 }));
 
 type FakeWebSocketInstance = InstanceType<typeof FakeWebSocket>;
@@ -428,6 +431,11 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     isProviderAuthProfileConfiguredMock.mockReturnValue(false);
     resolveProviderAuthProfileApiKeyMock.mockReset();
     resolveProviderAuthProfileApiKeyMock.mockResolvedValue(undefined);
+    resolveProviderAuthProfileSelectionStateMock.mockReset();
+    resolveProviderAuthProfileSelectionStateMock.mockReturnValue({
+      explicit: false,
+      status: "unselected",
+    });
   });
 
   afterEach(() => {
@@ -622,7 +630,10 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
   it("does not fall back to OPENAI_API_KEY when a configured profile cannot resolve", async () => {
     vi.stubEnv("OPENAI_API_KEY", "sk-env"); // pragma: allowlist secret
     resolveProviderAuthProfileApiKeyMock.mockResolvedValueOnce(undefined);
-    isProviderAuthProfileConfiguredMock.mockReturnValueOnce(true);
+    resolveProviderAuthProfileSelectionStateMock.mockReturnValueOnce({
+      explicit: true,
+      status: "missing",
+    });
     const provider = buildOpenAIRealtimeVoiceProvider();
     const bridge = provider.createBridge({
       cfg: {} as never,
@@ -923,10 +934,16 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     const cfg = { agents: { defaults: {} } } as never;
 
     expect(provider.isConfigured({ cfg, providerConfig: {} })).toBe(false);
-    expect(isProviderAuthProfileConfiguredMock).toHaveBeenCalledWith({
+    expect(resolveProviderAuthProfileSelectionStateMock).toHaveBeenNthCalledWith(1, {
       provider: "openai",
       cfg,
       profileTypes: ["api_key"],
+      includeExternalCliAuth: false,
+    });
+    expect(resolveProviderAuthProfileSelectionStateMock).toHaveBeenNthCalledWith(2, {
+      provider: "openai",
+      cfg,
+      profileTypes: ["oauth"],
       includeExternalCliAuth: false,
     });
   });
@@ -970,7 +987,10 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
   });
 
   it("scopes GPT-Live availability and browser auth to the selected agent", async () => {
-    isProviderAuthProfileConfiguredMock.mockReturnValue(true);
+    resolveProviderAuthProfileSelectionStateMock.mockReturnValue({
+      explicit: true,
+      status: "selected",
+    });
     resolveProviderAuthProfileApiKeyMock.mockResolvedValue("sk-profile"); // pragma: allowlist secret
     const createBrowserSession = vi.fn(async () => ({
       provider: "openai",
@@ -999,14 +1019,14 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
     expect(internalApi.isGatewayRelayConfigured({ cfg, providerConfig, agentId: "voice" })).toBe(
       true,
     );
-    expect(isProviderAuthProfileConfiguredMock).toHaveBeenNthCalledWith(1, {
+    expect(resolveProviderAuthProfileSelectionStateMock).toHaveBeenNthCalledWith(1, {
       provider: "openai",
       cfg,
       agentDir: "/tmp/openclaw-agent-voice",
       profileTypes: ["api_key"],
       includeExternalCliAuth: false,
     });
-    expect(isProviderAuthProfileConfiguredMock).toHaveBeenNthCalledWith(2, {
+    expect(resolveProviderAuthProfileSelectionStateMock).toHaveBeenNthCalledWith(2, {
       provider: "openai",
       cfg,
       agentDir: "/tmp/openclaw-agent-voice",
@@ -1466,9 +1486,11 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
       async ({ profileTypes }: { profileTypes?: readonly string[] }) =>
         profileTypes?.includes("oauth") ? oauthToken : undefined,
     );
-    isProviderAuthProfileConfiguredMock.mockImplementation(
+    resolveProviderAuthProfileSelectionStateMock.mockImplementation(
       ({ profileTypes }: { profileTypes?: readonly string[] }) =>
-        profileTypes?.includes("api_key") === true,
+        profileTypes?.includes("api_key")
+          ? { explicit: true, status: "unresolved" }
+          : { explicit: true, status: "selected" },
     );
     const createBrowserSession = vi.fn();
     const provider = buildOpenAIRealtimeVoiceProvider({
@@ -1596,12 +1618,15 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
   });
 
   it("treats OpenAI API-key auth profiles as configured for browser realtime sessions", () => {
-    isProviderAuthProfileConfiguredMock.mockReturnValue(true);
+    resolveProviderAuthProfileSelectionStateMock.mockReturnValue({
+      explicit: true,
+      status: "selected",
+    });
     const provider = buildOpenAIRealtimeVoiceProvider();
     const cfg = { agents: { defaults: {} } } as never;
 
     expect(provider.isConfigured({ cfg, providerConfig: {} })).toBe(true);
-    expect(isProviderAuthProfileConfiguredMock).toHaveBeenCalledWith({
+    expect(resolveProviderAuthProfileSelectionStateMock).toHaveBeenCalledWith({
       provider: "openai",
       cfg,
       profileTypes: ["api_key"],
@@ -1689,7 +1714,10 @@ describe("buildOpenAIRealtimeVoiceProvider", () => {
 
   it("fails closed when a configured API-key profile cannot be resolved", async () => {
     resolveProviderAuthProfileApiKeyMock.mockResolvedValueOnce(undefined);
-    isProviderAuthProfileConfiguredMock.mockReturnValueOnce(true);
+    resolveProviderAuthProfileSelectionStateMock.mockReturnValueOnce({
+      explicit: true,
+      status: "missing",
+    });
     const provider = buildOpenAIRealtimeVoiceProvider();
     const bridge = provider.createBridge({
       cfg: {} as never,

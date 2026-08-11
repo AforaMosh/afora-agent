@@ -10,7 +10,10 @@ import {
   resolveApiKeyForProfile,
   resolveOAuthCredentialForProfile,
 } from "../agents/auth-profiles/oauth.js";
-import { resolveAuthProfileOrderWithMetadata } from "../agents/auth-profiles/order.js";
+import {
+  resolveAuthProfileEligibility,
+  resolveAuthProfileOrderWithMetadata,
+} from "../agents/auth-profiles/order.js";
 import { listProfilesForProvider } from "../agents/auth-profiles/profiles.js";
 import { resolveStoredCredentialReadOnlyAvailability } from "../agents/auth-profiles/read-only-availability.js";
 import {
@@ -35,6 +38,7 @@ import {
   resolveUsableCustomProviderApiKey,
 } from "../agents/model-auth-provider-config.js";
 import { resolveManagedSecretRefRuntimeProviderAuth } from "../agents/model-auth-runtime-config.js";
+import { resolveProviderIdForAuth } from "../agents/provider-auth-aliases.js";
 import { readProviderJsonResponse } from "../agents/provider-http-errors.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { cancelUnreadResponseBody } from "../infra/http-body.js";
@@ -566,13 +570,10 @@ export function listUsableProviderAuthProfileIds(params: {
 }
 
 /**
- * Checks whether auth profile selection is configured for a provider.
- *
- * Explicit missing profiles and unresolved SecretRefs remain configured so
- * callers can fail closed instead of silently substituting another source.
+ * Checks whether any usable auth profile exists for a provider.
  */
 export function isProviderAuthProfileConfigured(params: {
-  /** Provider id to check for configured auth profiles. */
+  /** Provider id to check for usable auth profiles. */
   provider: string;
   /** Optional runtime config used to resolve auth profile order and default agent dir. */
   cfg?: OpenClawConfig;
@@ -585,14 +586,66 @@ export function isProviderAuthProfileConfigured(params: {
   /** Whether external CLI auth profiles may be discovered and included. */
   includeExternalCliAuth?: boolean;
 }): boolean {
+  return listUsableProviderAuthProfileIds(params).profileIds.length > 0;
+}
+
+/**
+ * Resolves requested credential-type selection state and whether authored order owns it.
+ */
+export function resolveProviderAuthProfileSelectionState(params: {
+  provider: string;
+  cfg?: OpenClawConfig;
+  agentDir?: string;
+  profileTypes: readonly AuthProfileCredential["type"][];
+  allowKeychainPrompt?: boolean;
+  includeExternalCliAuth?: boolean;
+}): {
+  explicit: boolean;
+  status: "missing" | "selected" | "unresolved" | "unselected";
+} {
   try {
     const { hasExplicitOrder, profileIds, store } = resolveUsableProviderAuthProfiles({
       ...params,
       readinessMode: "read-only",
     });
-    return hasExplicitOrder || filterAuthProfileIdsByType(store, profileIds, params).length > 0;
+    const selectedProfileId = filterAuthProfileIdsByType(store, profileIds, params)[0];
+    if (selectedProfileId) {
+      const selected = resolveAuthProfileEligibility({
+        cfg: params.cfg,
+        store,
+        provider: params.provider,
+        profileId: selectedProfileId,
+      });
+      return {
+        explicit: hasExplicitOrder,
+        status: selected.reasonCode === "unresolved_ref" ? "unresolved" : "selected",
+      };
+    }
+    if (!hasExplicitOrder) {
+      return { explicit: false, status: "unselected" };
+    }
+
+    const providerAuthKey = resolveProviderIdForAuth(params.provider, { config: params.cfg });
+    const explicitOrder = [store.order, params.cfg?.auth?.order]
+      .map(
+        (order) =>
+          Object.entries(order ?? {}).find(
+            ([provider]) =>
+              resolveProviderIdForAuth(provider, { config: params.cfg }) === providerAuthKey,
+          )?.[1],
+      )
+      .find((order) => order !== undefined);
+    const allowedTypes = new Set(params.profileTypes);
+    const selectsRequestedType = explicitOrder?.some((profileId) => {
+      const storedType = store.profiles[profileId]?.type;
+      const configuredMode = params.cfg?.auth?.profiles?.[profileId]?.mode;
+      const configuredType = configuredMode === "aws-sdk" ? undefined : configuredMode;
+      const selectedType = storedType ?? configuredType;
+      return selectedType !== undefined && allowedTypes.has(selectedType);
+    });
+    return { explicit: true, status: selectsRequestedType ? "missing" : "unselected" };
   } catch {
-    return false;
+    return { explicit: false, status: "unselected" };
   }
 }
 

@@ -7,6 +7,7 @@ import type { PluginLogger } from "openclaw/plugin-sdk/plugin-entry";
 import {
   isProviderAuthProfileConfigured,
   resolveProviderAuthProfileApiKey,
+  resolveProviderAuthProfileSelectionState,
 } from "openclaw/plugin-sdk/provider-auth";
 import { resolveProviderRequestHeaders } from "openclaw/plugin-sdk/provider-http";
 import {
@@ -582,14 +583,11 @@ async function resolveOpenAIRealtimePlatformAuth(params: {
   if (profileApiKey) {
     return { status: "available", value: profileApiKey };
   }
-  const hasConfiguredApiKeyProfile = isProviderAuthProfileConfigured({
-    provider: "openai",
-    cfg: params.cfg,
-    ...(agentDir ? { agentDir } : {}),
-    profileTypes: ["api_key"],
-    includeExternalCliAuth: false,
-  });
-  if (hasConfiguredApiKeyProfile) {
+  const apiKeySelection = resolveOpenAIRealtimeAuthProfileSelection(params, ["api_key"]);
+  if (apiKeySelection.status !== "unselected") {
+    return { status: "missing" };
+  }
+  if (hasExplicitOpenAIRealtimeOAuthSelection(params)) {
     return { status: "missing" };
   }
 
@@ -602,6 +600,33 @@ async function resolveOpenAIRealtimePlatformAuth(params: {
   }
 
   return { status: "missing" };
+}
+
+function resolveOpenAIRealtimeAuthProfileSelection(
+  params: {
+    cfg: RealtimeVoiceBrowserSessionCreateRequest["cfg"] | undefined;
+    agentId?: string;
+  },
+  profileTypes: readonly ("api_key" | "oauth")[],
+) {
+  const agentDir =
+    params.cfg && params.agentId ? resolveAgentDir(params.cfg, params.agentId) : undefined;
+  return resolveProviderAuthProfileSelectionState({
+    provider: "openai",
+    cfg: params.cfg,
+    ...(agentDir ? { agentDir } : {}),
+    profileTypes,
+    includeExternalCliAuth: false,
+  });
+}
+
+function hasExplicitOpenAIRealtimeOAuthSelection(params: {
+  cfg: RealtimeVoiceBrowserSessionCreateRequest["cfg"] | undefined;
+  agentId?: string;
+}): boolean {
+  // An authored OAuth order owns GA subscription auth; ambient Platform keys must not preempt it.
+  const selection = resolveOpenAIRealtimeAuthProfileSelection(params, ["oauth"]);
+  return selection.explicit && selection.status !== "unselected";
 }
 
 async function requireOpenAIRealtimePlatformAuth(params: {
@@ -636,18 +661,12 @@ function hasOpenAIRealtimePlatformAuthInput(params: {
   if (hasOpenAIRealtimeConfiguredApiKeyInput(params.configuredApiKey)) {
     return true;
   }
-  const agentDir =
-    params.cfg && params.agentId ? resolveAgentDir(params.cfg, params.agentId) : undefined;
-  if (
-    isProviderAuthProfileConfigured({
-      provider: "openai",
-      cfg: params.cfg,
-      ...(agentDir ? { agentDir } : {}),
-      profileTypes: ["api_key"],
-      includeExternalCliAuth: false,
-    })
-  ) {
+  const apiKeySelection = resolveOpenAIRealtimeAuthProfileSelection(params, ["api_key"]);
+  if (apiKeySelection.status !== "unselected") {
     return true;
+  }
+  if (hasExplicitOpenAIRealtimeOAuthSelection(params)) {
+    return false;
   }
   return hasOpenAIRealtimeApiKeyInput(undefined);
 }
