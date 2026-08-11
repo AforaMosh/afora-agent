@@ -26,6 +26,7 @@ import {
 } from "../state/openclaw-agent-db-schema.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
 import {
+  OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
   OPENCLAW_AGENT_SCHEMA_VERSION,
   type OpenClawAgentDatabase,
 } from "../state/openclaw-agent-db.js";
@@ -46,7 +47,7 @@ import { readSqliteUserVersion } from "./sqlite-user-version.js";
 import { resolveAgentDatabaseMediaMigrationTargets } from "./state-migrations.media-persistence-targets.js";
 import type { MigrationMessages } from "./state-migrations.types.js";
 
-const PREVIOUS_MEDIA_SCHEMA_VERSION = OPENCLAW_AGENT_SCHEMA_VERSION - 1;
+const PREVIOUS_MEDIA_SCHEMA_VERSION = OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION - 1;
 const ARCHIVE_TEMP_MARKER = ".media-retirement";
 
 type MediaMigrationDatabase = Pick<
@@ -304,11 +305,32 @@ function createMigrationDatabaseHandle(
   };
 }
 
+function convergeCurrentAgentSchema(params: {
+  agentId: string;
+  database: DatabaseSync;
+  pathname: string;
+}): number {
+  if (readSqliteUserVersion(params.database) < OPENCLAW_AGENT_SCHEMA_VERSION) {
+    // Media rows must cross their durable v16 fence before unrelated structural
+    // migrations run, so a failed second phase remains safely resumable by Doctor.
+    ensureOpenClawAgentDatabaseSchema(params.database, {
+      agentId: params.agentId,
+      path: params.pathname,
+    });
+  }
+  return readSqliteUserVersion(params.database);
+}
+
 function migrateAgentDatabase(params: {
   agentId: string;
   beforeTransaction?: () => void;
   pathname: string;
-}): { rewrittenSessions: number; rewrittenTrajectoryRows: number; versionAdvanced: boolean } {
+}): {
+  rewrittenSessions: number;
+  rewrittenTrajectoryRows: number;
+  schemaVersion: number;
+  versionAdvanced: boolean;
+} {
   const database = openNodeSqliteDatabase(params.pathname);
   try {
     database.exec(`PRAGMA busy_timeout = ${OPENCLAW_SQLITE_BUSY_TIMEOUT_MS};`);
@@ -329,11 +351,11 @@ function migrateAgentDatabase(params: {
       userVersion = readSqliteUserVersion(database);
     }
     if (
-      userVersion !== PREVIOUS_MEDIA_SCHEMA_VERSION &&
-      userVersion !== OPENCLAW_AGENT_SCHEMA_VERSION
+      userVersion < PREVIOUS_MEDIA_SCHEMA_VERSION ||
+      userVersion > OPENCLAW_AGENT_SCHEMA_VERSION
     ) {
       throw new Error(
-        `${params.pathname} uses schema version ${userVersion}; expected ${PREVIOUS_MEDIA_SCHEMA_VERSION} or ${OPENCLAW_AGENT_SCHEMA_VERSION}`,
+        `${params.pathname} uses schema version ${userVersion}; expected ${PREVIOUS_MEDIA_SCHEMA_VERSION} through ${OPENCLAW_AGENT_SCHEMA_VERSION}`,
       );
     }
     if (metadata.schemaVersion !== userVersion) {
@@ -380,7 +402,16 @@ function migrateAgentDatabase(params: {
     const changedSessions = planned.filter((session) => session.changed);
     const versionAdvanced = userVersion === PREVIOUS_MEDIA_SCHEMA_VERSION;
     if (!versionAdvanced && changedSessions.length === 0 && changedTrajectoryRows.length === 0) {
-      return { rewrittenSessions: 0, rewrittenTrajectoryRows: 0, versionAdvanced: false };
+      return {
+        rewrittenSessions: 0,
+        rewrittenTrajectoryRows: 0,
+        schemaVersion: convergeCurrentAgentSchema({
+          agentId: params.agentId,
+          database,
+          pathname: params.pathname,
+        }),
+        versionAdvanced: false,
+      };
     }
 
     params.beforeTransaction?.();
@@ -420,14 +451,16 @@ function migrateAgentDatabase(params: {
           );
         }
         if (versionAdvanced) {
-          database.exec(`PRAGMA user_version = ${OPENCLAW_AGENT_SCHEMA_VERSION};`);
+          database.exec(
+            `PRAGMA user_version = ${OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION};`,
+          );
           executeSqliteQuerySync(
             database,
             db
               .updateTable("schema_meta")
               .set({
                 app_version: VERSION,
-                schema_version: OPENCLAW_AGENT_SCHEMA_VERSION,
+                schema_version: OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
                 updated_at: Date.now(),
               })
               .where("meta_key", "=", "primary"),
@@ -440,9 +473,15 @@ function migrateAgentDatabase(params: {
         operationLabel: "media-persistence-retirement",
       },
     );
+    const schemaVersion = convergeCurrentAgentSchema({
+      agentId: params.agentId,
+      database,
+      pathname: params.pathname,
+    });
     return {
       rewrittenSessions: changedSessions.length,
       rewrittenTrajectoryRows: changedTrajectoryRows.length,
+      schemaVersion,
       versionAdvanced,
     };
   } finally {
@@ -631,7 +670,12 @@ export function migrateLegacyMediaPersistence(
         pathname,
       });
       if (entry.source !== "registry" || result.versionAdvanced) {
-        registerOpenClawAgentDatabase({ agentId: entry.agentId, env, path: pathname });
+        registerOpenClawAgentDatabase({
+          agentId: entry.agentId,
+          env,
+          path: pathname,
+          schemaVersion: result.schemaVersion,
+        });
       }
       if (
         result.versionAdvanced ||
@@ -639,7 +683,7 @@ export function migrateLegacyMediaPersistence(
         result.rewrittenTrajectoryRows > 0
       ) {
         changes.push(
-          `Migrated media persistence in ${pathname}: ${result.rewrittenSessions} transcript session(s), ${result.rewrittenTrajectoryRows} trajectory row(s), schema v${OPENCLAW_AGENT_SCHEMA_VERSION}.`,
+          `Migrated media persistence in ${pathname}: ${result.rewrittenSessions} transcript session(s), ${result.rewrittenTrajectoryRows} trajectory row(s), media floor v${OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION}.`,
         );
       }
     } catch (error) {

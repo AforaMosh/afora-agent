@@ -63,6 +63,7 @@ import {
 } from "./openclaw-state-db.js";
 
 export {
+  OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
   OPENCLAW_AGENT_SCHEMA_VERSION,
   type OpenClawAgentDatabase,
   type OpenClawAgentDatabaseOptions,

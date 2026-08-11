@@ -13,6 +13,7 @@ import { registerOpenClawAgentDatabase } from "../state/openclaw-agent-db-regist
 import {
   closeOpenClawAgentDatabasesForTest,
   listOpenClawRegisteredAgentDatabases,
+  OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
   OPENCLAW_AGENT_SCHEMA_VERSION,
   openOpenClawAgentDatabase,
   runOpenClawAgentWriteTransaction,
@@ -22,7 +23,7 @@ import { requireNodeSqlite } from "./node-sqlite.js";
 import { migrateLegacyMediaPersistence } from "./state-migrations.media-persistence.js";
 
 const tempDirs: string[] = [];
-const PREVIOUS_VERSION = OPENCLAW_AGENT_SCHEMA_VERSION - 1;
+const PREVIOUS_VERSION = OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION - 1;
 
 type FixtureEvent = Record<string, unknown>;
 
@@ -447,6 +448,86 @@ describe("legacy media persistence doctor migration", () => {
     expect(openOpenClawAgentDatabase({ agentId: "main", env }).db.isOpen).toBe(true);
     closeOpenClawAgentDatabasesForTest();
     expect(migrateLegacyMediaPersistence({ env })).toEqual({ changes: [], warnings: [] });
+  });
+
+  it("runs the v16 media cutover before converging Doctor state through v17", () => {
+    expect(OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION).toBe(16);
+    expect(OPENCLAW_AGENT_SCHEMA_VERSION).toBe(17);
+    const stateDir = makeTempDir(tempDirs, "media-persistence-version-fences-");
+    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const databasePath = createLegacyDatabaseFixture({
+      env,
+      eventsBySession: {
+        legacy: [
+          createEvent({
+            id: "event-1",
+            parentId: null,
+            timestamp: 1000,
+            message: { role: "user", content: "legacy", MediaPath: "/media/a.png" },
+          }),
+        ],
+      },
+    });
+    const { DatabaseSync } = requireNodeSqlite();
+    const legacy = new DatabaseSync(databasePath);
+    legacy.exec(`
+      CREATE TABLE state_leases (
+        scope TEXT NOT NULL,
+        lease_key TEXT NOT NULL,
+        owner TEXT NOT NULL,
+        expires_at INTEGER,
+        heartbeat_at INTEGER,
+        payload_json TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (scope, lease_key)
+      ) STRICT;
+      CREATE INDEX idx_agent_state_leases_expiry
+        ON state_leases(expires_at, scope, lease_key)
+        WHERE expires_at IS NOT NULL;
+      CREATE INDEX idx_agent_state_leases_owner
+        ON state_leases(owner, updated_at DESC);
+      INSERT INTO state_leases (
+        scope, lease_key, owner, expires_at, heartbeat_at, payload_json, created_at, updated_at
+      ) VALUES ('retired', 'orphan', 'nobody', NULL, NULL, NULL, 1, 1);
+    `);
+    legacy.close();
+
+    let versionBeforeMediaTransaction: number | undefined;
+    const migration = migrateLegacyMediaPersistence({
+      env,
+      hooks: {
+        beforeDatabaseTransaction: (pathname) => {
+          const beforeMedia = new DatabaseSync(pathname, { readOnly: true });
+          versionBeforeMediaTransaction = (
+            beforeMedia.prepare("PRAGMA user_version").get() as { user_version: number }
+          ).user_version;
+          beforeMedia.close();
+        },
+      },
+    });
+    expect(migration.warnings).toEqual([]);
+    expect(versionBeforeMediaTransaction).toBe(
+      OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION - 1,
+    );
+    const afterDoctor = new DatabaseSync(databasePath, { readOnly: true });
+    expect(afterDoctor.prepare("PRAGMA user_version").get()).toEqual({
+      user_version: OPENCLAW_AGENT_SCHEMA_VERSION,
+    });
+    expect(
+      afterDoctor
+        .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'state_leases'")
+        .get(),
+    ).toBeUndefined();
+    const migratedRow = afterDoctor
+      .prepare("SELECT event_json FROM transcript_events WHERE session_id = ? AND seq = 0")
+      .get("legacy") as { event_json: string };
+    expect(
+      (JSON.parse(migratedRow.event_json) as { message: Record<string, unknown> }).message,
+    ).toMatchObject({
+      __openclaw: { media: [expect.objectContaining({ path: "/media/a.png" })] },
+    });
+    afterDoctor.close();
   });
 
   it("upgrades the existing v14 structural schema before the media cutover", () => {
