@@ -13,7 +13,11 @@ import { RealtimeTalkSession } from "./realtime-talk.ts";
 type InspectableRealtimeTalkSession = {
   callbacks: RealtimeTalkCallbacks;
   options: { provider?: string; transport?: string };
-  localOptions: { inputDeviceId?: string; videoDeviceId?: string };
+  localOptions: {
+    inputDeviceId?: string;
+    videoDeviceId?: string;
+    supportsOutputGeneration?: boolean;
+  };
 };
 
 function inspectSession(state: ChatRealtimeState): InspectableRealtimeTalkSession {
@@ -28,6 +32,7 @@ function createState(): ChatRealtimeState {
   const state = {
     client: {},
     connected: true,
+    hello: null,
     settings: loadSettings(),
     sessionKey: "main",
     lastError: null,
@@ -71,6 +76,18 @@ describe("chat realtime actions", () => {
     expect(inspectSession(state).localOptions.inputDeviceId).toBe("usb-mic");
     expect(inspectSession(state).localOptions.videoDeviceId).toBe("desk-camera");
     expect(startSpy).toHaveBeenCalledOnce();
+  });
+
+  it("snapshots output-generation support when Talk starts", async () => {
+    const state = createState();
+    state.hello = {
+      features: { capabilities: ["talk-output-generation"] },
+    } as ChatRealtimeState["hello"];
+
+    await state.toggleRealtimeTalk();
+    state.hello = null;
+
+    expect(inspectSession(state).localOptions.supportsOutputGeneration).toBe(true);
   });
 
   it("enables camera only after a video-capable voice session starts", async () => {

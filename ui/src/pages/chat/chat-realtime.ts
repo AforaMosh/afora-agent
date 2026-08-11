@@ -1,5 +1,6 @@
-import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import type { GatewayBrowserClient, GatewayHelloOk } from "../../api/gateway.ts";
 import { loadSettings, patchSettings, type UiSettings } from "../../app/settings.ts";
+import { isGatewayCapabilityAdvertised } from "../../lib/gateway-methods.ts";
 import {
   createRealtimeTalkConversationState,
   updateRealtimeTalkConversation,
@@ -16,6 +17,7 @@ import { RealtimeTalkSession, type RealtimeTalkStatus } from "./realtime-talk.ts
 export type ChatRealtimeState = {
   client: GatewayBrowserClient | null;
   connected: boolean;
+  hello: GatewayHelloOk | null;
   settings: UiSettings;
   sessionKey: string;
   lastError?: string | null;
@@ -166,6 +168,8 @@ export function attachChatRealtimeActions(state: ChatRealtimeState) {
     const inputDeviceId = talkSettings.realtimeTalkInputDeviceId?.trim() || undefined;
     const videoDeviceId = talkSettings.realtimeTalkVideoDeviceId?.trim() || undefined;
     const autoEnableCamera = talkSettings.talkCameraAutoEnable === true;
+    const supportsOutputGeneration =
+      isGatewayCapabilityAdvertised(state, "talk-output-generation") === true;
     let autoEnableCameraAttempted = false;
     state.realtimeTalkActive = true;
     state.realtimeTalkStatus = "connecting";
@@ -252,7 +256,7 @@ export function attachChatRealtimeActions(state: ChatRealtimeState) {
         },
       },
       {},
-      { inputDeviceId, videoDeviceId },
+      { inputDeviceId, videoDeviceId, supportsOutputGeneration },
     );
     state.realtimeTalkSession = session;
     try {

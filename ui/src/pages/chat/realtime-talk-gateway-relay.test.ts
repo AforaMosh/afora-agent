@@ -126,6 +126,7 @@ function createTransport(overrides: Partial<RealtimeTalkTransportContext> = {}) 
     callbacks: {},
     client: createClient(),
     sessionKey: "main",
+    supportsOutputGeneration: true,
     ...overrides,
   });
 }
@@ -550,9 +551,9 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
     transport.stop();
   });
 
-  it("cancels provider output when the first audio chunk exceeds the time budget", async () => {
+  it("includes output generation in cancellation when the Gateway advertises support", async () => {
     const client = createClient();
-    const transport = createTransport({ client });
+    const transport = createTransport({ client, supportsOutputGeneration: true });
 
     await startTransport(transport);
     emitTalkEvent({
@@ -582,6 +583,47 @@ describe("GatewayRelayRealtimeTalkTransport", () => {
             sessionId: "relay-1",
             turnId: "turn-authoritative",
             outputGeneration: 7,
+            reason: "playback-overflow",
+          },
+        ],
+      ]),
+    );
+    expect(createdSources).toHaveLength(0);
+
+    transport.stop();
+  });
+
+  it("preserves turn identity but omits output generation for a legacy Gateway", async () => {
+    const client = createClient();
+    const transport = createTransport({ client, supportsOutputGeneration: false });
+
+    await startTransport(transport);
+    emitTalkEvent({
+      relaySessionId: "relay-1",
+      type: "audio",
+      audioBase64: zeroPcmBase64(24000 * 11),
+      outputGeneration: 7,
+      talkEvent: {
+        id: "relay-1:2",
+        type: "output.audio.delta",
+        sessionId: "relay-1",
+        turnId: "turn-authoritative",
+        seq: 2,
+        timestamp: "2026-08-05T00:00:00.000Z",
+        mode: "realtime",
+        transport: "gateway-relay",
+        brain: "agent-consult",
+        payload: { byteLength: 48_000 },
+      } satisfies RealtimeTalkEvent,
+    });
+
+    await waitForFast(() =>
+      expect(requestCallsFor(client, "talk.session.cancelOutput")).toStrictEqual([
+        [
+          "talk.session.cancelOutput",
+          {
+            sessionId: "relay-1",
+            turnId: "turn-authoritative",
             reason: "playback-overflow",
           },
         ],

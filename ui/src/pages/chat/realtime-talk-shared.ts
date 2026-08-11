@@ -122,6 +122,7 @@ export type RealtimeTalkTransportContext = {
   callbacks: RealtimeTalkCallbacks;
   inputDeviceId?: string;
   videoDeviceId?: string;
+  supportsOutputGeneration?: boolean;
   consultThinkingLevel?: string;
   consultFastMode?: boolean;
 };

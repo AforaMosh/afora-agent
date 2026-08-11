@@ -709,7 +709,9 @@ export class GatewayRelayRealtimeTalkTransport implements RealtimeTalkTransport 
       .request("talk.session.cancelOutput", {
         sessionId: this.session.relaySessionId,
         ...(turnId ? { turnId } : {}),
-        ...(outputGeneration ? { outputGeneration } : {}),
+        ...(this.ctx.supportsOutputGeneration === true && outputGeneration !== undefined
+          ? { outputGeneration }
+          : {}),
         reason,
       })
       .then(

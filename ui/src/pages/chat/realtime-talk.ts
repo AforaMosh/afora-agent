@@ -45,6 +45,7 @@ type RealtimeTalkLaunchOptions = {
 type RealtimeTalkLocalOptions = {
   inputDeviceId?: string;
   videoDeviceId?: string;
+  supportsOutputGeneration?: boolean;
 };
 
 const activeRealtimeTalkSessions = new Set<RealtimeTalkSession>();
@@ -243,6 +244,7 @@ export class RealtimeTalkSession {
           callbacks,
           inputDeviceId: this.localOptions.inputDeviceId,
           videoDeviceId: this.localOptions.videoDeviceId,
+          supportsOutputGeneration: this.localOptions.supportsOutputGeneration === true,
           consultThinkingLevel: session.consultThinkingLevel,
           consultFastMode: session.consultFastMode,
         });
