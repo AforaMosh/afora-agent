@@ -131,10 +131,14 @@ describe("diagnostics-otel gateway runtime", () => {
         }),
       });
       const conversation = { id: "qa-operator", kind: "direct" as const };
-      const send = async (text: string) => {
+      const send = async (
+        text: string,
+        expectedText: string,
+        targetConversation = conversation,
+      ) => {
         const cursor = state.getSnapshot().messages.length;
         state.addInboundMessage({
-          conversation,
+          conversation: targetConversation,
           senderId: "qa-user",
           senderName: "QA User",
           text,
@@ -145,13 +149,16 @@ describe("diagnostics-otel gateway runtime", () => {
             .messages.slice(cursor)
             .find(
               (message) =>
-                message.direction === "outbound" && message.conversation.id === conversation.id,
+                message.direction === "outbound" &&
+                message.conversation.id === targetConversation.id &&
+                message.text.includes(expectedText),
             ),
         );
       };
 
       const successful = await send(
         "Tool progress QA check: use the read tool exactly once on `QA_KICKOFF_TASK.md` before answering. After that read completes, reply with only this exact marker and no other text: `OTEL-GATEWAY-SUCCESS-OK`.",
+        "OTEL-GATEWAY-SUCCESS-OK",
       );
       expect(successful.direction).toBe("outbound");
       expect(successful.text).toContain("OTEL-GATEWAY-SUCCESS-OK");
@@ -161,6 +168,7 @@ describe("diagnostics-otel gateway runtime", () => {
       )) as { cursor: number };
       const recovered = await send(
         "Failed tool terminal recovery QA check: read the missing workspace file, then respond with exact marker: `QA-FAILED-TOOL-FINALIZED-OK`.",
+        "QA-FAILED-TOOL-FINALIZED-OK",
       );
       expect(recovered.direction).toBe("outbound");
       expect(recovered.text).toContain("The requested file could not be read: ENOENT.");
@@ -177,7 +185,7 @@ describe("diagnostics-otel gateway runtime", () => {
       }>;
       const readPlans = scenarioRequests.filter((request) => request.plannedToolName === "read");
       const finalizations = scenarioRequests.filter((request) =>
-        String(request.allInputText ?? "").includes(
+        (request.allInputText ?? "").includes(
           "The previous assistant turn completed its tool calls but did not produce a user-visible answer.",
         ),
       );
@@ -193,13 +201,13 @@ describe("diagnostics-otel gateway runtime", () => {
         (item) =>
           item.type === "function_call" &&
           item.name === "exec" &&
-          String(item.arguments ?? "").includes("qa-failed-terminal-missing-file.txt"),
+          JSON.stringify(item.arguments ?? "").includes("qa-failed-terminal-missing-file.txt"),
       );
       const failedExecOutputs = finalizationInput.filter(
         (item) =>
           item.type === "function_call_output" &&
           item.call_id === failedExecCalls[0]?.call_id &&
-          /ENOENT|no such file/iu.test(String(item.output ?? "")),
+          /ENOENT|no such file/iu.test(JSON.stringify(item.output ?? "")),
       );
       expect(failedExecCalls).toHaveLength(1);
       expect(failedExecOutputs).toHaveLength(1);
