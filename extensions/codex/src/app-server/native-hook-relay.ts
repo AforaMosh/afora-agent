@@ -202,7 +202,7 @@ function codexNativeHookRelayPrincipal(attempt: CodexNativeHookRelayAttempt): st
     requester?.accountId,
     requester?.senderId,
     requester?.senderIsOwner,
-    requester?.roleIds ? [...new Set(requester.roleIds)].sort() : requester?.roleIds,
+    requester?.roleIds ? [...new Set(requester.roleIds)].toSorted() : requester?.roleIds,
     approvalContext?.trigger,
     approvalContext?.approvalReviewerDeviceId,
   ]);
