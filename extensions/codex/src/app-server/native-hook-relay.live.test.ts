@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import type { EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
 import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
@@ -12,6 +12,7 @@ import { withTempDir } from "openclaw/plugin-sdk/test-env";
 import type { PluginHookToolContext } from "openclaw/plugin-sdk/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveCodexAppServerRuntimeOptions } from "./config.js";
+import { createCodexTestHostCapabilities } from "./host-capability.test-support.js";
 import {
   clearCodexNativeHookRelayOwners,
   codexNativeHookRelayOwnerCount,
@@ -151,6 +152,7 @@ describeLive("Codex native hook relay worker lifetime", () => {
           onAgentEvent: (event: { stream: string; data: Record<string, unknown> }) => {
             agentEvents.push({ atMs: Date.now(), ...event });
           },
+          hostCapabilities: createCodexTestHostCapabilities(),
         } as unknown as EmbeddedRunAttemptParams;
 
         const result = await runCodexAppServerAttempt(params, {

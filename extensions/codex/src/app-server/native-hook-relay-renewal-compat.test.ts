@@ -16,7 +16,14 @@ const relayMocks = vi.hoisted(() => ({
   unregister: vi.fn(),
 }));
 
-function acquireCodexNativeHookRelay(params: Parameters<typeof acquireCodexNativeHookRelayRaw>[0]) {
+type TestNativeHookRelayParams = Omit<
+  Parameters<typeof acquireCodexNativeHookRelayRaw>[0],
+  "hostCapabilities"
+> & {
+  hostCapabilities?: Parameters<typeof acquireCodexNativeHookRelayRaw>[0]["hostCapabilities"];
+};
+
+function acquireCodexNativeHookRelay(params: TestNativeHookRelayParams) {
   return acquireCodexNativeHookRelayRaw({
     ...params,
     hostCapabilities: params.hostCapabilities ?? createCodexTestHostCapabilities(),

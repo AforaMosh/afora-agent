@@ -5,6 +5,7 @@ import {
 } from "openclaw/plugin-sdk/sqlite-runtime-testing";
 import { createOpenClawTestState, type OpenClawTestState } from "openclaw/plugin-sdk/test-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCodexTestHostCapabilities } from "./host-capability.test-support.js";
 import { createCodexNativeHookRelay } from "./native-hook-relay.js";
 import {
   clearCodexNativeHookRelayOwners,
@@ -77,6 +78,7 @@ function createRoute(generation: string) {
     loopDetectionPreToolUseRelay: true,
     signal: new AbortController().signal,
     onPreToolUseFailure: vi.fn(),
+    hostCapabilities: createCodexTestHostCapabilities(),
   });
   return acquisition.status === "active" ? acquisition.lease : undefined;
 }
