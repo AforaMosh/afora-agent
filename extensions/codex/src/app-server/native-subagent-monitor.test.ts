@@ -26,8 +26,6 @@ import type {
 type CodexThreadReadResponse = CodexAppServerRequestResult<"thread/read">;
 type CodexThreadListResponse = CodexAppServerRequestResult<"thread/list">;
 
-const DESCENDANT_RELAY_QUIET_WINDOW_MS = 5 * 60_000;
-
 const CodexNativeSubagentMonitor = codexNativeSubagentMonitorRuntime.Monitor;
 const registerCodexNativeSubagentMonitor = codexNativeSubagentMonitorRuntime.register;
 type CodexNativeSubagentMonitorInstance = InstanceType<typeof CodexNativeSubagentMonitor>;
@@ -315,13 +313,6 @@ function subAgentActivityNotification(
   };
 }
 
-function descendantItemNotification(threadId: string, itemId: string): CodexServerNotification {
-  return {
-    method: "item/completed",
-    params: { threadId, item: { id: itemId, type: "agentMessage", text: "working" } },
-  };
-}
-
 function threadStatusChangedNotification(
   threadId: string,
   type: "active" | "idle" | "notLoaded" | "systemError",
@@ -559,11 +550,12 @@ describe("CodexNativeSubagentMonitor", () => {
   it("cancels running children and releases their parent pin when closeAgent completes", async () => {
     const client = createClient();
     const runtime = createRuntime();
+    const relay = createNativeHookRelayLease();
     const releaseParentThread = vi.fn();
     const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
       retainParentThread: () => releaseParentThread,
     });
-    registerParent(monitor);
+    registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
 
     await notifyChildStarted(client);
     await client.notify(
@@ -575,9 +567,27 @@ describe("CodexNativeSubagentMonitor", () => {
       expect.objectContaining({ runId: "codex-thread:child-thread", status: "cancelled" }),
     );
     expect(releaseParentThread).toHaveBeenCalledOnce();
+    expect(relay.releases.get("child-thread")).toHaveBeenCalledOnce();
     expect(runtime.deliverAgentHarnessTaskCompletion).not.toHaveBeenCalled();
     monitor.dispose();
   });
+
+  it.each(["thread/closed", "thread/archived", "thread/deleted"] as const)(
+    "releases a completed worker relay on %s",
+    async (method) => {
+      const client = createClient();
+      const relay = createNativeHookRelayLease();
+      const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime());
+      registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
+      await notifyChildStarted(client);
+      await client.notify(nativeCompletionNotification());
+      expect(relay.releases.get("child-thread")).not.toHaveBeenCalled();
+
+      await client.notify({ method, params: { threadId: "child-thread" } });
+      expect(relay.releases.get("child-thread")).toHaveBeenCalledOnce();
+      monitor.dispose();
+    },
+  );
 
   it("retires parent generations idempotently and fences late child completions", async () => {
     const client = createClient();
@@ -1163,46 +1173,41 @@ describe("CodexNativeSubagentMonitor", () => {
     client.close();
   });
 
-  it("releases an interrupted child and resumes monitoring on its next turn", async () => {
-    const client = createClient();
-    const runtime = createRuntime();
-    const releaseClient = vi.fn();
-    const retainClient = vi.fn(() => releaseClient);
-    const monitor = new CodexNativeSubagentMonitor(client as never, runtime, { retainClient });
-    registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123");
-    await notifyChildStarted(client);
+  it.each(["completed", "failed", "interrupted"] as const)(
+    "retains a %s child's relay and client until authoritative unload",
+    async (status) => {
+      const client = createClient();
+      const relay = createNativeHookRelayLease();
+      relay.acquireDiscovery.mockReturnValue(undefined);
+      const releaseClient = vi.fn();
+      const retainClient = vi.fn(() => releaseClient);
+      const monitor = new CodexNativeSubagentMonitor(client as never, createRuntime(), {
+        retainClient,
+      });
+      registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
+      await notifyChildStarted(client);
 
-    await client.notify(childTurnCompletedNotification({ status: "interrupted" }));
+      await client.notify(childTurnCompletedNotification({ status }));
+      expect(retainClient).toHaveBeenCalledOnce();
+      expect(releaseClient).not.toHaveBeenCalled();
+      expect(relay.releases.get("child-thread")).not.toHaveBeenCalled();
 
-    expect(runtime.deliverAgentHarnessTaskCompletion).not.toHaveBeenCalled();
-    expect(releaseClient).toHaveBeenCalledTimes(1);
+      await client.notify(threadStatusChangedNotification("child-thread", "notLoaded"));
+      expect(relay.releases.get("child-thread")).toHaveBeenCalledOnce();
+      expect(releaseClient).toHaveBeenCalledOnce();
+      client.close();
+    },
+  );
 
-    client.setThreadRead(
-      "child-thread",
-      threadRead({ status: "completed", result: "resumed child result" }),
-    );
-    await client.notify({
-      method: "turn/started",
-      params: {
-        threadId: "child-thread",
-        turn: { id: "resumed-turn", status: "inProgress", items: [], error: null },
-      },
-    });
-    await expect(monitor.reconcileChildThread("child-thread")).resolves.toBe(true);
-
-    expect(retainClient).toHaveBeenCalledTimes(2);
-    expect(releaseClient).toHaveBeenCalledTimes(2);
-    expect(runtime.deliverAgentHarnessTaskCompletion).toHaveBeenCalledWith(
-      expect.objectContaining({ result: "resumed child result" }),
-    );
-    client.close();
-  });
-
-  it("re-registers a settled sub-agent that the parent messages again", async () => {
+  it("keeps one relay claim when a settled sub-agent is messaged again", async () => {
     const client = createClient();
     const runtime = createRuntime();
     const relay = createNativeHookRelayLease();
-    const monitor = new CodexNativeSubagentMonitor(client as never, runtime);
+    relay.acquireDiscovery.mockReturnValue(undefined);
+    const releaseClient = vi.fn();
+    const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
+      retainClient: () => releaseClient,
+    });
     registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
     await client.notify(subAgentActivityNotification("parent-thread", "child-thread"));
     await client.notify(
@@ -1213,7 +1218,7 @@ describe("CodexNativeSubagentMonitor", () => {
       }),
     );
     expect(runtime.deliverAgentHarnessTaskCompletion).toHaveBeenCalledTimes(1);
-    expect(relay.releases.get("child-thread")).toHaveBeenCalledTimes(1);
+    expect(relay.releases.get("child-thread")).not.toHaveBeenCalled();
 
     await client.notify(
       subAgentActivityNotification("parent-thread", "child-thread", "interacted"),
@@ -1230,10 +1235,9 @@ describe("CodexNativeSubagentMonitor", () => {
     expect(runtime.deliverAgentHarnessTaskCompletion).toHaveBeenLastCalledWith(
       expect.objectContaining({ result: "second" }),
     );
-    expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual([
-      "child-thread",
-      "child-thread",
-    ]);
+    expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual(["child-thread"]);
+    await client.notify(threadStatusChangedNotification("child-thread", "notLoaded"));
+    expect(relay.releases.get("child-thread")).toHaveBeenCalledOnce();
     monitor.dispose();
   });
 
@@ -1674,7 +1678,9 @@ describe("CodexNativeSubagentMonitor", () => {
       }),
     );
     registration.unregister();
-    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => {
+      setImmediate(resolve);
+    });
 
     expect(readAttempt).toBe(1);
     expect(relay.releaseDiscovery).not.toHaveBeenCalled();
@@ -1843,7 +1849,11 @@ describe("CodexNativeSubagentMonitor", () => {
     const client = createClient();
     const runtime = createRuntime();
     const relay = createNativeHookRelayLease();
-    const monitor = new CodexNativeSubagentMonitor(client as never, runtime);
+    relay.acquireDiscovery.mockReturnValue(undefined);
+    const releaseClient = vi.fn();
+    const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
+      retainClient: () => releaseClient,
+    });
     const registration = registerParent(
       monitor,
       "parent-thread",
@@ -1869,7 +1879,7 @@ describe("CodexNativeSubagentMonitor", () => {
         items: [{ id: "final-c", type: "agentMessage", phase: "final_answer", text: "done" }],
       }),
     );
-    expect(relay.releases.get("child-c")).toHaveBeenCalledTimes(1);
+    expect(relay.releases.get("child-c")).not.toHaveBeenCalled();
     expect(relay.releases.get("grandchild-g")).not.toHaveBeenCalled();
 
     registration.unregister();
@@ -1881,151 +1891,48 @@ describe("CodexNativeSubagentMonitor", () => {
       "great-grandchild-h",
     ]);
     expect(runtime.deliverAgentHarnessTaskCompletion).toHaveBeenCalledTimes(1);
+    expect(releaseClient).not.toHaveBeenCalled();
 
-    monitor.dispose();
+    await client.notify(threadStatusChangedNotification("child-c", "notLoaded"));
+    await client.notify(threadStatusChangedNotification("grandchild-g", "notLoaded"));
+    await client.notify(threadStatusChangedNotification("great-grandchild-h", "notLoaded"));
     expect(relay.releases.get("grandchild-g")).toHaveBeenCalledTimes(1);
     expect(relay.releases.get("great-grandchild-h")).toHaveBeenCalledTimes(1);
+    expect(releaseClient).toHaveBeenCalledOnce();
+    monitor.dispose();
   });
 
-  it("releases a settled descendant claim after its quiet window and re-claims it later", async () => {
-    vi.useFakeTimers();
-    try {
-      const client = createClient();
-      const runtime = createRuntime();
-      const relay = createNativeHookRelayLease();
-      const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
-        recoveryPollDelaysMs: [],
-      });
-      registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
-      await notifyChildStarted(client, "parent-thread", "child-c");
-      await client.notify(subAgentActivityNotification("child-c", "grandchild-g"));
-      await client.notify(threadStatusChangedNotification("grandchild-g", "active"));
-      await client.notify(threadStatusChangedNotification("grandchild-g", "idle"));
+  it("keeps a settled descendant claimed across its next turn", async () => {
+    const client = createClient();
+    const runtime = createRuntime();
+    const relay = createNativeHookRelayLease();
+    const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
+      recoveryPollDelaysMs: [],
+    });
+    registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
+    await notifyChildStarted(client, "parent-thread", "child-c");
+    await client.notify(subAgentActivityNotification("child-c", "grandchild-g"));
+    await client.notify(threadStatusChangedNotification("grandchild-g", "active"));
+    await client.notify(threadStatusChangedNotification("grandchild-g", "idle"));
 
-      await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS - 1);
-      expect(relay.releases.get("grandchild-g")).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(2);
-      expect(relay.releases.get("grandchild-g")).toHaveBeenCalledTimes(1);
+    await client.notify(subAgentActivityNotification("child-c", "grandchild-g", "interacted"));
+    await client.notify({
+      method: "turn/started",
+      params: {
+        threadId: "grandchild-g",
+        turn: { id: "turn-g2", status: "inProgress", items: [], error: null },
+      },
+    });
 
-      await client.notify(subAgentActivityNotification("child-c", "grandchild-g", "interacted"));
-      expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual([
-        "child-c",
-        "grandchild-g",
-        "grandchild-g",
-      ]);
-      monitor.dispose();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("keeps a running descendant claim past the quiet window after its spawner settles", async () => {
-    vi.useFakeTimers();
-    try {
-      const client = createClient();
-      const runtime = createRuntime();
-      const relay = createNativeHookRelayLease();
-      const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
-        recoveryPollDelaysMs: [],
-      });
-      registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
-      await notifyChildStarted(client, "parent-thread", "child-c");
-      await client.notify(subAgentActivityNotification("child-c", "grandchild-g"));
-      await client.notify(threadStatusChangedNotification("grandchild-g", "active"));
-      await client.notify(
-        childTurnCompletedNotification({
-          childThreadId: "child-c",
-          turnId: "turn-c",
-          status: "completed",
-          items: [{ id: "final-c", type: "agentMessage", phase: "final_answer", text: "done" }],
-        }),
-      );
-      expect(relay.releases.get("child-c")).toHaveBeenCalledTimes(1);
-
-      await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS * 3);
-      expect(relay.releases.get("grandchild-g")).not.toHaveBeenCalled();
-
-      await client.notify(threadStatusChangedNotification("grandchild-g", "idle"));
-      await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS + 1);
-      expect(relay.releases.get("grandchild-g")).toHaveBeenCalledTimes(1);
-      monitor.dispose();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("keeps a descendant claimed when its turn is reported before it is announced", async () => {
-    vi.useFakeTimers();
-    try {
-      const client = createClient();
-      const runtime = createRuntime();
-      const relay = createNativeHookRelayLease();
-      const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
-        recoveryPollDelaysMs: [],
-      });
-      registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
-      await notifyChildStarted(client, "parent-thread", "child-c");
-
-      await client.notify(threadStatusChangedNotification("grandchild-g", "active"));
-      await client.notify({
-        method: "turn/started",
-        params: {
-          threadId: "grandchild-g",
-          turn: { id: "turn-g", status: "inProgress", items: [], error: null },
-        },
-      });
-      await client.notify(subAgentActivityNotification("child-c", "grandchild-g"));
-      await client.notify(descendantItemNotification("grandchild-g", "g-message-1"));
-
-      await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS * 3);
-      expect(relay.releases.get("grandchild-g")).not.toHaveBeenCalled();
-
-      await client.notify(threadStatusChangedNotification("grandchild-g", "idle"));
-      await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS + 1);
-      expect(relay.releases.get("grandchild-g")).toHaveBeenCalledTimes(1);
-      monitor.dispose();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("keeps a re-messaged descendant claimed across its next turn", async () => {
-    vi.useFakeTimers();
-    try {
-      const client = createClient();
-      const runtime = createRuntime();
-      const relay = createNativeHookRelayLease();
-      const monitor = new CodexNativeSubagentMonitor(client as never, runtime, {
-        recoveryPollDelaysMs: [],
-      });
-      registerParent(monitor, "parent-thread", "agent:main:discord:channel:C123", relay.lease);
-      await notifyChildStarted(client, "parent-thread", "child-c");
-      await client.notify(subAgentActivityNotification("child-c", "grandchild-g"));
-      await client.notify(threadStatusChangedNotification("grandchild-g", "active"));
-      await client.notify(threadStatusChangedNotification("grandchild-g", "idle"));
-
-      await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS - 1_000);
-      await client.notify(subAgentActivityNotification("child-c", "grandchild-g", "interacted"));
-      await client.notify({
-        method: "turn/started",
-        params: {
-          threadId: "grandchild-g",
-          turn: { id: "turn-g2", status: "inProgress", items: [], error: null },
-        },
-      });
-
-      await client.notify(subAgentActivityNotification("child-c", "grandchild-g", "interacted"));
-      await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS * 3);
-      expect(relay.releases.get("grandchild-g")).not.toHaveBeenCalled();
-      expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual([
-        "child-c",
-        "grandchild-g",
-      ]);
-      monitor.dispose();
-      expect(relay.releases.get("grandchild-g")).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.useRealTimers();
-    }
+    await client.notify(subAgentActivityNotification("child-c", "grandchild-g", "interacted"));
+    expect(relay.releases.get("grandchild-g")).not.toHaveBeenCalled();
+    expect(relay.acquireChild.mock.calls.map(([threadId]) => threadId)).toEqual([
+      "child-c",
+      "grandchild-g",
+    ]);
+    await client.notify(threadStatusChangedNotification("grandchild-g", "notLoaded"));
+    expect(relay.releases.get("grandchild-g")).toHaveBeenCalledOnce();
+    monitor.dispose();
   });
 
   it("does not recover an older result while the newest child turn is active", async () => {
@@ -3017,6 +2924,82 @@ describe("CodexNativeSubagentMonitor", () => {
     );
     parent.unregister();
     client.close();
+  });
+
+  it("warms and evicts a nested worker subscription without releasing its relay", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = createClient();
+      client.request.mockImplementation(async (method) => {
+        if (method === "thread/unsubscribe") {
+          return {} as never;
+        }
+        throw new Error(`unexpected request: ${method}`);
+      });
+      ensureCodexAppServerClientRuntime(client as never, { agentDir: "/tmp/agent" });
+      const relay = createNativeHookRelayLease();
+      relay.acquireDiscovery.mockReturnValue(undefined);
+      const parent = registerCodexNativeSubagentMonitor({
+        client: client as never,
+        parentThreadId: "parent-thread",
+        requesterSessionKey: "agent:main:main",
+        taskRuntimeScope: createTaskScope("agent:main:main"),
+        runtime: createRuntime(),
+        nativeHookRelay: relay.lease,
+      });
+
+      await notifyChildStarted(client, "parent-thread", "child-c");
+      await client.notify(subAgentActivityNotification("child-c", "grandchild-g"));
+      await vi.waitFor(() =>
+        expect(isCodexAppServerLiveThreadClaimed(client as never, "grandchild-g")).toBe(true),
+      );
+      await client.notify(
+        childTurnCompletedNotification({
+          childThreadId: "grandchild-g",
+          status: "completed",
+        }),
+      );
+      await vi.waitFor(() =>
+        expect(isCodexAppServerLiveThreadClaimed(client as never, "grandchild-g")).toBe(false),
+      );
+      await client.notify({
+        method: "turn/started",
+        params: {
+          threadId: "grandchild-g",
+          turn: { id: "grandchild-turn-2", status: "inProgress", items: [], error: null },
+        },
+      });
+      await vi.waitFor(() =>
+        expect(isCodexAppServerLiveThreadClaimed(client as never, "grandchild-g")).toBe(true),
+      );
+      await client.notify(
+        childTurnCompletedNotification({
+          childThreadId: "grandchild-g",
+          turnId: "grandchild-turn-2",
+          status: "completed",
+        }),
+      );
+      await vi.waitFor(() =>
+        expect(isCodexAppServerLiveThreadClaimed(client as never, "grandchild-g")).toBe(false),
+      );
+
+      await vi.advanceTimersByTimeAsync(30 * 60_000);
+      await vi.waitFor(() =>
+        expect(client.request).toHaveBeenCalledWith(
+          "thread/unsubscribe",
+          { threadId: "grandchild-g" },
+          { timeoutMs: 5_000 },
+        ),
+      );
+      expect(relay.releases.get("grandchild-g")).not.toHaveBeenCalled();
+
+      await client.notify(threadStatusChangedNotification("grandchild-g", "notLoaded"));
+      expect(relay.releases.get("grandchild-g")).toHaveBeenCalledOnce();
+      parent.unregister();
+      client.close();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("releases a completed native child when its full idle pool cannot evict its oldest owner", async () => {

@@ -40,7 +40,6 @@ setupRunAttemptTestHooks();
 afterEach(() => setActivePluginRegistry(createEmptyPluginRegistry()));
 
 const flushRelayCleanup = () => nativeHookRelayUnregisterQueue.flush();
-const DESCENDANT_RELAY_QUIET_WINDOW_MS = 5 * 60_000;
 
 type DirectRelayOptions = {
   enabled?: boolean;
@@ -319,13 +318,14 @@ describe("Codex native hook relay lifecycle", () => {
         status: "completed",
       }),
     );
+    await harness.notify(threadStatusChanged("child-thread", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
     ).toBeUndefined();
   });
 
-  it("keeps child ownership after parent abort and releases on terminal", async () => {
+  it("keeps child ownership after parent abort and releases on unload", async () => {
     // Codex has persisted this child, but its queued lifecycle notification has
     // not reached OpenClaw when the parent is aborted.
     const { harness, run, route } = await startRelayAttempt("abort", {}, ["child-after-abort"]);
@@ -341,13 +341,14 @@ describe("Codex native hook relay lifecycle", () => {
         status: "completed",
       }),
     );
+    await harness.notify(threadStatusChanged("child-after-abort", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
     ).toBeUndefined();
   });
 
-  it("releases a shared route only after the last child terminal", async () => {
+  it("releases a shared route only after the last child unload", async () => {
     const { harness, run, route } = await startRelayAttempt("multi");
     await harness.notify(spawned("thread-1", "child-a"));
     await harness.notify(spawned("thread-1", "child-b"));
@@ -356,6 +357,7 @@ describe("Codex native hook relay lifecycle", () => {
     await harness.notify(
       childTurnCompleted({ childThreadId: "child-a", turnId: "turn-a", status: "completed" }),
     );
+    await harness.notify(threadStatusChanged("child-a", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
@@ -363,6 +365,7 @@ describe("Codex native hook relay lifecycle", () => {
     await harness.notify(
       childTurnCompleted({ childThreadId: "child-b", turnId: "turn-b", status: "completed" }),
     );
+    await harness.notify(threadStatusChanged("child-b", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
@@ -393,6 +396,7 @@ describe("Codex native hook relay lifecycle", () => {
         status: "completed",
       }),
     );
+    await harness.notify(threadStatusChanged("resumable-child", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
@@ -429,15 +433,15 @@ describe("Codex native hook relay lifecycle", () => {
       invokeChildTool({ ...route, toolCallId: "grandchild-tool-2", command: "pwd" }),
     ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
     await harness.notify(threadStatusChanged("grandchild-g", "notLoaded"));
+    await harness.notify(threadStatusChanged("child-c", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
     ).toBeUndefined();
   });
 
-  it("releases a nested descendant's route once it stops reporting activity", async () => {
+  it("retains an idle nested descendant until authoritative unload", async () => {
     const { harness, run, route } = await startRelayAttempt("nested-quiet");
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     await harness.notify(spawned("thread-1", "quiet-child"));
     await harness.notify(spawned("quiet-child", "quiet-grandchild"));
     await harness.notify(threadStatusChanged("quiet-grandchild", "active"));
@@ -446,7 +450,6 @@ describe("Codex native hook relay lifecycle", () => {
     await harness.notify(
       childTurnCompleted({ childThreadId: "quiet-child", turnId: "turn-c", status: "completed" }),
     );
-    await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS * 2);
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
@@ -456,7 +459,12 @@ describe("Codex native hook relay lifecycle", () => {
     ).resolves.toEqual({ stdout: "", stderr: "", exitCode: 0 });
 
     await harness.notify(threadStatusChanged("quiet-grandchild", "idle"));
-    await vi.advanceTimersByTimeAsync(DESCENDANT_RELAY_QUIET_WINDOW_MS + 1);
+    flushRelayCleanup();
+    expect(
+      nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
+    ).toBeDefined();
+    await harness.notify(threadStatusChanged("quiet-grandchild", "notLoaded"));
+    await harness.notify(threadStatusChanged("quiet-child", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(route.relayId),
@@ -842,6 +850,7 @@ describe("Codex native hook relay lifecycle", () => {
         status: "completed",
       }),
     );
+    await harness.notify(threadStatusChanged("first-turn-child", "notLoaded"));
     flushRelayCleanup();
     expect(
       nativeHookRelayTesting.getNativeHookRelayRegistrationForTests(firstRoute.relayId),

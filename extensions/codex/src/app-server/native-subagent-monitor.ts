@@ -106,15 +106,11 @@ type ChildState = {
   deliveringCompletion: boolean;
   deliveryOwnerKey?: string;
   settledWithoutCompletion: boolean;
-  nativeHookRelay?: CodexNativeHookRelayLease;
-  releaseNativeHookRelay?: () => void;
 };
 
-type DescendantRelayClaim = {
+type WorkerRelayClaim = {
   lease: CodexNativeHookRelayLease;
   release: () => void;
-  running: boolean;
-  quietTimer?: ReturnType<typeof setTimeout>;
 };
 
 type ChildAssistantMessages = {
@@ -170,12 +166,13 @@ const DEFAULT_COMPLETION_DELIVERY_RETRY_DELAYS_MS = [
   5_000, 15_000, 30_000, 60_000, 120_000, 300_000,
 ];
 const RECENT_TERMINAL_TASK_RECONCILE_GRACE_MS = 60_000;
-const DESCENDANT_RELAY_QUIET_WINDOW_MS = 5 * 60_000;
 const THREAD_READ_TIMEOUT_MS = 30_000;
 const THREAD_LIST_PAGE_LIMIT = 100;
 const NATIVE_SUBAGENT_NOTIFICATION_METHODS = new Set([
   "thread/started",
   "thread/closed",
+  "thread/archived",
+  "thread/deleted",
   "thread/status/changed",
   "turn/started",
   "turn/completed",
@@ -190,6 +187,8 @@ const NATIVE_SUBAGENT_NOTIFICATION_METHODS = new Set([
 const RECOVERY_REVISION_NOTIFICATION_METHODS = new Set([
   "thread/started",
   "thread/closed",
+  "thread/archived",
+  "thread/deleted",
   "thread/status/changed",
   "turn/started",
   "turn/completed",
@@ -231,6 +230,10 @@ function registerMonitor(params: {
       retainParentThread: params.retainParentThread,
       claimChildThread: (threadId) =>
         childThreadTransitions.enqueue(threadId, async () => {
+          const existing = childThreadOwnership.get(threadId);
+          if (existing) {
+            return existing;
+          }
           // Codex subscribes fresh children before thread/started; they have
           // no idle entry yet but must already be fenced from manual adoption.
           const ownership = await claimCodexAppServerLiveThread(params.client, threadId);
@@ -242,6 +245,9 @@ function registerMonitor(params: {
       retainChildThread: (threadId) =>
         childThreadTransitions.enqueue(threadId, async () => {
           const ownership = childThreadOwnership.get(threadId);
+          if (!ownership) {
+            return false;
+          }
           let retained = false;
           try {
             retained = await retainCodexAppServerLiveThread(
@@ -291,7 +297,7 @@ class Monitor {
   private readonly retiredParentStates = new WeakSet<ParentState>();
   private readonly childStates = new Map<string, ChildState>();
   private readonly childThreadIdsByAgentPath = new Map<string, string>();
-  private readonly descendantRelayClaims = new Map<string, DescendantRelayClaim>();
+  private readonly workerRelayClaims = new Map<string, WorkerRelayClaim>();
   private readonly taskReconciliations = new Map<string, Promise<void>>();
   private readonly taskReconciliationTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly threadStatusRevisions = new Map<string, ThreadStatusRevision>();
@@ -350,11 +356,10 @@ class Monitor {
     for (const registration of this.discoveryRegistrations) {
       this.releaseDiscoveryRegistration(registration);
     }
-    for (const claim of this.descendantRelayClaims.values()) {
-      clearDescendantRelayQuietTimer(claim);
+    for (const claim of this.workerRelayClaims.values()) {
       claim.release();
     }
-    this.descendantRelayClaims.clear();
+    this.workerRelayClaims.clear();
     for (const childState of this.childStates.values()) {
       // Terminal delivery no longer needs app-server. Keep its bounded retry
       // alive if idle-pool eviction closes this client between attempts.
@@ -439,11 +444,9 @@ class Monitor {
       retryAttempt: 0,
     };
     this.discoveryRegistrations.add(discoveryRegistration);
-    if (discoveryRegistration.releaseRelayDiscovery) {
-      // A child can be persisted before its lifecycle notification is observed.
-      // Keep the relay and client alive until an exact terminal census closes that gap.
-      this.releaseClientRetention ??= this.retainClient?.();
-    }
+    // A child can be persisted before its lifecycle notification is observed.
+    // Keep the relay and client alive until an exact terminal census closes that gap.
+    this.syncClientRetention();
     // Recovery may perform several bounded history reads. It must never delay
     // the foreground parent turn that established this registration.
     void this.reconcileTaskRowsForParent(registeredState).catch((error: unknown) => {
@@ -717,34 +720,36 @@ class Monitor {
       if (
         !this.isCurrentDiscoveryRegistration(registration, censusTurnId) ||
         this.childStates.get(childState.childThreadId) !== childState ||
-        childState.nativeHookRelay !== registration.nativeHookRelay ||
+        this.workerRelayClaims.get(childState.childThreadId)?.lease !==
+          registration.nativeHookRelay ||
         !statusRead.isCurrent()
       ) {
-        return;
+        return undefined;
       }
       const thread = isJsonObject(response.thread) ? response.thread : undefined;
       if (
         readString(thread, "id")?.trim() !== childState.childThreadId ||
         readThreadParentThreadId(thread) !== childState.parentThreadId
       ) {
-        return;
+        return undefined;
       }
-      const status = isJsonObject(thread.status)
+      const status = isJsonObject(thread?.status)
         ? normalizeIdentifier(readString(thread.status, "type"))
         : undefined;
       if (status !== "notloaded" && status !== "closed" && status !== "unloaded") {
-        return;
+        return undefined;
       }
       return () => {
         if (
           !this.isCurrentDiscoveryRegistration(registration, censusTurnId) ||
           this.childStates.get(childState.childThreadId) !== childState ||
-          childState.nativeHookRelay !== registration.nativeHookRelay ||
+          this.workerRelayClaims.get(childState.childThreadId)?.lease !==
+            registration.nativeHookRelay ||
           !statusRead.isCurrent()
         ) {
           return;
         }
-        this.releaseChildNativeHookRelay(childState);
+        this.releaseWorkerHookRelay(childState.childThreadId);
         this.settleResumableChild(childState);
       };
     } finally {
@@ -781,7 +786,7 @@ class Monitor {
     const release = registration.releaseRelayDiscovery;
     registration.releaseRelayDiscovery = undefined;
     release?.();
-    this.releaseClientRetentionIfIdle();
+    this.syncClientRetention();
     this.pruneParentIfUnused(registration.parentState);
   }
 
@@ -825,7 +830,7 @@ class Monitor {
     const threadStatus = isJsonObject(params?.status)
       ? normalizeIdentifier(readString(params.status, "type"))
       : undefined;
-    this.trackDescendantHookRelay(notification, params, threadId, threadStatus);
+    this.trackWorkerHookRelay(notification, params, threadId, threadStatus);
     const tracksRecoveryRevision = Boolean(threadId && this.threadStatusRevisions.has(threadId));
     if (
       RECOVERY_REVISION_NOTIFICATION_METHODS.has(notification.method) &&
@@ -857,8 +862,13 @@ class Monitor {
       this.handleClosedChild(notification, state);
     }
     const childState = threadId ? this.childStates.get(threadId) : undefined;
-    if (childState && (notification.method === "thread/closed" || threadStatus === "notloaded")) {
-      this.releaseChildNativeHookRelay(childState);
+    if (
+      childState &&
+      (notification.method === "thread/closed" ||
+        notification.method === "thread/archived" ||
+        notification.method === "thread/deleted" ||
+        threadStatus === "notloaded")
+    ) {
       this.settleResumableChild(childState);
     }
     if (notification.method === "turn/started" && childState) {
@@ -956,7 +966,7 @@ class Monitor {
   private observeActiveChild(childState: ChildState): void {
     childState.settledWithoutCompletion = false;
     childState.fallbackCompletion = undefined;
-    this.releaseClientRetention ??= this.retainClient?.();
+    this.syncClientRetention();
   }
 
   private settleResumableChild(childState: ChildState): void {
@@ -966,7 +976,7 @@ class Monitor {
     childState.settledWithoutCompletion = true;
     childState.fallbackCompletion = undefined;
     this.clearRecoveryTimers(childState);
-    this.releaseClientRetentionIfIdle();
+    this.syncClientRetention();
   }
 
   private captureChildAssistantMessage(notification: CodexServerNotification): void {
@@ -1209,8 +1219,10 @@ class Monitor {
         continue;
       }
       if (childState) {
+        this.releaseWorkerHookRelay(childThreadId);
         this.retireChild(state, childState, "Codex native subagent was closed.");
       } else {
+        this.releaseWorkerHookRelay(childThreadId);
         this.updateChildThreadOwnership("release", childThreadId, this.releaseChildThread);
       }
     }
@@ -1453,7 +1465,6 @@ class Monitor {
       return;
     }
     childState.terminal = true;
-    this.releaseChildNativeHookRelay(childState);
     this.clearRecoveryTimers(childState);
     state.mirror?.markAuthoritativeCompletion(completion.childThreadId);
     state.taskRuntime?.finalizeTaskRunByRunId({
@@ -1474,7 +1485,7 @@ class Monitor {
       runId: codexNativeSubagentRunId(completion.childThreadId),
       deliveryStatus: "pending",
     });
-    this.releaseClientRetentionIfIdle();
+    this.syncClientRetention();
     await this.deliverPendingCompletion(state, childState);
   }
 
@@ -1607,7 +1618,6 @@ class Monitor {
     }
     if (!childState) {
       this.updateChildThreadOwnership("claim", childThreadId, this.claimChildThread);
-      this.releaseClientRetention ??= this.retainClient?.();
       if (!this.parentThreadRetentions.has(parentThreadId)) {
         const releaseParentThread = this.retainParentThread?.(parentThreadId);
         if (releaseParentThread) {
@@ -1628,6 +1638,7 @@ class Monitor {
         deliveringCompletion: false,
       };
       this.childStates.set(childThreadId, childState);
+      this.syncClientRetention();
       this.threadStatusRevisions.set(
         childThreadId,
         this.threadStatusRevisions.get(childThreadId) ?? { value: 0, readers: 0 },
@@ -1675,7 +1686,6 @@ class Monitor {
       this.updateChildThreadOwnership("retain", childState.childThreadId, this.retainChildThread);
     }
     this.clearRecoveryTimers(childState);
-    this.releaseChildNativeHookRelay(childState);
     if (childState.completionDeliveryTimer) {
       clearTimeout(childState.completionDeliveryTimer);
     }
@@ -1705,7 +1715,7 @@ class Monitor {
     if (statusRevision?.readers === 0) {
       this.threadStatusRevisions.delete(childState.childThreadId);
     }
-    this.releaseClientRetentionIfIdle();
+    this.syncClientRetention();
     const state = this.parentStates.get(childState.parentThreadId);
     if (state) {
       this.pruneParentIfUnused(state);
@@ -1733,18 +1743,10 @@ class Monitor {
     childState: ChildState,
     relay: CodexNativeHookRelayLease | undefined,
   ): void {
-    if (childState.nativeHookRelay || !relay) {
-      return;
-    }
-    const release = relay.acquireChild(childState.childThreadId);
-    if (!release) {
-      return;
-    }
-    childState.nativeHookRelay = relay;
-    childState.releaseNativeHookRelay = release;
+    this.acquireWorkerHookRelay(childState.childThreadId, relay);
   }
 
-  private trackDescendantHookRelay(
+  private trackWorkerHookRelay(
     notification: CodexServerNotification,
     params: JsonObject | undefined,
     threadId: string | undefined,
@@ -1753,108 +1755,90 @@ class Monitor {
     if (notification.method === "item/started" || notification.method === "item/completed") {
       const item = isJsonObject(params?.item) ? params.item : undefined;
       const spawnerThreadId = (readString(item, "senderThreadId") ?? threadId)?.trim();
-      if (spawnerThreadId) {
-        this.noteDescendantRelayLiveness(spawnerThreadId, true);
-      }
       const lease = spawnerThreadId
-        ? (this.childStates.get(spawnerThreadId)?.nativeHookRelay ??
-          this.descendantRelayClaims.get(spawnerThreadId)?.lease)
+        ? this.workerRelayClaims.get(spawnerThreadId)?.lease
         : undefined;
+      if (spawnerThreadId && lease && !this.childStates.has(spawnerThreadId)) {
+        this.updateChildThreadOwnership("claim", spawnerThreadId, this.claimChildThread);
+      }
       if (!lease) {
         return;
       }
       for (const spawnedThreadId of readItemSpawnedThreads(notification.method, item).threadIds) {
-        this.acquireDescendantHookRelay(spawnedThreadId, lease);
+        this.acquireWorkerHookRelay(spawnedThreadId, lease);
       }
       return;
     }
     if (!threadId) {
       return;
     }
-    if (threadStatus === "notloaded") {
-      this.releaseDescendantHookRelay(threadId);
+    if (
+      notification.method === "thread/closed" ||
+      notification.method === "thread/archived" ||
+      notification.method === "thread/deleted" ||
+      threadStatus === "notloaded"
+    ) {
+      this.releaseWorkerHookRelay(threadId);
       return;
     }
-    this.noteDescendantRelayLiveness(
-      threadId,
-      notification.method === "turn/started" || threadStatus === "active",
-    );
+    if (!this.workerRelayClaims.has(threadId) || this.childStates.has(threadId)) {
+      return;
+    }
+    if (notification.method === "turn/started" || threadStatus === "active") {
+      this.updateChildThreadOwnership("claim", threadId, this.claimChildThread);
+    } else if (notification.method === "turn/completed" || threadStatus) {
+      this.updateChildThreadOwnership("retain", threadId, this.retainChildThread);
+    }
   }
 
-  private acquireDescendantHookRelay(
-    descendantThreadIdInput: string,
-    lease: CodexNativeHookRelayLease,
+  private acquireWorkerHookRelay(
+    workerThreadIdInput: string,
+    lease: CodexNativeHookRelayLease | undefined,
   ): void {
-    const descendantThreadId = descendantThreadIdInput.trim();
+    const workerThreadId = workerThreadIdInput.trim();
     if (
-      !descendantThreadId ||
+      !workerThreadId ||
+      !lease ||
       this.disposed ||
-      this.childStates.has(descendantThreadId) ||
-      this.parentStates.has(descendantThreadId)
+      this.workerRelayClaims.has(workerThreadId) ||
+      this.parentStates.has(workerThreadId)
     ) {
       return;
     }
-    const claimed = this.descendantRelayClaims.get(descendantThreadId);
-    if (!claimed) {
-      const release = lease.acquireChild(descendantThreadId);
-      if (!release) {
-        return;
-      }
-      this.descendantRelayClaims.set(descendantThreadId, { lease, release, running: false });
+    const release = lease.acquireChild(workerThreadId);
+    if (!release) {
+      return;
     }
-    this.noteDescendantRelayLiveness(descendantThreadId, claimed?.running === true);
+    this.workerRelayClaims.set(workerThreadId, { lease, release });
+    if (!this.childStates.has(workerThreadId)) {
+      this.updateChildThreadOwnership("claim", workerThreadId, this.claimChildThread);
+    }
+    this.syncClientRetention();
   }
 
-  private noteDescendantRelayLiveness(descendantThreadId: string, running: boolean): void {
-    const claim = this.descendantRelayClaims.get(descendantThreadId);
+  private releaseWorkerHookRelay(workerThreadId: string): void {
+    const claim = this.workerRelayClaims.get(workerThreadId);
     if (!claim) {
       return;
     }
-    clearDescendantRelayQuietTimer(claim);
-    claim.running = running;
-    if (running) {
-      return;
-    }
-    claim.quietTimer = setTimeout(() => {
-      claim.quietTimer = undefined;
-      if (this.descendantRelayClaims.get(descendantThreadId) === claim) {
-        this.releaseDescendantHookRelay(descendantThreadId);
-      }
-    }, DESCENDANT_RELAY_QUIET_WINDOW_MS);
-    unrefTimer(claim.quietTimer);
-  }
-
-  private releaseDescendantHookRelay(descendantThreadId: string): void {
-    const claim = this.descendantRelayClaims.get(descendantThreadId);
-    if (!claim) {
-      return;
-    }
-    this.descendantRelayClaims.delete(descendantThreadId);
-    clearDescendantRelayQuietTimer(claim);
+    this.workerRelayClaims.delete(workerThreadId);
     claim.release();
+    this.updateChildThreadOwnership("release", workerThreadId, this.releaseChildThread);
+    this.syncClientRetention();
   }
 
-  private releaseChildNativeHookRelay(childState: ChildState): void {
-    const release = childState.releaseNativeHookRelay;
-    childState.nativeHookRelay = undefined;
-    childState.releaseNativeHookRelay = undefined;
-    release?.();
-  }
-
-  private releaseClientRetentionIfIdle(): void {
-    if (
-      [...this.discoveryRegistrations].some((registration) => registration.releaseRelayDiscovery)
-    ) {
-      return;
-    }
-    if (
+  private syncClientRetention(): void {
+    const needed =
+      this.workerRelayClaims.size > 0 ||
+      [...this.discoveryRegistrations].some((registration) => registration.releaseRelayDiscovery) ||
       [...this.childStates.values()].some(
         (childState) => !childState.terminal && !childState.settledWithoutCompletion,
-      )
-    ) {
-      return;
+      );
+    if (needed) {
+      this.releaseClientRetention ??= this.retainClient?.();
+    } else {
+      this.releaseRetainedClient();
     }
-    this.releaseRetainedClient();
   }
 
   private releaseRetainedClient(): void {
@@ -2434,13 +2418,6 @@ function readObjectStringKeys(value: JsonValue | undefined): string[] {
 
 function normalizeIdentifier(value: string | undefined): string | undefined {
   return value?.replace(/[^a-z0-9]/giu, "").toLowerCase();
-}
-
-function clearDescendantRelayQuietTimer(claim: DescendantRelayClaim): void {
-  if (claim.quietTimer) {
-    clearTimeout(claim.quietTimer);
-    claim.quietTimer = undefined;
-  }
 }
 
 function unrefTimer(timer: ReturnType<typeof setTimeout>): void {
