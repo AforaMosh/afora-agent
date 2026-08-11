@@ -10,6 +10,19 @@ vi.mock("../agents/harness/runtime-plugin.js", () => ({
   ensureSelectedAgentHarnessPlugin: agentHarnessPluginMocks.ensureSelectedAgentHarnessPlugin,
 }));
 
+vi.mock("../agents/runtime-plugins.js", async () => {
+  const [{ createEmptyPluginRegistry }, { withPluginRuntimeRegistryScope }] = await Promise.all([
+    vi.importActual<typeof import("../plugins/registry-empty.js")>("../plugins/registry-empty.js"),
+    vi.importActual<typeof import("../plugins/runtime/gateway-request-scope.js")>(
+      "../plugins/runtime/gateway-request-scope.js",
+    ),
+  ]);
+  return {
+    withAgentPluginRegistry: ({ run }: { run: () => unknown }) =>
+      withPluginRuntimeRegistryScope(createEmptyPluginRegistry(), run),
+  };
+});
+
 vi.mock("../logging/subsystem.js", () => {
   const createMockLogger = () => ({
     subsystem: "test",

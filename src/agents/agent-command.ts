@@ -628,13 +628,18 @@ async function agentCommandWithAdmissionIngress(
               prepareAgentCommandExecution(preparedOpts, runtime),
             ),
           run: async (prepared) =>
-            await agentCommandInternal(
-              prepared,
-              prepared.opts,
-              admissionIngress,
-              runtime,
-              resolvedDeps,
-            ),
+            await withAgentPluginRegistry({
+              config: prepared.cfg,
+              workspaceDir: prepared.workspaceDir,
+              run: () =>
+                agentCommandInternal(
+                  prepared,
+                  prepared.opts,
+                  admissionIngress,
+                  runtime,
+                  resolvedDeps,
+                ),
+            }),
         }),
     ),
   );
