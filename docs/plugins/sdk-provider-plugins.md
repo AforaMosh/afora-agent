@@ -865,6 +865,11 @@ catalog, API-key auth, and dynamic model resolution.
         clients. Implement `handleBargeIn` when a transport can detect that a
         human is interrupting assistant playback and the provider supports
         truncating or clearing the active audio response.
+        `handleBargeIn(options)` may provide a request-scoped
+        `options.onClearAudio` callback for the exact output being cancelled.
+        Use that override for the current call; when it is absent, fall back to
+        the session's `onClearAudio` callback supplied when the bridge was
+        created.
         `submitToolResult` may return `void` for synchronous submission, or a
         `Promise<void>` for an asynchronous completion boundary the provider
         bridge can expose. Gateway relay sessions wait for that promise before
