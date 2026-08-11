@@ -22,6 +22,7 @@ import type {
   PluginHookChannelContext,
   PluginHookToolRequesterContext,
 } from "../plugins/hook-types.js";
+import { isMemoryIsolationCutoverAgent } from "../plugins/memory-cutover.js";
 import { resolveMemoryFlushPlan } from "../plugins/memory-state.js";
 import { appendRuntimePluginToolGrant } from "../plugins/tool-grant-allowlist.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
@@ -64,6 +65,7 @@ import {
   filterLocalModelLeanTools,
   resolveLocalModelLeanPreserveToolNames,
 } from "./local-model-lean.js";
+import { createMemoryFileMutationGuard } from "./memory-file-mutation-guard.js";
 import { createMemoryWriteProvenanceObserver } from "./memory-write-provenance.js";
 import type { ModelAuthMode } from "./model-auth.js";
 import { resolveOpenClawPluginToolsForOptions } from "./openclaw-plugin-tools.js";
@@ -523,13 +525,16 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
   const runtimeRoot = capabilityProfile.workspace.runtimeRoot;
   const codingRoot = sandboxRoot ?? runtimeRoot;
   const memoryFlushWriteRoot = sandboxRoot ?? workspaceRoot;
+  const memoryFileMutationGuard = isMemoryIsolationCutoverAgent(agentId)
+    ? createMemoryFileMutationGuard({ mutationRoot: memoryFlushWriteRoot })
+    : undefined;
   // Flush exposes one append-only target; its fallback records inherited taint after success.
   const memoryWriteProvenance = isMemoryFlushRun
     ? undefined
     : createMemoryWriteProvenanceObserver({
         mutationRoot: sandboxRoot ?? workspaceRoot,
         workspaceDir: workspaceRoot,
-        plan: resolveMemoryFlushPlan({ cfg: options?.config }) ?? {},
+        plan: resolveMemoryFlushPlan({ cfg: options?.config, agentId }) ?? {},
         resolveOriginClass: () =>
           options?.senderIsOwner === false || options?.isTurnTainted?.() === true
             ? "untrusted"
@@ -574,6 +579,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
     skillsSnapshot: options?.skillsSnapshot,
     modelContextWindowTokens: options?.modelContextWindowTokens,
     imageSanitization,
+    memoryFileMutationGuard,
     memoryWriteProvenance,
     ...(includeBaseCodingTools
       ? { baseToolNames: createCodingTools(codingRoot).map((tool) => tool.name) }
@@ -712,6 +718,7 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
             currentMessageId: options?.currentMessageId,
             modelProvider: options?.modelProvider,
             modelId: options?.modelId,
+            runId: options?.runId,
             modelHasVision: options?.modelHasVision,
             requireExplicitMessageTarget: options?.requireExplicitMessageTarget,
             disableMessageTool: options?.disableMessageTool || options?.swarmCollector,

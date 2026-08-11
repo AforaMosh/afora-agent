@@ -1,6 +1,7 @@
 /** Registry state for plugin memory runtimes, prompt supplements, and flush planning. */
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { listAgentIds } from "../agents/agent-scope-config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import type {
   MemoryCorpusSupplement,
@@ -17,10 +18,14 @@ import type {
   MemoryPromptSupplementRegistration,
   PreparedMemoryPromptSection,
 } from "./registry-contribution-types.js";
+import { isMemoryIsolationCutoverAgent } from "./memory-cutover.js";
 import type { PluginRegistry } from "./registry-types.js";
 import { requireActivePluginRegistry, resolveDirectPluginRegistrationOwner } from "./runtime.js";
 
 const log = createSubsystemLogger("plugins/memory-state");
+
+export const LEGACY_MEMORY_PUBLIC_ARTIFACTS_UNAVAILABLE =
+  "Memory public artifacts are unavailable after scoped-memory cutover.";
 
 export type {
   MemoryCorpusSearchResult,
@@ -191,6 +196,7 @@ function cloneMemoryPromptSectionParams(
     agentId: params.agentId,
     agentSessionKey: params.agentSessionKey,
     sandboxed: params.sandboxed,
+    memoryReadEnforced: params.memoryReadEnforced,
   };
 }
 
@@ -203,6 +209,7 @@ function snapshotMemoryPromptContext(
     agentId: params.agentId,
     agentSessionKey: params.agentSessionKey,
     sandboxed: params.sandboxed === true,
+    memoryReadEnforced: params.memoryReadEnforced === true,
   });
 }
 
@@ -213,9 +220,10 @@ function preparedMemoryPromptContextMatches(
   const current = snapshotMemoryPromptContext(params);
   return (
     prepared.context.citationsMode === current.citationsMode &&
-    prepared.context.agentId === current.agentId &&
-    prepared.context.agentSessionKey === current.agentSessionKey &&
-    prepared.context.sandboxed === current.sandboxed &&
+      prepared.context.agentId === current.agentId &&
+      prepared.context.agentSessionKey === current.agentSessionKey &&
+      prepared.context.sandboxed === current.sandboxed &&
+      prepared.context.memoryReadEnforced === current.memoryReadEnforced &&
     prepared.context.availableTools.length === current.availableTools.length &&
     prepared.context.availableTools.every((tool, index) => tool === current.availableTools[index])
   );
@@ -299,8 +307,12 @@ export function listMemoryPromptPreparations(): MemoryPromptPreparationRegistrat
 }
 export function resolveMemoryFlushPlan(params: {
   cfg?: OpenClawConfig;
+  agentId?: string;
   nowMs?: number;
 }): MemoryFlushPlan | null {
+  if (params.agentId && isMemoryIsolationCutoverAgent(params.agentId)) {
+    return null;
+  }
   return getMemoryCapability()?.capability.flushPlanResolver?.(params) ?? null;
 }
 export function getMemoryRuntime(): MemoryPluginRuntime | undefined {
@@ -345,6 +357,12 @@ function isValidMemoryPublicArtifact(
 export async function listActiveMemoryPublicArtifacts(params: {
   cfg: OpenClawConfig;
 }): Promise<MemoryPluginPublicArtifact[]> {
+  // Public artifacts expose legacy workspace paths and durable-memory metadata.
+  // Phase 1C has no operator-scoped projection context, so any cut-over owner
+  // makes this shared route unavailable before a provider can inspect files.
+  if (listAgentIds(params.cfg).some(isMemoryIsolationCutoverAgent)) {
+    throw new Error(LEGACY_MEMORY_PUBLIC_ARTIFACTS_UNAVAILABLE);
+  }
   const capability = getMemoryCapability();
   const pluginId = capability?.pluginId;
   const listed = (await capability?.capability.publicArtifacts?.listArtifacts(params)) ?? [];

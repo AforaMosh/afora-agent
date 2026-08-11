@@ -20,6 +20,7 @@ import {
   buildAgentHookContextIdentityFields,
 } from "../../plugins/hook-agent-context.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
+import { isMemoryIsolationCutoverAgent } from "../../plugins/memory-cutover.js";
 import { withPluginRuntimeRegistryScope } from "../../plugins/runtime/gateway-request-scope.js";
 import { resolveUserPath } from "../../utils.js";
 import { isMarkdownCapableMessageChannel } from "../../utils/message-channel.js";
@@ -360,6 +361,9 @@ async function runEmbeddedAgentInternal(
             agentId: workspaceResolution.agentId,
             sessionKey: resolvedSessionKey,
             sessionId: params.sessionId,
+            ...(isMemoryIsolationCutoverAgent(workspaceResolution.agentId)
+              ? { memoryReadEnforced: true as const }
+              : {}),
             workspaceDir: resolvedWorkspace,
             activeProjectKeys: [...activeProjectKeys],
             modelProviderId: provider,

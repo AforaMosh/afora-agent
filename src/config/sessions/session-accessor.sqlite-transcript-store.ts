@@ -34,12 +34,9 @@ import {
   indexAppendedTranscriptEventInTransaction,
   reconcileSessionTranscriptIndexInTransaction,
 } from "./session-transcript-index.js";
+import { recordTranscriptMemoryPolicyInTransaction } from "./session-transcript-memory-policy.js";
 import { startSessionTranscriptIndexReconcile } from "./session-transcript-reconcile.js";
 import { createSessionTranscriptHeader } from "./transcript-header.js";
-import {
-  isSessionTranscriptLeafControl,
-  parseSessionTranscriptTreeEntry,
-} from "./transcript-tree.js";
 import { resolveVisibleTranscriptAppendParentId } from "./transcript-visible-events.js";
 
 export function appendTranscriptEventInTransaction(
@@ -86,6 +83,13 @@ export function appendTranscriptEventInTransaction(
       created_at: createdAt,
     }),
   );
+  const memoryPolicyAuthorized = recordTranscriptMemoryPolicyInTransaction({
+    database,
+    sessionId: scope.sessionId,
+    sessionKey: scope.sessionKey,
+    eventSeq: seq,
+    createdAt,
+  });
   if (options.touchMutation !== false) {
     touchTranscriptMutationInTransaction(database, scope.sessionId);
   }
@@ -95,6 +99,7 @@ export function appendTranscriptEventInTransaction(
     event: persistedEvent,
     eventId: identity?.eventId ?? null,
     createdAt,
+    memoryPolicyAuthorized,
   });
   if (projectionNeedsRebuild) {
     options.onProjectionReconcileNeeded?.();
@@ -203,12 +208,20 @@ function appendTranscriptEventRowInTransaction(
       created_at: createdAt,
     }),
   );
+  const memoryPolicyAuthorized = recordTranscriptMemoryPolicyInTransaction({
+    database,
+    sessionId: scope.sessionId,
+    sessionKey: scope.sessionKey,
+    eventSeq: seq,
+    createdAt,
+  });
   indexAppendedTranscriptEventInTransaction(database.db, {
     sessionId: scope.sessionId,
     seq,
     event: persistedEvent,
     eventId: identity?.eventId ?? null,
     createdAt,
+    memoryPolicyAuthorized,
   });
   if (!identity) {
     return true;
@@ -267,55 +280,8 @@ export function readActiveTranscriptAppendParentId(
   database: OpenClawAgentDatabase,
   sessionId: string,
 ): string | null {
-  const db = getSessionKysely(database.db);
-  const latest = executeSqliteQueryTakeFirstSync(
-    database.db,
-    db
-      .selectFrom("transcript_event_identities as ti")
-      .innerJoin("transcript_events as te", (join) =>
-        join.onRef("te.session_id", "=", "ti.session_id").onRef("te.seq", "=", "ti.seq"),
-      )
-      .select(["ti.event_type", "te.event_json"])
-      .where("ti.session_id", "=", sessionId)
-      .orderBy("ti.seq", "desc")
-      .limit(1),
-  );
-  if (!latest) {
-    return null;
-  }
-  try {
-    const event = JSON.parse(latest.event_json) as unknown;
-    const treeEntry = parseSessionTranscriptTreeEntry(event);
-    if (!treeEntry) {
-      return resolveVisibleTranscriptAppendParentId(
-        loadSqliteTranscriptEventsFromDatabase(database, sessionId),
-      );
-    }
-    if (latest.event_type !== "leaf") {
-      return treeEntry.appendParentId;
-    }
-    const leafReferencesKnown =
-      treeEntry.leafId !== undefined &&
-      transcriptTreeReferenceExists(database, sessionId, treeEntry.leafId) &&
-      transcriptTreeReferenceExists(database, sessionId, treeEntry.appendParentId);
-    if (isSessionTranscriptLeafControl(event) && leafReferencesKnown) {
-      return treeEntry.appendParentId;
-    }
-  } catch {
-    // Fall through to the tolerant full-tree resolver.
-  }
   return resolveVisibleTranscriptAppendParentId(
     loadSqliteTranscriptEventsFromDatabase(database, sessionId),
-  );
-}
-
-function transcriptTreeReferenceExists(
-  database: OpenClawAgentDatabase,
-  sessionId: string,
-  eventId: string | null,
-): boolean {
-  return (
-    eventId === null || readTranscriptIdentityByEventId(database, sessionId, eventId) !== undefined
   );
 }
 

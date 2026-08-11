@@ -743,7 +743,10 @@ export async function runPreflightCompactionIfNeeded(params: {
     modelId: params.followupRun.run.model ?? params.defaultModel,
     agentCfgContextTokens: params.agentCfgContextTokens,
   });
-  const memoryFlushPlan = resolveMemoryFlushPlan({ cfg: params.cfg });
+  const memoryFlushPlan = resolveMemoryFlushPlan({
+    cfg: params.cfg,
+    agentId: compactionAgentId,
+  });
   const reserveTokensFloor = memoryFlushPlan?.reserveTokensFloor ?? 20_000;
   const softThresholdTokens = memoryFlushPlan?.softThresholdTokens ?? 4_000;
   const freshPersistedTokens = resolveFreshSessionTotalTokens(entry);
@@ -1032,7 +1035,16 @@ export async function runMemoryFlushIfNeeded(params: {
   replyOperation: ReplyOperation;
   onVisibleErrorPayloads?: (payloads: ReplyPayload[]) => void;
 }): Promise<MemoryFlushResult> {
-  const memoryFlushPlan = resolveMemoryFlushPlan({ cfg: params.cfg });
+  const memoryFlushAgentId = params.sessionKey
+    ? resolveAgentIdFromSessionKey(
+        params.sessionKey,
+        params.followupRun.run.agentId ?? resolveDefaultAgentId(params.cfg),
+      )
+    : (params.followupRun.run.agentId ?? resolveDefaultAgentId(params.cfg));
+  const memoryFlushPlan = resolveMemoryFlushPlan({
+    cfg: params.cfg,
+    agentId: memoryFlushAgentId,
+  });
   if (!memoryFlushPlan) {
     return { sessionEntry: params.sessionEntry, outcome: "skipped" };
   }
@@ -1279,6 +1291,7 @@ export async function runMemoryFlushIfNeeded(params: {
   const activeMemoryFlushPlan =
     resolveMemoryFlushPlan({
       cfg: params.cfg,
+      agentId: memoryFlushAgentId,
       nowMs: memoryFlushNowMs,
     }) ?? memoryFlushPlan;
   const memoryFlushWritePath = activeMemoryFlushPlan.relativePath;
