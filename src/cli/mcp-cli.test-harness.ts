@@ -36,7 +36,6 @@ export const serveOpenClawChannelMcp = mocks.serveOpenClawChannelMcp;
 export const clearMcpOAuthCredentials = mocks.clearMcpOAuthCredentials;
 export const completeMcpOAuthAuthorization = mocks.completeMcpOAuthAuthorization;
 export const readMcpOAuthCredentialsStatus = mocks.readMcpOAuthCredentialsStatus;
-export const startMcpOAuthAuthorization = mocks.startMcpOAuthAuthorization;
 
 vi.mock("../runtime.js", () => ({
   defaultRuntime: mocks.runtime,

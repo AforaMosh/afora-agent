@@ -121,7 +121,10 @@ async function startAuthorizationServer(port: number) {
   });
   return {
     issuer,
-    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      }),
   };
 }
 
