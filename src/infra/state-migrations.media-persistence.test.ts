@@ -199,6 +199,34 @@ afterEach(() => {
 });
 
 describe("legacy media persistence doctor migration", () => {
+  it("refreshes a registry-owned v16 database after structural convergence", () => {
+    const stateDir = makeTempDir(tempDirs, "media-persistence-registry-v16-");
+    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const opened = openOpenClawAgentDatabase({ agentId: "main", env });
+    const databasePath = opened.path;
+    closeOpenClawAgentDatabasesForTest();
+    const { DatabaseSync } = requireNodeSqlite();
+    const database = new DatabaseSync(databasePath);
+    database.exec(`PRAGMA user_version = ${OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION};`);
+    database
+      .prepare("UPDATE schema_meta SET schema_version = ? WHERE meta_key = 'primary'")
+      .run(OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION);
+    database.close();
+    registerOpenClawAgentDatabase({
+      agentId: "main",
+      env,
+      path: databasePath,
+      schemaVersion: OPENCLAW_AGENT_MEDIA_PERSISTENCE_SCHEMA_VERSION,
+    });
+
+    expect(migrateLegacyMediaPersistence({ env }).warnings).toEqual([]);
+    expect(listOpenClawRegisteredAgentDatabases({ env })).toEqual([
+      expect.objectContaining({
+        schemaVersion: OPENCLAW_AGENT_SCHEMA_VERSION,
+      }),
+    ]);
+  });
+
   it("canonicalizes assistant media at the generic transcript append owner", () => {
     const stateDir = makeTempDir(tempDirs, "media-persistence-append-");
     const env = { OPENCLAW_STATE_DIR: stateDir };

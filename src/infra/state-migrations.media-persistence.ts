@@ -402,14 +402,15 @@ function migrateAgentDatabase(params: {
     const changedSessions = planned.filter((session) => session.changed);
     const versionAdvanced = userVersion === PREVIOUS_MEDIA_SCHEMA_VERSION;
     if (!versionAdvanced && changedSessions.length === 0 && changedTrajectoryRows.length === 0) {
+      const schemaVersion = convergeCurrentAgentSchema({
+        agentId: params.agentId,
+        database,
+        pathname: params.pathname,
+      });
       return {
         rewrittenSessions: 0,
         rewrittenTrajectoryRows: 0,
-        schemaVersion: convergeCurrentAgentSchema({
-          agentId: params.agentId,
-          database,
-          pathname: params.pathname,
-        }),
+        schemaVersion,
         versionAdvanced: false,
       };
     }
@@ -669,14 +670,12 @@ export function migrateLegacyMediaPersistence(
           : undefined,
         pathname,
       });
-      if (entry.source !== "registry" || result.versionAdvanced) {
-        registerOpenClawAgentDatabase({
-          agentId: entry.agentId,
-          env,
-          path: pathname,
-          schemaVersion: result.schemaVersion,
-        });
-      }
+      registerOpenClawAgentDatabase({
+        agentId: entry.agentId,
+        env,
+        path: pathname,
+        schemaVersion: result.schemaVersion,
+      });
       if (
         result.versionAdvanced ||
         result.rewrittenSessions > 0 ||
