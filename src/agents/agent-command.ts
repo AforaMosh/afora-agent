@@ -67,6 +67,7 @@ import { withAgentPluginRegistry } from "./runtime-plugins.js";
 import { measureAgentStartup } from "./startup-timing.js";
 
 type AgentCommandAdmissionIngress = Parameters<typeof executionIdentity.record>[0]["ingress"];
+type RestoreAdmittedRecovery = () => Promise<MainSessionRecoveryPendingTarget | undefined>;
 
 const log = createSubsystemLogger("agents/agent-command");
 
@@ -662,13 +663,12 @@ async function agentCommandFromIngressInternal(
   opts: AgentCommandGatewayIngressOpts,
   runtime: RuntimeEnv = defaultRuntime,
   deps?: CliDeps,
-  recovery?: {
-    restoreAdmittedRecovery?: () => Promise<MainSessionRecoveryPendingTarget | undefined>;
-  },
+  recovery?: { restoreAdmittedRecovery?: RestoreAdmittedRecovery },
 ) {
   if (typeof opts.allowModelOverride !== "boolean") {
     throw new Error("allowModelOverride must be explicitly set for ingress agent runs.");
   }
+  const api = { kind: "api", boundary: "agent-command.from-ingress", state: "unknown" } as const;
   const lifecycleGeneration =
     opts.lifecycleGeneration ?? captureAgentRunLifecycleGeneration(opts.runId ?? "");
   return await withAgentRunLifecycleGeneration(lifecycleGeneration, async () => {
@@ -686,14 +686,7 @@ async function agentCommandFromIngressInternal(
         await withAgentPluginRegistry({
           config: prepared.cfg,
           workspaceDir: prepared.workspaceDir,
-          run: async () =>
-            await agentCommandInternal(
-              prepared,
-              prepared.opts,
-              { kind: "api", boundary: "agent-command.from-ingress", state: "unknown" },
-              runtime,
-              deps,
-            ),
+          run: () => agentCommandInternal(prepared, prepared.opts, api, runtime, deps),
         }),
     });
 
@@ -713,11 +706,8 @@ export async function agentCommandFromIngress(
 ) {
   // Plugin SDK callers may be plain JavaScript. Enforce the private recovery
   // boundary at runtime so extra or inherited properties cannot author audit identity.
-  return await agentCommandFromIngressInternal(
-    { ...opts, executionIdentityAdmission: undefined },
-    runtime,
-    deps,
-  );
+  const ingressOpts = { ...opts, executionIdentityAdmission: undefined };
+  return await agentCommandFromIngressInternal(ingressOpts, runtime, deps);
 }
 
 /** Internal Gateway entrypoint that restores a rejected restart-recovery admission. */
@@ -725,9 +715,7 @@ export async function agentCommandFromGatewayIngress(
   opts: AgentCommandGatewayIngressOpts,
   runtime: RuntimeEnv,
   deps: CliDeps | undefined,
-  recovery: {
-    restoreAdmittedRecovery?: () => Promise<MainSessionRecoveryPendingTarget | undefined>;
-  },
+  recovery: { restoreAdmittedRecovery?: RestoreAdmittedRecovery },
 ) {
   return await agentCommandFromIngressInternal(opts, runtime, deps, recovery);
 }
