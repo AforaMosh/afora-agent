@@ -158,9 +158,12 @@ export async function prepareCodexAttemptTurnRequest(
             resourceState.client,
             { threadId: resourceState.thread.threadId, turnId: acceptedTurnId ?? "" },
           ));
-          if (resourceState.startupClientUnsafe) {
-            // This client cannot authoritatively report the hidden turn's lifecycle.
-            // Retire its parent monitor so its retention cannot keep the unsafe transport alive.
+          if (
+            resourceState.startupClientUnsafe &&
+            (acceptedTurnId !== undefined || appServer.start.transport === "stdio")
+          ) {
+            // Stdio owns the app-server process, so failed interruption requires retirement.
+            // Only indeterminate external starts keep this exact monitor for child discovery.
             resourceState.nativeSubagentMonitor?.retire();
             await retireUnsafeCodexTurnClientBestEffort(resourceState.client, "startup interrupt");
           }

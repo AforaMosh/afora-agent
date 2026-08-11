@@ -402,31 +402,58 @@ describe("Codex app-server main thread cleanup", () => {
   });
 
   it.each([
-    { label: "confirms", interruptFails: false },
-    { label: "cannot confirm", interruptFails: true },
+    { label: "confirms", interruptFails: false, transport: "stdio" as const },
+    { label: "cannot confirm over stdio", interruptFails: true, transport: "stdio" as const },
+    {
+      label: "cannot confirm over websocket",
+      interruptFails: true,
+      transport: "websocket" as const,
+    },
+    { label: "cannot confirm over unix", interruptFails: true, transport: "unix" as const },
   ])(
     "$label an indeterminate native turn before releasing its thread",
-    async ({ interruptFails }) => {
+    async ({ interruptFails, transport }) => {
       const sessionFile = path.join(tempDir, "cancelled-start-session.jsonl");
       const workspaceDir = path.join(tempDir, "cancelled-start-workspace");
       const harness = createClientHarness();
       const abort = new AbortController();
-      vi.spyOn(CodexAppServerClient, "start").mockReturnValueOnce(harness.client);
+      if (transport === "stdio") {
+        vi.spyOn(CodexAppServerClient, "start").mockReturnValueOnce(harness.client);
+      }
 
       const params = createParams(sessionFile, workspaceDir);
       params.abortSignal = abort.signal;
       const run = runCodexAppServerAttempt(params, {
         bindingStore: testCodexAppServerBindingStore,
+        ...(transport === "stdio"
+          ? {}
+          : { clientFactory: multiplexedClientFactory(async () => harness.client) }),
+        ...(transport === "stdio"
+          ? {}
+          : {
+              pluginConfig: {
+                appServer: {
+                  transport,
+                  homeScope: transport === "unix" ? ("user" as const) : ("agent" as const),
+                  url:
+                    transport === "websocket"
+                      ? "ws://127.0.0.1:39175"
+                      : "unix:///tmp/openclaw-codex-test.sock",
+                },
+              },
+            }),
       });
       const failure = run.then(
         () => undefined,
         (error: unknown) => error,
       );
-      const initialize = await waitForHarnessRequest(harness, "initialize");
-      harness.send({
-        id: initialize.id,
-        result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
-      });
+      if (transport === "stdio") {
+        const initialize = await waitForHarnessRequest(harness, "initialize");
+        harness.send({
+          id: initialize.id,
+          result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+        });
+      }
       const threadStart = await waitForHarnessRequest(harness, "thread/start");
       harness.send({ id: threadStart.id, result: threadStartResult() });
       const turnStart = await waitForHarnessRequest(harness, "turn/start");
@@ -449,14 +476,26 @@ describe("Codex app-server main thread cleanup", () => {
       }
       await expect(failure).resolves.toMatchObject({ message: "turn/start aborted" });
       expect(harness.writes.map((entry) => JSON.parse(entry).method)).toEqual([
-        "initialize",
-        "initialized",
+        ...(transport === "stdio" ? ["initialize", "initialized"] : []),
         "thread/start",
         "turn/start",
         "turn/interrupt",
         ...(!interruptFails ? ["thread/unsubscribe"] : []),
       ]);
-      expect(harness.stdinDestroyed).toBe(interruptFails);
+      expect(harness.stdinDestroyed).toBe(interruptFails && transport === "stdio");
+      if (interruptFails && transport !== "stdio") {
+        const censusStart = harness.writes.length;
+        harness.send({
+          method: "turn/completed",
+          params: {
+            threadId: "thread-1",
+            turnId: "turn-hidden-after-abort",
+            turn: { id: "turn-hidden-after-abort", status: "interrupted" },
+          },
+        });
+        const census = await waitForHarnessRequest(harness, "thread/list", censusStart);
+        harness.send({ id: census.id, result: { data: [], nextCursor: null } });
+      }
     },
   );
 
