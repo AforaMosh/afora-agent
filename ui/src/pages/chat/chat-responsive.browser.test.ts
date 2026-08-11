@@ -1304,6 +1304,104 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
     }
   });
 
+  it("keeps transcript prose readable without narrowing structured blocks", async () => {
+    const page = await openBrowserPage(1600, 1000);
+    const prose =
+      "A reliable transcript should make the main idea easy to follow before the reader reaches the details. This paragraph carries realistic context about the change, the tradeoffs, the proof, and the next action so its line length exposes the reading measure rather than a short fixture.";
+    try {
+      await page.setContent(`<!doctype html><html><head><style>${readUiCss()}</style></head><body>
+        <section class="card chat" data-theme="dark">
+          <div class="chat-thread" role="log">
+            <div class="chat-thread-inner">
+              <div class="chat-group assistant">
+                <div class="chat-avatar assistant">A</div>
+                <div class="chat-group-messages">
+                  <div class="chat-bubble">
+                    <div class="chat-text">
+                      <h2>Decision and supporting context</h2>
+                      <p id="measure-prose">${prose}</p>
+                      <ul id="measure-list">
+                        <li>Preserve the operator's mental model across the whole response.</li>
+                        <li>Keep the proof visible next to the decision it supports.</li>
+                      </ul>
+                      <blockquote><p>Everything should remain readable when the transcript is scanned.</p></blockquote>
+                      <details id="measure-details" open>
+                        <summary>Implementation details</summary>
+                        <p>${prose}</p>
+                      </details>
+                      <pre id="measure-code"><code>const transcriptMeasure = 68;\nconsole.log(transcriptMeasure);</code></pre>
+                      <table id="measure-table">
+                        <thead><tr><th>Surface</th><th>Decision</th><th>Evidence</th></tr></thead>
+                        <tbody><tr><td>Prose</td><td>Cap measure</td><td>68ch target</td></tr></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </body></html>`);
+
+      const metrics = await page.evaluate(() => {
+        const lineLengths = (selector: string) => {
+          const element = document.querySelector<HTMLElement>(selector);
+          const textNode = element?.firstChild;
+          if (!(textNode instanceof Text)) {
+            throw new Error(`Expected text fixture for ${selector}`);
+          }
+          const lines = new Map<number, number>();
+          const range = document.createRange();
+          for (let index = 0; index < textNode.length; index += 1) {
+            range.setStart(textNode, index);
+            range.setEnd(textNode, index + 1);
+            const top = Math.round(range.getBoundingClientRect().top * 100) / 100;
+            lines.set(top, (lines.get(top) ?? 0) + 1);
+          }
+          return [...lines.values()];
+        };
+        const rect = (selector: string) => {
+          const element = document.querySelector<HTMLElement>(selector);
+          if (!element) {
+            throw new Error(`Missing fixture element ${selector}`);
+          }
+          const bounds = element.getBoundingClientRect();
+          return { width: bounds.width, height: bounds.height };
+        };
+        const text = document.querySelector<HTMLElement>(".chat-text");
+        const prose = document.querySelector<HTMLElement>("#measure-prose");
+        if (!text || !prose) {
+          throw new Error("Missing transcript measure fixture");
+        }
+        const textStyle = getComputedStyle(text);
+        const proseStyle = getComputedStyle(prose);
+        return {
+          code: rect("#measure-code"),
+          details: rect("#measure-details"),
+          fontSize: Number.parseFloat(textStyle.fontSize),
+          lane: rect(".chat-group-messages"),
+          lineHeight: Number.parseFloat(textStyle.lineHeight),
+          list: rect("#measure-list"),
+          maxProseLineLength: Math.max(...lineLengths("#measure-prose")),
+          prose: rect("#measure-prose"),
+          proseMaxWidth: Number.parseFloat(proseStyle.maxWidth),
+          table: rect("#measure-table"),
+        };
+      });
+
+      expect(metrics.lineHeight / metrics.fontSize).toBeCloseTo(1.58, 2);
+      expect(metrics.proseMaxWidth).toBeCloseTo(metrics.prose.width, 0);
+      expect(metrics.maxProseLineLength).toBeLessThanOrEqual(100);
+      expect(metrics.prose.width).toBeLessThan(metrics.lane.width - 100);
+      expect(metrics.list.width).toBeCloseTo(metrics.prose.width, 0);
+      expect(metrics.details.width).toBeCloseTo(metrics.prose.width, 0);
+      expect(metrics.code.width).toBeCloseTo(metrics.lane.width, 0);
+      expect(metrics.table.width).toBeCloseTo(metrics.lane.width, 0);
+    } finally {
+      await closeBrowserPage(page);
+    }
+  });
+
   it("gives inline MCP Apps the full assistant message column", async () => {
     const page = await openBrowserPage(1366, 900);
     try {

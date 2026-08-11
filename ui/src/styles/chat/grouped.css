@@ -608,6 +608,7 @@ img.chat-avatar.chat-avatar--logo {
 }
 
 .chat-group.assistant .chat-bubble {
+  width: 100%;
   padding: 4px 0;
   border: 0;
   background: transparent;

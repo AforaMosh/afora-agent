@@ -20,10 +20,17 @@
 
 .chat-text {
   font-size: var(--chat-text-size);
-  line-height: 1.5;
+  line-height: 1.58;
   color: var(--chat-text);
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+/* Continuous prose is easier to scan at a character-based measure. Keep code,
+   tables, and widget-owned surfaces on the full message lane so structured
+   content does not inherit a narrow reading column. */
+.chat-text > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote, details) {
+  max-width: 68ch;
 }
 
 .chat-message-disclosure__preview {
