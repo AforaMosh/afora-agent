@@ -292,7 +292,13 @@ async function runZalouserQrLogin(params: {
       : {}),
   });
   if (!start.qrDataUrl) {
-    await params.prompter.note(start.message, t("wizard.zalouser.loginPendingTitle"));
+    // Setup has no follow-up wait once it returns. Retire ownership before the
+    // operator-facing note so a late vendor result cannot persist credentials.
+    cancelZaloQrLogin(params.profile);
+    await params.prompter.note(
+      t("wizard.zalouser.qrLoginRetry"),
+      t("wizard.zalouser.qrLoginTitle"),
+    );
     return;
   }
 
@@ -340,9 +346,16 @@ async function runZalouserQrLogin(params: {
     profile: params.profile,
     timeoutMs: 120_000,
   });
+  if (!waited.connected) {
+    // A wait timeout deliberately leaves the generic QR session active. Setup
+    // is terminal here, so release it before any awaited presentation work.
+    cancelZaloQrLogin(params.profile);
+  }
   await params.prompter.note(
-    waited.message,
-    waited.connected ? t("common.done") : t("wizard.zalouser.loginPendingTitle"),
+    waited.connected
+      ? waited.message
+      : [waited.message, t("wizard.zalouser.qrLoginRetry")].join("\n"),
+    waited.connected ? t("common.done") : t("wizard.zalouser.qrLoginTitle"),
   );
 }
 

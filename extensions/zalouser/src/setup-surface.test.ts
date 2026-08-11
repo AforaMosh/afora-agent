@@ -304,44 +304,90 @@ describe("zalouser setup wizard", () => {
   it.each([
     { name: "first login", authenticated: false, expectedLogouts: 0 },
     { name: "forced re-login", authenticated: true, expectedLogouts: 1 },
-  ])("reports $name QR startup failures", async ({ authenticated, expectedLogouts }) => {
-    checkZaloAuthenticatedMock.mockResolvedValueOnce(authenticated);
-    logoutZaloProfileMock.mockClear();
-    startZaloQrLoginMock.mockClear();
+  ])(
+    "cancels $name when QR startup remains pending",
+    async ({ authenticated, expectedLogouts }) => {
+      checkZaloAuthenticatedMock.mockResolvedValueOnce(authenticated);
+      cancelZaloQrLoginMock.mockClear();
+      logoutZaloProfileMock.mockClear();
+      startZaloQrLoginMock.mockClear();
+      startZaloQrLoginMock.mockResolvedValueOnce({
+        message: "Still preparing QR. Call wait to continue checking login status.",
+      });
+      waitForZaloQrLoginMock.mockClear();
+      const note = vi.fn(async (_message: string, _title?: string) => {});
+      const prompter = createTestWizardPrompter({
+        note,
+        confirm: vi.fn(async ({ message }: { message: string }) => {
+          if (message === "Login via QR code now?") {
+            return true;
+          }
+          if (message === "Zalo Personal already logged in. Keep session?") {
+            return false;
+          }
+          return false;
+        }),
+      });
+
+      await runSetup({ prompter });
+
+      expect(note).toHaveBeenCalledWith(
+        "QR login stopped. Start login again to retry.",
+        "QR Login",
+      );
+      expect(note).not.toHaveBeenCalledWith(
+        expect.stringContaining("Call wait"),
+        expect.anything(),
+      );
+      expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+      expect(cancelZaloQrLoginMock.mock.invocationCallOrder[0]).toBeLessThan(
+        note.mock.invocationCallOrder.at(-1)!,
+      );
+      expect(logoutZaloProfileMock).toHaveBeenCalledTimes(expectedLogouts);
+      expect(prompter.confirm).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Did you scan and approve the QR on your phone?" }),
+      );
+      if (expectedLogouts > 0) {
+        expect(logoutZaloProfileMock.mock.invocationCallOrder[0]).toBeLessThan(
+          startZaloQrLoginMock.mock.invocationCallOrder[0]!,
+        );
+      }
+      expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("cancels a disconnected QR wait before reporting retry guidance", async () => {
+    checkZaloAuthenticatedMock.mockResolvedValueOnce(false);
+    cancelZaloQrLoginMock.mockClear();
     startZaloQrLoginMock.mockResolvedValueOnce({
-      message: "Failed to start QR login: invalid QR image",
+      message: "Scan this QR with the Zalo app.",
+      qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
     });
-    waitForZaloQrLoginMock.mockClear();
+    waitForZaloQrLoginMock.mockResolvedValueOnce({
+      connected: false,
+      message: "Still waiting for QR scan confirmation.",
+    });
     const note = vi.fn(async (_message: string, _title?: string) => {});
     const prompter = createTestWizardPrompter({
       note,
       confirm: vi.fn(async ({ message }: { message: string }) => {
-        if (message === "Login via QR code now?") {
-          return true;
-        }
-        if (message === "Zalo Personal already logged in. Keep session?") {
-          return false;
-        }
-        return false;
+        return (
+          message === "Login via QR code now?" ||
+          message === "Did you scan and approve the QR on your phone?"
+        );
       }),
     });
 
     await runSetup({ prompter });
 
-    expect(note).toHaveBeenCalledWith(
-      "Failed to start QR login: invalid QR image",
-      "Login pending",
+    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+    expect(note).toHaveBeenLastCalledWith(
+      "Still waiting for QR scan confirmation.\nQR login stopped. Start login again to retry.",
+      "QR Login",
     );
-    expect(logoutZaloProfileMock).toHaveBeenCalledTimes(expectedLogouts);
-    expect(prompter.confirm).not.toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Did you scan and approve the QR on your phone?" }),
+    expect(cancelZaloQrLoginMock.mock.invocationCallOrder[0]).toBeLessThan(
+      note.mock.invocationCallOrder.at(-1)!,
     );
-    if (expectedLogouts > 0) {
-      expect(logoutZaloProfileMock.mock.invocationCallOrder[0]).toBeLessThan(
-        startZaloQrLoginMock.mock.invocationCallOrder[0]!,
-      );
-    }
-    expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
   });
 
   it("prompts DM policy before group access in quickstart", async () => {

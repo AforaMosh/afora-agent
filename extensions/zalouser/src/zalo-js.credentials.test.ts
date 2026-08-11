@@ -278,7 +278,44 @@ describe("zalouser credential persistence", () => {
     expect(createZaloMock).toHaveBeenCalledTimes(2);
   });
 
-  it("cancels the active vendor login before a late result can persist credentials", async () => {
+  it("fences a late vendor completion after QR startup times out", async () => {
+    const stateDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-zalouser-credentials-"));
+    const profile = "qr-start-timeout-cancel";
+    let resolveLogin: (api: API) => void = () => undefined;
+    const loginResult = new Promise<API>((resolve) => {
+      resolveLogin = resolve;
+    });
+    const api = createMockApi({
+      imei: "late-start-imei",
+      userAgent: "late-start-user-agent",
+      cookies: [{ key: "zpsid", value: "late-start", domain: "chat.zalo.me" }],
+    });
+
+    createZaloMock.mockResolvedValueOnce({
+      loginQR: async () => await loginResult,
+    });
+
+    try {
+      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+        const started = await startZaloQrLogin({ profile, timeoutMs: 3000 });
+        expect(started).toEqual({
+          message: "Still preparing QR. Call wait to continue checking login status.",
+        });
+
+        cancelZaloQrLogin(profile);
+        resolveLogin(api);
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+
+        expect(loadStoredZaloCredentials(profile)).toBeNull();
+      });
+    } finally {
+      await rm(stateDir, { recursive: true, force: true });
+    }
+  });
+
+  it("fences a late vendor completion after QR wait times out", async () => {
     const stateDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-zalouser-credentials-"));
     const profile = "qr-presentation-cancel";
     const abort = vi.fn();
@@ -314,6 +351,11 @@ describe("zalouser credential persistence", () => {
       await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
         const started = await startZaloQrLogin({ profile, timeoutMs: 1000 });
         expect(started.qrDataUrl).toBe(`data:image/png;base64,${PNG_1X1}`);
+
+        await expect(waitForZaloQrLogin({ profile, timeoutMs: 1000 })).resolves.toEqual({
+          connected: false,
+          message: "Still waiting for QR scan confirmation.",
+        });
 
         cancelZaloQrLogin(profile);
         resolveLogin(api);
