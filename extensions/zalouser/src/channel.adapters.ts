@@ -400,7 +400,8 @@ export const zalouserAuthAdapter = {
     accountId?: string | null;
     runtime: RuntimeEnv;
   }) => {
-    const { startZaloQrLogin, waitForZaloQrLogin } = await loadZalouserChannelRuntime();
+    const { cancelZaloQrLogin, startZaloQrLogin, waitForZaloQrLogin } =
+      await loadZalouserChannelRuntime();
     const account = resolveZalouserAccountSync({
       cfg,
       accountId: accountId ?? resolveDefaultZalouserAccountId(cfg),
@@ -415,19 +416,28 @@ export const zalouserAuthAdapter = {
       timeoutMs: 35_000,
     });
     if (!started.qrDataUrl) {
+      cancelZaloQrLogin(account.profile);
       throw new Error(started.message || "Failed to start QR login");
     }
 
-    const qrPath = await writeQrDataUrlToTempFile(started.qrDataUrl, account.profile);
+    let qrPath: string | null = null;
+    try {
+      qrPath = await writeQrDataUrlToTempFile(started.qrDataUrl, account.profile);
+    } finally {
+      if (!qrPath) {
+        // The QR vendor login can persist credentials asynchronously. Cancel at
+        // its lifecycle owner whenever presentation fails or throws.
+        cancelZaloQrLogin(account.profile);
+      }
+    }
     if (!qrPath) {
-      // The direct CLI path has no prompt-level recovery. Stop before polling so
-      // an unusable vendor image cannot leave the operator waiting with nothing to scan.
       throw new Error("Zalo QR login returned an unusable image. Start login again.");
     }
     runtime.log(`Scan QR image: ${qrPath}`);
 
     const waited = await waitForZaloQrLogin({ profile: account.profile, timeoutMs: 180_000 });
     if (!waited.connected) {
+      cancelZaloQrLogin(account.profile);
       throw new Error(waited.message || "Zalouser login failed");
     }
 

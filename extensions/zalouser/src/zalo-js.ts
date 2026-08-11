@@ -757,6 +757,11 @@ function resetQrLogin(profileInput?: string | null): void {
   activeQrLogins.delete(profile);
 }
 
+/** Cancel the profile's active vendor QR login before abandoning presentation. */
+export function cancelZaloQrLogin(profileInput?: string | null): void {
+  resetQrLogin(profileInput);
+}
+
 async function fetchGroupsByIds(api: API, ids: string[]): Promise<Map<string, GroupInfo>> {
   const result = new Map<string, GroupInfo>();
   for (let index = 0; index < ids.length; index += GROUP_INFO_CHUNK_SIZE) {

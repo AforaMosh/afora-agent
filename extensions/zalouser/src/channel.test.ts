@@ -22,6 +22,7 @@ describe("zalouser target classification", () => {
 import { setZalouserRuntime } from "./runtime.js";
 import { sendMessageZalouser, sendReactionZalouser } from "./send.js";
 import {
+  cancelZaloQrLoginMock,
   listZaloFriendsMatchingMock,
   startZaloQrLoginMock,
   waitForZaloQrLoginMock,
@@ -485,6 +486,7 @@ describe("zalouser channel policies", () => {
 
 describe("zalouser account resolution", () => {
   beforeEach(() => {
+    cancelZaloQrLoginMock.mockReset();
     listZaloFriendsMatchingMock.mockReset();
     startZaloQrLoginMock.mockReset();
     waitForZaloQrLoginMock.mockReset();
@@ -606,5 +608,6 @@ describe("zalouser account resolution", () => {
       }),
     ).rejects.toThrow("Zalo QR login returned an unusable image. Start login again.");
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
+    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("work-profile");
   });
 });

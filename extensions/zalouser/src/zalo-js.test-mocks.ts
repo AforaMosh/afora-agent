@@ -3,6 +3,7 @@ import { vi, type Mock } from "vitest";
 
 type ZaloJsModule = typeof import("./zalo-js.js");
 type ZaloJsMocks = {
+  cancelZaloQrLoginMock: Mock<ZaloJsModule["cancelZaloQrLogin"]>;
   checkZaloAuthenticatedMock: Mock<ZaloJsModule["checkZaloAuthenticated"]>;
   getZaloUserInfoMock: Mock<ZaloJsModule["getZaloUserInfo"]>;
   listZaloFriendsMock: Mock<ZaloJsModule["listZaloFriends"]>;
@@ -23,6 +24,7 @@ type ZaloJsMocks = {
 
 const zaloJsMocks = vi.hoisted(
   (): ZaloJsMocks => ({
+    cancelZaloQrLoginMock: vi.fn(),
     checkZaloAuthenticatedMock: vi.fn(async () => false),
     getZaloUserInfoMock: vi.fn(async () => null),
     listZaloFriendsMock: vi.fn(async () => []),
@@ -66,6 +68,7 @@ const zaloJsMocks = vi.hoisted(
 );
 
 export const listZaloFriendsMock = zaloJsMocks.listZaloFriendsMock;
+export const cancelZaloQrLoginMock = zaloJsMocks.cancelZaloQrLoginMock;
 export const listZaloFriendsMatchingMock = zaloJsMocks.listZaloFriendsMatchingMock;
 export const listZaloGroupMembersMock = zaloJsMocks.listZaloGroupMembersMock;
 export const listZaloGroupsMock = zaloJsMocks.listZaloGroupsMock;
@@ -79,6 +82,7 @@ export const startZaloQrLoginMock = zaloJsMocks.startZaloQrLoginMock;
 export const waitForZaloQrLoginMock = zaloJsMocks.waitForZaloQrLoginMock;
 
 vi.mock("./zalo-js.js", () => ({
+  cancelZaloQrLogin: cancelZaloQrLoginMock,
   checkZaloAuthenticated: zaloJsMocks.checkZaloAuthenticatedMock,
   getZaloUserInfo: zaloJsMocks.getZaloUserInfoMock,
   listZaloFriends: listZaloFriendsMock,

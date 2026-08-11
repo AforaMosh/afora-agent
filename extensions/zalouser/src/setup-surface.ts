@@ -24,6 +24,7 @@ import {
 } from "./accounts.js";
 import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
 import {
+  cancelZaloQrLogin,
   logoutZaloProfile,
   resolveZaloAllowFromEntries,
   resolveZaloGroupsByEntries,
@@ -291,21 +292,33 @@ async function runZalouserQrLogin(params: {
       : {}),
   });
   if (!start.qrDataUrl) {
+    cancelZaloQrLogin(params.profile);
     await params.prompter.note(start.message, t("wizard.zalouser.loginPendingTitle"));
     return;
   }
 
-  const qrPath = await writeQrDataUrlToTempFile(start.qrDataUrl, params.profile);
-  await params.prompter.note(
-    [
-      start.message,
-      qrPath
-        ? t("wizard.zalouser.qrImageSaved", { path: qrPath })
-        : t("wizard.zalouser.qrImageWriteFailed"),
-      ...(qrPath ? [t("wizard.zalouser.scanApproveContinue")] : []),
-    ].join("\n"),
-    t("wizard.zalouser.qrLoginTitle"),
-  );
+  let qrPath: string | null = null;
+  let presented = false;
+  try {
+    qrPath = await writeQrDataUrlToTempFile(start.qrDataUrl, params.profile);
+    await params.prompter.note(
+      [
+        start.message,
+        qrPath
+          ? t("wizard.zalouser.qrImageSaved", { path: qrPath })
+          : t("wizard.zalouser.qrImageWriteFailed"),
+        ...(qrPath ? [t("wizard.zalouser.scanApproveContinue")] : []),
+      ].join("\n"),
+      t("wizard.zalouser.qrLoginTitle"),
+    );
+    presented = qrPath !== null;
+  } finally {
+    if (!presented) {
+      // Failed presentation must retire the vendor login before setup returns;
+      // otherwise its worker can persist credentials after reporting failure.
+      cancelZaloQrLogin(params.profile);
+    }
+  }
   if (!qrPath) {
     return;
   }
@@ -315,6 +328,7 @@ async function runZalouserQrLogin(params: {
     initialValue: true,
   });
   if (!scanned) {
+    cancelZaloQrLogin(params.profile);
     return;
   }
 

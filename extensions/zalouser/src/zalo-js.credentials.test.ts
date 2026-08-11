@@ -35,6 +35,7 @@ import {
   type StoredZaloCredentials,
 } from "./session-state.js";
 import {
+  cancelZaloQrLogin,
   checkZaloAuthenticated,
   listZaloFriends,
   sendZaloLink,
@@ -275,6 +276,57 @@ describe("zalouser credential persistence", () => {
       message: "Login successful.",
     });
     expect(createZaloMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancels the active vendor login before a late result can persist credentials", async () => {
+    const stateDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-zalouser-credentials-"));
+    const profile = "qr-presentation-cancel";
+    const abort = vi.fn();
+    let resolveLogin: (api: API) => void = () => undefined;
+    const loginResult = new Promise<API>((resolve) => {
+      resolveLogin = resolve;
+    });
+    const api = createMockApi({
+      imei: "cancelled-imei",
+      userAgent: "cancelled-user-agent",
+      cookies: [{ key: "zpsid", value: "cancelled", domain: "chat.zalo.me" }],
+    });
+
+    createZaloMock.mockResolvedValueOnce({
+      loginQR: async (_options: unknown, callback?: (event: LoginQRCallbackEvent) => unknown) => {
+        callback?.({
+          type: LoginQRCallbackEventType.QRCodeGenerated,
+          data: {
+            code: "cancelled-qr",
+            image: `data:image/png;base64,${PNG_1X1}`,
+          },
+          actions: {
+            saveToFile: vi.fn(async () => undefined),
+            retry: vi.fn(),
+            abort,
+          },
+        });
+        return await loginResult;
+      },
+    });
+
+    try {
+      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+        const started = await startZaloQrLogin({ profile, timeoutMs: 1000 });
+        expect(started.qrDataUrl).toBe(`data:image/png;base64,${PNG_1X1}`);
+
+        cancelZaloQrLogin(profile);
+        resolveLogin(api);
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+
+        expect(abort).toHaveBeenCalledTimes(1);
+        expect(loadStoredZaloCredentials(profile)).toBeNull();
+      });
+    } finally {
+      await rm(stateDir, { recursive: true, force: true });
+    }
   });
 
   it("revalidates setup ownership immediately before QR credentials are written", async () => {
