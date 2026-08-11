@@ -18,7 +18,7 @@ describe("legacy media persistence additive schema repair", () => {
     cleanupTempDirs(tempDirs);
   });
 
-  it("repairs same-version additive session schema before media validation", () => {
+  it("repairs same-version additive and retired structural schema before media validation", () => {
     const stateDir = makeTempDir(tempDirs, "media-persistence-current-additive-");
     const env = { OPENCLAW_STATE_DIR: stateDir };
     const opened = openOpenClawAgentDatabase({ agentId: "main", env });
@@ -46,7 +46,43 @@ describe("legacy media persistence additive schema repair", () => {
       DROP INDEX idx_agent_session_nodes_entry_valid_pending;
       DROP TABLE session_key_contract;
       ALTER TABLE session_nodes DROP COLUMN entry_valid;
+      CREATE TABLE state_leases (
+        scope TEXT NOT NULL,
+        lease_key TEXT NOT NULL,
+        owner TEXT NOT NULL,
+        expires_at INTEGER,
+        heartbeat_at INTEGER,
+        payload_json TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (scope, lease_key)
+      ) STRICT;
+      CREATE INDEX idx_agent_state_leases_expiry
+        ON state_leases(expires_at, scope, lease_key)
+        WHERE expires_at IS NOT NULL;
+      CREATE INDEX idx_agent_state_leases_owner
+        ON state_leases(owner, updated_at DESC);
+      INSERT INTO state_leases (
+        scope, lease_key, owner, expires_at, heartbeat_at, payload_json, created_at, updated_at
+      ) VALUES ('retired', 'orphan', 'nobody', NULL, NULL, NULL, 1, 1);
+      INSERT INTO auth_profile_store (store_key, store_json, updated_at)
+      VALUES ('primary', '{"fixture":"store-present"}', 10);
+      INSERT INTO auth_profile_state (state_key, state_json, updated_at)
+      VALUES ('primary', '{"fixture":"state-present"}', 11);
     `);
+    const before = {
+      authState: database
+        .prepare("SELECT state_key, state_json, updated_at FROM auth_profile_state")
+        .get(),
+      authStore: database
+        .prepare("SELECT store_key, store_json, updated_at FROM auth_profile_store")
+        .get(),
+      metadata: database
+        .prepare(
+          "SELECT role, schema_version, agent_id, app_version, created_at, updated_at FROM schema_meta WHERE meta_key = 'primary'",
+        )
+        .get(),
+    };
     database.close();
 
     const result = migrateLegacyMediaPersistence({ env });
@@ -64,8 +100,31 @@ describe("legacy media persistence additive schema repair", () => {
       expect(
         repaired.prepare("SELECT main_key FROM session_key_contract WHERE id = 1").get(),
       ).toEqual({ main_key: "main" });
+      expect(
+        repaired
+          .prepare(
+            "SELECT name FROM sqlite_schema WHERE name IN ('state_leases', 'idx_agent_state_leases_expiry', 'idx_agent_state_leases_owner')",
+          )
+          .all(),
+      ).toEqual([]);
+      expect(
+        repaired.prepare("SELECT store_key, store_json, updated_at FROM auth_profile_store").get(),
+      ).toEqual(before.authStore);
+      expect(
+        repaired.prepare("SELECT state_key, state_json, updated_at FROM auth_profile_state").get(),
+      ).toEqual(before.authState);
+      expect(
+        repaired
+          .prepare(
+            "SELECT role, schema_version, agent_id, app_version, created_at, updated_at FROM schema_meta WHERE meta_key = 'primary'",
+          )
+          .get(),
+      ).toEqual(before.metadata);
+      expect(repaired.prepare("PRAGMA integrity_check").get()).toEqual({ integrity_check: "ok" });
+      expect(repaired.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     } finally {
       repaired.close();
     }
+    expect(migrateLegacyMediaPersistence({ env })).toEqual({ changes: [], warnings: [] });
   });
 });

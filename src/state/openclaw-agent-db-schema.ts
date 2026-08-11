@@ -292,12 +292,8 @@ function migrateOpenClawAgentSchema(db: DatabaseSync): void {
   backfillTranscriptMutationWatermarks(db);
 }
 
-function migrateRetiredAgentStateLeaseSchema(
-  db: DatabaseSync,
-  previousVersion: number,
-  targetVersion: number,
-): void {
-  if (previousVersion >= 17 || targetVersion < 17) {
+function migrateRetiredAgentStateLeaseSchema(db: DatabaseSync, targetVersion: number): void {
+  if (targetVersion < 17) {
     return;
   }
   // The 2026-08-10 tenant audit found no agent-DB lease writers after #121113;
@@ -613,6 +609,9 @@ function ensureAgentSchema(
           `OpenClaw agent database ${pathname} uses schema version ${previousVersion}; expected at most ${targetVersion} for this migration.`,
         );
       }
+      // Early v17 media migrations stamped the version before this structural step.
+      // Keep the retirement before the same-version return so reruns converge safely.
+      migrateRetiredAgentStateLeaseSchema(db, targetVersion);
       if (previousVersion === targetVersion) {
         ensureSessionEntryValidityProjection(db);
         ensureSessionKeyContractSchemaInTransaction(db);
@@ -640,7 +639,6 @@ function ensureAgentSchema(
       dropLegacyRuntimeJournalSchemas(db);
       migrateMemoryIndexSourcesIdentity(db);
       migrateOpenClawAgentSchema(db);
-      migrateRetiredAgentStateLeaseSchema(db, previousVersion, targetVersion);
       migrateConversationDeliveryTargetColumn(db);
       backfillOpenClawAgentSchema(db, previousVersion);
       // Remove after 2026-10-01: drop the pre-v11 conversation backfill once schema 11 is the support floor.

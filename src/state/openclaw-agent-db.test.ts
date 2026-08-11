@@ -1640,6 +1640,110 @@ describe("openclaw agent database", () => {
     ).toEqual([]);
   });
 
+  it.each([
+    { authState: true, label: "with auth rows" },
+    { authState: false, label: "without auth rows" },
+  ])("repairs residual version 17 lease storage $label", ({ authState }) => {
+    const stateDir = createTempStateDir();
+    const databasePath = materializeCurrentWorkerAgentDatabase(stateDir);
+    const { DatabaseSync } = requireNodeSqlite();
+    const writer = new DatabaseSync(databasePath);
+    writer.exec(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA wal_autocheckpoint = 0;
+      PRAGMA wal_checkpoint(TRUNCATE);
+    `);
+    const snapshotReader = new DatabaseSync(databasePath, { readOnly: true });
+    snapshotReader.exec("BEGIN;");
+    snapshotReader
+      .prepare("SELECT schema_version FROM schema_meta WHERE meta_key = 'primary'")
+      .get();
+    writer.exec(`
+      BEGIN IMMEDIATE;
+      CREATE TABLE state_leases (
+        scope TEXT NOT NULL,
+        lease_key TEXT NOT NULL,
+        owner TEXT NOT NULL,
+        expires_at INTEGER,
+        heartbeat_at INTEGER,
+        payload_json TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (scope, lease_key)
+      ) STRICT;
+      CREATE INDEX idx_agent_state_leases_expiry
+        ON state_leases(expires_at, scope, lease_key)
+        WHERE expires_at IS NOT NULL;
+      CREATE INDEX idx_agent_state_leases_owner
+        ON state_leases(owner, updated_at DESC);
+      INSERT INTO state_leases (
+        scope, lease_key, owner, expires_at, heartbeat_at, payload_json, created_at, updated_at
+      ) VALUES ('retired', 'orphan', 'nobody', NULL, NULL, NULL, 1, 1);
+      ${authState ? "INSERT INTO auth_profile_store (store_key, store_json, updated_at) VALUES ('primary', '{\"fixture\":\"store-present\"}', 10);" : ""}
+      ${authState ? "INSERT INTO auth_profile_state (state_key, state_json, updated_at) VALUES ('primary', '{\"fixture\":\"state-present\"}', 11);" : ""}
+      COMMIT;
+    `);
+    writer.close();
+    expect(fs.statSync(`${databasePath}-wal`).size).toBeGreaterThan(0);
+
+    const readPreservedState = () => {
+      const database = new DatabaseSync(databasePath, { readOnly: true });
+      try {
+        return {
+          authState: database
+            .prepare(
+              "SELECT state_key, state_json, updated_at FROM auth_profile_state ORDER BY state_key",
+            )
+            .all(),
+          authStore: database
+            .prepare(
+              "SELECT store_key, store_json, updated_at FROM auth_profile_store ORDER BY store_key",
+            )
+            .all(),
+          foreignKeys: database.prepare("PRAGMA foreign_key_check").all(),
+          integrity: database.prepare("PRAGMA integrity_check").get(),
+          journalMode: database.prepare("PRAGMA journal_mode").get(),
+          metadata: database
+            .prepare(
+              "SELECT role, schema_version, agent_id, app_version, created_at, updated_at FROM schema_meta WHERE meta_key = 'primary'",
+            )
+            .get(),
+          retiredObjects: database
+            .prepare(
+              "SELECT name FROM sqlite_schema WHERE name IN ('state_leases', 'idx_agent_state_leases_expiry', 'idx_agent_state_leases_owner') ORDER BY name",
+            )
+            .all(),
+          userVersion: database.prepare("PRAGMA user_version").get(),
+        };
+      } finally {
+        database.close();
+      }
+    };
+    const before = readPreservedState();
+
+    migrateOpenClawAgentDatabaseForMaintenance({
+      agentId: "worker-1",
+      pathname: databasePath,
+    });
+    snapshotReader.exec("ROLLBACK;");
+    snapshotReader.close();
+    const repaired = readPreservedState();
+    expect(repaired).toEqual({
+      ...before,
+      foreignKeys: [],
+      integrity: { integrity_check: "ok" },
+      journalMode: { journal_mode: "wal" },
+      retiredObjects: [],
+      userVersion: { user_version: OPENCLAW_AGENT_SCHEMA_VERSION },
+    });
+
+    migrateOpenClawAgentDatabaseForMaintenance({
+      agentId: "worker-1",
+      pathname: databasePath,
+    });
+    expect(readPreservedState()).toEqual(repaired);
+  });
+
   it("upgrades version 11 with agent state intact and adds ACP parent-stream storage", () => {
     const stateDir = createTempStateDir();
     const env = { OPENCLAW_STATE_DIR: stateDir };
