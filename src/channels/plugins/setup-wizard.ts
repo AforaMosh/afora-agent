@@ -405,7 +405,10 @@ export function buildChannelSetupWizardAdapterFromSetupWizard(params: {
           }
           const allowEnv = credential.allowEnv?.({ cfg: next, accountId }) ?? false;
 
-          if (!credentialInputModePolicySelected && wizard.credentials.length > 1) {
+          if (
+            !credentialInputModePolicySelected &&
+            wizard.supportsSharedCredentialInputMode === true
+          ) {
             const policy = await resolveSharedChannelCredentialInputMode({ prompter });
             credentialInputModePolicySelected = true;
             if (policy === "per-credential") {

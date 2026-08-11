@@ -102,6 +102,7 @@ function createLegacyWizard(): ChannelSetupWizard {
       unconfiguredLabel: "Not configured",
       resolveConfigured: ({ cfg }) => Boolean(resolveLegacyAccount(cfg).botId),
     },
+    supportsSharedCredentialInputMode: true,
     credentials: [
       {
         inputKey: "token",
@@ -146,10 +147,10 @@ function createLegacyWizard(): ChannelSetupWizard {
   };
 }
 
-function createConfigure() {
+function createConfigure(wizard = createLegacyWizard()) {
   return buildChannelSetupWizardAdapterFromSetupWizard({
     plugin: createLegacyPlugin(),
-    wizard: createLegacyWizard(),
+    wizard,
   }).configure;
 }
 
@@ -205,6 +206,33 @@ describe("channel setup wizard credential input", () => {
       "How do you want to provide this Token?",
       "Where is this Token stored?",
     ]);
+  });
+
+  it("keeps a single active credential on its ordinary input-mode prompt", async () => {
+    const wizard = createLegacyWizard();
+    wizard.supportsSharedCredentialInputMode = false;
+    const conditionalCredential = wizard.credentials[1];
+    if (!conditionalCredential) {
+      throw new Error("test invariant: expected a second credential");
+    }
+    conditionalCredential.shouldPrompt = () => false;
+    const queued = createQueuedWizardPrompter({
+      selectValues: ["plaintext"],
+      textValues: ["test-bot-id"],
+    });
+
+    const result = await runSetupWizardConfigure({
+      configure: createConfigure(wizard),
+      cfg: {} as OpenClawConfig,
+      prompter: queued.prompter,
+    });
+
+    expect(getChannelConfig(result.cfg)).toMatchObject({ botId: "test-bot-id" });
+    expect(getChannelConfig(result.cfg).secret).toBeUndefined();
+    expect(queued.select).toHaveBeenCalledOnce();
+    expect(queued.select).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "How do you want to provide this Bot ID?" }),
+    );
   });
 });
 
