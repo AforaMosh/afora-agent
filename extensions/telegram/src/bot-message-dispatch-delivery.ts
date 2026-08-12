@@ -6,6 +6,7 @@ import {
   resolveTranscriptBackedChannelFinalText,
 } from "openclaw/plugin-sdk/channel-outbound";
 import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { createSubsystemLogger } from "openclaw/plugin-sdk/logging-core";
 import type { ReplyPayload } from "openclaw/plugin-sdk/reply-payload";
 import { isSingleUseReplyToMode } from "openclaw/plugin-sdk/reply-reference";
 import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
@@ -72,6 +73,8 @@ type TelegramSendPayloadOptions = {
   onPlatformSendDispatch?: () => Promise<void>;
   bindPendingFinalDelivery?: <T extends ReplyPayload>(payload: T) => T;
 };
+
+const deliveryDowngradeLog = createSubsystemLogger("gateway/channels/telegram").child("delivery");
 
 const projectPayloadForDelivery = (turn: Turn, payload: ReplyPayload): ReplyPayload | undefined =>
   projectOutboundPayloadPlanForDelivery(
@@ -303,6 +306,20 @@ export async function sendPayload(
       await projectionSequence.fail();
       return false;
     }
+    // Any other status silently downgrades a final from the durable custody
+    // funnel to the direct funnel; that downgrade must be attributable when a
+    // delivery later settles ambiguous (spurious "couldn't confirm" notices).
+    deliveryDowngradeLog.warn(
+      `durable final delivery not handled (status=${durable.status}${
+        "reason" in durable && durable.reason ? ` reason=${durable.reason}` : ""
+      }); falling back to direct send`,
+    );
+  } else if (options?.durable) {
+    deliveryDowngradeLog.warn(
+      `durable final delivery skipped (${
+        durableDelivery ? "prompt context sequence not fresh" : "durable deliverer unavailable"
+      }); falling back to direct send`,
+    );
   }
   try {
     const transcriptMirror = createTranscriptMirror(turn);

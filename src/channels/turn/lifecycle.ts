@@ -19,6 +19,7 @@ import {
 import { settlePendingFinalDelivery } from "../../infra/outbound/delivery-completion.js";
 import { createMessageSentEmitter } from "../../infra/outbound/message-sent-hook.js";
 import { summarizeOutboundPayloadForTransport } from "../../infra/outbound/payloads.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { resolveMessageReceiptPrimaryId } from "../message/receipt.js";
 import { createChannelReplyPipeline } from "../message/reply-pipeline.js";
@@ -52,6 +53,8 @@ import type {
   ChannelTurnResult,
   PreparedChannelTurn,
 } from "./types.js";
+
+const settleLog = createSubsystemLogger("channels/turn/delivery-custody");
 
 type RoutedAssembledChannelTurn = Omit<
   AssembledChannelTurn,
@@ -245,6 +248,11 @@ async function settleFailedPendingFinalDelivery(
   } else if (isPlatformMessageNotDispatchedError(error)) {
     await settlePendingFinalDelivery(completion, "prepared", ["queued", "unknown"]);
   } else {
+    // Unknown custody can surface later as a recovery notice; without this line
+    // the causing error is invisible and the notice looks spontaneous.
+    settleLog.warn(
+      `pending final delivery settled unknown after send error: intent=${completion.intentId} ${formatErrorMessage(error)}`,
+    );
     await settlePendingFinalDelivery(completion, "unknown", ["queued", "unknown"]);
   }
 }
