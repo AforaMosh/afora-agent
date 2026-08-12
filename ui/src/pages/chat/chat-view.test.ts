@@ -3926,7 +3926,7 @@ describe("chat slash menu accessibility", () => {
     keydownComposer(container, "Enter");
 
     expect(onSlashCommand).not.toHaveBeenCalled();
-    expect(draft).toBe("Please use /weather ");
+    expect(draft).toBe("Please use /weather: ");
   });
 
   it("does not offer session-changing commands in the middle of prose", () => {
