@@ -42,12 +42,12 @@ export async function handleWhatsAppAction(
           `Set channels.whatsapp.reactionLevel to "minimal" or "extensive" to enable.`,
       );
     }
-    const chatJid = readStringParam(params, "chatJid", { required: true });
+    const chatJid = readStringParam(params, "chatJid", { required: true, trim: false });
     const messageId = readStringParam(params, "messageId", { required: true });
     const { emoji, remove, isEmpty } = readReactionParams(params, {
       removeErrorMessage: "Emoji is required to remove a WhatsApp reaction.",
     });
-    const participant = readStringParam(params, "participant");
+    const participant = readStringParam(params, "participant", { trim: false });
     const fromMeRaw = params.fromMe;
     const fromMe = typeof fromMeRaw === "boolean" ? fromMeRaw : undefined;
 
