@@ -1,7 +1,10 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { replaceTranscriptEvents } from "../config/sessions/session-accessor.js";
+import {
+  replaceTranscriptEvents,
+  type TranscriptEvent,
+} from "../config/sessions/session-accessor.js";
 import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
@@ -37,7 +40,7 @@ describe("session transcript reader marker projection", () => {
 
   async function writeTranscript(
     sessionId: string,
-    events: unknown[],
+    events: TranscriptEvent[],
   ): Promise<SessionTranscriptReadScope> {
     const scope = {
       agentId: "main",

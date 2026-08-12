@@ -7,6 +7,7 @@ import * as sessionAccessor from "../config/sessions/session-accessor.js";
 import {
   persistSessionTranscriptTurn,
   replaceTranscriptEvents,
+  type TranscriptEvent,
   upsertSessionEntryCore,
 } from "../config/sessions/session-accessor.js";
 import { waitForSessionTranscriptIndexReconcile } from "../config/sessions/session-transcript-reconcile.js";
@@ -65,7 +66,7 @@ describe("session transcript reader facade", () => {
 
   async function writeTranscript(
     sessionId: string,
-    events: unknown[],
+    events: TranscriptEvent[],
   ): Promise<SessionTranscriptReadScope> {
     const scope = {
       agentId: "main",

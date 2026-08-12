@@ -3,6 +3,7 @@ import {
   resolveSessionTranscriptRuntimeTarget,
   withTranscriptWriteLock,
   type SessionTranscriptWriteLockAccessorContext,
+  type TranscriptEvent,
   type TranscriptMessageAppendOptions,
   type TranscriptMessageAppendResult,
   type TranscriptUpdatePayload,
@@ -31,7 +32,7 @@ export type InternalSessionTranscriptWriteLockContext = {
     options: Omit<TranscriptMessageAppendOptions<TMessage>, "config">,
   ) => Promise<TranscriptMessageAppendResult<TMessage> | undefined>;
   publishUpdate: (update?: TranscriptUpdatePayload) => Promise<void>;
-  readEvents: () => Promise<unknown[]>;
+  readEvents: () => Promise<TranscriptEvent[]>;
   target: InternalSessionTranscriptTarget;
 };
 

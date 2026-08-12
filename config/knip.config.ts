@@ -81,6 +81,8 @@ const repositoryScriptEntries = [
   "scripts/openclaw-release-clawhub-runtime-state.ts!",
   // Oxlint loads this JS plugin by path from config/oxlint/boundary-guards.json.
   "scripts/oxlint-boundary-guards.mjs!",
+  // Oxlint loads this JS plugin by path from the root and focused lint configs.
+  "scripts/oxlint-type-evidence.mjs!",
   "scripts/plugin-prerelease-liveish-matrix.mts!",
   // Generates the checked-in native protocol models from core descriptor metadata.
   "scripts/protocol-gen.ts!",

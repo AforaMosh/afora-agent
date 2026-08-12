@@ -12,7 +12,7 @@ import {
   resolveMemoryLightDreamingConfig,
   resolveMemoryRemDreamingConfig,
 } from "openclaw/plugin-sdk/memory-core-host-status";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { OpenClawConfig, OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { normalizeStringEntries, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { appendFailedDreamingEvent } from "./dreaming-events.js";
 import {
@@ -67,7 +67,6 @@ import {
 } from "./short-term-promotion.js";
 
 type Logger = Pick<OpenClawPluginApi["logger"], "info" | "warn" | "error">;
-type DreamingHostConfig = unknown;
 type DreamingPhaseStorageConfig = {
   timezone?: string;
   storage: { mode: "inline" | "separate" | "both"; separateReports: boolean };
@@ -557,7 +556,7 @@ function isCheckpointSessionTranscriptPath(absolutePath: string): boolean {
 }
 
 function resolveSessionAgentsForWorkspace(params: {
-  cfg: DreamingHostConfig;
+  cfg: OpenClawConfig;
   workspaceDir: string;
   primaryWorkspaceDir?: string;
 }): string[] {
@@ -566,13 +565,10 @@ function resolveSessionAgentsForWorkspace(params: {
     return [];
   }
   const target = normalizeMemoryCoreWorkspaceKey(workspaceDir);
-  const workspaces = resolveMemoryDreamingWorkspaces(
-    cfg as Parameters<typeof resolveMemoryDreamingWorkspaces>[0],
-    {
-      primaryWorkspaceDir,
-      primaryAgentId: "main",
-    },
-  );
+  const workspaces = resolveMemoryDreamingWorkspaces(cfg, {
+    primaryWorkspaceDir,
+    primaryAgentId: "main",
+  });
   const match = workspaces.find(
     (entry) => normalizeMemoryCoreWorkspaceKey(entry.workspaceDir) === target,
   );
@@ -584,7 +580,7 @@ function resolveSessionAgentsForWorkspace(params: {
 
 async function collectSessionIngestionBatches(params: {
   workspaceDir: string;
-  cfg?: DreamingHostConfig;
+  cfg?: OpenClawConfig;
   primaryWorkspaceDir?: string;
   lookbackDays: number;
   nowMs: number;
@@ -719,7 +715,7 @@ async function collectSessionIngestionBatches(params: {
 
 async function ingestSessionTranscriptSignals(params: {
   workspaceDir: string;
-  cfg?: DreamingHostConfig;
+  cfg?: OpenClawConfig;
   primaryWorkspaceDir?: string;
   lookbackDays: number;
   nowMs: number;
@@ -1286,7 +1282,7 @@ export function previewRemDreaming(params: {
 async function runLightDreaming(params: {
   agentId?: string;
   workspaceDir: string;
-  cfg?: DreamingHostConfig;
+  cfg?: OpenClawConfig;
   primaryWorkspaceDir?: string;
   config: LightDreamingConfig;
   logger: Logger;
@@ -1386,7 +1382,7 @@ async function runLightDreaming(params: {
 async function runRemDreaming(params: {
   agentId?: string;
   workspaceDir: string;
-  cfg?: DreamingHostConfig;
+  cfg?: OpenClawConfig;
   primaryWorkspaceDir?: string;
   config: RemDreamingConfig;
   logger: Logger;
@@ -1504,7 +1500,7 @@ export async function runDreamingSweepPhases(params: {
   agentId?: string;
   workspaceDir: string;
   pluginConfig?: Record<string, unknown>;
-  cfg?: DreamingHostConfig;
+  cfg?: OpenClawConfig;
   logger: Logger;
   subagent?: DreamNarrativeRequest["subagent"];
   detachNarratives?: boolean;
@@ -1524,7 +1520,7 @@ export async function runDreamingSweepPhases(params: {
 
   const light = resolveMemoryLightDreamingConfig({
     pluginConfig: params.pluginConfig,
-    cfg: params.cfg as Parameters<typeof resolveMemoryLightDreamingConfig>[0]["cfg"],
+    cfg: params.cfg,
   });
   if (light.enabled && light.limit > 0) {
     try {
@@ -1555,7 +1551,7 @@ export async function runDreamingSweepPhases(params: {
 
   const rem = resolveMemoryRemDreamingConfig({
     pluginConfig: params.pluginConfig,
-    cfg: params.cfg as Parameters<typeof resolveMemoryRemDreamingConfig>[0]["cfg"],
+    cfg: params.cfg,
   });
   if (rem.enabled && rem.limit > 0) {
     try {

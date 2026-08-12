@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+import type { TranscriptEvent } from "./session-accessor.types.js";
 import {
   DEFAULT_REPLAY_MAX_MESSAGES,
   replayableTranscriptRole,
@@ -21,7 +22,7 @@ type SessionResetBoundaryEvent = {
 
 export type SessionResetBoundaryPlan = {
   event: SessionResetBoundaryEvent;
-  seedEvents: unknown[];
+  seedEvents: object[];
 };
 
 function recordId(record: unknown): string | undefined {
@@ -154,7 +155,7 @@ async function readLegacyTranscriptEvents(sessionFile: string | undefined): Prom
 }
 
 export async function buildSessionResetBoundaryPlan(params: {
-  events: readonly unknown[];
+  events: readonly TranscriptEvent[];
   legacySessionFile?: string;
   reason: SessionResetBoundaryReason;
 }): Promise<SessionResetBoundaryPlan> {
@@ -169,7 +170,7 @@ export async function buildSessionResetBoundaryPlan(params: {
     ? []
     : await readLegacyTranscriptEvents(params.legacySessionFile);
   const seedEvents = legacyEvents.filter(
-    (event) =>
+    (event): event is object =>
       event !== null &&
       typeof event === "object" &&
       !Array.isArray(event) &&

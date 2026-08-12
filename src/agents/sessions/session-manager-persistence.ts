@@ -180,7 +180,7 @@ export class SessionManagerPersistence extends SessionManagerCore {
       this.persistenceHeaderPending = false;
     }
     const leafEntry = parseOpaqueLeafEntry(entry);
-    if (leafEntry) {
+    if (leafEntry && isRecord(entry)) {
       requireTranscriptEventAppend(
         appendTranscriptEventSync(scope, entry),
         `Session transcript leaf control was not persisted: ${leafEntry.id}`,

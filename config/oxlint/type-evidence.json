@@ -1,0 +1,10 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "jsPlugins": ["../../scripts/oxlint-type-evidence.mjs"],
+  "categories": { "correctness": "off" },
+  "rules": {
+    "openclaw-type-evidence/no-unknown-type-aliases": "error",
+    "openclaw-type-evidence/no-widen-then-assert": "error"
+  }
+}

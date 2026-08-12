@@ -512,9 +512,9 @@ export function wrapStreamFnSanitizeMalformedToolCalls(
       }
     }
     const nextContext = {
-      ...(context as unknown as Record<string, unknown>),
-      messages: nextMessages,
-    } as unknown;
-    return baseFn(model, nextContext as typeof context, options);
+      ...context,
+      messages: nextMessages as typeof context.messages,
+    };
+    return baseFn(model, nextContext, options);
   };
 }

@@ -127,8 +127,9 @@ function assertEventIdentitiesUnchanged(
   if (before.length !== after.length) {
     throw new Error(`${owner} event count changed during media migration`);
   }
-  for (let index = 0; index < before.length; index += 1) {
-    if (eventIdentity(before[index]) !== eventIdentity(after[index])) {
+  for (const [index, beforeEvent] of before.entries()) {
+    const afterEvent = after[index];
+    if (afterEvent === undefined || eventIdentity(beforeEvent) !== eventIdentity(afterEvent)) {
       throw new Error(`${owner} event identity changed at index ${index}`);
     }
   }

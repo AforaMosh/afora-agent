@@ -1,4 +1,5 @@
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import type { TranscriptEvent } from "../../config/sessions/session-accessor.js";
 import { selectSessionTranscriptLeafControlledPath } from "../../config/sessions/transcript-tree.js";
 import { CURRENT_SESSION_VERSION } from "../../config/sessions/version.js";
 import { logWarn } from "../../logger.js";
@@ -388,13 +389,13 @@ export function parseOpaqueLeafEntry(record: unknown):
   };
 }
 
-export function partitionSessionFileEntries(entries: readonly FileEntry[]): {
+export function partitionSessionFileEntries(entries: readonly TranscriptEvent[]): {
   fileEntries: FileEntry[];
-  opaqueEntries: Array<{ index: number; record: unknown }>;
+  opaqueEntries: Array<{ index: number; record: TranscriptEvent }>;
   fileEntriesByOriginalIndex: Array<FileEntry | undefined>;
 } {
   const fileEntries: FileEntry[] = [];
-  const opaqueEntries: Array<{ index: number; record: unknown }> = [];
+  const opaqueEntries: Array<{ index: number; record: TranscriptEvent }> = [];
   const fileEntriesByOriginalIndex: Array<FileEntry | undefined> = [];
   const header = entries.find(
     (entry) => isRecord(entry) && entry.type === "session" && typeof entry.id === "string",

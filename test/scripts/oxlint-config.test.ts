@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 type OxlintConfig = {
   ignorePatterns?: string[];
+  jsPlugins?: string[];
   overrides?: Array<{
     excludeFiles?: string[];
     files?: string[];
@@ -147,6 +148,7 @@ describe("oxlint config", () => {
       "docs/_layouts/",
       ".agents/skills/autoreview/tests/fixtures/**",
       "test/fixtures/oxlint-boundary-guards/**",
+      "test/fixtures/oxlint-type-evidence/**",
       "**/a2ui.bundle.js",
       "extensions/diffs/assets/viewer-runtime.js",
       "extensions/diffs-language-pack/assets/viewer-runtime.js",
@@ -289,6 +291,18 @@ describe("oxlint config", () => {
       "error",
       { considerDefaultExhaustiveForUnions: true },
     ]);
+  });
+
+  it("enables the repository type-evidence plugin", () => {
+    const config = readJson(".oxlintrc.json") as OxlintConfig;
+
+    expect(config.jsPlugins).toContain("./scripts/oxlint-type-evidence.mjs");
+    expect(config.rules?.["openclaw-type-evidence/no-unknown-type-aliases"]).toBe("error");
+    expect(config.rules?.["openclaw-type-evidence/no-widen-then-assert"]).toBe("error");
+    expect(config.overrides).toContainEqual({
+      files: ["**/*.d.ts"],
+      rules: { "openclaw-type-evidence/no-unknown-type-aliases": "off" },
+    });
   });
 
   it("enables clean zero-baseline lint rules", () => {

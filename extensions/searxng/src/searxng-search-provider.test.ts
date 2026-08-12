@@ -195,11 +195,11 @@ describe("searxng web search provider", () => {
 
   it("persists base URL to plugin config via setConfiguredCredentialValue", () => {
     const provider = createSearxngWebSearchProvider();
-    const config = {} as Record<string, unknown>;
     const setConfiguredCredentialValue = provider.setConfiguredCredentialValue;
     if (!setConfiguredCredentialValue) {
       throw new Error("Expected SearXNG provider setConfiguredCredentialValue");
     }
+    const config: Parameters<typeof setConfiguredCredentialValue>[0] = {};
 
     setConfiguredCredentialValue(config, "http://search.local:9000");
 

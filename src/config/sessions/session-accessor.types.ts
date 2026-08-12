@@ -193,8 +193,8 @@ export type ExactSessionEntry = {
   entry: SessionEntry;
 };
 
-/** Raw transcript record for non-message events; message records use appendTranscriptMessage. */
-export type TranscriptEvent = unknown;
+/** JSON event persisted in a transcript; message records use appendTranscriptMessage. */
+export type TranscriptEvent = object | string | number | boolean | null;
 
 export type SessionTranscriptStats = {
   eventCount: number;

@@ -1,7 +1,9 @@
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import {
   loadTranscriptEventsSync,
   replaceTranscriptEventsSync,
   type SessionTranscriptRuntimeTarget,
+  type TranscriptEvent,
 } from "../../config/sessions/session-accessor.js";
 import { isSessionTranscriptSideAppendEntry } from "../../config/sessions/transcript-tree.js";
 import { CURRENT_SESSION_VERSION } from "../../config/sessions/version.js";
@@ -58,19 +60,19 @@ export class SessionManagerCore {
   }
 
   setSessionTarget(target: SessionManagerPersistenceTarget): void {
-    const entries = loadTranscriptEventsSync(target) as FileEntry[];
+    const entries = loadTranscriptEventsSync(target);
     const header = entries.find(
-      (entry) => typeof entry === "object" && entry !== null && entry.type === "session",
+      (entry): entry is Record<string, unknown> => isRecord(entry) && entry.type === "session",
     );
     this.setLoadedSessionTarget(target, entries);
-    if (header?.cwd) {
+    if (typeof header?.cwd === "string") {
       this.cwd = header.cwd;
     }
   }
 
   protected setLoadedSessionTarget(
     target: SessionManagerPersistenceTarget | undefined,
-    entries: FileEntry[],
+    entries: TranscriptEvent[],
   ): void {
     const partitioned = partitionSessionFileEntries(entries);
     // Only a physically empty transcript may initialize lazily. Opaque persisted rows still need
@@ -441,13 +443,17 @@ export class SessionManagerCore {
   protected getPersistedFileEntries(
     leafAppendParentId: string | null = this.appendParentId,
     leafAppendMode?: "side",
-  ): unknown[] {
+  ): TranscriptEvent[] {
     this.clampOpaqueFileEntryIndexes();
-    const entries: unknown[] = [];
+    const entries: TranscriptEvent[] = [];
     let opaqueIndex = 0;
     for (let index = 0; index <= this.fileEntries.length; index += 1) {
       while (this.opaqueFileEntries[opaqueIndex]?.index === index) {
-        entries.push(this.opaqueFileEntries[opaqueIndex]?.record);
+        const opaqueEntry = this.opaqueFileEntries[opaqueIndex];
+        if (!opaqueEntry) {
+          break;
+        }
+        entries.push(opaqueEntry.record);
         opaqueIndex += 1;
       }
       const entry = this.fileEntries[index];
@@ -456,7 +462,11 @@ export class SessionManagerCore {
       }
     }
     while (opaqueIndex < this.opaqueFileEntries.length) {
-      entries.push(this.opaqueFileEntries[opaqueIndex]?.record);
+      const opaqueEntry = this.opaqueFileEntries[opaqueIndex];
+      if (!opaqueEntry) {
+        break;
+      }
+      entries.push(opaqueEntry.record);
       opaqueIndex += 1;
     }
 
@@ -498,7 +508,7 @@ export class SessionManagerCore {
     return entries;
   }
 
-  getPersistedEntries(): unknown[] {
+  getPersistedEntries(): TranscriptEvent[] {
     return this.getPersistedFileEntries();
   }
 

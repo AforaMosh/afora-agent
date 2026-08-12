@@ -1,3 +1,4 @@
+import type { TranscriptEvent } from "../../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { ImageContent, TextContent } from "../../llm/types.js";
 import type { AgentMessage } from "../runtime/index.js";
@@ -133,7 +134,7 @@ export interface SessionContext {
 
 export type PreservedOpaqueFileEntry = {
   index: number;
-  record: unknown;
+  record: TranscriptEvent;
 };
 
 export type SessionLeafControl = {

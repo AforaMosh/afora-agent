@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["unicorn", "typescript", "oxc"],
+  "jsPlugins": ["./scripts/oxlint-type-evidence.mjs"],
   "categories": {
     "correctness": "error",
     "perf": "error",
@@ -66,6 +67,8 @@
     "oxc/no-accumulating-spread": "error",
     "oxc/no-async-endpoint-handlers": "error",
     "oxc/no-map-spread": "error",
+    "openclaw-type-evidence/no-unknown-type-aliases": "error",
+    "openclaw-type-evidence/no-widen-then-assert": "error",
     "promise/no-callback-in-promise": "error",
     "promise/no-multiple-resolved": "error",
     "promise/no-promise-in-callback": "error",
@@ -213,6 +216,7 @@
     // Intentional negative-test corpora contain parser and lint violations by contract.
     ".agents/skills/autoreview/tests/fixtures/**",
     "test/fixtures/oxlint-boundary-guards/**",
+    "test/fixtures/oxlint-type-evidence/**",
     "**/a2ui.bundle.js",
     "extensions/diffs/assets/viewer-runtime.js",
     "extensions/diffs-language-pack/assets/viewer-runtime.js",
@@ -272,6 +276,12 @@
       ],
       "rules": {
         "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": ["**/*.d.ts"],
+      "rules": {
+        "openclaw-type-evidence/no-unknown-type-aliases": "off"
       }
     },
     {

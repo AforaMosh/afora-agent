@@ -20,6 +20,7 @@ import {
   type SessionTranscriptRawDeltaLimits,
   type SessionTranscriptRawDeltaResult,
   type SessionTranscriptVisibleMessageDeltaLimits,
+  type TranscriptEvent as SessionTranscriptEvent,
 } from "../config/sessions/session-accessor.js";
 import { resolveMirroredTranscriptText } from "../config/sessions/transcript-mirror.js";
 import {
@@ -67,9 +68,8 @@ export type {
   SessionTranscriptMemoryHitKey,
   SessionTranscriptMemoryHitKeyParams,
   SessionTranscriptReadParams,
+  SessionTranscriptEvent,
 };
-
-export type SessionTranscriptEvent = unknown;
 
 export type SessionTranscriptTargetParams = SessionTranscriptReadParams;
 

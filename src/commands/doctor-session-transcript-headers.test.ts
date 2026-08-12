@@ -4,6 +4,7 @@ import { SessionManager } from "../agents/sessions/session-manager.js";
 import {
   loadTranscriptEventsSync,
   replaceTranscriptEventsSync,
+  type TranscriptEvent,
   upsertSessionEntryCore,
 } from "../config/sessions/session-accessor.js";
 import { readTranscriptStorageRows } from "../config/sessions/session-accessor.sqlite-read.js";
@@ -67,7 +68,7 @@ describe("doctor SQLite session transcript header repair", () => {
   });
 
   async function seedHeaderlessTranscript(
-    events: readonly unknown[],
+    events: readonly TranscriptEvent[],
     options: { spawnedCwd?: string } = { spawnedCwd: SPAWNED_CWD },
   ): Promise<void> {
     await upsertSessionEntryCore(scope, {

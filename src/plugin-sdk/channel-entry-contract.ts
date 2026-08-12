@@ -38,7 +38,7 @@ export type {
   BundledEntryModuleLoadOptions,
 } from "./channel-entry-contract.types.js";
 
-type BundledChannelRuntime = unknown;
+type BundledChannelRuntime = OpenClawPluginApi["runtime"];
 
 type ChannelEntryConfigSchema<TPlugin> =
   TPlugin extends ChannelPlugin<unknown>
