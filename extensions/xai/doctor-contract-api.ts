@@ -1,7 +1,7 @@
 // Xai doctor contract repairs plugin-owned model configuration.
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { asObjectRecord } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { isLegacyXaiBuiltinModel } from "./model-definitions.js";
+import { isLegacyXaiBuiltinModel, XAI_DEFAULT_MODEL_ID } from "./model-definitions.js";
 
 type LegacyConfigRule = {
   path: Array<string | number>;
@@ -37,17 +37,17 @@ const PLUGIN_MODEL_MIGRATIONS: PluginModelMigration[] = [
   {
     path: ["plugins", "entries", "xai", "config", "webSearch"],
     retiredModels: RETIRED_REASONING_MODELS,
-    targetModel: "grok-4.3",
+    targetModel: XAI_DEFAULT_MODEL_ID,
   },
   {
     path: ["plugins", "entries", "xai", "config", "codeExecution"],
     retiredModels: RETIRED_REASONING_MODELS,
-    targetModel: "grok-4.3",
+    targetModel: XAI_DEFAULT_MODEL_ID,
   },
   {
     path: ["plugins", "entries", "xai", "config", "xSearch"],
     retiredModels: RETIRED_NON_REASONING_MODELS,
-    targetModel: "grok-4.3",
+    targetModel: XAI_DEFAULT_MODEL_ID,
   },
   ...[
     ["plugins", "entries", "xai", "config", "webSearch"],

@@ -137,7 +137,7 @@ export async function requestXaiXSearch(params: {
         inputText: params.options.query,
         tools: [buildXSearchTool(params.options)],
         maxTurns: params.maxTurns,
-        reasoningEffort: params.model === XAI_DEFAULT_X_SEARCH_MODEL ? "none" : undefined,
+        reasoningEffort: params.model === XAI_DEFAULT_X_SEARCH_MODEL ? "low" : undefined,
       }),
       errorLabel: "xAI",
     },

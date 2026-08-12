@@ -244,7 +244,7 @@ describe("xai web search config resolution", () => {
 
   it("prefers configured api keys and resolves grok scoped defaults", () => {
     expect(resolveXaiWebSearchCredential({ grok: { apiKey: "xai-secret" } })).toBe("xai-secret");
-    expect(resolveXaiWebSearchModel()).toBe("grok-4.3");
+    expect(resolveXaiWebSearchModel()).toBe("grok-4.5");
     expect(resolveXaiInlineCitations()).toBe(false);
   });
 
@@ -644,8 +644,8 @@ describe("xai web search config resolution", () => {
   });
 
   it("uses default model when not specified", () => {
-    expect(resolveXaiWebSearchModel({})).toBe("grok-4.3");
-    expect(resolveXaiWebSearchModel(undefined)).toBe("grok-4.3");
+    expect(resolveXaiWebSearchModel({})).toBe("grok-4.5");
+    expect(resolveXaiWebSearchModel(undefined)).toBe("grok-4.5");
   });
 
   it("uses a Grok-specific 60s default timeout while preserving overrides", () => {
@@ -676,7 +676,7 @@ describe("xai web search config resolution", () => {
 
     expect(firstFetchUrl(mockFetch)).toBe("https://api.x.ai/proxy/v1/responses");
     expect(firstFetchBody(mockFetch)).toMatchObject({
-      model: "grok-4.3",
+      model: "grok-4.5",
       store: false,
       reasoning: { effort: "low" },
       tools: [{ type: "web_search" }],

@@ -56,8 +56,8 @@ OAuth client.
   </Step>
   <Step title="API-key path">
     API-key setup still works for xAI Console keys and for media surfaces
-    that need key-backed provider config. It keeps Grok 4.3 as the
-    regional-safe setup default:
+    that need key-backed provider config. It uses Grok 4.5 as the setup
+    default:
 
     ```bash
     openclaw models auth login --provider xai --method api-key
@@ -122,8 +122,8 @@ see [legacy compatibility and moving aliases](#legacy-compatibility-and-moving-a
 
 <Tip>
 Use `xai/auto` to follow xAI's authenticated OAuth default, or select a concrete
-id such as `xai/grok-4.5` to remain pinned. API-key setup keeps Grok 4.3 as the
-regional-safe default; `grok-build-0.1` and both dated Grok 4.20 variants remain
+id such as `xai/grok-4.5` to remain pinned. API-key setup uses Grok 4.5 by
+default; `grok-build-0.1`, Grok 4.3, and both dated Grok 4.20 variants remain
 selectable.
 </Tip>
 
@@ -537,7 +537,7 @@ stale context metadata on active 4.20 rows. It does not pin active 4.20
     | Key               | Type    | Default                   | Description                                      |
     | ----------------- | ------- | ------------------------- | ------------------------------------------------ |
     | `enabled`         | boolean | Automatic for xAI models  | Disable, or opt in for a known non-xAI provider |
-    | `model`           | string  | `grok-4.3`                | Model used for x_search requests                 |
+    | `model`           | string  | `grok-4.5`                | Model used for x_search requests                 |
     | `baseUrl`         | string  | -                         | xAI Responses base URL override                  |
     | `inlineCitations` | boolean | -                         | Include inline citations in results              |
     | `maxTurns`        | number  | -                         | Maximum conversation turns                       |
@@ -552,7 +552,7 @@ stale context metadata on active 4.20 rows. It does not pin active 4.20
             config: {
               xSearch: {
                 enabled: true,
-                model: "grok-4.3",
+                model: "grok-4.5",
                 baseUrl: "https://api.x.ai/v1",
                 inlineCitations: true,
               },
@@ -574,7 +574,7 @@ stale context metadata on active 4.20 rows. It does not pin active 4.20
     | Key              | Type    | Default                  | Description                                      |
     | ---------------- | ------- | ------------------------ | ------------------------------------------------ |
     | `enabled`        | boolean | Automatic for xAI models | Disable, or opt in for a known non-xAI provider |
-    | `model`          | string  | `grok-4.3`               | Model used for code execution requests           |
+    | `model`          | string  | `grok-4.5`               | Model used for code execution requests           |
     | `maxTurns`       | number  | -                        | Maximum conversation turns                       |
     | `timeoutSeconds` | number  | `30`                     | Request timeout in seconds                       |
 
@@ -590,7 +590,7 @@ stale context metadata on active 4.20 rows. It does not pin active 4.20
             config: {
               codeExecution: {
                 enabled: true,
-                model: "grok-4.3",
+                model: "grok-4.5",
               },
             },
           },

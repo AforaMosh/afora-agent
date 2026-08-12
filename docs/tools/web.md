@@ -532,7 +532,7 @@ every provider. xAI credentials are always required.
         config: {
           xSearch: {
             enabled: true, // required for a known non-xAI model provider
-            model: "grok-4.3",
+            model: "grok-4.5",
             baseUrl: "https://api.x.ai/v1", // optional, overrides webSearch.baseUrl
             inlineCitations: false,
             maxTurns: 2,

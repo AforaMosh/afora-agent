@@ -13,7 +13,7 @@ export const XAI_DEFAULT_CONTEXT_WINDOW = 1_000_000;
 const XAI_GROK_45_CONTEXT_WINDOW = 500_000;
 const XAI_CODE_CONTEXT_WINDOW = 256_000;
 export const XAI_DEFAULT_MAX_TOKENS = 64_000;
-export const XAI_DEFAULT_MODEL_ID = "grok-4.3";
+export const XAI_DEFAULT_MODEL_ID = "grok-4.5";
 
 type XaiCost = ModelDefinitionConfig["cost"];
 
@@ -254,12 +254,12 @@ export function buildXaiModelDefinition(): ModelDefinitionConfig {
   return toModelDefinition(
     XAI_MODEL_CATALOG.find((entry) => entry.id === XAI_DEFAULT_MODEL_ID) ?? {
       id: XAI_DEFAULT_MODEL_ID,
-      name: "Grok 4.3",
+      name: "Grok 4.5",
       reasoning: true,
       input: ["text", "image"],
-      contextWindow: XAI_DEFAULT_CONTEXT_WINDOW,
+      contextWindow: XAI_GROK_45_CONTEXT_WINDOW,
       maxTokens: XAI_DEFAULT_MAX_TOKENS,
-      cost: XAI_GROK_43_COST,
+      cost: XAI_GROK_45_COST,
     },
   );
 }
