@@ -1,3 +1,4 @@
+import { parseAccessGroupAllowFromEntry } from "openclaw/plugin-sdk/access-groups";
 // Whatsapp plugin module implements inbound policy behavior.
 import { resolveStableChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
 import { readChannelAllowFromStore } from "openclaw/plugin-sdk/channel-pairing";
@@ -13,12 +14,12 @@ import type {
 } from "openclaw/plugin-sdk/config-contracts";
 import { resolveDefaultGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
 import { resolveWhatsAppAccount, type ResolvedWhatsAppAccount } from "./accounts.js";
-import { getSelfIdentity, getSenderIdentity, normalizeWhatsAppLidJid } from "./identity.js";
+import { getSelfIdentity, getSenderIdentity, normalizeExactWhatsAppLidJid } from "./identity.js";
 import { requireWhatsAppInboundAdmission } from "./inbound/admission.js";
 import { resolveWhatsAppGroupConversationId } from "./inbound/group-conversation.js";
 import type { AdmittedWebInboundMessage } from "./inbound/types.js";
 import { normalizeWhatsAppDirectIdentity } from "./normalize-target.js";
-import { hasUnsafeWhatsAppTargetCharacters } from "./phone-input.js";
+import { trimWhatsAppAsciiSpaces } from "./phone-input.js";
 import { resolveWhatsAppRuntimeGroupPolicy } from "./runtime-group-policy.js";
 import { isSelfChatMode } from "./text-runtime.js";
 
@@ -41,10 +42,15 @@ function normalizeWhatsAppIngressPhone(value: string): string | null {
   return normalized?.startsWith("+") ? normalized : null;
 }
 
-function filterUnsafeWhatsAppIngressEntries(
-  entries: Array<string | number>,
-): Array<string | number> {
-  return entries.filter((entry) => !hasUnsafeWhatsAppTargetCharacters(String(entry)));
+function normalizeWhatsAppIngressEntries(entries: Array<string | number>): string[] {
+  return entries.flatMap((entry) => {
+    const raw = trimWhatsAppAsciiSpaces(String(entry));
+    if (raw === "*" || parseAccessGroupAllowFromEntry(raw)) {
+      return [raw];
+    }
+    const normalized = normalizeWhatsAppDirectIdentity(raw);
+    return normalized ? [normalized] : [];
+  });
 }
 
 function buildResolvedWhatsAppGroupConfig(params: {
@@ -70,13 +76,13 @@ export function resolveWhatsAppInboundPolicy(params: {
     cfg: params.cfg,
     accountId: params.accountId,
   });
-  const configuredAllowFrom = account.allowFrom ?? [];
+  const configuredAllowFrom = normalizeWhatsAppIngressEntries(account.allowFrom ?? []);
   const dmPolicy = account.dmPolicy ?? "pairing";
   const dmAllowFrom =
     configuredAllowFrom.length > 0 ? configuredAllowFrom : params.selfE164 ? [params.selfE164] : [];
   const configuredGroupAllowFrom =
     Array.isArray(account.groupAllowFrom) && account.groupAllowFrom.length > 0
-      ? account.groupAllowFrom
+      ? normalizeWhatsAppIngressEntries(account.groupAllowFrom)
       : undefined;
   const groupAllowFrom =
     configuredGroupAllowFrom ??
@@ -150,7 +156,7 @@ export async function resolveWhatsAppIngressAccess(params: {
         {
           key: "lid",
           kind: "plugin:whatsapp-lid",
-          normalize: normalizeWhatsAppLidJid,
+          normalize: normalizeExactWhatsAppLidJid,
           sensitivity: "pii",
         },
       ],
@@ -158,7 +164,7 @@ export async function resolveWhatsAppIngressAccess(params: {
     },
     cfg: params.cfg,
     readStoreAllowFrom: async ({ accountId }) =>
-      filterUnsafeWhatsAppIngressEntries(
+      normalizeWhatsAppIngressEntries(
         await readChannelAllowFromStore("whatsapp", process.env, accountId),
       ),
     subject: {
@@ -181,9 +187,9 @@ export async function resolveWhatsAppIngressAccess(params: {
       params.policy.account.selfChatMode !== false &&
       params.senderId &&
       senderIsSamePhone
-        ? filterUnsafeWhatsAppIngressEntries([...params.policy.dmAllowFrom, params.senderId])
-        : filterUnsafeWhatsAppIngressEntries(params.policy.dmAllowFrom),
-    groupAllowFrom: filterUnsafeWhatsAppIngressEntries(params.policy.groupAllowFrom),
+        ? normalizeWhatsAppIngressEntries([...params.policy.dmAllowFrom, params.senderId])
+        : params.policy.dmAllowFrom,
+    groupAllowFrom: params.policy.groupAllowFrom,
     command: params.includeCommand === true ? {} : undefined,
   });
 }

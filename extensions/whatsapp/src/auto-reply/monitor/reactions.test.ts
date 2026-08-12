@@ -5,6 +5,7 @@ import { createTestWebInboundMessage } from "../../inbound/test-message.test-hel
 import type { AdmittedWebInboundMessage } from "../../inbound/types.js";
 import { resolveWhatsAppAckEmoji } from "./ack-emoji.js";
 import { maybeSendAckReaction } from "./ack-reaction.js";
+import { resolveReactionParticipant } from "./reaction-participant.js";
 import { createWhatsAppStatusReactionController } from "./status-reaction.js";
 
 const hoisted = vi.hoisted(() => ({
@@ -141,6 +142,32 @@ const expectAckReactionSent = (accountId: string, cfg: OpenClawConfig = createCo
     },
   );
 };
+
+describe("resolveReactionParticipant", () => {
+  it.each([
+    ["15551234567@s.whatsapp.net", "15551234567@s.whatsapp.net"],
+    ["15551234567:4@hosted", "15551234567@hosted"],
+    ["277038292303944@lid", "277038292303944@lid"],
+    ["277038292303944:4@hosted.lid", "277038292303944@hosted.lid"],
+  ])("emits exact provider participant %j", (jid, expected) => {
+    expect(resolveReactionParticipant(createMessage({ platform: { sender: { jid } } }))).toBe(
+      expected,
+    );
+  });
+
+  it.each([
+    "15551234567@S.WHATSAPP.NET",
+    "whatsapp:15551234567@s.whatsapp.net",
+    " 15551234567@s.whatsapp.net ",
+    "277038292303944@LID",
+    "120363401234567890@g.us",
+    "120363401234567890@newsletter",
+  ])("does not emit raw provider participant %j", (jid) => {
+    expect(resolveReactionParticipant(createMessage({ platform: { sender: { jid } } }))).toBe(
+      undefined,
+    );
+  });
+});
 
 describe("resolveWhatsAppAckEmoji", () => {
   it.each([

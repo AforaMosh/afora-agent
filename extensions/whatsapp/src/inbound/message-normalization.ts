@@ -4,7 +4,7 @@ import {
   resolveWhatsAppDirectPeer,
   type WhatsAppDirectPeerResolutionError,
 } from "../direct-peer-owner.js";
-import { normalizeWhatsAppLidJid } from "../identity.js";
+import { normalizeExactWhatsAppLidJid } from "../identity.js";
 import type { OpenClawConfig } from "../runtime-api.js";
 import {
   checkInboundAccessControl,
@@ -86,7 +86,7 @@ export function createWhatsAppInboundMessageNormalizer(options: {
     }
 
     const participantJid = msg.key?.participant ?? undefined;
-    const directLid = group ? null : normalizeWhatsAppLidJid(remoteJid);
+    const directLid = group ? null : normalizeExactWhatsAppLidJid(remoteJid);
     const canonicalRemoteJid = directLid ?? remoteJid;
     const directPeer = directLid
       ? await resolveWhatsAppDirectPeer({

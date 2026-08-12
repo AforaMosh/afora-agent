@@ -10,7 +10,7 @@ import {
   formatMediaPlaceholderText,
   type MediaPlaceholderTextFact,
 } from "openclaw/plugin-sdk/channel-inbound";
-import { toWhatsAppParticipantJid } from "./participant-target.js";
+import { resolveWhatsAppProviderParticipantJid } from "./participant-target.js";
 import { jidToE164 } from "./text-runtime.js";
 
 // ── Inbound message metadata cache ──────────────────────────────────────
@@ -238,6 +238,10 @@ export function buildQuotedMessageOptions(params: {
     quotedRemoteJid,
     requestedJid: params.requestedJid,
   });
+  const participant = resolveWhatsAppProviderParticipantJid(params.participant);
+  if (params.participant && !participant) {
+    throw new Error("Invalid WhatsApp participant from provider quote metadata.");
+  }
   const previewText = [
     params.messageText,
     formatMediaPlaceholderText(params.media ? [params.media] : []),
@@ -250,7 +254,7 @@ export function buildQuotedMessageOptions(params: {
         remoteJid,
         id,
         fromMe: params.fromMe ?? false,
-        participant: params.participant ? toWhatsAppParticipantJid(params.participant) : undefined,
+        participant,
       },
       message: { conversation: previewText },
     },

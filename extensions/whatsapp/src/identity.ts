@@ -74,7 +74,7 @@ function normalizeDeviceScopedJid(jid: string | null | undefined): string | null
     : (jid ?? null);
 }
 
-function normalizeExactWhatsAppLidJid(jid: string | null | undefined): string | null {
+export function normalizeExactWhatsAppLidJid(jid: string | null | undefined): string | null {
   const parsed = typeof jid === "string" ? parseExactWhatsAppJid(jid) : null;
   return parsed?.kind === "lid" ? `${parsed.digits}@${parsed.domain}` : null;
 }

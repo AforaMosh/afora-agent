@@ -180,6 +180,78 @@ describe("typed WhatsApp direct identity access", () => {
     },
   );
 
+  it.each(["123@LID", "whatsapp:123@lid", " 123@lid "])(
+    "does not authorize raw direct LID alias %j",
+    async (senderJid) => {
+      setAccessControlTestConfig({
+        channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: ["123@lid"] } },
+      });
+      await expect(
+        checkInboundAccessControl({
+          cfg: getAccessControlTestConfig() as never,
+          accountId: "default",
+          from: "+999",
+          selfE164: "+1999",
+          senderE164: null,
+          senderJid,
+          group: false,
+          isFromMe: false,
+          sock: { sendMessage: sendMessageMock },
+          remoteJid: senderJid,
+        }),
+      ).resolves.toMatchObject({ allowed: false });
+    },
+  );
+
+  it.each(["123@LID", "whatsapp:123@lid", " 123@lid "])(
+    "does not authorize raw group LID alias %j",
+    async (senderJid) => {
+      setAccessControlTestConfig({
+        channels: {
+          whatsapp: { groupPolicy: "allowlist", groupAllowFrom: ["123@lid"] },
+        },
+      });
+      await expect(
+        checkInboundAccessControl({
+          cfg: getAccessControlTestConfig() as never,
+          accountId: "default",
+          from: "120363401234567890@g.us",
+          selfE164: "+1999",
+          senderE164: null,
+          senderJid,
+          group: true,
+          isFromMe: false,
+          sock: { sendMessage: sendMessageMock },
+          remoteJid: "120363401234567890@g.us",
+        }),
+      ).resolves.toMatchObject({ allowed: false });
+    },
+  );
+
+  it.each(["123@LID", "whatsapp:123@lid", "  whatsapp:whatsapp:123@HOSTED.LID  "])(
+    "keeps configured convenience LID %j compatible with exact subjects",
+    async (allowFrom) => {
+      const subject = allowFrom.includes("HOSTED") ? "123@hosted.lid" : "123@lid";
+      setAccessControlTestConfig({
+        channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: [allowFrom] } },
+      });
+      await expect(
+        checkInboundAccessControl({
+          cfg: getAccessControlTestConfig() as never,
+          accountId: "default",
+          from: subject,
+          selfE164: "+1999",
+          senderE164: null,
+          senderJid: subject,
+          group: false,
+          isFromMe: false,
+          sock: { sendMessage: sendMessageMock },
+          remoteJid: subject,
+        }),
+      ).resolves.toMatchObject({ allowed: true });
+    },
+  );
+
   it.each([
     { name: "omitted", selfChatMode: undefined },
     { name: "enabled", selfChatMode: true },
