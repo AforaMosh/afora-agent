@@ -212,5 +212,7 @@ export function createModelRecorders(runtime: DiagnosticsRecorderRuntime) {
     recordModelCallStarted,
     recordModelCallCompleted,
     recordModelCallError,
+    recordModelAuthState: runtime.recordModelAuthState,
+    clearModelAuthState: runtime.clearModelAuthState,
   };
 }
