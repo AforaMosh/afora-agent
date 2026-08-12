@@ -1,3 +1,4 @@
+import { responsesPrewarmOperation } from "@openclaw/ai/internal/openai";
 import { onLlmRequestActivity } from "@openclaw/ai/internal/runtime";
 import { isCloudModelRef } from "@openclaw/model-catalog-core/model-catalog-refs";
 /**
@@ -430,6 +431,9 @@ export function streamWithIdleTimeout(
   const guardIterationGaps = opts?.scope !== "creation-only";
   const runId = opts?.runId;
   return (model, context, options) => {
+    if (options && Reflect.get(options, responsesPrewarmOperation) === true) {
+      return baseFn(model, context, options);
+    }
     const createIdleTimeoutError = () =>
       new Error(`LLM idle timeout (${Math.floor(timeoutMs / 1000)}s): no response from model`);
 

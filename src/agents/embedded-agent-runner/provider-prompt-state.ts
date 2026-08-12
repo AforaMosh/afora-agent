@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import crypto from "node:crypto";
-import { responsesPromptObserver } from "@openclaw/ai/internal/openai";
+import { responsesPrewarmOperation, responsesPromptObserver } from "@openclaw/ai/internal/openai";
 import { stableStringify } from "@openclaw/normalization-core";
 import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
 import type { Model } from "openclaw/plugin-sdk/llm";
@@ -89,6 +89,9 @@ export function wrapStreamFnWithProviderPromptState(params: {
   recordEvent?: (type: string, data?: Record<string, unknown>) => void;
 }): StreamFn {
   return async (model, context, options) => {
+    if (options && Reflect.get(options, responsesPrewarmOperation) === true) {
+      return params.streamFn(model, context, options);
+    }
     params.state.lastAttempt = undefined; // Custom transports must not leave a stale candidate.
     const originalOnPayload = options?.onPayload;
     const observedOptions: NonNullable<Parameters<StreamFn>[2]> = {

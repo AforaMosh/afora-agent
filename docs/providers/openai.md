@@ -1314,22 +1314,32 @@ not declared Codex-compatible.
 
 <AccordionGroup>
   <Accordion title="Transport (WebSocket vs SSE)">
-    OpenClaw uses WebSocket-first with SSE fallback (`"auto"`) for `openai/*`.
+    Direct OpenAI API-key requests use SSE by default. You can explicitly select
+    a WebSocket transport for the official OpenAI Responses endpoint.
 
-    In `"auto"` mode, OpenClaw:
-    - Retries one early WebSocket failure before falling back to SSE
+    With a session id, `"auto"` and `"websocket-cached"` reuse one cached
+    connection. OpenClaw starts that connection and sends a non-generating
+    prewarm request while the first real request is prepared; the real request
+    then continues from the prewarm response. This behavior applies only to
+    those explicit session-cached modes on the official endpoint.
+
+    For WebSocket requests, OpenClaw keeps the existing failure policy:
+
+    - Falls back to SSE when WebSocket setup fails before request dispatch
     - After a failure, marks WebSocket as degraded for 60 seconds and uses SSE
       during cool-down
+    - Does not replay over SSE after dispatch when the request outcome is unknown
     - Attaches stable session and turn identity headers for retries and
       reconnects
     - Normalizes usage counters (`input_tokens` / `prompt_tokens`) across
       transport variants
 
-    | Value                | Behavior                          |
-    | ---------------------- | ------------------------------------ |
-    | `"auto"` (default)   | WebSocket first, SSE fallback     |
-    | `"sse"`              | Force SSE only                    |
-    | `"websocket"`        | Force WebSocket only              |
+    | Value                  | Behavior                                                        |
+    | ---------------------- | --------------------------------------------------------------- |
+    | `"sse"` (default)     | SSE only                                                        |
+    | `"auto"`              | Session-cached WebSocket with prewarm, then pre-dispatch fallback to SSE |
+    | `"websocket-cached"`  | Session-cached WebSocket with prewarm and pre-dispatch SSE fallback |
+    | `"websocket"`         | Transient WebSocket with pre-dispatch SSE fallback; no prewarm  |
 
     ```json5
     {

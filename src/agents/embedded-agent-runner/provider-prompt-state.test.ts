@@ -1,4 +1,4 @@
-import { responsesPromptObserver } from "@openclaw/ai/internal/openai";
+import { responsesPrewarmOperation, responsesPromptObserver } from "@openclaw/ai/internal/openai";
 import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
 import {
   createAssistantMessageEventStream,
@@ -335,6 +335,34 @@ describe("provider prompt state", () => {
       timestamp: 1,
     });
     await result.result();
+    clearProviderPromptState(runId);
+  });
+
+  it("does not admit speculative Responses prewarm into provider retry state", async () => {
+    const runId = "responses-prewarm";
+    const state = getProviderPromptState(runId);
+    const transport = vi.fn<StreamFn>(async (_model, _context, options) => {
+      await options?.onPayload?.({ input: [], model: model.id }, model);
+      return createResultStream("stop");
+    });
+    const wrapped = wrapStreamFnWithProviderPromptState({
+      streamFn: transport,
+      state,
+      effectiveContextTokenBudget: 128_000,
+    });
+    const options = { onPayload: (payload: unknown) => payload };
+    Reflect.set(options, responsesPrewarmOperation, true);
+
+    const result = await wrapped(
+      model,
+      { systemPrompt: "stable", messages: [], tools: [] },
+      options,
+    );
+    await result.result();
+
+    expect(transport).toHaveBeenCalledOnce();
+    expect(state.lastAttempt).toBeUndefined();
+    expect(markLastProviderPromptContextRejected(state)).toBeUndefined();
     clearProviderPromptState(runId);
   });
 });

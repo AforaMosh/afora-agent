@@ -63,7 +63,7 @@ vi.mock("openai", () => {
 
 vi.mock("openai/resources/responses/ws.js", () => ({
   ResponsesWS: class MockResponsesWS {
-    socket = { readyState: 1 };
+    socket = { readyState: 0 };
     private responseMessages: StreamMessage[] = [];
 
     constructor(
@@ -92,7 +92,9 @@ vi.mock("openai/resources/responses/ws.js", () => ({
     stream() {
       const handshake = transportState.handshakeMessages.shift() ?? { type: "open" as const };
       const readResponses = () => this.responseMessages;
+      const socket = this.socket;
       return (async function* () {
+        socket.readyState = 1;
         yield handshake;
         if (handshake.type !== "open") {
           return;
@@ -112,6 +114,7 @@ vi.mock("openai/resources/responses/ws.js", () => ({
 }));
 
 import { createOpenAIResponsesTransportStreamFn } from "./openai-responses-client.js";
+import { responsesPrewarmOperation } from "./openai-responses-contracts.js";
 
 const initialHost = getAiTransportHost();
 const model = {
@@ -231,6 +234,7 @@ async function run(
     model?: Model<"openai-responses">;
     transport?: "sse" | "websocket" | "websocket-cached" | "auto";
     sessionId?: string;
+    events?: unknown[];
     timeoutMs?: number;
     onPayload?: (payload: Record<string, unknown>) => Record<string, unknown>;
     headers?: Record<string, string>;
@@ -245,6 +249,38 @@ async function run(
     onPayload: overrides.onPayload,
     headers: overrides.headers,
   } as never);
+  return stream.result();
+}
+
+async function runPrewarm(
+  context: Context,
+  overrides: {
+    events?: unknown[];
+    model?: Model<"openai-responses">;
+    transport?: "sse" | "websocket" | "websocket-cached" | "auto" | null;
+    onPayload?: (
+      payload: Record<string, unknown>,
+    ) => Promise<Record<string, unknown>> | Record<string, unknown>;
+  } = {},
+): Promise<AssistantMessage> {
+  const options = {
+    apiKey: "test-key",
+    sessionId: "session-1",
+    ...(overrides.transport === null
+      ? {}
+      : { transport: overrides.transport ?? "websocket-cached" }),
+    reasoningEffort: "low",
+    onPayload: overrides.onPayload,
+  };
+  Reflect.set(options, responsesPrewarmOperation, true);
+  const stream = await createOpenAIResponsesTransportStreamFn()(
+    overrides.model ?? model,
+    context,
+    options as never,
+  );
+  for await (const event of stream) {
+    overrides.events?.push(event);
+  }
   return stream.result();
 }
 
@@ -295,6 +331,117 @@ describe("native OpenAI Responses WebSocket client integration", () => {
   afterEach(() => {
     cleanupSessionResources();
     configureAiTransportHost(initialHost);
+  });
+
+  it("preconnects, waits once, continues actual input, and resets with session cleanup", async () => {
+    transportState.responseBatches.push(
+      [{ type: "delay", ms: 20 }, message(completedEvent("resp_warm"))],
+      [message(completedEvent("resp_real"))],
+      [message(completedEvent("resp_warm_2"))],
+    );
+    let releasePayload!: () => void;
+    const payloadPending = new Promise<void>((resolve) => {
+      releasePayload = resolve;
+    });
+    const events: unknown[] = [];
+    const prewarm = runPrewarm(
+      { systemPrompt: "stable prompt", messages: [], tools: [] },
+      {
+        events,
+        onPayload: async (payload) => {
+          await payloadPending;
+          return payload;
+        },
+      },
+    );
+    await Promise.resolve();
+    expect(transportState.websocketOptions).toHaveLength(1);
+    releasePayload();
+    await vi.waitFor(() => expect(transportState.websocketRequests).toHaveLength(1));
+
+    const real = run({
+      systemPrompt: "stable prompt",
+      messages: [userMessage("actual question", 1)],
+      tools: [],
+    });
+    expect(transportState.websocketOptions).toHaveLength(1);
+    expect(transportState.websocketRequests).toHaveLength(1);
+    await Promise.all([prewarm, real]);
+    await runPrewarm({ systemPrompt: "stable prompt", messages: [], tools: [] });
+
+    expect(events).toEqual([]);
+    expect(transportState.websocketOptions[0]?.headers).toMatchObject({
+      "OpenAI-Beta": "responses_websockets=2026-02-06",
+    });
+    expect(transportState.websocketRequests).toHaveLength(2);
+    expect(transportState.websocketRequests[0]).toMatchObject({
+      type: "response.create",
+      generate: false,
+      input: [
+        {
+          type: "message",
+          role: "developer",
+          content: [{ type: "input_text", text: "stable prompt" }],
+        },
+      ],
+    });
+    expect(transportState.websocketRequests[1]).toMatchObject({
+      previous_response_id: "resp_warm",
+      input: [
+        {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: "actual question" }],
+        },
+      ],
+    });
+    expect(transportState.websocketRequests[1]).not.toHaveProperty("generate");
+
+    cleanupSessionResources("session-1");
+    expect(transportState.websocketCloseReasons).toContain("session_cleanup");
+
+    await runPrewarm({ systemPrompt: "stable prompt", messages: [], tools: [] });
+    expect(transportState.websocketOptions).toHaveLength(2);
+  });
+
+  it("keeps speculative failures and unexpected output out of SSE and cooldown", async () => {
+    transportState.handshakeMessages.push(
+      { type: "error", error: new Error("speculative connect failed") },
+      { type: "error", error: new Error("real connect failed") },
+    );
+    transportState.sdkOutcomes.push(sdkCompletion("resp_sse"));
+
+    await runPrewarm({ systemPrompt: "stable", messages: [], tools: [] });
+    expect(transportState.sdkRequests).toEqual([]);
+    expect((await run({ messages: [userMessage("real", 1)], tools: [] })).stopReason).toBe("stop");
+    expect(transportState.websocketOptions).toHaveLength(2);
+    expect(transportState.sdkRequests).toHaveLength(1);
+
+    cleanupSessionResources();
+    transportState.responseBatches.push(
+      [message(completedEvent("resp_bad_warm", "unexpected"))],
+      [message(completedEvent("resp_real"))],
+    );
+    await runPrewarm({ systemPrompt: "stable", messages: [], tools: [] });
+    await run({ systemPrompt: "stable", messages: [userMessage("real", 2)], tools: [] });
+    expect(transportState.websocketOptions).toHaveLength(4);
+    expect(transportState.websocketRequests.at(-1)).not.toHaveProperty("previous_response_id");
+  });
+
+  it("does not speculate for the API-key SSE default, custom endpoints, or managed transport", async () => {
+    await runPrewarm({ systemPrompt: "stable", messages: [], tools: [] }, { transport: null });
+    await runPrewarm(
+      { systemPrompt: "stable", messages: [], tools: [] },
+      { model: { ...model, baseUrl: "https://compatible.example/v1" } },
+    );
+    configureAiTransportHost({
+      ...getAiTransportHost(),
+      requiresManagedTransport: () => true,
+    });
+    await runPrewarm({ systemPrompt: "stable", messages: [], tools: [] });
+
+    expect(transportState.websocketOptions).toEqual([]);
+    expect(transportState.sdkRequests).toEqual([]);
   });
 
   it("continues past provider-only output metadata with one socket and only new input", async () => {

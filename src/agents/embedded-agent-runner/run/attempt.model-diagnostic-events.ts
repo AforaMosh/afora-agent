@@ -1,3 +1,4 @@
+import { responsesPrewarmOperation } from "@openclaw/ai/internal/openai";
 import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
 /**
@@ -187,6 +188,9 @@ export function wrapStreamFnWithDiagnosticModelCallEvents(
   ctx: ModelCallDiagnosticContext,
 ): StreamFn {
   return ((model, streamContext, options) => {
+    if (options && Reflect.get(options, responsesPrewarmOperation) === true) {
+      return streamFn(model, streamContext, options);
+    }
     const lifecycle = createModelLifecycle({
       ctx,
       options,

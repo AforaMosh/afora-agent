@@ -89,6 +89,7 @@ export type OpenAIResponsesOptions = BaseOpenAIStreamOptions & {
 };
 
 const PROMPT_OBSERVER = Symbol("openaiResponsesPromptObserver");
+export const responsesPrewarmOperation = Symbol.for("openclaw.openaiResponsesPrewarmOperation");
 export type ResponsesPromptObservation = {
   egress: "responses-sdk" | "responses-websocket" | "native-codex-websocket" | "native-codex-sse";
   payloadVariant: "initial" | "reasoning-stripped" | "compaction-stripped";

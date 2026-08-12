@@ -23,6 +23,7 @@ import {
 import {
   AZURE_RESPONSES_FIRST_EVENT_TIMEOUT_MS,
   OpenAIResponsesWebSocketPreDispatchError,
+  responsesPrewarmOperation,
   type OpenAIResponsesOptions,
 } from "./openai-responses-contracts.js";
 import {
@@ -45,9 +46,11 @@ import {
 import { processResponsesStream } from "./openai-responses-stream-internal.js";
 import { observeResponsesStream } from "./openai-responses-stream-observer-internal.js";
 import {
+  beginOpenAIResponsesWebSocketPrewarm,
   createOpenAIResponsesWebSocketStream,
   type OpenAIResponsesWebSocketMode,
   supportsNativeOpenAIResponsesWebSocket,
+  waitForOpenAIResponsesWebSocketPrewarm,
 } from "./openai-responses-websocket.js";
 import {
   assertCodeModeResponsesToolSurface,
@@ -180,6 +183,7 @@ type ResponsesTransportExecutorOptions = {
 function createResponsesTransportExecutor(config: ResponsesTransportExecutorOptions): StreamFn {
   return (model, context, options) => {
     const responsesOptions = options as OpenAIResponsesOptions | undefined;
+    const isPrewarmOperation = Reflect.get(options ?? {}, responsesPrewarmOperation) === true;
     const eventStream = createAssistantMessageEventStream();
     const stream = eventStream as unknown as { push(event: unknown): void; end(): void };
     void (async () => {
@@ -201,6 +205,7 @@ function createResponsesTransportExecutor(config: ResponsesTransportExecutorOpti
         timestamp: Date.now(),
       };
       let firstEventAbort: ReturnType<typeof createFirstStreamEventAbortController> | undefined;
+      let websocketPrewarm: ReturnType<typeof beginOpenAIResponsesWebSocketPrewarm>;
       try {
         const apiKey = options?.apiKey || getEnvApiKey(model.provider) || "";
         const websocketMode = resolveNativeOpenAIResponsesWebSocketMode(
@@ -231,6 +236,18 @@ function createResponsesTransportExecutor(config: ResponsesTransportExecutorOpti
           turnState?.headers,
           options?.sessionId,
         );
+        if (isPrewarmOperation && websocketMode) {
+          websocketPrewarm = beginOpenAIResponsesWebSocketPrewarm({
+            client,
+            mode: websocketMode,
+            sessionId: options?.sessionId,
+            headers: websocketHeaders,
+          });
+        }
+        if (isPrewarmOperation && !websocketPrewarm) {
+          eventStream.end(output);
+          return;
+        }
         const buildRequest = async (replayMode: OpenAIResponsesReplayMode) => {
           let params = config.buildRequest(
             model,
@@ -289,6 +306,11 @@ function createResponsesTransportExecutor(config: ResponsesTransportExecutorOpti
           model,
           requestOptions?.timeout,
         );
+        if (isPrewarmOperation) {
+          await websocketPrewarm?.(params, websocketSignal);
+          eventStream.end(output);
+          return;
+        }
         emitModelTransportDebug(
           log,
           `[responses] start provider=${model.provider} api=${model.api} model=${model.id} ` +
@@ -336,6 +358,12 @@ function createResponsesTransportExecutor(config: ResponsesTransportExecutorOpti
               `model=${model.id} reason=${reason}`,
           );
         if (websocketMode) {
+          await waitForOpenAIResponsesWebSocketPrewarm({
+            client,
+            mode: websocketMode,
+            sessionId: options?.sessionId,
+            headers: websocketHeaders,
+          });
           try {
             const websocket = createOpenAIResponsesWebSocketStream({
               client,
@@ -422,6 +450,11 @@ function createResponsesTransportExecutor(config: ResponsesTransportExecutorOpti
         stream.push({ type: "done", reason: output.stopReason as never, message: output as never });
         stream.end();
       } catch (error) {
+        if (isPrewarmOperation) {
+          void websocketPrewarm?.();
+          eventStream.end(output);
+          return;
+        }
         if (error instanceof ResponsesStreamFailure && error.observation) {
           logResponsesFailedNoDetails(error.observation);
         }

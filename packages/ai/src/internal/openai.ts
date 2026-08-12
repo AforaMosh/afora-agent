@@ -16,5 +16,7 @@ export * from "../providers/openai-tool-schema-compat.js";
 export * from "../providers/openai-tool-schema.js";
 export * from "../providers/schema-keyword-strip.js";
 export * from "../providers/tool-schema-json-projection.js";
+export { responsesPrewarmOperation } from "../transports/openai-responses-contracts.js";
 export { responsesPromptObserver } from "../transports/openai-responses-contracts.js";
+export { supportsNativeOpenAIResponsesWebSocket } from "../transports/openai-responses-websocket.js";
 export type { ResponsesPromptObservation } from "../transports/openai-responses-contracts.js";

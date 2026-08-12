@@ -1,5 +1,10 @@
 /** Prepares the guarded stream runtime before prompt execution and settlement. */
 import {
+  responsesPrewarmOperation,
+  supportsNativeOpenAIResponsesWebSocket,
+} from "@openclaw/ai/internal/openai";
+import { resolveAgentReasoningOption } from "../../../../packages/agent-core/src/reasoning.js";
+import {
   bindOwnedSessionTranscriptWrites,
   withOwnedSessionTranscriptWrites,
 } from "../../../config/sessions/transcript-write-context.js";
@@ -48,7 +53,7 @@ export async function runEmbeddedAttemptExecutionPhase(
     settleTracker: { abortActiveSession, trackPromptSettlePromise },
     state: sessionRuntimeState,
     transcriptPolicy,
-    transport: { effectiveAgentTransport, providerTextTransforms },
+    transport: { effectiveAgentTransport, providerTextTransforms, streamStrategy },
   } = sessionRuntime;
   const { orphanRepair } = sessionRuntime.boundary;
   const { capabilityToolNames, liveAllowedToolNames, replayAllowedToolNames } =
@@ -122,6 +127,34 @@ export async function runEmbeddedAttemptExecutionPhase(
   }
 
   const isProbeSession = attempt.sessionId?.startsWith("probe-") ?? false;
+  if (
+    !input.isRawModelRun &&
+    !isProbeSession &&
+    (effectiveAgentTransport === "auto" || effectiveAgentTransport === "websocket-cached") &&
+    (streamStrategy === "provider" || streamStrategy === "boundary-aware:openai-responses") &&
+    supportsNativeOpenAIResponsesWebSocket(attempt.model)
+  ) {
+    const { agent } = activeSession;
+    const options = {
+      [responsesPrewarmOperation]: true,
+      sessionId: attempt.sessionId,
+      transport: effectiveAgentTransport,
+      signal: input.runAbortController.signal,
+      reasoning: resolveAgentReasoningOption(attempt.model, agent.state.thinkingLevel),
+      thinkingBudgets: agent.thinkingBudgets,
+      maxRetryDelayMs: agent.maxRetryDelayMs,
+      onPayload: agent.onPayload,
+      onResponse: agent.onResponse,
+    };
+    const prewarm = agent.streamFn(
+      attempt.model,
+      { systemPrompt: agent.state.systemPrompt, messages: [], tools: agent.state.tools },
+      options,
+    );
+    void Promise.resolve(prewarm)
+      .then((stream) => stream.result())
+      .catch(() => undefined);
+  }
   const queueHandleRef: { current?: EmbeddedAgentQueueHandle } = {};
   const abortRun = createEmbeddedAttemptRunAbort({
     abortActiveSession,
