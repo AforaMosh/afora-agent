@@ -1,6 +1,7 @@
 import type { MediaPlaceholderTextFact } from "openclaw/plugin-sdk/channel-inbound";
 // Whatsapp plugin module implements identity behavior.
-import { jidToE164, normalizeE164 } from "./text-runtime.js";
+import { normalizeWhatsAppPhoneInput } from "./phone-input.js";
+import { jidToE164 } from "./text-runtime.js";
 
 const WHATSAPP_LID_RE = /@(lid|hosted\.lid)$/i;
 
@@ -89,7 +90,7 @@ export function resolveComparableIdentity(
   const jid = rawJid && !isWhatsAppLidJid(rawJid) ? rawJid : null;
   const e164 =
     identity?.e164 != null
-      ? normalizeE164(identity.e164)
+      ? normalizeWhatsAppPhoneInput(identity.e164)
       : ((jid ? jidToE164(jid, authDir ? { authDir } : undefined) : null) ??
         (lid ? jidToE164(lid, authDir ? { authDir } : undefined) : null));
   return {

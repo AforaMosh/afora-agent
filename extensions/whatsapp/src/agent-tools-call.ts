@@ -2,7 +2,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
 import { createActionGate, stringEnum } from "openclaw/plugin-sdk/channel-actions";
 import type {
   AnyAgentTool,
@@ -17,6 +16,7 @@ import { jsonResult } from "openclaw/plugin-sdk/tool-results";
 import { Type } from "typebox";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { getWhatsAppConnectionController } from "./connection-controller-runtime-context.js";
+import { normalizeWhatsAppPhoneInput } from "./phone-input.js";
 import { resolveJidToE164 } from "./targets-runtime.js";
 
 const MEOWCALLER_COMMAND = "meowcaller";
@@ -148,11 +148,7 @@ async function resolveRequesterE164(params: {
 }): Promise<string | null> {
   const senderId = params.requesterSenderId.trim();
   if (!senderId.includes("@")) {
-    try {
-      return normalizeE164(senderId.replace(/^whatsapp:/i, ""));
-    } catch {
-      return null;
-    }
+    return normalizeWhatsAppPhoneInput(senderId);
   }
 
   const account = resolveWhatsAppAccount({ cfg: params.cfg, accountId: params.accountId });
@@ -174,7 +170,7 @@ async function resolveLinkedWhatsAppSelfE164(params: {
     return null;
   }
   if (identity.e164) {
-    return normalizeE164(identity.e164);
+    return normalizeWhatsAppPhoneInput(identity.e164);
   }
   const account = resolveWhatsAppAccount({ cfg: params.cfg, accountId: params.accountId });
   const lidLookup = controller.getCurrentSock()?.signalRepository.lidMapping;

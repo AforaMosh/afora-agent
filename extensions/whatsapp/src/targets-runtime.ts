@@ -14,6 +14,7 @@ import {
   sliceMarkdownIR,
 } from "openclaw/plugin-sdk/text-chunking";
 import { CONFIG_DIR, resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
+import { normalizeWhatsAppPhoneInput } from "./phone-input.js";
 
 const WHATSAPP_FORMAT_CAPABILITIES = FormatCapabilityProfile.define({
   mechanism: "markdown",
@@ -61,17 +62,13 @@ export function isSelfChatMode(
   if (!Array.isArray(allowFrom) || allowFrom.length === 0) {
     return false;
   }
-  const normalizedSelf = normalizeE164(selfE164);
-  return allowFrom.some((n) => {
-    if (n === "*") {
-      return false;
-    }
-    try {
-      return normalizeE164(String(n)) === normalizedSelf;
-    } catch {
-      return false;
-    }
-  });
+  const normalizedSelf = normalizeWhatsAppPhoneInput(selfE164);
+  if (!normalizedSelf) {
+    return false;
+  }
+  return allowFrom.some(
+    (entry) => entry !== "*" && normalizeWhatsAppPhoneInput(String(entry)) === normalizedSelf,
+  );
 }
 
 export function toWhatsappJid(number: string): string {

@@ -13,7 +13,8 @@ import {
 } from "../identity.js";
 import { requireWhatsAppInboundAdmission } from "../inbound/admission.js";
 import type { AdmittedWebInboundMessage } from "../inbound/types.js";
-import { isSelfChatMode, normalizeE164 } from "../text-runtime.js";
+import { normalizeWhatsAppDirectIdentity } from "../normalize-target.js";
+import { isSelfChatMode } from "../text-runtime.js";
 
 export type MentionConfig = {
   mentionRegexes: RegExp[];
@@ -137,7 +138,7 @@ export function resolveOwnerList(mentionCfg: MentionConfig, selfE164?: string | 
   const raw =
     Array.isArray(allowFrom) && allowFrom.length > 0 ? allowFrom : selfE164 ? [selfE164] : [];
   return raw
-    .filter((entry): entry is string => Boolean(entry && entry !== "*"))
-    .map((entry) => normalizeE164(entry))
+    .filter((entry) => Boolean(entry && entry !== "*"))
+    .map((entry) => normalizeWhatsAppDirectIdentity(String(entry)))
     .filter((entry): entry is string => Boolean(entry));
 }

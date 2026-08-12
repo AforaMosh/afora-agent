@@ -2210,42 +2210,86 @@ describe("whatsapp inbound dispatch", () => {
       route: { sessionKey: "agent:main:main", mainSessionKey: "agent:main:main" },
       expectedCalls: 1,
     },
-  ])("$name", ({ dmRouteTarget, pinnedMainDmRecipient, route, expectedCalls }) => {
-    const updateLastRoute = vi.fn();
+    {
+      name: "updates current delivery target when stable owner matches the pin alias",
+      dmRouteTarget: "+2000",
+      dmRouteAliases: ["+1000"],
+      pinnedMainDmRecipient: "+1000",
+      route: { sessionKey: "agent:main:main", mainSessionKey: "agent:main:main" },
+      expectedCalls: 1,
+    },
+  ])(
+    "$name",
+    ({ dmRouteTarget, dmRouteAliases = [], pinnedMainDmRecipient, route, expectedCalls }) => {
+      const updateLastRoute = vi.fn();
 
+      updateWhatsAppMainLastRoute({
+        backgroundTasks: new Set(),
+        cfg: {} as never,
+        ctx: { Body: "hello" },
+        dmRouteAliases,
+        dmRouteTarget,
+        pinnedMainDmRecipient,
+        route: makeRoute(route),
+        updateLastRoute,
+        warn: () => {},
+      });
+
+      expect(updateLastRoute).toHaveBeenCalledTimes(expectedCalls);
+    },
+  );
+
+  it.each([
+    {
+      name: "uses the current phone fact for a stable E164 owner",
+      owner: "+15550001111",
+      sender: { e164: "+15550002222" },
+      expected: "+15550002222",
+    },
+    {
+      name: "keeps a stable LID owner despite a current phone fact",
+      owner: "999@lid",
+      sender: { lid: "999@lid", e164: "+15550002222" },
+      expected: "999@lid",
+    },
+    {
+      name: "falls back to a stable E164 owner without a current mapping",
+      owner: "+15550001111",
+      sender: undefined,
+      expected: "+15550001111",
+    },
+    {
+      name: "rejects an invalid compatibility owner",
+      owner: "signal_:+15550001111",
+      sender: { e164: "+15550002222" },
+      expected: undefined,
+    },
+  ])("$name", ({ owner, sender, expected }) => {
+    const dmRouteTarget = resolveWhatsAppDmRouteTarget({
+      msg: makeMsg({
+        admission: directAdmission(owner),
+        platform: { sender },
+      }),
+    });
+    expect(dmRouteTarget).toBe(expected);
+
+    const updateLastRoute = vi.fn();
     updateWhatsAppMainLastRoute({
       backgroundTasks: new Set(),
       cfg: {} as never,
       ctx: { Body: "hello" },
       dmRouteAliases: [],
       dmRouteTarget,
-      pinnedMainDmRecipient,
-      route: makeRoute(route),
+      pinnedMainDmRecipient: null,
+      route: makeRoute({ sessionKey: "agent:main:main", mainSessionKey: "agent:main:main" }),
       updateLastRoute,
       warn: () => {},
     });
-
-    expect(updateLastRoute).toHaveBeenCalledTimes(expectedCalls);
-  });
-
-  it("resolves DM route targets from the selected compatibility owner", async () => {
-    expect(
-      resolveWhatsAppDmRouteTarget({
-        msg: makeMsg({ admission: directAdmission("+15550003333") }),
-      }),
-    ).toBe("+15550003333");
-
-    expect(
-      resolveWhatsAppDmRouteTarget({
-        msg: makeMsg({ admission: directAdmission("999@lid") }),
-      }),
-    ).toBe("999@lid");
-
-    expect(
-      resolveWhatsAppDmRouteTarget({
-        msg: makeMsg({ admission: directAdmission("15550003333:2@hosted") }),
-      }),
-    ).toBe("+15550003333");
+    if (expected) {
+      expect(updateLastRoute).toHaveBeenCalledWith(expect.objectContaining({ to: expected }));
+    } else {
+      expect(updateLastRoute).not.toHaveBeenCalled();
+    }
   });
 
   it("rejects an invalid owner from the deprecated flat adapter", () => {

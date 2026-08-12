@@ -526,7 +526,7 @@ export async function processMessage(params: {
     cfg: params.cfg,
     allowFrom: inboundPolicy.configuredAllowFrom,
   });
-  // Compare only producer-proven canonical aliases; last-route policy must not rediscover owner.
+  // Stable session ownership and current delivery facts are producer-proven aliases for pin checks.
   const dmRouteAliases = [
     admission.sender.id,
     params.msg.platform.sender?.e164,

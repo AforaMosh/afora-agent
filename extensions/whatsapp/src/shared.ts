@@ -1,6 +1,5 @@
 // Whatsapp plugin module implements shared behavior.
 import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
-import { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
 import {
   adaptScopedAccountAccessor,
   createScopedChannelConfigAdapter,
@@ -28,6 +27,7 @@ import { WhatsAppChannelConfigSchema } from "./config-schema.js";
 import { whatsappDoctor } from "./doctor.js";
 import { resolveWhatsAppConfigPath } from "./group-config-path.js";
 import { resolveLegacyGroupSessionKey } from "./group-session-contract.js";
+import { normalizeWhatsAppDirectIdentity } from "./normalize-target.js";
 import {
   collectUnsupportedSecretRefConfigCandidates,
   unsupportedSecretRefSurfacePatterns,
@@ -66,7 +66,7 @@ const whatsappResolveDmPolicy = createScopedDmSecurityResolver<ResolvedWhatsAppA
   resolvePolicy: (account) => account.dmPolicy,
   resolveAllowFrom: (account) => account.allowFrom,
   policyPathSuffix: "dmPolicy",
-  normalizeEntry: (raw) => normalizeE164(raw),
+  normalizeEntry: (raw) => normalizeWhatsAppDirectIdentity(raw) ?? "",
   inheritSharedDefaultsFromDefaultAccount: true,
 });
 

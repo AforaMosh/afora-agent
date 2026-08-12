@@ -1,28 +1,16 @@
 // Whatsapp helper module supports normalize target behavior.
-import { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
 import { formatNormalizedAllowFromEntries } from "openclaw/plugin-sdk/allow-from";
 import {
   normalizeLowercaseStringOrEmpty,
   uniqueStrings,
 } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { normalizeWhatsAppLidJid } from "./identity.js";
+import { normalizeWhatsAppPhoneInput, stripWhatsAppTargetPrefixes } from "./phone-input.js";
 
 const WHATSAPP_USER_JID_RE = /^(\d+)(?::\d+)?@(s\.whatsapp\.net|hosted)$/i;
 const WHATSAPP_LEGACY_USER_JID_RE = /^(\d+)@c\.us$/i;
 const WHATSAPP_LID_RE = /^(\d+)(?::\d+)?@(lid|hosted\.lid)$/i;
 const WHATSAPP_NEWSLETTER_JID_RE = /^([0-9]+)@newsletter$/i;
-const WHATSAPP_PHONE_INPUT_RE = /^\+?[\d\s().-]+$/;
-
-function stripWhatsAppTargetPrefixes(value: string): string {
-  let candidate = value.trim();
-  for (;;) {
-    const before = candidate;
-    candidate = candidate.replace(/^whatsapp:/i, "").trim();
-    if (candidate === before) {
-      return candidate;
-    }
-  }
-}
 
 function normalizeWhatsAppGroupJid(value: string): string | null {
   const candidate = stripWhatsAppTargetPrefixes(value)
@@ -93,17 +81,12 @@ export function normalizeWhatsAppTarget(value: string): string | null {
     if (!phone) {
       return null;
     }
-    const normalized = normalizeE164(phone);
-    return normalized.length > 1 ? normalized : null;
+    return normalizeWhatsAppPhoneInput(phone);
   }
   if (candidate.includes("@")) {
     return null;
   }
-  if (!WHATSAPP_PHONE_INPUT_RE.test(candidate)) {
-    return null;
-  }
-  const normalized = normalizeE164(candidate);
-  return normalized.length > 1 ? normalized : null;
+  return normalizeWhatsAppPhoneInput(candidate);
 }
 
 export function normalizeWhatsAppDirectIdentity(value: string): string | null {

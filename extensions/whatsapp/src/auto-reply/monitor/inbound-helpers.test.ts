@@ -48,6 +48,33 @@ const makeBlockedQuotedReplyMessage = (id: string): ReplyContextParams["msg"] =>
   });
 
 describe("whatsapp inbound context visibility", () => {
+  it("does not expose group history through a foreign provider prefix", () => {
+    const history = resolveVisibleWhatsAppGroupHistory({
+      history: [
+        { sender: "Alice (+111)", body: "Private context", senderJid: "111@s.whatsapp.net" },
+      ],
+      mode: "allowlist",
+      groupPolicy: "allowlist",
+      groupAllowFrom: ["signal:+111"],
+    });
+
+    expect(history).toEqual([]);
+  });
+
+  it.each([
+    ["whatsapp:whatsapp:777@lid", "777@lid"],
+    ["whatsapp:whatsapp:777@hosted.lid", "777@hosted.lid"],
+  ])("exposes exact direct identity history for %s", (allowFrom, senderJid) => {
+    const history = resolveVisibleWhatsAppGroupHistory({
+      history: [{ sender: "Alice", body: "Allowed context", senderJid }],
+      mode: "allowlist",
+      groupPolicy: "allowlist",
+      groupAllowFrom: [allowFrom],
+    });
+
+    expect(history).toHaveLength(1);
+  });
+
   it("filters non-allowlisted group history from supplemental context", () => {
     const history = resolveVisibleWhatsAppGroupHistory({
       history: [
@@ -85,6 +112,38 @@ describe("whatsapp inbound context visibility", () => {
     });
 
     expect(reply).toBeNull();
+  });
+
+  it("does not expose quoted context through a foreign provider prefix", () => {
+    const reply = resolveVisibleWhatsAppReplyContext({
+      msg: makeBlockedQuotedReplyMessage("msg-foreign-quote"),
+      mode: "allowlist",
+      groupPolicy: "allowlist",
+      groupAllowFrom: ["signal:+999"],
+    });
+
+    expect(reply).toBeNull();
+  });
+
+  it.each([
+    ["whatsapp:whatsapp:777@lid", "777@lid"],
+    ["whatsapp:whatsapp:777@hosted.lid", "777@hosted.lid"],
+  ])("exposes exact direct identity quoted context for %s", (allowFrom, jid) => {
+    const msg = makeBlockedQuotedReplyMessage(`msg-${jid}`);
+    msg.quote = {
+      id: "allowed-reply",
+      body: "Allowed quoted text",
+      sender: { jid },
+    };
+
+    expect(
+      resolveVisibleWhatsAppReplyContext({
+        msg,
+        mode: "allowlist",
+        groupPolicy: "allowlist",
+        groupAllowFrom: [allowFrom],
+      }),
+    ).toMatchObject({ id: "allowed-reply", body: "Allowed quoted text" });
   });
 
   it("keeps blocked quoted replies in allowlist_quote mode", () => {

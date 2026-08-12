@@ -494,7 +494,6 @@ vi.mock("./auto-reply/monitor/runtime-api.js", () => ({
   isControlCommandMessage: () => false,
   jidToE164: normalizePhoneLikeToE164,
   logVerbose: (_msg: string) => undefined,
-  normalizeE164: normalizePhoneLikeToE164,
   readStoreAllowFromForDmPolicy: async () => [] as string[],
   recordSessionMetaFromInbound: async () => undefined,
   resolveChannelMessageSourceReplyDeliveryMode: resolveChannelMessageSourceReplyDeliveryModeMock,
@@ -535,7 +534,6 @@ vi.mock("./auto-reply/monitor/group-gating.runtime.js", () => ({
   }),
   hasControlCommand: (body: string) => body.trim().startsWith("/"),
   implicitMentionKindWhen: (kind: string, enabled: boolean) => (enabled ? [kind] : []),
-  normalizeE164: normalizePhoneLikeToE164,
   parseActivationCommand: (body: string) => ({
     hasCommand: body.trim().startsWith("/"),
   }),

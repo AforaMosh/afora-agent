@@ -22,7 +22,7 @@ import type {
   AdmittedWebInboundMessage,
   DeprecatedWebInboundAdmissionTopLevelFields,
 } from "../../inbound/types.js";
-import { normalizeE164 } from "../../text-runtime.js";
+import { normalizeWhatsAppPhoneInput } from "../../phone-input.js";
 import { buildMentionConfig } from "../mentions.js";
 import type { MentionConfig } from "../mentions.js";
 import { maybeSendAckReaction } from "./ack-reaction.js";
@@ -83,7 +83,7 @@ export function createWebOnMessageHandler(params: {
     ) {
       return msg;
     }
-    const normalized = normalizeE164(peerId);
+    const normalized = normalizeWhatsAppPhoneInput(peerId);
     if (!normalized) {
       return msg;
     }

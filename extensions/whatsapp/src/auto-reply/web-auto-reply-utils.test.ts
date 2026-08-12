@@ -381,6 +381,12 @@ describe("web auto-reply util", () => {
         ),
       ).toEqual(["+15550001111"]);
       expect(resolveOwnerList({ mentionRegexes: [] }, "+1 555 000 2222")).toEqual(["+15550002222"]);
+      expect(
+        resolveOwnerList({
+          mentionRegexes: [],
+          allowFrom: ["signal:+15550003333", "whatsapp:whatsapp:777@lid"],
+        }),
+      ).toEqual(["777@lid"]);
     });
   });
 

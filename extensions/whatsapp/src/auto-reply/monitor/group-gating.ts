@@ -5,6 +5,7 @@ import { createDedupeCache } from "openclaw/plugin-sdk/dedupe-runtime";
 import type { HistoryMediaEntry } from "openclaw/plugin-sdk/reply-history";
 import { resolveWhatsAppGroupsConfigPath } from "../../group-config-path.js";
 import {
+  getComparableIdentityValues,
   getPrimaryIdentityId,
   getReplyContext,
   getSelfIdentity,
@@ -22,7 +23,6 @@ import { resolveGroupActivationFor } from "./group-activation.js";
 import {
   hasControlCommand,
   implicitMentionKindWhen,
-  normalizeE164,
   parseActivationCommand,
   createChannelHistoryWindow,
   resolveInboundMentionDecision,
@@ -75,15 +75,15 @@ function isOwnerSender(
   msg: AdmittedWebInboundMessage,
   authDir?: string,
 ) {
-  const sender = normalizeE164(getSenderIdentity(msg, authDir).e164 ?? "");
-  if (!sender) {
+  const senderValues = new Set(getComparableIdentityValues(getSenderIdentity(msg, authDir)));
+  if (senderValues.size === 0) {
     return false;
   }
   const owners = resolveOwnerList(
     baseMentionConfig,
     getSelfIdentity(msg, authDir).e164 ?? undefined,
   );
-  return owners.includes(sender);
+  return owners.some((owner) => senderValues.has(owner));
 }
 
 function recordPendingGroupHistoryEntry(params: {

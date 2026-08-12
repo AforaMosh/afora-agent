@@ -70,6 +70,8 @@ describe("normalizeWhatsAppTarget", () => {
     expect(normalizeWhatsAppTarget("abc@hosted")).toBeNull();
     expect(normalizeWhatsAppTarget("123:device@hosted")).toBeNull();
     expect(normalizeWhatsAppTarget("123@hosted.example")).toBeNull();
+    expect(normalizeWhatsAppTarget("+15551234567\t")).toBeNull();
+    expect(normalizeWhatsAppTarget("\n+15551234567")).toBeNull();
     expect(normalizeWhatsAppTarget("abc@newsletter")).toBeNull();
   });
 

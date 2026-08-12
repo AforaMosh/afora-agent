@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   assertWebChannel,
+  isSelfChatMode,
   jidToE164,
   markdownToWhatsApp,
   markdownToWhatsAppChunks,
@@ -14,6 +15,13 @@ import {
   toWhatsappJid,
   toWhatsappJidWithLid,
 } from "./text-runtime.js";
+
+describe("isSelfChatMode", () => {
+  it("accepts WhatsApp phone syntax but rejects foreign provider prefixes", () => {
+    expect(isSelfChatMode("+15550001111", ["whatsapp:whatsapp:+15550001111"])).toBe(true);
+    expect(isSelfChatMode("+15550001111", ["signal:+15550001111"])).toBe(false);
+  });
+});
 
 async function withTempDir<T>(
   prefix: string,

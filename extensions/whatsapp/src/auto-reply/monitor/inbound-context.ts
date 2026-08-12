@@ -15,7 +15,7 @@ import {
 } from "../../identity.js";
 import { requireWhatsAppInboundAdmission } from "../../inbound/admission.js";
 import type { AdmittedWebInboundMessage } from "../../inbound/types.js";
-import { normalizeE164 } from "../../text-runtime.js";
+import { normalizeWhatsAppDirectIdentity } from "../../normalize-target.js";
 
 export type GroupHistoryEntry = {
   sender: string;
@@ -47,8 +47,8 @@ function isWhatsAppSupplementalSenderAllowed(params: {
     if (!rawEntry) {
       continue;
     }
-    const normalizedEntry = normalizeE164(rawEntry);
-    if ((normalizedEntry && senderValues.has(normalizedEntry)) || senderValues.has(rawEntry)) {
+    const normalizedEntry = normalizeWhatsAppDirectIdentity(rawEntry);
+    if (normalizedEntry && senderValues.has(normalizedEntry)) {
       return true;
     }
   }

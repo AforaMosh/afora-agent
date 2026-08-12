@@ -531,7 +531,14 @@ export function resolveWhatsAppDmRouteTarget(params: {
   if (admission.conversation.kind === "group") {
     return undefined;
   }
-  return normalizeWhatsAppDirectIdentity(admission.sender.id) ?? undefined;
+  const sessionOwner = normalizeWhatsAppDirectIdentity(admission.sender.id);
+  const currentE164 = params.msg.platform.sender?.e164;
+  // Stable session ownership yields only to a canonical current E164 delivery fact.
+  return sessionOwner?.startsWith("+") &&
+    currentE164 &&
+    normalizeWhatsAppDirectIdentity(currentE164) === currentE164
+    ? currentE164
+    : (sessionOwner ?? undefined);
 }
 
 export function updateWhatsAppMainLastRoute(params: {
