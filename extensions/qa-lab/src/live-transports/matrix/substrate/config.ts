@@ -19,6 +19,9 @@ type MatrixQaStreamingConfig = {
   preview?: {
     toolProgress?: boolean;
   };
+  progress?: {
+    commandText?: "raw" | "status";
+  };
 };
 type MatrixQaAgentDefaultsOverrides = {
   blockStreamingChunk?: {
@@ -128,6 +131,7 @@ type MatrixQaConfigSnapshot = {
   startupVerification?: "if-unverified" | "off";
   streaming: MatrixQaStreamingMode;
   streamingPreviewToolProgress: boolean;
+  streamingProgressCommandText?: "raw" | "status";
   textChunkLimit?: number;
   threadBindings: MatrixQaThreadBindingsConfigOverrides;
   threadReplies: MatrixQaThreadRepliesMode;
@@ -445,6 +449,9 @@ function buildMatrixQaChannelAccountConfig(params: {
       chunkMode: params.snapshot.chunkMode ?? "length",
       mode: params.snapshot.streaming,
       preview: { toolProgress: params.snapshot.streamingPreviewToolProgress },
+      ...(params.snapshot.streamingProgressCommandText !== undefined
+        ? { progress: { commandText: params.snapshot.streamingProgressCommandText } }
+        : {}),
     },
   };
   const startupVerificationConfig =
@@ -497,6 +504,7 @@ function buildMatrixQaConfigSnapshot(params: {
   sutUserId: string;
   topology: MatrixQaProvisionedTopology;
 }): MatrixQaConfigSnapshot {
+  const streaming = params.overrides?.streaming;
   return {
     allowBots: params.overrides?.allowBots,
     autoJoin: params.overrides?.autoJoin ?? "off",
@@ -516,10 +524,11 @@ function buildMatrixQaConfigSnapshot(params: {
     }),
     replyToMode: params.overrides?.replyToMode ?? "off",
     startupVerification: params.overrides?.startupVerification,
-    streaming: resolveMatrixQaStreamingMode(params.overrides?.streaming),
-    streamingPreviewToolProgress: resolveMatrixQaStreamingPreviewToolProgress(
-      params.overrides?.streaming,
-    ),
+    streaming: resolveMatrixQaStreamingMode(streaming),
+    streamingPreviewToolProgress: resolveMatrixQaStreamingPreviewToolProgress(streaming),
+    streamingProgressCommandText: isMatrixQaStreamingConfig(streaming)
+      ? streaming.progress?.commandText
+      : undefined,
     threadBindings: { ...params.overrides?.threadBindings },
     textChunkLimit: params.overrides?.textChunkLimit,
     threadReplies: params.overrides?.threadReplies ?? "inbound",
