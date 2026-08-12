@@ -266,7 +266,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +2: narrow channel agent-run terminal reader and outcome contract.
       // +5: narrow string, record, and error coercion helpers.
       // +1: normalized Gateway public origin resolver for plugin-generated links.
-      4308,
+      // +4: model-auth state/clear diagnostic event contracts through public runtime barrels.
+      4312,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
