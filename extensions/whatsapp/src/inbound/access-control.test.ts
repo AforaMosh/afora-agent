@@ -210,29 +210,6 @@ describe("checkInboundAccessControl admission contract", () => {
     ).resolves.toMatchObject({ allowed: false });
   });
 
-  it.each(["telegram:1555", "sms:+1555"])(
-    "does not authorize a WhatsApp phone through foreign provider identity %s",
-    async (allowFrom) => {
-      setAccessControlTestConfig({
-        channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: [allowFrom] } },
-      });
-      await expect(
-        checkInboundAccessControl({
-          cfg: getAccessControlTestConfig() as never,
-          accountId: "default",
-          from: "+1555",
-          selfE164: "+1999",
-          senderE164: "+1555",
-          senderJid: "1555@s.whatsapp.net",
-          group: false,
-          isFromMe: false,
-          sock: { sendMessage: sendMessageMock },
-          remoteJid: "1555@s.whatsapp.net",
-        }),
-      ).resolves.toMatchObject({ allowed: false });
-    },
-  );
-
   it("authorizes an exact LID through repeated WhatsApp prefixes", async () => {
     setAccessControlTestConfig({
       channels: {

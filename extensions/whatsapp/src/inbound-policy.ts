@@ -123,6 +123,8 @@ export async function resolveWhatsAppIngressAccess(params: {
   senderJid?: string | null;
   includeCommand?: boolean;
 }) {
+  const senderIsSamePhone =
+    params.policy.isSamePhone(params.senderId) || params.policy.isSamePhone(params.senderE164);
   return await resolveStableChannelMessageIngress({
     channelId: "whatsapp",
     accountId: params.policy.account.accountId,
@@ -169,7 +171,7 @@ export async function resolveWhatsAppIngressAccess(params: {
       !params.isGroup &&
       params.policy.account.selfChatMode !== false &&
       params.senderId &&
-      params.policy.isSamePhone(params.senderId)
+      senderIsSamePhone
         ? [...params.policy.dmAllowFrom, params.senderId]
         : params.policy.dmAllowFrom,
     groupAllowFrom: params.policy.groupAllowFrom,

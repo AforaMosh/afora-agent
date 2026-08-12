@@ -90,6 +90,17 @@ describe("normalizeWhatsAppDirectIdentity", () => {
     expect(normalizeWhatsAppDirectIdentity("sms:+1555")).toBeNull();
   });
 
+  it.each([
+    "signal_:+1555",
+    "whatsapp:signal_:+1555",
+    "signal.:+1555",
+    "signal/:+1555",
+    "other channel:+1555",
+  ])("rejects residual non-phone identity syntax in %s", (value) => {
+    expect(normalizeWhatsAppTarget(value)).toBeNull();
+    expect(normalizeWhatsAppDirectIdentity(value)).toBeNull();
+  });
+
   it("accepts formatted phones and exact direct JIDs", () => {
     expect(normalizeWhatsAppDirectIdentity("+1 (555) 123-4567")).toBe("+15551234567");
     expect(normalizeWhatsAppDirectIdentity("15551234567@s.whatsapp.net")).toBe("+15551234567");

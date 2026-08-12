@@ -127,6 +127,7 @@ export function buildWhatsAppInboundAdmission(params: {
   isGroup: boolean;
   conversationId: string;
   senderId: string;
+  senderE164?: string | null;
 }): WhatsAppInboundAdmission {
   return {
     accountId: params.policy.account.accountId,
@@ -139,7 +140,8 @@ export function buildWhatsAppInboundAdmission(params: {
     },
     sender: {
       id: params.senderId,
-      isSamePhone: params.policy.isSamePhone(params.senderId),
+      isSamePhone:
+        params.policy.isSamePhone(params.senderId) || params.policy.isSamePhone(params.senderE164),
     },
     ingress: {
       admission: params.access.ingress.admission,

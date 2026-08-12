@@ -77,13 +77,71 @@ describe("direct-peer owner", () => {
     setWhatsAppRuntime({ state: { openKeyedStore } } as never);
   });
 
-  it("keeps mapped-first peers owned by their E164 identity", async () => {
+  it("persists mapped-first E164 ownership across no-match and runtime reuse", async () => {
     await expect(
       resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: mapped }),
     ).resolves.toMatchObject({ kind: "resolved", peerId: "+15550001111", e164: "+15550001111" });
     expect(
       Array.from(state.stores.values()).flatMap((store) => Array.from(store.values())),
-    ).toHaveLength(0);
+    ).toHaveLength(1);
+
+    setWhatsAppRuntime({ state: { openKeyedStore } } as never);
+    await expect(
+      resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: noMatch }),
+    ).resolves.toMatchObject({
+      kind: "resolved",
+      peerId: "+15550001111",
+      e164: "+15550001111",
+    });
+
+    await expect(
+      resolveWhatsAppDirectPeer({
+        accountId: "default",
+        jid: "999@lid",
+        mapping: {
+          kind: "mapped",
+          e164: "+15550002222",
+          evidence: [{ source: "baileys", outcome: "mapped" }],
+        },
+      }),
+    ).resolves.toMatchObject({
+      kind: "resolved",
+      peerId: "+15550001111",
+      e164: "+15550001111",
+    });
+
+    await expect(
+      resolveWhatsAppDirectPeer({
+        accountId: "default",
+        jid: "999@lid",
+        mapping: {
+          kind: "error",
+          reason: "mapping-conflict",
+          distinctValueCount: 2,
+          evidence: [
+            { source: "auth", outcome: "mapped" },
+            { source: "baileys", outcome: "mapped" },
+          ],
+        },
+      }),
+    ).resolves.toMatchObject({ kind: "error", error: { code: "mapping-error" } });
+  });
+
+  it("atomically keeps one owner when mapped and opaque first observations race", async () => {
+    const results = await Promise.all([
+      resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: mapped }),
+      resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: noMatch }),
+    ]);
+
+    const [first, second] = results;
+    expect(first).toMatchObject({ kind: "resolved" });
+    if (!first || first.kind !== "resolved") {
+      throw new Error("expected the first owner resolution to succeed");
+    }
+    expect(second).toMatchObject({ kind: "resolved", peerId: first.peerId });
+    expect(
+      Array.from(state.stores.values()).flatMap((store) => Array.from(store.values())),
+    ).toHaveLength(1);
   });
 
   it("persists an opaque-first LID owner across later mapping and runtime reuse", async () => {
@@ -114,6 +172,23 @@ describe("direct-peer owner", () => {
     ).resolves.toMatchObject({ kind: "resolved", peerId: "999@lid" });
   });
 
+  it("keeps explicit mapping failures retryable after LID ownership is stored", async () => {
+    await resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: noMatch });
+
+    await expect(
+      resolveWhatsAppDirectPeer({
+        accountId: "default",
+        jid: "999@lid",
+        mapping: {
+          kind: "error",
+          reason: "mapping-unavailable",
+          distinctValueCount: 0,
+          evidence: [{ source: "baileys", outcome: "error", errorKind: "lookup" }],
+        },
+      }),
+    ).resolves.toMatchObject({ kind: "error", error: { code: "mapping-error" } });
+  });
+
   it("turns mapping failures into retryable owner errors without state writes", async () => {
     const result = await resolveWhatsAppDirectPeer({
       accountId: "default",
@@ -136,6 +211,26 @@ describe("direct-peer owner", () => {
     expect(
       Array.from(state.stores.values()).flatMap((store) => Array.from(store.values())),
     ).toHaveLength(0);
+  });
+
+  it("rejects malformed persisted owner variants", async () => {
+    await resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: noMatch });
+    const entry = Array.from(state.stores.values()).flatMap((store) =>
+      Array.from(store.values()),
+    )[0];
+    if (!entry) {
+      throw new Error("expected a persisted owner");
+    }
+    entry.value = {
+      accountId: "default",
+      lid: "999@lid",
+      owner: "e164",
+      e164: "signal_:+15550001111",
+    };
+
+    await expect(
+      resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: noMatch }),
+    ).resolves.toMatchObject({ kind: "error", error: { code: "owner-state-error" } });
   });
 
   it.each(["lookup", "register", "pairing"] as const)(

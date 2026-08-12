@@ -105,6 +105,8 @@ export async function checkInboundAccessControl(params: {
     senderE164: params.senderE164,
     senderJid: params.senderJid,
   });
+  const senderIsSamePhone =
+    policy.isSamePhone(params.from) || policy.isSamePhone(params.senderE164);
   const { senderAccess } = access;
   if (params.group && senderAccess.decision !== "allow") {
     if (senderAccess.reasonCode === "group_policy_disabled") {
@@ -125,10 +127,7 @@ export async function checkInboundAccessControl(params: {
 
   // DM access control (secure defaults): "pairing" (default) / "allowlist" / "open" / "disabled".
   if (!params.group) {
-    if (
-      params.isFromMe &&
-      (policy.account.selfChatMode === false || !policy.isSamePhone(params.from))
-    ) {
+    if (params.isFromMe && (policy.account.selfChatMode === false || !senderIsSamePhone)) {
       logWhatsAppVerbose(params.verbose, "Skipping outbound DM (fromMe); no pairing reply needed.");
       return blockedInboundAccess(policy);
     }
@@ -136,7 +135,7 @@ export async function checkInboundAccessControl(params: {
       logWhatsAppVerbose(params.verbose, "Blocked dm (dmPolicy: disabled)");
       return blockedInboundAccess(policy);
     }
-    if (senderAccess.decision === "pairing" && !policy.isSamePhone(params.from)) {
+    if (senderAccess.decision === "pairing" && !senderIsSamePhone) {
       const candidate = params.from;
       const candidateIsLid = normalizeWhatsAppLidJid(candidate) !== null;
       if (suppressPairingReply) {
@@ -200,6 +199,7 @@ export async function checkInboundAccessControl(params: {
       isGroup: params.group,
       conversationId,
       senderId: admissionSenderId,
+      senderE164: params.senderE164,
     }),
   };
 }

@@ -10,8 +10,8 @@ import { normalizeWhatsAppLidJid } from "./identity.js";
 const WHATSAPP_USER_JID_RE = /^(\d+)(?::\d+)?@s\.whatsapp\.net$/i;
 const WHATSAPP_LEGACY_USER_JID_RE = /^(\d+)@c\.us$/i;
 const WHATSAPP_LID_RE = /^(\d+)(?::\d+)?@(lid|hosted\.lid)$/i;
-const NON_WHATSAPP_PROVIDER_PREFIX_RE = /^[a-z][a-z0-9-]*:/i;
 const WHATSAPP_NEWSLETTER_JID_RE = /^([0-9]+)@newsletter$/i;
+const WHATSAPP_PHONE_INPUT_RE = /^\+?[\d\s().-]+$/;
 
 function stripWhatsAppTargetPrefixes(value: string): string {
   let candidate = value.trim();
@@ -99,7 +99,7 @@ export function normalizeWhatsAppTarget(value: string): string | null {
   if (candidate.includes("@")) {
     return null;
   }
-  if (NON_WHATSAPP_PROVIDER_PREFIX_RE.test(candidate)) {
+  if (!WHATSAPP_PHONE_INPUT_RE.test(candidate)) {
     return null;
   }
   const normalized = normalizeE164(candidate);

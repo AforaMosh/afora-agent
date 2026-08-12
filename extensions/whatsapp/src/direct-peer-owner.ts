@@ -1,7 +1,9 @@
 // Whatsapp plugin module owns stable direct-peer compatibility identity.
 import { createHash } from "node:crypto";
 import { readChannelAllowFromStore } from "openclaw/plugin-sdk/channel-pairing";
+import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { normalizeWhatsAppLidJid } from "./identity.js";
+import { normalizeWhatsAppDirectIdentity } from "./normalize-target.js";
 import { getWhatsAppRuntime } from "./runtime.js";
 import type { WhatsAppJidMappingOutcome } from "./targets-runtime.js";
 
@@ -11,8 +13,7 @@ const DIRECT_PEER_OWNER_MAX_ENTRIES = 50_000;
 type StoredDirectPeerOwner = {
   accountId: string;
   lid: string;
-  owner: "lid";
-};
+} & ({ owner: "lid" } | { owner: "e164"; e164: string });
 
 type WhatsAppDirectPeerResolution =
   | {
@@ -47,7 +48,7 @@ export class WhatsAppDirectPeerResolutionError extends Error {
 }
 
 function ownerStore() {
-  return getWhatsAppRuntime().state.openKeyedStore<StoredDirectPeerOwner>({
+  return getWhatsAppRuntime().state.openKeyedStore<unknown>({
     namespace: DIRECT_PEER_OWNER_NAMESPACE,
     maxEntries: DIRECT_PEER_OWNER_MAX_ENTRIES,
     overflowPolicy: "reject-new",
@@ -84,28 +85,48 @@ function ownerStateError(cause: unknown): WhatsAppDirectPeerResolution {
   };
 }
 
-async function recordLidOwner(params: {
-  accountId: string;
-  lid: string;
-}): Promise<WhatsAppDirectPeerResolution | null> {
-  const store = ownerStore();
-  const key = ownerKey(params.accountId, params.lid);
-  try {
-    const created = await store.registerIfAbsent(key, {
-      accountId: params.accountId,
-      lid: params.lid,
-      owner: "lid",
-    });
-    if (created) {
-      return null;
-    }
-    const existing = await store.lookup(key);
-    return existing?.owner === "lid" && existing.lid === params.lid
-      ? null
-      : ownerStateError(new Error("direct-peer owner record is invalid"));
-  } catch (error) {
-    return ownerStateError(error);
+function readStoredOwner(
+  value: unknown,
+  params: { accountId: string; lid: string },
+): StoredDirectPeerOwner | null {
+  if (
+    !isRecord(value) ||
+    value.accountId !== params.accountId ||
+    value.lid !== params.lid ||
+    (value.owner !== "lid" && value.owner !== "e164")
+  ) {
+    return null;
   }
+  if (value.owner === "lid") {
+    return { accountId: params.accountId, lid: params.lid, owner: "lid" };
+  }
+  if (
+    typeof value.e164 !== "string" ||
+    !value.e164.startsWith("+") ||
+    normalizeWhatsAppDirectIdentity(value.e164) !== value.e164
+  ) {
+    return null;
+  }
+  return { accountId: params.accountId, lid: params.lid, owner: "e164", e164: value.e164 };
+}
+
+function resolveStoredOwner(params: {
+  owner: StoredDirectPeerOwner;
+  mapping: WhatsAppJidMappingOutcome;
+}): WhatsAppDirectPeerResolution {
+  const e164 =
+    params.owner.owner === "e164"
+      ? params.owner.e164
+      : params.mapping.kind === "mapped"
+        ? params.mapping.e164
+        : null;
+  return {
+    kind: "resolved",
+    peerId: params.owner.owner === "e164" ? params.owner.e164 : params.owner.lid,
+    lid: params.owner.lid,
+    e164,
+    mapping: params.mapping,
+  };
 }
 
 export async function resolveWhatsAppDirectPeer(params: {
@@ -126,27 +147,20 @@ export async function resolveWhatsAppDirectPeer(params: {
       }),
     };
   }
-
   const store = ownerStore();
-  let stored: StoredDirectPeerOwner | undefined;
+  let storedValue: unknown;
   try {
-    stored = await store.lookup(ownerKey(params.accountId, lid));
+    storedValue = await store.lookup(ownerKey(params.accountId, lid));
   } catch (error) {
     return ownerStateError(error);
   }
-  if (stored) {
-    if (stored.owner !== "lid" || stored.lid !== lid || stored.accountId !== params.accountId) {
+  if (storedValue !== undefined) {
+    const stored = readStoredOwner(storedValue, { accountId: params.accountId, lid });
+    if (!stored) {
       return ownerStateError(new Error("direct-peer owner record is invalid"));
     }
-    return {
-      kind: "resolved",
-      peerId: lid,
-      lid,
-      e164: params.mapping.kind === "mapped" ? params.mapping.e164 : null,
-      mapping: params.mapping,
-    };
+    return resolveStoredOwner({ owner: stored, mapping: params.mapping });
   }
-
   let pairedEntries: string[];
   try {
     pairedEntries = await readChannelAllowFromStore("whatsapp", process.env, params.accountId);
@@ -155,27 +169,24 @@ export async function resolveWhatsAppDirectPeer(params: {
   }
 
   const exactLidPairing = pairedEntries.some((entry) => normalizeWhatsAppLidJid(entry) === lid);
-  if (params.mapping.kind === "mapped" && !exactLidPairing) {
-    return {
-      kind: "resolved",
-      peerId: params.mapping.e164,
+  const owner: StoredDirectPeerOwner =
+    params.mapping.kind === "mapped" && !exactLidPairing
+      ? { accountId: params.accountId, lid, owner: "e164", e164: params.mapping.e164 }
+      : { accountId: params.accountId, lid, owner: "lid" };
+  try {
+    if (await store.registerIfAbsent(ownerKey(params.accountId, lid), owner)) {
+      return resolveStoredOwner({ owner, mapping: params.mapping });
+    }
+    const existing = readStoredOwner(await store.lookup(ownerKey(params.accountId, lid)), {
+      accountId: params.accountId,
       lid,
-      e164: params.mapping.e164,
-      mapping: params.mapping,
-    };
+    });
+    return existing
+      ? resolveStoredOwner({ owner: existing, mapping: params.mapping })
+      : ownerStateError(new Error("direct-peer owner record is invalid"));
+  } catch (error) {
+    return ownerStateError(error);
   }
-
-  const writeError = await recordLidOwner({ accountId: params.accountId, lid });
-  if (writeError) {
-    return writeError;
-  }
-  return {
-    kind: "resolved",
-    peerId: lid,
-    lid,
-    e164: params.mapping.kind === "mapped" ? params.mapping.e164 : null,
-    mapping: params.mapping,
-  };
 }
 
 export async function clearWhatsAppDirectPeerOwners(accountId: string): Promise<void> {
@@ -183,7 +194,7 @@ export async function clearWhatsAppDirectPeerOwners(accountId: string): Promise<
   const entries = await store.entries();
   await Promise.all(
     entries
-      .filter((entry) => entry.value.accountId === accountId)
+      .filter((entry) => isRecord(entry.value) && entry.value.accountId === accountId)
       .map(async (entry) => await store.delete(entry.key)),
   );
 }
