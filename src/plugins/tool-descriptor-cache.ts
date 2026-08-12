@@ -44,7 +44,9 @@ export function createPluginToolDescriptorConfigCacheKeyMemo(): PluginToolDescri
   return new WeakMap();
 }
 
-function getDescriptorCacheObjectId(value: object | null | undefined): number | null {
+function getDescriptorCacheObjectId<TValue extends object>(
+  value: TValue | null | undefined,
+): number | null {
   if (!value) {
     return null;
   }

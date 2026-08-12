@@ -75,46 +75,44 @@ function installSlackNativeReconnectFailureObserver(receiver: unknown) {
   }
 
   Reflect.set(client, OPENCLAW_SLACK_NATIVE_RECONNECT_OBSERVER_KEY, true);
-  Reflect.set(
-    client,
-    "delayReconnectAttempt",
-    function patchedDelayReconnectAttempt(this: object, callback: unknown) {
-      if (typeof callback !== "function") {
-        return delayReconnectAttempt.call(this, callback);
-      }
-      const failureCount = Number(Reflect.get(this, "numOfConsecutiveReconnectionFailures") ?? 0);
-      const nextFailureCount = failureCount + 1;
-      Reflect.set(this, "numOfConsecutiveReconnectionFailures", nextFailureCount);
-      const pingTimeoutMs = Number(Reflect.get(this, "clientPingTimeoutMS"));
-      const delayMs =
-        (Number.isFinite(pingTimeoutMs) && pingTimeoutMs >= 0
-          ? pingTimeoutMs
-          : OPENCLAW_SLACK_CLIENT_PING_TIMEOUT_MS) * nextFailureCount;
-      const logger = Reflect.get(this, "logger") as { debug?: (message: string) => void };
-      logger?.debug?.(
-        `Before trying to reconnect, this client will wait for ${delayMs} milliseconds`,
-      );
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (Reflect.get(this, "shuttingDown")) {
-            logger?.debug?.("Client shutting down, will not attempt reconnect.");
+  Reflect.set(client, "delayReconnectAttempt", function patchedDelayReconnectAttempt<
+    T extends object,
+  >(this: T, callback: unknown) {
+    if (typeof callback !== "function") {
+      return delayReconnectAttempt.call(this, callback);
+    }
+    const failureCount = Number(Reflect.get(this, "numOfConsecutiveReconnectionFailures") ?? 0);
+    const nextFailureCount = failureCount + 1;
+    Reflect.set(this, "numOfConsecutiveReconnectionFailures", nextFailureCount);
+    const pingTimeoutMs = Number(Reflect.get(this, "clientPingTimeoutMS"));
+    const delayMs =
+      (Number.isFinite(pingTimeoutMs) && pingTimeoutMs >= 0
+        ? pingTimeoutMs
+        : OPENCLAW_SLACK_CLIENT_PING_TIMEOUT_MS) * nextFailureCount;
+    const logger = Reflect.get(this, "logger") as { debug?: (message: string) => void };
+    logger?.debug?.(
+      `Before trying to reconnect, this client will wait for ${delayMs} milliseconds`,
+    );
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (Reflect.get(this, "shuttingDown")) {
+          logger?.debug?.("Client shutting down, will not attempt reconnect.");
+          resolve(undefined);
+          return;
+        }
+        logger?.debug?.("Continuing with reconnect...");
+        emit.call(this, "reconnecting");
+        Promise.resolve(callback.call(this)).then(resolve, (error: unknown) => {
+          if (callback === Reflect.get(this, "start")) {
+            emit.call(this, OPENCLAW_SLACK_SOCKET_START_FAILED_EVENT, error);
             resolve(undefined);
             return;
           }
-          logger?.debug?.("Continuing with reconnect...");
-          emit.call(this, "reconnecting");
-          Promise.resolve(callback.call(this)).then(resolve, (error: unknown) => {
-            if (callback === Reflect.get(this, "start")) {
-              emit.call(this, OPENCLAW_SLACK_SOCKET_START_FAILED_EVENT, error);
-              resolve(undefined);
-              return;
-            }
-            reject(toErrorObject(error, "Non-Error rejection"));
-          });
-        }, delayMs);
-      });
-    },
-  );
+          reject(toErrorObject(error, "Non-Error rejection"));
+        });
+      }, delayMs);
+    });
+  });
 }
 
 function createSlackRelayReceiver(): SlackReceiver {

@@ -16,7 +16,7 @@ afterEach(async () => {
 async function invoke(
   method: "desktop.observe" | "worker.desktop.observe",
   params: unknown,
-  context: object,
+  context: Record<string, unknown>,
 ) {
   const respond = vi.fn();
   await environmentsHandlers[method]?.({ params, respond, context } as never);

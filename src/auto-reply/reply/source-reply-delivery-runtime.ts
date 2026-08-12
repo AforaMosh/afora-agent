@@ -21,21 +21,18 @@ type SourceReplyDeliveryRuntime = {
 };
 
 const sourceReplyDeliveryRuntimeKey = "__openclawSourceReplyDeliveryRuntime" as const;
-type SourceReplyDeliveryRuntimeOwner = {
-  [sourceReplyDeliveryRuntimeKey]?: SourceReplyDeliveryRuntime;
-};
 
-export function bindSourceReplyDeliveryRuntime(
-  owner: object,
+export function bindSourceReplyDeliveryRuntime<TOwner extends object>(
+  owner: TOwner,
   runtime: SourceReplyDeliveryRuntime,
 ): void {
-  (owner as SourceReplyDeliveryRuntimeOwner)[sourceReplyDeliveryRuntimeKey] = runtime;
+  Reflect.set(owner, sourceReplyDeliveryRuntimeKey, runtime);
 }
 
-export function readSourceReplyDeliveryRuntime(
-  owner: object,
+export function readSourceReplyDeliveryRuntime<TOwner extends object>(
+  owner: TOwner,
 ): SourceReplyDeliveryRuntime | undefined {
-  return (owner as SourceReplyDeliveryRuntimeOwner)[sourceReplyDeliveryRuntimeKey];
+  return Reflect.get(owner, sourceReplyDeliveryRuntimeKey) as SourceReplyDeliveryRuntime | undefined;
 }
 
 export function createSourceReplyDeliveryRuntime(params: {

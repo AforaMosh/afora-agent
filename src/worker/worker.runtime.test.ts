@@ -799,7 +799,7 @@ class FakeWorkerGateway {
     };
   }
 
-  private send(socket: WebSocket, frame: object): void {
+  private send(socket: WebSocket, frame: unknown): void {
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(frame));
     }

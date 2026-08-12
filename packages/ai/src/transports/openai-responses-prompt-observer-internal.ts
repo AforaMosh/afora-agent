@@ -36,8 +36,8 @@ function readFinalResponsesPrompt(
   ] as const;
 }
 
-export function createResponsesPromptEgressObserver(
-  options: object | undefined,
+export function createResponsesPromptEgressObserver<T extends object>(
+  options: T | undefined,
   assembledPrompt: string | undefined,
 ) {
   const observer = options ? responsesPromptObserver.get(options) : undefined;

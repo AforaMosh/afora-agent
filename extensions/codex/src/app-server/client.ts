@@ -54,7 +54,7 @@ type PendingRequest = {
 };
 
 /** Process-local generation fence for bindings tied to one app-server client instance. */
-export function getCodexAppServerClientInstanceId(client: object): string {
+export function getCodexAppServerClientInstanceId<T extends object>(client: T): string {
   const current = CODEX_APP_SERVER_CLIENT_INSTANCE_IDS.get(client);
   if (current) {
     return current;
@@ -64,7 +64,7 @@ export function getCodexAppServerClientInstanceId(client: object): string {
   return created;
 }
 
-export function resolveCodexAppServerClientInstanceId(client: object): string {
+export function resolveCodexAppServerClientInstanceId<T extends object>(client: T): string {
   const getInstanceId = (client as { getInstanceId?: () => string }).getInstanceId;
   return getInstanceId?.call(client) ?? getCodexAppServerClientInstanceId(client);
 }

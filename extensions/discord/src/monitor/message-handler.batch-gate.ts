@@ -7,8 +7,8 @@ type ReplyThreadingContext = {
   ReplyThreading?: ReplyThreadingPolicy;
 };
 
-export function applyImplicitReplyBatchGate(
-  ctx: object,
+export function applyImplicitReplyBatchGate<T extends object>(
+  ctx: T,
   replyToMode: ReplyToMode,
   isBatched: boolean,
 ) {
@@ -16,5 +16,5 @@ export function applyImplicitReplyBatchGate(
   if (!replyThreading) {
     return;
   }
-  (ctx as ReplyThreadingContext).ReplyThreading = replyThreading;
+  Reflect.set(ctx, "ReplyThreading" satisfies keyof ReplyThreadingContext, replyThreading);
 }

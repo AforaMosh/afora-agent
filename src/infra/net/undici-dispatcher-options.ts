@@ -67,7 +67,10 @@ function createIpSafeProxyClientFactory(): UndiciProxyClientFactory {
   };
 }
 
-function createUndiciClient(origin: string | URL, options: object): import("undici").Dispatcher {
+function createUndiciClient<TOptions extends object>(
+  origin: string | URL,
+  options: TOptions,
+): import("undici").Dispatcher {
   const { Client } = loadUndiciModule(["Client"]);
   return withUndiciErrorDiagnostics(
     new Client(origin, options as ConstructorParameters<typeof Client>[1]),
@@ -85,9 +88,9 @@ function createUndiciPool(origin: string | URL, options: unknown): import("undic
   );
 }
 
-function createUndiciOriginDispatcher(
+function createUndiciOriginDispatcher<TOptions extends object>(
   origin: string | URL,
-  options: object,
+  options: TOptions,
 ): import("undici").Dispatcher {
   return isObjectRecord(options) && options.connections === 1
     ? createUndiciClient(origin, options)

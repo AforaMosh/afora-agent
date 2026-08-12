@@ -514,7 +514,7 @@ describe("codex plugin", () => {
       | [
           (context: { senderIsOwner?: boolean }) => Array<{
             name: string;
-            execute(callId: string, params: object): Promise<unknown>;
+            execute(callId: string, params: Record<string, unknown>): Promise<unknown>;
           }>,
           { names: string[] },
         ]
@@ -829,7 +829,10 @@ describe("codex plugin", () => {
       }),
     );
     const afterCompaction = on.mock.calls.find(([name]) => name === "after_compaction")?.[1] as
-      | ((event: object, ctx: { sessionId?: string; sessionKey?: string }) => Promise<void>)
+      | ((
+          event: { previousSessionId?: string },
+          ctx: { sessionId?: string; sessionKey?: string },
+        ) => Promise<void>)
       | undefined;
     if (!afterCompaction) {
       throw new Error("missing Codex after_compaction hook");

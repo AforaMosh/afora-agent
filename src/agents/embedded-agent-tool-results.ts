@@ -386,9 +386,12 @@ function stringifyStructuredToolResultContent(block: unknown): string | undefine
   }
 }
 
-function resolveToolResultContentBlocks(result: object): unknown[] {
+function resolveToolResultContentBlocks(result: unknown): unknown[] {
   if (Array.isArray(result)) {
     return result;
+  }
+  if (!result || typeof result !== "object") {
+    return [result];
   }
   const record = result as Record<string, unknown>;
   // Typed provider blocks own their `content`; only untyped tool-result envelopes unwrap it.

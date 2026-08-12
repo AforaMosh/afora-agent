@@ -1034,7 +1034,7 @@ function shouldRedactStructuredPrimitiveField(key: string, path: readonly string
   return shouldRedactStructuredAuthorizationCode(normalizedKey, path) || isSensitiveFieldKey(key);
 }
 
-function isPlainRedactableObject(value: object): value is Record<string, unknown> {
+function isPlainRedactableObject<T extends object>(value: T): value is T & Record<string, unknown> {
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }

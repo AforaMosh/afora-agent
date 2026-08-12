@@ -17,7 +17,7 @@ export function withFetchPreconnect<T extends typeof fetch>(fn: T): T & FetchWit
 export function withFetchPreconnect<T extends object>(
   fn: T,
 ): T & FetchWithPreconnect & typeof fetch;
-export function withFetchPreconnect(fn: object) {
+export function withFetchPreconnect<T extends object>(fn: T) {
   return Object.assign(fn, {
     preconnect: (_url: string | URL, _options?: FetchPreconnectOptions) => {},
     __openclawAcceptsDispatcher: true as const,

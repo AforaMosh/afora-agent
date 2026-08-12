@@ -12,7 +12,9 @@ export function markCoreModelRequestStartedDiagnosticEvent<T extends CoreModelRe
   return event;
 }
 
-export function consumeCoreModelRequestStartedDiagnosticEvent(event: object): boolean {
+export function consumeCoreModelRequestStartedDiagnosticEvent<TEvent extends object>(
+  event: TEvent,
+): boolean {
   const marked = coreModelRequestStartedEvents.has(event);
   coreModelRequestStartedEvents.delete(event);
   return marked;

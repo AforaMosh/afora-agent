@@ -12,7 +12,9 @@ export function withReplySystemEventSessionKey<T extends object>(
 }
 
 /** Read route-owned system-event state after it crosses internal reply-option spreads. */
-export function getReplySystemEventSessionKey(options: object | undefined): string | undefined {
+export function getReplySystemEventSessionKey<TOptions extends object>(
+  options: TOptions | undefined,
+): string | undefined {
   if (!options) {
     return undefined;
   }

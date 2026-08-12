@@ -88,11 +88,18 @@ function resolveToolParameterSchemaCacheKey(
   ]);
 }
 
-function getCachedToolParameterSchema(schema: object, key: string): TSchema | undefined {
+function getCachedToolParameterSchema<T extends object>(
+  schema: T,
+  key: string,
+): TSchema | undefined {
   return toolParameterSchemaCache.get(schema)?.find((entry) => entry.key === key)?.value;
 }
 
-function rememberCachedToolParameterSchema(schema: object, key: string, value: TSchema): TSchema {
+function rememberCachedToolParameterSchema<T extends object>(
+  schema: T,
+  key: string,
+  value: TSchema,
+): TSchema {
   const entries = toolParameterSchemaCache.get(schema) ?? [];
   toolParameterSchemaCache.set(
     schema,

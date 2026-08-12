@@ -15,7 +15,7 @@ const accountRef = `hmac-sha256:v1:${"a".repeat(32)}:${"b".repeat(64)}`;
 
 async function runAuditHandler(
   method: "audit.activity.list" | "audit.list" | "audit.run.inspect",
-  params: object,
+  params: Record<string, unknown>,
 ) {
   const respond = vi.fn();
   await expectDefined(

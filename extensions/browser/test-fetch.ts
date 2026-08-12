@@ -38,7 +38,7 @@ export function withBrowserFetchPreconnect<T extends typeof fetch>(fn: T): T & F
 export function withBrowserFetchPreconnect<T extends object>(
   fn: T,
 ): T & FetchWithPreconnect & typeof fetch;
-export function withBrowserFetchPreconnect(fn: object) {
+export function withBrowserFetchPreconnect<T extends object>(fn: T) {
   const fetchFn = Object.assign(fn as FetchFunction, {
     preconnect: (_url: string | URL, _options?: FetchPreconnectOptions) => {},
     __openclawAcceptsDispatcher: true as const,

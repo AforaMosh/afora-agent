@@ -50,7 +50,7 @@ export type DiscordMessageHandler = (
   options?: { abortSignal?: AbortSignal },
 ) => Promise<void>;
 
-export function registerDiscordListener(listeners: Array<object>, listener: object) {
+export function registerDiscordListener<T extends object>(listeners: T[], listener: T) {
   if (listeners.some((existing) => existing.constructor === listener.constructor)) {
     return false;
   }

@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { toErrorObject as toLintErrorObject } from "@openclaw/normalization-core/error-coercion";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { OpenClawConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
 
 let modelsListCommand: typeof import("./models/list.list-command.js").modelsListCommand;
@@ -164,7 +165,10 @@ vi.mock("./models/list.scoped-catalog.js", () => ({
 }));
 
 vi.mock("../agents/prepared-model-registry.js", () => ({
-  loadPreparedAgentModelRegistry: async (config: object, options?: { agentDir?: string }) => ({
+  loadPreparedAgentModelRegistry: async (
+    config: OpenClawConfig,
+    options?: { agentDir?: string },
+  ) => ({
     agentDir: options?.agentDir ?? "/tmp/openclaw-agent",
     config,
     registry: createMockModelRegistry(),

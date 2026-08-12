@@ -28,25 +28,35 @@ export function withSystemEventOwner<T extends object>(options: T, agentId: stri
   return options;
 }
 
-export function resolveSystemEventOptionsOwnerAgentId(options: object): string | null {
+export function resolveSystemEventOptionsOwnerAgentId<TOptions extends object>(
+  options: TOptions,
+): string | null {
   return optionOwners.get(options) ?? null;
 }
 
-export function recordSystemEventOwner(event: object, agentId: string | null): void {
+export function recordSystemEventOwner<TEvent extends object>(
+  event: TEvent,
+  agentId: string | null,
+): void {
   const normalized = normalizeOwnerAgentId(agentId);
   if (normalized) {
     eventOwners.set(event, normalized);
   }
 }
 
-export function cloneSystemEventOwner(source: object, clone: object): void {
+export function cloneSystemEventOwner<TSource extends object, TClone extends object>(
+  source: TSource,
+  clone: TClone,
+): void {
   const ownerAgentId = eventOwners.get(source);
   if (ownerAgentId) {
     eventOwners.set(clone, ownerAgentId);
   }
 }
 
-export function resolveSystemEventOwnerAgentId(event: object): string | null {
+export function resolveSystemEventOwnerAgentId<TEvent extends object>(
+  event: TEvent,
+): string | null {
   return eventOwners.get(event) ?? null;
 }
 

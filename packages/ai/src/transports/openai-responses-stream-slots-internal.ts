@@ -71,8 +71,10 @@ export function appendResponsesPendingTextDelta<TSlot extends DeferredTextSlot>(
   materialize(slot);
 }
 
-export function readResponsesOutputIndex(event: object): number | undefined {
-  const outputIndex = (event as { output_index?: unknown }).output_index;
+export function readResponsesOutputIndex<TEvent extends object>(
+  event: TEvent,
+): number | undefined {
+  const outputIndex = "output_index" in event ? event.output_index : undefined;
   return typeof outputIndex === "number" && Number.isInteger(outputIndex) && outputIndex >= 0
     ? outputIndex
     : undefined;
@@ -82,7 +84,7 @@ export function createResponsesOutputSlotTracker<TSlot extends { type: string }>
   const indexed = new Map<number, TSlot>();
   let unindexed: TSlot | undefined;
   return {
-    register(event: object, slot: TSlot): void {
+    register<TEvent extends object>(event: TEvent, slot: TSlot): void {
       const outputIndex = readResponsesOutputIndex(event);
       if (outputIndex === undefined) {
         if (unindexed) {
@@ -96,8 +98,8 @@ export function createResponsesOutputSlotTracker<TSlot extends { type: string }>
       }
       indexed.set(outputIndex, slot);
     },
-    resolve<TType extends TSlot["type"]>(
-      event: object,
+    resolve<TType extends TSlot["type"], TEvent extends object>(
+      event: TEvent,
       type: TType,
     ): Extract<TSlot, { type: TType }> | undefined {
       const outputIndex = readResponsesOutputIndex(event);
@@ -108,7 +110,7 @@ export function createResponsesOutputSlotTracker<TSlot extends { type: string }>
       }
       return slot?.type === type ? (slot as Extract<TSlot, { type: TType }>) : undefined;
     },
-    get(event: object): TSlot | undefined {
+    get<TEvent extends object>(event: TEvent): TSlot | undefined {
       const outputIndex = readResponsesOutputIndex(event);
       return outputIndex === undefined ? unindexed : indexed.get(outputIndex);
     },

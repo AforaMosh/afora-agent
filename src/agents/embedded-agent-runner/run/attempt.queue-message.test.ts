@@ -13,7 +13,9 @@ type EmbeddedAgentActiveSessionSteerTarget = Parameters<
   typeof steerActiveSessionWithOptionalDeliveryWait
 >[0];
 
-function createIdentityAwareSteer(message: object): EmbeddedAgentActiveSessionSteerTarget["steer"] {
+function createIdentityAwareSteer<TMessage extends object>(
+  message: TMessage,
+): EmbeddedAgentActiveSessionSteerTarget["steer"] {
   return async (_text, _images, _recorder, _media, _imageOrder, queueIdentity) => {
     setSteeringMessageIdentity(
       message as Parameters<typeof setSteeringMessageIdentity>[0],
@@ -22,7 +24,7 @@ function createIdentityAwareSteer(message: object): EmbeddedAgentActiveSessionSt
   };
 }
 
-function registerDisplayRetirement(message: object) {
+function registerDisplayRetirement<TMessage extends object>(message: TMessage) {
   const retire = vi.fn(() => true);
   registerQueuedUserMessageRetirement(
     message as Parameters<typeof registerQueuedUserMessageRetirement>[0],

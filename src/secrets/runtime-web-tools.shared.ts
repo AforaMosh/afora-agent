@@ -164,7 +164,7 @@ export function hasConfiguredSecretRef(
   );
 }
 
-function getProviderEnvVars(provider: object): string[] {
+function getProviderEnvVars<TProvider extends object>(provider: TProvider): string[] {
   return "envVars" in provider && Array.isArray(provider.envVars) ? provider.envVars : [];
 }
 

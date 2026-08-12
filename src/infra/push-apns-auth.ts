@@ -25,7 +25,7 @@ function toBase64UrlBytes(value: Uint8Array): string {
     .replace(/=+$/g, "");
 }
 
-function toBase64UrlJson(value: object): string {
+function toBase64UrlJson<TValue extends object>(value: TValue): string {
   return toBase64UrlBytes(Buffer.from(JSON.stringify(value)));
 }
 

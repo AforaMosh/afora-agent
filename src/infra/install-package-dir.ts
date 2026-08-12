@@ -182,7 +182,7 @@ export function requestDeferredPackageDirInstall<T extends object>(params: T): T
   return params;
 }
 
-function isPackageDirInstallCommitDeferred(params: object): boolean {
+function isPackageDirInstallCommitDeferred<TParams extends object>(params: TParams): boolean {
   return (
     (params as { [PACKAGE_DIR_INSTALL_TRANSACTION_REQUEST]?: true })[
       PACKAGE_DIR_INSTALL_TRANSACTION_REQUEST
@@ -202,8 +202,8 @@ function attachPackageDirInstallTransaction<T extends object>(
   return result;
 }
 
-export function resolvePackageDirInstallTransaction(
-  result: object,
+export function resolvePackageDirInstallTransaction<TResult extends object>(
+  result: TResult,
 ): PackageDirInstallTransaction | undefined {
   return (result as { [PACKAGE_DIR_INSTALL_TRANSACTION]?: PackageDirInstallTransaction })[
     PACKAGE_DIR_INSTALL_TRANSACTION

@@ -19,19 +19,23 @@ export function recordPluginCandidateInstallOwner<T extends object>(
   return candidate;
 }
 
-function readPluginCandidateInstallOwner(
-  candidate: object,
+function readPluginCandidateInstallOwner<TCandidate extends object>(
+  candidate: TCandidate,
 ): PluginCandidateInstallOwner | undefined {
   return (candidate as { [PLUGIN_CANDIDATE_INSTALL_OWNER]?: PluginCandidateInstallOwner })[
     PLUGIN_CANDIDATE_INSTALL_OWNER
   ];
 }
 
-export function resolvePluginCandidateInstallOwner(candidate: object): string | undefined {
+export function resolvePluginCandidateInstallOwner<TCandidate extends object>(
+  candidate: TCandidate,
+): string | undefined {
   return readPluginCandidateInstallOwner(candidate)?.installOwner;
 }
 
-export function isPluginCandidateInstallOwnerAmbiguous(candidate: object): boolean {
+export function isPluginCandidateInstallOwnerAmbiguous<TCandidate extends object>(
+  candidate: TCandidate,
+): boolean {
   return readPluginCandidateInstallOwner(candidate)?.ambiguous === true;
 }
 
@@ -47,8 +51,8 @@ export function recordPluginInstallOwnerLookup<T extends object>(
   return params;
 }
 
-export function resolvePluginInstallOwnerLookup(
-  params: object,
+export function resolvePluginInstallOwnerLookup<TParams extends object>(
+  params: TParams,
 ): ReadonlyMap<string, string> | undefined {
   return (params as { [PLUGIN_INSTALL_OWNER_LOOKUP]?: ReadonlyMap<string, string> })[
     PLUGIN_INSTALL_OWNER_LOOKUP

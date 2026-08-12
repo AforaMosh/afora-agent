@@ -20,8 +20,8 @@ export type ReplyOptionsWithOperationRunState = {
   [REPLY_OPERATION_RUN_STATE]?: ReplyOperationRunState;
 };
 
-export function resolveReplyOperationRunState(
-  options: object | undefined,
+export function resolveReplyOperationRunState<TOptions extends object>(
+  options: TOptions | undefined,
 ): ReplyOperationRunState | undefined {
   return (options as ReplyOptionsWithOperationRunState | undefined)?.[REPLY_OPERATION_RUN_STATE];
 }

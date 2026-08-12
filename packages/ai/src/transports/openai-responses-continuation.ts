@@ -25,7 +25,10 @@ export type ResponsesContinuationStatus =
   | "no_previous_response"
   | "request_changed";
 
-function jsonValuesEqual(left: object, right: object): boolean {
+function jsonValuesEqual<TLeft extends object, TRight extends object>(
+  left: TLeft,
+  right: TRight,
+): boolean {
   // Round-trip first so stable key ordering retains JSON's omitted/undefined wire semantics.
   return (
     stableStringify(JSON.parse(JSON.stringify(left) as string)) ===

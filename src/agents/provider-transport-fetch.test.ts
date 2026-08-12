@@ -34,7 +34,11 @@ const {
   class MockFinalizationRegistry {
     constructor(private callback: (held: { finalize: () => Promise<void> }) => void) {}
 
-    register(_target: object, held: { finalize: () => Promise<void> }, token?: object) {
+    register<TTarget extends object, TToken extends object>(
+      _target: TTarget,
+      held: { finalize: () => Promise<void> },
+      token?: TToken,
+    ) {
       managedStreamCleanupRegistrationsLocal.push({
         callback: this.callback,
         held,
@@ -42,7 +46,7 @@ const {
       });
     }
 
-    unregister(token: object) {
+    unregister<TToken extends object>(token: TToken) {
       const index = managedStreamCleanupRegistrationsLocal.findIndex(
         (entry) => entry.token === token,
       );

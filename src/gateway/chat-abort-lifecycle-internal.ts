@@ -1,7 +1,10 @@
 const terminalPersistenceErrorByEntry = new WeakMap<object, unknown>();
 const removalWaitersByEntry = new WeakMap<object, Set<() => void>>();
 
-export function markChatAbortTerminalPersistenceError(entry: object, error: unknown): void {
+export function markChatAbortTerminalPersistenceError<TEntry extends object>(
+  entry: TEntry,
+  error: unknown,
+): void {
   if (error === undefined) {
     terminalPersistenceErrorByEntry.delete(entry);
     return;
@@ -9,7 +12,7 @@ export function markChatAbortTerminalPersistenceError(entry: object, error: unkn
   terminalPersistenceErrorByEntry.set(entry, error);
 }
 
-export function notifyChatAbortControllerRemoved(entry: object): void {
+export function notifyChatAbortControllerRemoved<TEntry extends object>(entry: TEntry): void {
   const waiters = removalWaitersByEntry.get(entry);
   removalWaitersByEntry.delete(entry);
   for (const resolve of waiters ?? []) {

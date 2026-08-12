@@ -18,24 +18,24 @@ import {
   writePolicyFixture,
 } from "./register.test-harness.js";
 
-const scanPolicyMcpServers = (cfg: object) =>
+const scanPolicyMcpServers = <T extends object>(cfg: T) =>
   collectPolicyEvidence(cfg as Record<string, unknown>).mcpServers;
-const scanPolicyIngress = (cfg: object) =>
+const scanPolicyIngress = <T extends object>(cfg: T) =>
   collectPolicyEvidence(cfg as Record<string, unknown>).ingress ?? [];
 
-function writeModelPolicyFixture(providers: object): Promise<string> {
+function writeModelPolicyFixture<T extends object>(providers: T): Promise<string> {
   return writePolicyFixture({ models: { providers } });
 }
 
-async function runModelPolicyFixture(providers: object, cfg: OpenClawConfig) {
+async function runModelPolicyFixture<T extends object>(providers: T, cfg: OpenClawConfig) {
   return runPolicyDoctorLint(ctx(await writeModelPolicyFixture(providers), cfg));
 }
 
-function writeMcpPolicyFixture(servers: object): Promise<string> {
+function writeMcpPolicyFixture<T extends object>(servers: T): Promise<string> {
   return writePolicyFixture({ mcp: { servers } });
 }
 
-function writeIngressPolicyFixture(ingress: object): Promise<string> {
+function writeIngressPolicyFixture<T extends object>(ingress: T): Promise<string> {
   return writePolicyFixture({ ingress });
 }
 

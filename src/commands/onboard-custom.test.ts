@@ -67,7 +67,7 @@ function stubFetchSequence(
 
 async function runPromptCustomApi(
   prompter: ReturnType<typeof createTestPrompter>,
-  config: object = {},
+  config: Parameters<typeof promptCustomApiConfig>[0]["config"] = {},
 ) {
   return promptCustomApiConfig({
     prompter: prompter as unknown as Parameters<typeof promptCustomApiConfig>[0]["prompter"],

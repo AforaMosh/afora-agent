@@ -2,7 +2,10 @@
 // terminal error's identity and shape for existing callers.
 const retryAttemptErrors = new WeakMap<object, readonly unknown[]>();
 
-export function recordRetryAttemptErrors(error: object, attemptErrors: readonly unknown[]): void {
+export function recordRetryAttemptErrors<TError extends object>(
+  error: TError,
+  attemptErrors: readonly unknown[],
+): void {
   retryAttemptErrors.set(error, [...attemptErrors]);
 }
 

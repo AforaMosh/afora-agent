@@ -285,7 +285,7 @@ describe("worker protocol schemas", () => {
     expect(validateWorkerSessionsSpawnParams({ ...spawn, unexpected: true })).toBe(false);
     expect(validateWorkerSessionsSendParams({ ...send, message: "" })).toBe(false);
     const escaped = "\0";
-    const requestBytes = (method: string, requestParams: object) =>
+    const requestBytes = <T extends object>(method: string, requestParams: T) =>
       Buffer.byteLength(
         JSON.stringify({
           type: "req",

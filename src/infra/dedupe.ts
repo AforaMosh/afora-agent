@@ -6,10 +6,14 @@ import { pruneMapToMaxSize } from "./map-size.js";
 /** Small in-memory TTL/LRU-style cache for replay and duplicate suppression. */
 export type DedupeCache = {
   /** Returns true for a recent duplicate; records the key and optional owner when absent. */
-  check: (key: string | undefined | null, now?: number, ownerToken?: object) => boolean;
+  check: <TOwner extends object>(
+    key: string | undefined | null,
+    now?: number,
+    ownerToken?: TOwner,
+  ) => boolean;
   /** Returns true for a recent duplicate without refreshing or recording the key. */
   peek: (key: string | undefined | null, now?: number) => boolean;
-  delete: (key: string | undefined | null, ownerToken?: object) => void;
+  delete: <TOwner extends object>(key: string | undefined | null, ownerToken?: TOwner) => void;
   clear: () => void;
   size: () => number;
 };
@@ -29,7 +33,7 @@ export function createDedupeCache(options: DedupeCacheOptions): DedupeCache {
   const maxSize = resolveNonNegativeIntegerOption(options.maxSize, 0);
   const cache = new Map<string, { ownerToken?: object; recordedAt: number }>();
 
-  const record = (key: string, recordedAt: number, ownerToken?: object) => {
+  const record = <TOwner extends object>(key: string, recordedAt: number, ownerToken?: TOwner) => {
     cache.delete(key);
     cache.set(key, { recordedAt, ...(ownerToken ? { ownerToken } : {}) });
   };

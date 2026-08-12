@@ -70,13 +70,13 @@ vi.mock("./monitor/ingress.js", () => ({
         message: unknown,
         lifecycle: unknown,
         receivedAt: number,
-        provenance: object,
+        provenance: unknown,
       ) => Promise<unknown>;
       dispatch: (
         message: unknown,
         lifecycle: unknown,
         receivedAt: number,
-        provenance: object,
+        provenance: unknown,
       ) => Promise<unknown>;
     }) => ({
       receive: async (raw: { message: unknown }) => {

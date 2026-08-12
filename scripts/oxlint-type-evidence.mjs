@@ -96,6 +96,25 @@ function broadTypeKind(type) {
   return isBroadRecordType(unwrapped) ? "record" : null;
 }
 
+function parameterAnnotation(parameter) {
+  if (parameter.type === "TSParameterProperty") {
+    return parameterAnnotation(parameter.parameter);
+  }
+  if (parameter.type === "RestElement") {
+    return parameter.typeAnnotation ?? parameterAnnotation(parameter.argument);
+  }
+  if (parameter.type === "AssignmentPattern") {
+    return parameter.typeAnnotation ?? parameter.left.typeAnnotation;
+  }
+  return parameter.typeAnnotation;
+}
+
+function parameterName(parameter, sourceCode) {
+  return parameter.type === "Identifier"
+    ? parameter.name
+    : sourceCode.getText(parameter).replace(/\s*:\s*object\s*$/u, "");
+}
+
 function assertedExpression(node) {
   return unwrapExpressionParentheses(node.expression);
 }
@@ -378,6 +397,96 @@ const noUnknownTypeAliasesRule = {
   },
 };
 
+const noObjectParametersRule = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Disallow object function parameters; inputs must preserve an owner-provided type or be parsed at their boundary.",
+    },
+    messages: {
+      objectParameter:
+        "Parameter `{{parameter}}` accepts the broad `object` type. Use the expected owner type or decode the external input at its boundary.",
+    },
+  },
+  create(context) {
+    const aliases = new Map();
+
+    const resolvesToObject = (type, visited = new Set()) => {
+      if (type.type === "TSObjectKeyword") {
+        return true;
+      }
+      if (type.type === "TSParenthesizedType") {
+        return resolvesToObject(type.typeAnnotation, visited);
+      }
+      if (type.type === "TSUnionType") {
+        return type.types.some((member) => resolvesToObject(member, visited));
+      }
+      const name =
+        type.type === "TSTypeReference" &&
+        type.typeName.type === "Identifier" &&
+        (type.typeArguments === null ||
+          type.typeArguments === undefined ||
+          type.typeArguments.params.length === 0)
+          ? type.typeName.name
+          : null;
+      if (name === null || visited.has(name)) {
+        return false;
+      }
+      const alias = aliases.get(name);
+      if (alias === undefined) {
+        return false;
+      }
+      const nextVisited = new Set(visited);
+      nextVisited.add(name);
+      return resolvesToObject(alias, nextVisited);
+    };
+
+    const checkParameters = (node) => {
+      for (const parameter of node.params) {
+        const annotation = parameterAnnotation(parameter);
+        if (
+          annotation === null ||
+          annotation === undefined ||
+          !resolvesToObject(annotation.typeAnnotation)
+        ) {
+          continue;
+        }
+        context.report({
+          node: annotation.typeAnnotation,
+          messageId: "objectParameter",
+          data: { parameter: parameterName(parameter, context.sourceCode) },
+        });
+      }
+    };
+
+    return {
+      Program(node) {
+        for (const statement of node.body) {
+          const declaration =
+            statement.type === "ExportNamedDeclaration" ? statement.declaration : statement;
+          if (
+            declaration?.type === "TSTypeAliasDeclaration" &&
+            (declaration.typeParameters === null || declaration.typeParameters === undefined)
+          ) {
+            aliases.set(declaration.id.name, declaration.typeAnnotation);
+          }
+        }
+      },
+      ArrowFunctionExpression: checkParameters,
+      FunctionDeclaration: checkParameters,
+      FunctionExpression: checkParameters,
+      TSCallSignatureDeclaration: checkParameters,
+      TSConstructSignatureDeclaration: checkParameters,
+      TSConstructorType: checkParameters,
+      TSDeclareFunction: checkParameters,
+      TSEmptyBodyFunctionExpression: checkParameters,
+      TSFunctionType: checkParameters,
+      TSMethodSignature: checkParameters,
+    };
+  },
+};
+
 const noWidenThenAssertRule = {
   meta: {
     type: "problem",
@@ -435,6 +544,7 @@ const noWidenThenAssertRule = {
 export default {
   meta: { name: "openclaw-type-evidence" },
   rules: {
+    "no-object-parameters": noObjectParametersRule,
     "no-unknown-type-aliases": noUnknownTypeAliasesRule,
     "no-widen-then-assert": noWidenThenAssertRule,
   },

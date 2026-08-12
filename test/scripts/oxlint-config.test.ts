@@ -297,6 +297,7 @@ describe("oxlint config", () => {
     const config = readJson(".oxlintrc.json") as OxlintConfig;
 
     expect(config.jsPlugins).toContain("./scripts/oxlint-type-evidence.mjs");
+    expect(config.rules?.["openclaw-type-evidence/no-object-parameters"]).toBe("error");
     expect(config.rules?.["openclaw-type-evidence/no-unknown-type-aliases"]).toBe("error");
     expect(config.rules?.["openclaw-type-evidence/no-widen-then-assert"]).toBe("error");
     expect(config.overrides).toContainEqual({

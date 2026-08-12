@@ -208,8 +208,8 @@ function makeTelegramPollRegistryEntry(
   };
 }
 
-async function withTelegramSpooledReplayUpdate<T>(
-  update: object,
+async function withTelegramSpooledReplayUpdate<T, U extends object>(
+  update: U,
   fn: () => Promise<T>,
 ): Promise<T> {
   return (await runWithTelegramSpooledReplayUpdate(update, fn)).value;

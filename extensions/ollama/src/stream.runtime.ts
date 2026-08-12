@@ -925,14 +925,12 @@ function resolveOllamaModelHeaders(model: {
   return model.headers as Record<string, string>;
 }
 
-function resolveOllamaRequestTimeoutMs(
-  model: object,
+function resolveOllamaRequestTimeoutMs<T extends object>(
+  model: T,
   options: { requestTimeoutMs?: unknown; timeoutMs?: unknown } | undefined,
 ): number | undefined {
   const raw =
-    options?.requestTimeoutMs ??
-    options?.timeoutMs ??
-    (model as { requestTimeoutMs?: unknown }).requestTimeoutMs;
+    options?.requestTimeoutMs ?? options?.timeoutMs ?? Reflect.get(model, "requestTimeoutMs");
   return typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : undefined;
 }
 

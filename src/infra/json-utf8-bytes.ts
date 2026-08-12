@@ -38,7 +38,7 @@ function jsonStringByteLengthUpToLimit(value: string, remainingBytes: number): n
   return jsonUtf8BytesOrInfinity(value);
 }
 
-function* enumerableOwnEntries(value: object): Generator<[string, unknown]> {
+function* enumerableOwnEntries<TValue extends object>(value: TValue): Generator<[string, unknown]> {
   const record = value as Record<string, unknown>;
   for (const key in record) {
     if (Object.prototype.propertyIsEnumerable.call(record, key)) {
@@ -48,7 +48,10 @@ function* enumerableOwnEntries(value: object): Generator<[string, unknown]> {
 }
 
 /** Returns the first enumerable own keys in JavaScript enumeration order. */
-export function firstEnumerableOwnKeys(value: object, maxKeys: number): string[] {
+export function firstEnumerableOwnKeys<TValue extends object>(
+  value: TValue,
+  maxKeys: number,
+): string[] {
   const keys: string[] = [];
   for (const key in value as Record<string, unknown>) {
     if (!Object.prototype.propertyIsEnumerable.call(value, key)) {

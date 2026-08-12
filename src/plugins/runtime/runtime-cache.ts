@@ -1,5 +1,9 @@
 /** Defines a lazily computed enumerable property on a runtime facade. */
-export function defineCachedValue(target: object, key: PropertyKey, create: () => unknown): void {
+export function defineCachedValue<TTarget extends object>(
+  target: TTarget,
+  key: PropertyKey,
+  create: () => unknown,
+): void {
   let cached: unknown;
   let ready = false;
   Object.defineProperty(target, key, {

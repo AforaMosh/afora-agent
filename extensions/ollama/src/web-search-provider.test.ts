@@ -57,8 +57,8 @@ async function runOllamaWebSearchSetup(config: OpenClawConfig) {
   return { next, notes };
 }
 
-function guardedResponse(
-  body: string | object,
+function guardedResponse<T extends object>(
+  body: string | T,
   init: ResponseInit = {},
   release: () => Promise<void> = vi.fn(async () => {}),
 ) {

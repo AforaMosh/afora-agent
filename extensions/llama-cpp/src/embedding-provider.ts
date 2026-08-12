@@ -114,7 +114,7 @@ function toMemoryEmbeddingInput(input: EmbeddingInput): MemoryEmbeddingInput {
   return typeof input === "string" ? { text: input } : input;
 }
 
-function copyLocalRuntimeFacts(source: object, target: object): void {
+function copyLocalRuntimeFacts<S extends object, T extends object>(source: S, target: T): void {
   const getRuntimeFacts = Reflect.get(source, LOCAL_EMBEDDING_RUNTIME_FACTS);
   if (typeof getRuntimeFacts === "function") {
     Object.defineProperty(target, LOCAL_EMBEDDING_RUNTIME_FACTS, {

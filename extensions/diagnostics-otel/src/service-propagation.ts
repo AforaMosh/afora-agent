@@ -21,9 +21,10 @@ import { JaegerPropagator } from "@opentelemetry/propagator-jaeger";
 const DEFAULT_PROPAGATORS = ["tracecontext", "baggage"];
 const CONTEXT_OWNER_KEY = createContextKey("openclaw.owned-sdk.context-owner");
 const PROPAGATOR_OWNER_KEY = createContextKey("openclaw.owned-sdk.propagator-owner");
+type SdkRuntimeOwner = { readonly kind: "openclaw-sdk-runtime-owner" };
 
 class OwnedContextManager extends AsyncLocalStorageContextManager {
-  constructor(private readonly owner: object) {
+  constructor(private readonly owner: SdkRuntimeOwner) {
     super();
   }
 
@@ -44,7 +45,7 @@ class OwnedContextManager extends AsyncLocalStorageContextManager {
 class OwnedPropagator implements TextMapPropagator {
   constructor(
     private readonly delegate: TextMapPropagator,
-    private readonly owner: object,
+    private readonly owner: SdkRuntimeOwner,
   ) {}
 
   inject(carrierContext: Context, carrier: unknown, setter: TextMapSetter): void {
@@ -65,14 +66,14 @@ class OwnedPropagator implements TextMapPropagator {
   }
 }
 
-function ownsGlobalPropagator(owner: object): boolean {
-  const probe: { owner?: object } = {};
+function ownsGlobalPropagator(owner: SdkRuntimeOwner): boolean {
+  const probe: { owner?: SdkRuntimeOwner } = {};
   propagation.inject(ROOT_CONTEXT.setValue(PROPAGATOR_OWNER_KEY, probe), {}, { set() {} });
   return probe.owner === owner;
 }
 
-function ownsGlobalContextManager(owner: object): boolean {
-  const probe: { owner?: object } = {};
+function ownsGlobalContextManager(owner: SdkRuntimeOwner): boolean {
+  const probe: { owner?: SdkRuntimeOwner } = {};
   context.with(ROOT_CONTEXT.setValue(CONTEXT_OWNER_KEY, probe), () => {});
   return probe.owner === owner;
 }
@@ -111,7 +112,7 @@ function createConfiguredPropagator(warn: (message: string) => void): TextMapPro
 }
 
 export function registerOwnedSdkRuntime(warn: (message: string) => void): (() => void) | null {
-  const owner = {};
+  const owner: SdkRuntimeOwner = { kind: "openclaw-sdk-runtime-owner" };
   const contextManager = new OwnedContextManager(owner).enable();
   const ownsContext = context.setGlobalContextManager(contextManager);
   if (!ownsContext) {

@@ -286,16 +286,15 @@ export function resolveSessionTranscriptPath(
 ): string {
   return resolveSessionTranscriptPathInDir(sessionId, resolveAgentSessionsDir(agentId), topicId);
 }
-export function resolveSessionFilePathCore(
+export function resolveSessionFilePathCore<TEntry extends object>(
   sessionId: string,
-  entry?: object,
+  entry?: TEntry,
   opts?: SessionFilePathOptions,
 ): string {
   const sessionsDir = resolveSessionsDir(opts);
-  const candidate =
-    entry && "sessionFile" in entry && typeof entry.sessionFile === "string"
-      ? entry.sessionFile.trim()
-      : undefined;
+  const sessionFile =
+    entry && "sessionFile" in entry ? Reflect.get(entry, "sessionFile") : undefined;
+  const candidate = typeof sessionFile === "string" ? sessionFile.trim() : undefined;
   if (candidate) {
     if (candidate.startsWith(SQLITE_TRANSCRIPT_TARGET_PREFIX)) {
       return candidate;

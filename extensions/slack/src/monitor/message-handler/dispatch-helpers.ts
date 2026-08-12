@@ -11,6 +11,8 @@ import { readSlackReplyBlocks, resolveSlackThreadTs } from "../replies.js";
 import { resolveSlackTimestampMs } from "./timestamp.js";
 import type { PreparedSlackMessage } from "./types.js";
 
+type SlackStreamClientIdentity = Pick<PreparedSlackMessage["ctx"]["app"]["client"], "users">;
+
 function resolveSlackMessageTimestampMs(message: SlackMessageEvent): number | undefined {
   const ts = message.event_ts ?? message.ts;
   return resolveSlackTimestampMs(ts);
@@ -138,7 +140,7 @@ export type SlackEventDeliveryAttempt = {
 const SLACK_STREAM_RECIPIENT_TEAM_CACHE_MAX = 2000;
 const slackStreamRecipientTeamCaches = new WeakMap<object, Map<string, string>>();
 
-function getSlackStreamRecipientTeamCache(client: object): Map<string, string> {
+function getSlackStreamRecipientTeamCache<T extends object>(client: T): Map<string, string> {
   const existing = slackStreamRecipientTeamCaches.get(client);
   if (existing) {
     return existing;
@@ -174,7 +176,7 @@ function buildSlackEventDeliveryKey(params: SlackEventDeliveryAttempt): string |
 }
 
 function readSlackStreamRecipientTeamCache(params: {
-  client: object;
+  client: SlackStreamClientIdentity;
   fallbackTeamId?: string;
   userId?: string;
 }): string | undefined {
@@ -193,7 +195,7 @@ function readSlackStreamRecipientTeamCache(params: {
 }
 
 function rememberSlackStreamRecipientTeam(params: {
-  client: object;
+  client: SlackStreamClientIdentity;
   fallbackTeamId?: string;
   userId?: string;
   teamId: string;

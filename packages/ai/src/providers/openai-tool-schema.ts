@@ -57,11 +57,15 @@ function resolveStrictOpenAISchemaCacheKey(
   ]);
 }
 
-function readCachedStrictOpenAISchema(schema: object, key: string): unknown {
+function readCachedStrictOpenAISchema<T extends object>(schema: T, key: string): unknown {
   return strictOpenAISchemaCache.get(schema)?.find((entry) => entry.key === key)?.value;
 }
 
-function rememberStrictOpenAISchema(schema: object, key: string, value: unknown): unknown {
+function rememberStrictOpenAISchema<T extends object>(
+  schema: T,
+  key: string,
+  value: unknown,
+): unknown {
   const entries = strictOpenAISchemaCache.get(schema) ?? [];
   strictOpenAISchemaCache.set(
     schema,

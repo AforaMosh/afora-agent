@@ -16,11 +16,11 @@ import {
   writePolicyFixture,
 } from "./register.test-harness.js";
 
-function writeExecApprovalsPolicyFixture(execApprovals: object): Promise<string> {
+function writeExecApprovalsPolicyFixture<T extends object>(execApprovals: T): Promise<string> {
   return writePolicyFixture({ execApprovals });
 }
 
-function writeDataHandlingPolicyFixture(dataHandling: object): Promise<string> {
+function writeDataHandlingPolicyFixture<T extends object>(dataHandling: T): Promise<string> {
   return writePolicyFixture({ dataHandling });
 }
 

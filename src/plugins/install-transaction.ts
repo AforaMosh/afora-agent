@@ -24,8 +24,8 @@ export function attachPluginInstallTransaction<T extends object>(
   return result;
 }
 
-export function resolvePluginInstallTransaction(
-  result: object,
+export function resolvePluginInstallTransaction<TResult extends object>(
+  result: TResult,
 ): PluginInstallTransaction | undefined {
   return (result as { [PLUGIN_INSTALL_TRANSACTION]?: PluginInstallTransaction })[
     PLUGIN_INSTALL_TRANSACTION
@@ -47,28 +47,28 @@ export function requestDeferredPluginInstall<T extends object>(
   return params;
 }
 
-export function copyPluginInstallTransactionRequest<T extends object>(
-  source: object,
+export function copyPluginInstallTransactionRequest<TSource extends object, T extends object>(
+  source: TSource,
   target: T,
 ): T {
   const request = resolvePluginInstallTransactionRequest(source);
   return request ? requestDeferredPluginInstall(target, request.transactionSink) : target;
 }
 
-function resolvePluginInstallTransactionRequest(
-  params: object,
+function resolvePluginInstallTransactionRequest<TParams extends object>(
+  params: TParams,
 ): PluginInstallTransactionRequest | undefined {
   return (params as { [PLUGIN_INSTALL_TRANSACTION_REQUEST]?: PluginInstallTransactionRequest })[
     PLUGIN_INSTALL_TRANSACTION_REQUEST
   ];
 }
 
-export function isPluginInstallCommitDeferred(params: object): boolean {
+export function isPluginInstallCommitDeferred<TParams extends object>(params: TParams): boolean {
   return resolvePluginInstallTransactionRequest(params)?.deferCommit === true;
 }
 
-export function resolvePluginInstallTransactionSink(
-  params: object,
+export function resolvePluginInstallTransactionSink<TParams extends object>(
+  params: TParams,
 ): PluginInstallTransaction[] | undefined {
   return resolvePluginInstallTransactionRequest(params)?.transactionSink;
 }
@@ -85,8 +85,8 @@ export function attachPluginInstallOwnerMigrations<T extends object>(
   return result;
 }
 
-export function resolvePluginInstallOwnerMigrations(
-  result: object,
+export function resolvePluginInstallOwnerMigrations<TResult extends object>(
+  result: TResult,
 ): Readonly<Record<string, string>> | undefined {
   return (result as { [PLUGIN_INSTALL_OWNER_MIGRATIONS]?: Readonly<Record<string, string>> })[
     PLUGIN_INSTALL_OWNER_MIGRATIONS

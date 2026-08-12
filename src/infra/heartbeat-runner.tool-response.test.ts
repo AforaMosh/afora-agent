@@ -176,7 +176,10 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
     return call;
   }
 
-  function setAgentTurnStatus(options: object | undefined, status: "ok" | "failed") {
+  function setAgentTurnStatus<TOptions extends object>(
+    options: TOptions | undefined,
+    status: "ok" | "failed",
+  ) {
     const runState = resolveReplyOperationRunState(options);
     if (!runState) {
       throw new Error("Expected heartbeat reply operation run state");

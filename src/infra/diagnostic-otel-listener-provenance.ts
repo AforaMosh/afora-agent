@@ -8,6 +8,8 @@ export function markTrustedOtelDiagnosticListener<TArgs extends unknown[], TResu
   return registeredListener;
 }
 
-export function isTrustedOtelDiagnosticListener(listener: object): boolean {
+export function isTrustedOtelDiagnosticListener<TListener extends object>(
+  listener: TListener,
+): boolean {
   return trustedOtelDiagnosticListeners.has(listener);
 }

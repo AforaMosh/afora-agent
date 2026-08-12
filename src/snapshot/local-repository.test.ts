@@ -295,12 +295,10 @@ function seedStateLease(databasePath: string): void {
   });
 }
 
-function disableDefensiveModeForSchemaCorruption(database: object): void {
-  (
-    database as {
-      enableDefensive?: (active: boolean) => void;
-    }
-  ).enableDefensive?.(false);
+function disableDefensiveModeForSchemaCorruption(
+  database: InstanceType<ReturnType<typeof requireNodeSqlite>["DatabaseSync"]>,
+): void {
+  database.enableDefensive?.(false);
 }
 
 function createUnsafeIndexDrift(databasePath: string): void {

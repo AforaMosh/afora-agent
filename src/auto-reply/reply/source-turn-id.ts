@@ -12,11 +12,6 @@ const CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED = Symbol(
   "openclaw.channelSourceTurnSameThreadRequired",
 );
 
-type ChannelSourceTurnContext = object & {
-  [CHANNEL_SOURCE_TURN_ID]?: string;
-  [CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED]?: true;
-};
-
 /**
  * Internal-origin turns (gateway chat.send stamps the internal channel as the
  * ingress provider) carry run ids, not provider message ids. Minting a channel
@@ -54,32 +49,35 @@ export function buildChannelSourceTurnId(params: {
 }
 
 /** Carries host-only source identity through internal context clones without public type drift. */
-export function setChannelSourceTurnId(context: object, sourceTurnId: string | undefined): void {
-  const scoped = context as ChannelSourceTurnContext;
+export function setChannelSourceTurnId<TContext extends object>(
+  context: TContext,
+  sourceTurnId: string | undefined,
+): void {
   if (sourceTurnId) {
-    scoped[CHANNEL_SOURCE_TURN_ID] = sourceTurnId;
+    Reflect.set(context, CHANNEL_SOURCE_TURN_ID, sourceTurnId);
   } else {
-    delete scoped[CHANNEL_SOURCE_TURN_ID];
+    Reflect.deleteProperty(context, CHANNEL_SOURCE_TURN_ID);
   }
 }
 
-export function readChannelSourceTurnId(context: object): string | undefined {
-  return (context as ChannelSourceTurnContext)[CHANNEL_SOURCE_TURN_ID];
+export function readChannelSourceTurnId<TContext extends object>(context: TContext): string | undefined {
+  return Reflect.get(context, CHANNEL_SOURCE_TURN_ID) as string | undefined;
 }
 
 /** Carries the original channel adapter's narrowed message-action scope privately. */
-export function setChannelSourceTurnSameThreadRequired(
-  context: object,
+export function setChannelSourceTurnSameThreadRequired<TContext extends object>(
+  context: TContext,
   sameThreadRequired: boolean | undefined,
 ): void {
-  const scoped = context as ChannelSourceTurnContext;
   if (sameThreadRequired === true) {
-    scoped[CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED] = true;
+    Reflect.set(context, CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED, true);
   } else {
-    delete scoped[CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED];
+    Reflect.deleteProperty(context, CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED);
   }
 }
 
-export function readChannelSourceTurnSameThreadRequired(context: object): boolean {
-  return (context as ChannelSourceTurnContext)[CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED] === true;
+export function readChannelSourceTurnSameThreadRequired<TContext extends object>(
+  context: TContext,
+): boolean {
+  return Reflect.get(context, CHANNEL_SOURCE_TURN_SAME_THREAD_REQUIRED) === true;
 }

@@ -832,10 +832,12 @@ export function attachModelProviderRequestTransport<TModel extends object>(
 }
 
 /** Reads provider request transport metadata attached to a model definition. */
-export function getModelProviderRequestTransport(
-  model: object,
+export function getModelProviderRequestTransport<TModel extends object>(
+  model: TModel,
 ): ModelProviderRequestTransportOverrides | undefined {
-  return (model as ModelWithProviderRequestTransport)[MODEL_PROVIDER_REQUEST_TRANSPORT_SYMBOL];
+  return Reflect.get(model, MODEL_PROVIDER_REQUEST_TRANSPORT_SYMBOL) as
+    | ModelProviderRequestTransportOverrides
+    | undefined;
 }
 
 /** Attaches the lifecycle-owned plugin metadata generation used for request policy. */
@@ -852,15 +854,17 @@ export function attachModelProviderMetadataOwners<TModel extends object>(
 }
 
 /** Reads the plugin metadata generation attached to a prepared model. */
-export function getModelProviderMetadataOwners(
-  model: object,
+export function getModelProviderMetadataOwners<TModel extends object>(
+  model: TModel,
 ): PluginMetadataSnapshotOwnerMaps | undefined {
-  return (model as ModelWithProviderMetadataOwners)[MODEL_PROVIDER_METADATA_OWNERS_SYMBOL];
+  return Reflect.get(model, MODEL_PROVIDER_METADATA_OWNERS_SYMBOL) as
+    | PluginMetadataSnapshotOwnerMaps
+    | undefined;
 }
 
 /** Carries request-policy ownership across provider/transport model projections. */
-export function inheritModelProviderMetadataOwners<TModel extends object>(
-  source: object,
+export function inheritModelProviderMetadataOwners<TSource extends object, TModel extends object>(
+  source: TSource,
   target: TModel,
 ): TModel {
   return attachModelProviderMetadataOwners(target, getModelProviderMetadataOwners(source));

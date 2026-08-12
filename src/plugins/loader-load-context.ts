@@ -71,7 +71,9 @@ const bundledPackageCacheIdentityByStockRoot = new Map<string, BundledPackageCac
 const runtimeBindingCacheIds = new WeakMap<object, number>();
 let nextRuntimeBindingCacheId = 1;
 
-function resolveRuntimeBindingCacheId(value: object | undefined): number | undefined {
+function resolveRuntimeBindingCacheId<TValue extends object>(
+  value: TValue | undefined,
+): number | undefined {
   if (!value) {
     return undefined;
   }

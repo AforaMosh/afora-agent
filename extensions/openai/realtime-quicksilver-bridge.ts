@@ -489,7 +489,7 @@ export class OpenAIQuicksilverVoiceBridge implements RealtimeVoiceBridge {
     }
   }
 
-  private sendEvent(event: object): void {
+  private sendEvent(event: unknown): void {
     if (!this.socket || this.socket.readyState !== WEBSOCKET_OPEN) {
       return;
     }

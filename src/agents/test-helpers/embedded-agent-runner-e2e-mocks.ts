@@ -170,7 +170,7 @@ export function installEmbeddedRunnerBaseE2eMocks(options?: {
     prepareProviderExtraParams: vi.fn(() => undefined),
     resolveProviderExtraParamsForTransport: vi.fn(() => undefined),
     resolveProviderRuntimePlugin: vi.fn(() => undefined),
-    resolveProviderRuntimePluginHandle: vi.fn((params: object) => params),
+    resolveProviderRuntimePluginHandle: vi.fn(<TParams extends object>(params: TParams) => params),
     wrapProviderStreamFn: vi.fn(() => undefined),
   }));
   vi.doMock("../harness/runtime-plugin.js", () => ({

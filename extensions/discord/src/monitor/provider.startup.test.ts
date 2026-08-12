@@ -13,8 +13,8 @@ vi.mock("../internal/voice.js", () => ({
 
     registerClient(client: {
       getPlugin: (id: string) => unknown;
-      registerListener: (listener: object) => object;
-      unregisterListener: (listener: object) => boolean;
+      registerListener: (listener: { type: string }) => unknown;
+      unregisterListener: (listener: { type: string }) => boolean;
     }) {
       registerVoiceClientSpy(client);
       if (!client.getPlugin("gateway")) {

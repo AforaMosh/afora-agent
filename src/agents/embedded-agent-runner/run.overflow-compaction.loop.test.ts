@@ -45,8 +45,8 @@ vi.mock("./run/skill-workshop-attempt-params.js", () => ({
   resolveSkillWorkshopAttemptParams: vi.fn(() => ({})),
 }));
 
-function makeDispatchInput(
-  sessionManager: object,
+function makeDispatchInput<TSessionManager extends object>(
+  sessionManager: TSessionManager,
   replayState: EmbeddedRunReplayState,
 ): Parameters<typeof dispatchEmbeddedRunAttempt>[0] {
   return {

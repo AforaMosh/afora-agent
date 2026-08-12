@@ -1,3 +1,5 @@
+import type { ExecFileSyncOptions } from "node:child_process";
+
 export type VercelContainerRegistryPublishPlan = {
   channel: "stable" | "extended-stable" | "beta";
   copies: Array<{ sourceRef: string; targetRef: string; targetTag: string }>;
@@ -22,7 +24,7 @@ export function publishVercelContainerRegistryImages(
     targetImage: string;
   },
   options?: {
-    execFileSyncImpl?: (command: string, args: string[], options: object) => unknown;
+    execFileSyncImpl?: (command: string, args: string[], options: ExecFileSyncOptions) => unknown;
     log?: (message: string) => void;
   },
 ): VercelContainerRegistryPublishPlan;
@@ -34,7 +36,7 @@ export function promoteVercelContainerRegistryAliases(
     targetImage: string;
   },
   options?: {
-    execFileSyncImpl?: (command: string, args: string[], options: object) => unknown;
+    execFileSyncImpl?: (command: string, args: string[], options: ExecFileSyncOptions) => unknown;
     log?: (message: string) => void;
   },
 ): {

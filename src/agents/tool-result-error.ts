@@ -19,7 +19,7 @@ const protectedNetworkToolErrors = new WeakSet<object>();
 const protectedNetworkToolTimeoutErrors = new WeakSet<object>();
 const trustedToolInputErrors = new WeakSet<object>();
 
-function readToolErrorField(error: object, key: string): unknown {
+function readToolErrorField<T extends object>(error: T, key: string): unknown {
   try {
     return key in error ? (error as Record<string, unknown>)[key] : undefined;
   } catch {
@@ -149,7 +149,7 @@ export function isTrustedToolExecutionPreflightError(error: unknown): boolean {
 }
 
 /** Records canonical host-created input failures without loading heavyweight tool implementations. */
-export function registerTrustedToolInputError(error: object): void {
+export function registerTrustedToolInputError<T extends object>(error: T): void {
   trustedToolInputErrors.add(error);
 }
 

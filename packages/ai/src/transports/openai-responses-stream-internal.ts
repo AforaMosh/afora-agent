@@ -139,8 +139,8 @@ export async function processResponsesStream<TApi extends Api>(
   let lastTextBlock: TextBlockReference | null = null;
   const blocks = output.content;
   const compactionTracker = createCompactionTracker(output, model, options);
-  const createOutputSlot = (
-    event: object,
+  const createOutputSlot = <TEvent extends object>(
+    event: TEvent,
     item: ResponseOutputItem | ResponsesStreamOutputMessage,
   ): ResponsesOutputSlot | undefined => {
     if (item.type === "reasoning") {
@@ -195,8 +195,8 @@ export async function processResponsesStream<TApi extends Api>(
     }
     return undefined;
   };
-  const resolveOutputItemSlot = (
-    event: object,
+  const resolveOutputItemSlot = <TEvent extends object>(
+    event: TEvent,
     item: ResponseOutputItem | ResponsesStreamOutputMessage,
   ): ResponsesOutputSlot | undefined => {
     if (item.type === "reasoning") {
@@ -207,8 +207,8 @@ export async function processResponsesStream<TApi extends Api>(
     }
     return readResponsesOutputIndex(event) === undefined ? undefined : outputSlots.get(event);
   };
-  const getOrCreateOutputSlot = (
-    event: object,
+  const getOrCreateOutputSlot = <TEvent extends object>(
+    event: TEvent,
     item: ResponseOutputItem | ResponsesStreamOutputMessage,
   ): ResponsesOutputSlot | undefined => {
     return resolveOutputItemSlot(event, item) ?? createOutputSlot(event, item);

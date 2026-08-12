@@ -12,7 +12,9 @@ export function markCoreSemanticRunProgressDiagnosticEvent<T extends CoreSemanti
   return event;
 }
 
-export function consumeCoreSemanticRunProgressDiagnosticEvent(event: object): boolean {
+export function consumeCoreSemanticRunProgressDiagnosticEvent<TEvent extends object>(
+  event: TEvent,
+): boolean {
   const marked = coreSemanticRunProgressEvents.has(event);
   coreSemanticRunProgressEvents.delete(event);
   return marked;

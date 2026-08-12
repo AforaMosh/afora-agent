@@ -14,7 +14,9 @@ import {
 // on the same registry without adding lifecycle methods to the public SDK class.
 const registries = new WeakMap<object, OAuthProviderRegistry>();
 
-export function getAuthStorageOAuthProviderRegistry(authStorage: object): OAuthProviderRegistry {
+export function getAuthStorageOAuthProviderRegistry<TAuthStorage extends object>(
+  authStorage: TAuthStorage,
+): OAuthProviderRegistry {
   let registry = registries.get(authStorage);
   if (!registry) {
     registry = new OAuthProviderRegistry();
@@ -23,8 +25,8 @@ export function getAuthStorageOAuthProviderRegistry(authStorage: object): OAuthP
   return registry;
 }
 
-export async function loginAuthStorageOAuthProvider(
-  authStorage: object,
+export async function loginAuthStorageOAuthProvider<TAuthStorage extends object>(
+  authStorage: TAuthStorage,
   providerId: OAuthProviderId,
   callbacks: OAuthLoginCallbacks,
 ): Promise<OAuthCredentials> {

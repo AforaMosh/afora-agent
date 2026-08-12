@@ -125,7 +125,7 @@ type FeishuDownloadResponse = Awaited<ReturnType<Lark.Client["im"]["messageResou
 type FeishuHeaderMap = Record<string, string | string[]>;
 type FeishuMessageResourceDownloadType = "image" | "file" | "media";
 
-function asHeaderMap(value: object | undefined): FeishuHeaderMap | undefined {
+function asHeaderMap<T extends object>(value: T | undefined): FeishuHeaderMap | undefined {
   if (!value) {
     return undefined;
   }

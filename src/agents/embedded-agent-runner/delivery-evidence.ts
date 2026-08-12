@@ -378,7 +378,10 @@ export function getGatewayAgentResult(response: unknown): AgentDeliveryEvidence 
   return candidate as AgentDeliveryEvidence;
 }
 
-function hasAgentDeliveryEvidenceShape(value: object): boolean {
+function hasAgentDeliveryEvidenceShape(value: unknown): value is AgentDeliveryEvidence {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
   return (
     "payloads" in value ||
     "deliveryStatus" in value ||

@@ -58,7 +58,10 @@ vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
   return {
     ...actual,
-    readFileSync(filePath: string | URL | number, options?: BufferEncoding | object | null) {
+    readFileSync(
+      filePath: string | URL | number,
+      options?: BufferEncoding | { encoding?: BufferEncoding | null; flag?: string } | null,
+    ) {
       if (filePath === "/etc/codex/requirements.toml") {
         const content = codexRequirementsTomlMock();
         if (content !== undefined) {

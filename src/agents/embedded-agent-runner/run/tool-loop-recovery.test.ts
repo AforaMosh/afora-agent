@@ -26,7 +26,9 @@ vi.mock("../../tool-loop-admission.js", () => ({
 }));
 vi.mock("../../runtime/internal-hooks.js", () => ({
   attachInternalToolBatchLifecycle: (
-    result: object,
+    result: ReturnType<typeof mocks.admitToolCallBatch> extends Promise<infer TResult>
+      ? TResult
+      : never,
     lifecycle: (typeof mocks.attachedLifecycles)[number],
   ) => {
     mocks.attachedLifecycles.push(lifecycle);

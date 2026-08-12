@@ -8,6 +8,9 @@ import { playwrightCore } from "./playwright-core.runtime.js";
 
 const { chromium } = playwrightCore;
 type CdpSocketLookup = typeof dnsLookupCb;
+type ConnectOverCDPTransportMessage = Parameters<
+  NonNullable<ConnectOverCDPTransport["onmessage"]>
+>[0];
 
 export async function connectOverCdpPinnedTransport(
   connectionUrl: string,
@@ -29,9 +32,9 @@ export async function connectOverCdpPinnedTransport(
       ws.once("error", reject);
       ws.once("close", () => reject(new Error("CDP socket closed")));
     });
-    let onMessage: ((message: object) => void) | undefined;
+    let onMessage: ((message: ConnectOverCDPTransportMessage) => void) | undefined;
     let onClose: ((reason?: string) => void) | undefined;
-    const pendingMessages: object[] = [];
+    const pendingMessages: ConnectOverCDPTransportMessage[] = [];
     let pendingCloseReason: string | undefined;
     let transportClosed = false;
     let transportCloseScheduled = false;
@@ -66,7 +69,7 @@ export async function connectOverCdpPinnedTransport(
       }, 100);
       terminateTimer.unref?.();
     };
-    const scheduleMessage = (message: object) => {
+    const scheduleMessage = (message: ConnectOverCDPTransportMessage) => {
       setImmediate(() => {
         if (transportClosed) {
           return;

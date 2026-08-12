@@ -10,14 +10,18 @@ export { resolveActiveManagedProxyTlsOptions } from "./active-managed-proxy-tls.
 
 type ManagedEnvHttpProxyAgentOptions = ConstructorParameters<typeof EnvHttpProxyAgent>[0];
 
-function readProxyTlsRecord(options: object | undefined): Record<string, unknown> | undefined {
+function readProxyTlsRecord<TOptions extends object>(
+  options: TOptions | undefined,
+): Record<string, unknown> | undefined {
   if (!options || !("proxyTls" in options)) {
     return undefined;
   }
   return isProxyTlsRecord(options.proxyTls) ? options.proxyTls : undefined;
 }
 
-function readProxyUrlFromOptions(options: object | undefined): string | undefined {
+function readProxyUrlFromOptions<TOptions extends object>(
+  options: TOptions | undefined,
+): string | undefined {
   if (!options) {
     return undefined;
   }

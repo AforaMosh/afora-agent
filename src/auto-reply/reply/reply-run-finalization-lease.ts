@@ -139,7 +139,10 @@ export function createReplyRunFinalizationLease(params: {
   return lease;
 }
 
-export function beginReplyOperationFinalizationWork(owner: object, timeoutMs: number): () => void {
+export function beginReplyOperationFinalizationWork<TOwner extends object>(
+  owner: TOwner,
+  timeoutMs: number,
+): () => void {
   return leasesByOwner.get(owner)?.beginWork(timeoutMs) ?? (() => undefined);
 }
 

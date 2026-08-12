@@ -185,8 +185,8 @@ export function getTelegramSpooledReplayDeferredParticipant():
   return telegramSpooledReplayFrames.getStore()?.deferredWork;
 }
 
-export async function runWithTelegramSpooledReplayUpdate<T>(
-  update: object,
+export async function runWithTelegramSpooledReplayUpdate<T, U extends object>(
+  update: U,
   fn: () => Promise<T>,
   lifecycle?: TelegramSpooledReplayLifecycle,
 ): Promise<{ value: T; deferredWork?: TelegramSpooledReplayDeferredParticipant }> {

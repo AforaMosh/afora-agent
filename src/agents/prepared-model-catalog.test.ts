@@ -20,7 +20,7 @@ vi.mock("../config/config.js", () => ({
 
 vi.mock("./agent-scope.js", () => ({
   listAgentIds: () => mocks.agentIds,
-  resolveAgentDir: (_config: object, agentId: string) =>
+  resolveAgentDir: (_config: unknown, agentId: string) =>
     mocks.agentDirs.get(agentId) ?? "/tmp/prepared-model-catalog-agent",
   resolveAgentWorkspaceDir: () => "/tmp/prepared-model-catalog-workspace",
   resolveDefaultAgentDir: () => "/tmp/prepared-model-catalog-agent",
@@ -42,7 +42,7 @@ vi.mock("./prepared-model-runtime.js", () => {
     }),
     getPreparedModelRuntimeSnapshot: (...args: unknown[]) => mocks.getSnapshot(...args),
     loadPreparedModelRuntimeSnapshot: (...args: unknown[]) => mocks.loadSnapshot(...args),
-    preparedModelRuntimeConfigsMatch: (left: object, right: object) =>
+    preparedModelRuntimeConfigsMatch: (left: unknown, right: unknown) =>
       JSON.stringify(left) === JSON.stringify(right),
     prepareModelRuntimeSnapshot: (...args: unknown[]) => mocks.prepareSnapshot(...args),
   };

@@ -299,7 +299,7 @@ function trimUtf8Tail(value: string, maxBytes: number): string {
   return buffer.subarray(buffer.length - maxBytes).toString("utf8");
 }
 
-function objectValue(value: object, key: string): unknown {
+function objectValue<T extends object>(value: T, key: string): unknown {
   return Reflect.get(value, key);
 }
 

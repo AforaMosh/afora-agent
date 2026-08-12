@@ -64,7 +64,7 @@ const completedNavigationExpectation = (page: Record<string, unknown>) =>
     response: null,
   }) as const;
 
-type TestFrame = object;
+type TestFrame = { url?: () => string };
 type TestPageExtras = Record<string, unknown>;
 
 function createNavigationPage<T extends TestPageExtras>(

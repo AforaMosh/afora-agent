@@ -39,7 +39,7 @@ function registry<T extends { listConnected: () => NodeSession[] }>(params: T): 
   return value;
 }
 
-function schedule(registryValue: object, source: NodeSession): void {
+function schedule<TRegistry extends object>(registryValue: TRegistry, source: NodeSession): void {
   scheduleNodeConnectionNotification(registryValue as never, source, {
     isFirstConnection: true,
   });

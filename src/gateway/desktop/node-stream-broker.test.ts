@@ -43,7 +43,7 @@ async function startBrokerServer(params: {
   return `ws://127.0.0.1:${address.port}`;
 }
 
-async function connectAndSend(url: string, metadata: object): Promise<WebSocket> {
+async function connectAndSend(url: string, metadata: Record<string, unknown>): Promise<WebSocket> {
   const ws = new WebSocket(url);
   cleanups.push(async () => ws.terminate());
   await new Promise<void>((resolve, reject) => {

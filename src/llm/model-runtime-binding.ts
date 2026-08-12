@@ -23,10 +23,15 @@ export function getModelLlmRuntime(model: Model): LlmRuntime | undefined {
 }
 
 /** Associates a prepared stream entry point with the runtime that owns it. */
-export function bindStreamLlmRuntime(streamFn: object, runtime: LlmRuntime): void {
+export function bindStreamLlmRuntime<TStream extends object>(
+  streamFn: TStream,
+  runtime: LlmRuntime,
+): void {
   streamLlmRuntimes.set(streamFn, runtime);
 }
 
-export function getStreamLlmRuntime(streamFn: object | undefined): LlmRuntime | undefined {
+export function getStreamLlmRuntime<TStream extends object>(
+  streamFn: TStream | undefined,
+): LlmRuntime | undefined {
   return streamFn ? streamLlmRuntimes.get(streamFn) : undefined;
 }

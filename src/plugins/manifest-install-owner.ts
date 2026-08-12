@@ -18,16 +18,22 @@ export function recordPluginManifestInstallOwner<T extends object>(
   return record;
 }
 
-function readPluginManifestInstallOwner(record: object): PluginManifestInstallOwner | undefined {
+function readPluginManifestInstallOwner<TRecord extends object>(
+  record: TRecord,
+): PluginManifestInstallOwner | undefined {
   return (record as { [PLUGIN_MANIFEST_INSTALL_OWNER]?: PluginManifestInstallOwner })[
     PLUGIN_MANIFEST_INSTALL_OWNER
   ];
 }
 
-export function resolvePluginManifestInstallOwner(record: object): string | undefined {
+export function resolvePluginManifestInstallOwner<TRecord extends object>(
+  record: TRecord,
+): string | undefined {
   return readPluginManifestInstallOwner(record)?.installOwner;
 }
 
-export function isPluginManifestInstallOwnerAmbiguous(record: object): boolean {
+export function isPluginManifestInstallOwnerAmbiguous<TRecord extends object>(
+  record: TRecord,
+): boolean {
   return readPluginManifestInstallOwner(record)?.ambiguous === true;
 }

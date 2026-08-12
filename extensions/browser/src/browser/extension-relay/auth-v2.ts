@@ -293,7 +293,7 @@ export class BrowserRelayAuthV2Authority {
     this.keyId = relayKeyIdFromHex(keyHex);
   }
 
-  registerPendingConnection(binding: object, onInvalidate: () => void): boolean {
+  registerPendingConnection<T extends object>(binding: T, onInvalidate: () => void): boolean {
     if (
       this.disposed ||
       this.pendingConnections.has(binding) ||
@@ -306,7 +306,7 @@ export class BrowserRelayAuthV2Authority {
     return true;
   }
 
-  registerAuthenticatedConnection(binding: object, onInvalidate: () => void): boolean {
+  registerAuthenticatedConnection<T extends object>(binding: T, onInvalidate: () => void): boolean {
     if (
       this.disposed ||
       this.pendingConnections.has(binding) ||
@@ -319,7 +319,7 @@ export class BrowserRelayAuthV2Authority {
     return true;
   }
 
-  releaseConnection(binding: object): void {
+  releaseConnection<T extends object>(binding: T): void {
     this.pendingConnections.delete(binding);
     this.authenticatedConnections.delete(binding);
     for (const [sessionId, challenge] of this.challenges) {
@@ -329,8 +329,8 @@ export class BrowserRelayAuthV2Authority {
     }
   }
 
-  issueChallenge(
-    binding: object,
+  issueChallenge<T extends object>(
+    binding: T,
     hello: BrowserRelayAuthHello,
     expected: BrowserRelayBinding,
     nowMs = Date.now(),
@@ -366,8 +366,8 @@ export class BrowserRelayAuthV2Authority {
     };
   }
 
-  completeChallenge(
-    binding: object,
+  completeChallenge<T extends object>(
+    binding: T,
     response: BrowserRelayAuthResponse,
     nowMs = Date.now(),
   ): { ok: BrowserRelayAuthOk; fields: BrowserRelayProofFields } | null {

@@ -19,8 +19,8 @@ export function recordPluginPackageUninstallPlan<T extends object>(
   return params;
 }
 
-export function resolvePluginPackageUninstallPlan(
-  params: object,
+export function resolvePluginPackageUninstallPlan<TParams extends object>(
+  params: TParams,
 ): PluginPackageUninstallPlanMetadata | undefined {
   return (params as { [PLUGIN_PACKAGE_UNINSTALL_PLAN]?: PluginPackageUninstallPlanMetadata })[
     PLUGIN_PACKAGE_UNINSTALL_PLAN

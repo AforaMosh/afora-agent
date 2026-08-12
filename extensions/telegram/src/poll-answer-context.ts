@@ -50,8 +50,8 @@ export function beginTelegramPollRegistration(params: {
   };
 }
 
-export function prepareTelegramPollAnswerContext(params: {
-  update: object;
+export function prepareTelegramPollAnswerContext<T extends object>(params: {
+  update: T;
   accountId?: string;
 }): void {
   if (!isEligibleTelegramPollAnswerUpdate(params.update)) {
@@ -73,8 +73,8 @@ export function prepareTelegramPollAnswerContext(params: {
   preparedPollAnswers.set(params.update, prepared);
 }
 
-export async function settleTelegramPollAnswerContext(params: {
-  update: object;
+export async function settleTelegramPollAnswerContext<T extends object>(params: {
+  update: T;
   accountId?: string;
 }): Promise<void> {
   const prepared = preparedPollAnswers.get(params.update);
@@ -89,8 +89,8 @@ export async function settleTelegramPollAnswerContext(params: {
   preparedPollAnswers.set(params.update, { entry });
 }
 
-export function getPreparedTelegramPollAnswer(
-  update: object,
+export function getPreparedTelegramPollAnswer<T extends object>(
+  update: T,
 ): PreparedTelegramPollAnswer | undefined {
   return preparedPollAnswers.get(update);
 }
@@ -111,8 +111,8 @@ export function isEligibleTelegramPollAnswerUpdate(
   );
 }
 
-export function recordPreparedTelegramPollAnswer(
-  update: object,
+export function recordPreparedTelegramPollAnswer<T extends object>(
+  update: T,
   prepared: PreparedTelegramPollAnswer,
 ): void {
   preparedPollAnswers.set(update, prepared);

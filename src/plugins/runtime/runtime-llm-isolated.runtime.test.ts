@@ -60,7 +60,10 @@ function primeCompletionMocks() {
   });
 }
 
-function expectSingleCallFirstArg(mock: { mock: { calls: unknown[][] } }, expected: object) {
+function expectSingleCallFirstArg(
+  mock: { mock: { calls: unknown[][] } },
+  expected: Record<string, unknown>,
+) {
   expect(mock.mock.calls).toHaveLength(1);
   expect(mock.mock.calls[0]?.[0]).toEqual(expect.objectContaining(expected));
 }

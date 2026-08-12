@@ -101,24 +101,32 @@ function workspaceFileIdentity(stat: syncFs.Stats, canonicalPath: string): strin
   return `${canonicalPath}|${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}`;
 }
 
-function setWorkspaceFileSourceIdentity(
-  file: object,
+function setWorkspaceFileSourceIdentity<T extends object>(
+  file: T,
   sourceIdentity: WorkspaceFileSourceIdentity,
 ): void {
   workspaceFileSourceIdentities.set(file, sourceIdentity);
 }
 
-function getWorkspaceFileSourceIdentity(file: object): WorkspaceFileSourceIdentity | undefined {
+function getWorkspaceFileSourceIdentity<T extends object>(
+  file: T,
+): WorkspaceFileSourceIdentity | undefined {
   return workspaceFileSourceIdentities.get(file);
 }
 
-export function workspaceFileSourceIdentitiesMatch(left: object, right: object): boolean {
+export function workspaceFileSourceIdentitiesMatch<TLeft extends object, TRight extends object>(
+  left: TLeft,
+  right: TRight,
+): boolean {
   const leftIdentity = getWorkspaceFileSourceIdentity(left);
   const rightIdentity = getWorkspaceFileSourceIdentity(right);
   return leftIdentity?.[2] === rightIdentity?.[2];
 }
 
-export function workspaceFilesShareSourceIdentity(left: object, right: object): boolean {
+export function workspaceFilesShareSourceIdentity<TLeft extends object, TRight extends object>(
+  left: TLeft,
+  right: TRight,
+): boolean {
   const leftIdentity = getWorkspaceFileSourceIdentity(left);
   const rightIdentity = getWorkspaceFileSourceIdentity(right);
   if (!leftIdentity || !rightIdentity) {

@@ -1,3 +1,4 @@
+import type { ExecFileOptions } from "node:child_process";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -33,7 +34,7 @@ describe("worker Browser runtime", () => {
       (
         _file: string,
         _args: string[],
-        _options: object,
+        _options: ExecFileOptions,
         callback: (error: Error | null) => void,
       ) => {
         callback(null);
@@ -94,7 +95,7 @@ describe("worker Browser runtime", () => {
       (
         _file: string,
         _args: string[],
-        _options: object,
+        _options: ExecFileOptions,
         callback: (error: Error | null) => void,
       ) => {
         callback(new Error("launcher timed out"));

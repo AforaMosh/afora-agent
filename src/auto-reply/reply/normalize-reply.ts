@@ -38,7 +38,8 @@ const channelReplyTransformOwners = new WeakMap<
 
 export function bindNormalizeReplyTransformOwner<
   T extends (payload: ReplyPayload) => ReplyPayload | null,
->(transform: T, owner: object): T {
+  TOwner extends object,
+>(transform: T, owner: TOwner): T {
   channelReplyTransformOwners.set(transform, owner);
   return transform;
 }

@@ -2,8 +2,8 @@
 const DISCORD_PARTIAL_CHANNEL_RAW_DATA_ERROR =
   "Cannot access rawData on partial Channel. Use fetch() to populate data.";
 
-export function defineThrowingDiscordChannelGetter(
-  channel: object,
+export function defineThrowingDiscordChannelGetter<T extends object>(
+  channel: T,
   key: string,
   message = DISCORD_PARTIAL_CHANNEL_RAW_DATA_ERROR,
 ) {

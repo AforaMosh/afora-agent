@@ -103,20 +103,23 @@ export function prepareGatewayLocalUserIngress(params: {
   });
 }
 
-export function attachGatewayLocalUserIngress(
-  owner: object,
+export function attachGatewayLocalUserIngress<TOwner extends object>(
+  owner: TOwner,
   ingress: GatewayLocalUserIngress,
 ): void {
   ingressByOwner.set(owner, ingress);
 }
 
-export function getGatewayLocalUserIngress(
-  owner: object | null | undefined,
+export function getGatewayLocalUserIngress<TOwner extends object>(
+  owner: TOwner | null | undefined,
 ): GatewayLocalUserIngress | undefined {
   return owner ? ingressByOwner.get(owner) : undefined;
 }
 
-export function transferGatewayLocalUserIngress(source: object, target: object): void {
+export function transferGatewayLocalUserIngress<TSource extends object, TTarget extends object>(
+  source: TSource,
+  target: TTarget,
+): void {
   const ingress = ingressByOwner.get(source);
   if (ingress) {
     ingressByOwner.set(target, ingress);

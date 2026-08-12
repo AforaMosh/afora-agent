@@ -7,7 +7,7 @@ export type FormatErrorMessageOptions = {
 const STRUCTURED_ERROR_OWNED_FIELDS = new Set(["cause", "message", "name", "stack"]);
 const STRUCTURED_ERROR_PROTOTYPE_FIELDS = new Set(["__proto__", "constructor", "prototype"]);
 
-function readProperty(value: object, key: "cause" | "code" | "status"): unknown {
+function readProperty<T extends object>(value: T, key: "cause" | "code" | "status"): unknown {
   try {
     return (value as Record<string, unknown>)[key];
   } catch {

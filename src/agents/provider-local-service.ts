@@ -188,10 +188,12 @@ export function attachModelProviderLocalService<TModel extends object>(
 }
 
 /** Read local-service startup metadata attached to a model. */
-export function getModelProviderLocalService(
-  model: object,
+export function getModelProviderLocalService<TModel extends object>(
+  model: TModel,
 ): ModelProviderLocalServiceConfig | undefined {
-  return (model as ModelWithProviderLocalService)[MODEL_PROVIDER_LOCAL_SERVICE_SYMBOL];
+  return Reflect.get(model, MODEL_PROVIDER_LOCAL_SERVICE_SYMBOL) as
+    | ModelProviderLocalServiceConfig
+    | undefined;
 }
 
 /** Ensure a model's local provider service is healthy and return a lease. */

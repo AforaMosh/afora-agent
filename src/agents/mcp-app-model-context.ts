@@ -25,15 +25,18 @@ export function allowMcpAppModelContext(runtime: SessionMcpRuntime): void {
   runtime.mcpAppModelContextRevoked = undefined;
 }
 
-export function clearMcpAppModelContextForView(runtime: SessionMcpRuntime, view: object): void {
+export function clearMcpAppModelContextForView<TView extends object>(
+  runtime: SessionMcpRuntime,
+  view: TView,
+): void {
   if (runtime.pendingMcpAppModelContext?.owner === view) {
     clearMcpAppModelContext(runtime);
   }
 }
 
-export function updateMcpAppModelContext(
+export function updateMcpAppModelContext<TView extends object>(
   runtime: SessionMcpRuntime,
-  view: object,
+  view: TView,
   params: UpdateModelContextParams,
 ): void {
   if (runtime.mcpAppModelContextRevoked === true) {

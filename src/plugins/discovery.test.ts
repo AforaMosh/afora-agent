@@ -355,7 +355,10 @@ function expectNoDiagnostic(params: {
   expect(matched).toBe(false);
 }
 
-function expectCandidateFields(candidate: object | undefined, expected: Record<string, unknown>) {
+function expectCandidateFields<TCandidate extends object>(
+  candidate: TCandidate | undefined,
+  expected: Record<string, unknown>,
+) {
   if (!candidate) {
     throw new Error("Expected plugin candidate");
   }

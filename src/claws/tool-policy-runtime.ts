@@ -24,13 +24,17 @@ const uninitializedStateError = new Error(
   "OpenClaw state database has not initialized Claw consent provenance.",
 );
 
-export function markFrozenClawToolAllowPolicy(policy: object | undefined): void {
+export function markFrozenClawToolAllowPolicy<TPolicy extends object>(
+  policy: TPolicy | undefined,
+): void {
   if (policy) {
     frozenToolAllowPolicies.add(policy);
   }
 }
 
-export function isFrozenClawToolAllowPolicy(policy: object | undefined): boolean {
+export function isFrozenClawToolAllowPolicy<TPolicy extends object>(
+  policy: TPolicy | undefined,
+): boolean {
   return policy ? frozenToolAllowPolicies.has(policy) : false;
 }
 

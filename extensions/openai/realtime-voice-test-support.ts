@@ -211,8 +211,8 @@ export function createOpenAIRealtimeTestSupport<T extends FakeWebSocketLike>(dep
     vi.unstubAllEnvs();
   }
 
-  function readInternalRealtimeVoiceProviderApi(
-    provider: object,
+  function readInternalRealtimeVoiceProviderApi<T extends object>(
+    provider: T,
   ): InternalRealtimeVoiceProviderApi {
     return Reflect.get(
       provider,

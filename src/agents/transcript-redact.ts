@@ -59,7 +59,7 @@ function redactTranscriptStructuredFieldValue(
     : redactSensitiveFieldValue(key, value, redactTranscriptOptions(cfg));
 }
 
-function isPlainTranscriptObject(value: object): value is Record<string, unknown> {
+function isPlainTranscriptObject<T extends object>(value: T): value is T & Record<string, unknown> {
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }

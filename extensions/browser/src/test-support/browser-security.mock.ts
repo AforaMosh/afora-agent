@@ -3,6 +3,10 @@
  */
 import { vi } from "vitest";
 
+type ResolvePinnedHostnameParams = Parameters<
+  typeof import("../infra/net/ssrf.js").resolvePinnedHostnameWithPolicy
+>[1];
+
 const lookupFn = vi.hoisted(() => async (_hostname: string, options?: { all?: boolean }) => {
   const result = { address: "93.184.216.34", family: 4 };
   return options?.all === true ? [result] : result;
@@ -13,7 +17,7 @@ vi.mock("../infra/net/ssrf.js", async () => {
     await vi.importActual<typeof import("../infra/net/ssrf.js")>("../infra/net/ssrf.js");
   return {
     ...actual,
-    resolvePinnedHostnameWithPolicy: (hostname: string, params: object = {}) =>
+    resolvePinnedHostnameWithPolicy: (hostname: string, params: ResolvePinnedHostnameParams = {}) =>
       actual.resolvePinnedHostnameWithPolicy(hostname, { ...params, lookupFn: lookupFn as never }),
   };
 });
@@ -24,7 +28,7 @@ vi.mock("../sdk-security-runtime.js", async () => {
   );
   return {
     ...actual,
-    resolvePinnedHostnameWithPolicy: (hostname: string, params: object = {}) =>
+    resolvePinnedHostnameWithPolicy: (hostname: string, params: ResolvePinnedHostnameParams = {}) =>
       actual.resolvePinnedHostnameWithPolicy(hostname, { ...params, lookupFn: lookupFn as never }),
   };
 });

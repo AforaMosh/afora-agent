@@ -73,13 +73,13 @@ function hasGatewaySocketStarted(plugin: discordGateway.GatewayPlugin): boolean 
   return state.ws != null || state.isConnecting === true;
 }
 
-function readStringProperty(value: object, key: string): string | undefined {
-  const property = (value as Record<string, unknown>)[key];
+function readStringProperty<T extends object>(value: T, key: string): string | undefined {
+  const property = Reflect.get(value, key);
   return typeof property === "string" && property ? property : undefined;
 }
 
-function readNumberProperty(value: object, key: string): number | undefined {
-  return asFiniteNumber((value as Record<string, unknown>)[key]);
+function readNumberProperty<T extends object>(value: T, key: string): number | undefined {
+  return asFiniteNumber(Reflect.get(value, key));
 }
 
 function describeDiscordGatewayTransportError(error: Error): DiscordGatewayTransportErrorDetails {

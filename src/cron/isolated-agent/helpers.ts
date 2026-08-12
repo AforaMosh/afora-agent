@@ -257,7 +257,7 @@ function isCronToolWarning(text: string | undefined): boolean {
   return normalizeOptionalString(text)?.startsWith("⚠️ 🛠️ ") === true;
 }
 
-function isNonTerminalToolErrorWarning(payload: object | undefined): boolean {
+function isNonTerminalToolErrorWarning(payload: DeliveryPayload | undefined): boolean {
   return Boolean(payload && getReplyPayloadMetadata(payload)?.nonTerminalToolErrorWarning);
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Generates release dependency evidence artifacts and summaries.
-import { execFileSync } from "node:child_process";
+import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
 import { appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -43,7 +43,11 @@ export const DEPENDENCY_EVIDENCE_REPORTS = [
 
 const RELEASE_TAG_PATTERN = "v[0-9]*.[0-9]*.[0-9]*";
 
-type ExecFileSyncLike = (command: string, args?: string[], options?: object) => unknown;
+type ExecFileSyncLike = (
+  command: string,
+  args?: string[],
+  options?: ExecFileSyncOptions,
+) => unknown;
 type ManifestParams = {
   dependencyChangeBaseRef?: string;
   generatedAt?: string;

@@ -5,7 +5,7 @@ type HeadersLike = {
   [Symbol.iterator]: () => IterableIterator<[string, string]>;
 };
 
-function isHeadersLike(value: object): value is HeadersLike {
+function isHeadersLike<TValue extends object>(value: TValue): value is TValue & HeadersLike {
   if (typeof Headers !== "undefined" && value instanceof Headers) {
     return true;
   }

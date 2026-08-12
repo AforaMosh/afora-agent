@@ -16,8 +16,8 @@ export function attachWhatsAppIngressLifecycle<T extends object>(
   return message;
 }
 
-export function resolveWhatsAppIngressLifecycle(
-  message: object,
+export function resolveWhatsAppIngressLifecycle<T extends object>(
+  message: T,
 ): WhatsAppIngressLifecycle | undefined {
   return (message as WhatsAppIngressLifecycleCarrier)[ingressLifecycleKey];
 }

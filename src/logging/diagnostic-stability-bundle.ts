@@ -317,34 +317,39 @@ function readOptionalCodeString(value: unknown, label: string): string | undefin
   return SAFE_REASON_CODE.test(code) ? code : undefined;
 }
 
-function assignOptionalNumber(target: object, key: string, value: unknown, label: string): void {
+function assignOptionalNumber<T extends object>(
+  target: T,
+  key: string,
+  value: unknown,
+  label: string,
+): void {
   const parsed = readOptionalNumber(value, label);
   if (parsed !== undefined) {
-    (target as Record<string, unknown>)[key] = parsed;
+    Reflect.set(target, key, parsed);
   }
 }
 
-function assignOptionalPositiveInteger(
-  target: object,
+function assignOptionalPositiveInteger<T extends object>(
+  target: T,
   key: string,
   value: unknown,
   label: string,
 ): void {
   const parsed = readOptionalPositiveInteger(value, label);
   if (parsed !== undefined) {
-    (target as Record<string, unknown>)[key] = parsed;
+    Reflect.set(target, key, parsed);
   }
 }
 
-function assignOptionalCodeString(
-  target: object,
+function assignOptionalCodeString<T extends object>(
+  target: T,
   key: string,
   value: unknown,
   label: string,
 ): void {
   const parsed = readOptionalCodeString(value, label);
   if (parsed !== undefined) {
-    (target as Record<string, unknown>)[key] = parsed;
+    Reflect.set(target, key, parsed);
   }
 }
 

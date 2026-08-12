@@ -212,9 +212,9 @@ function isPropertySchema(value: unknown): value is boolean | Record<string, unk
   return typeof value === "boolean" || isRecord(value);
 }
 
-function rememberSchemaPair(
-  left: object,
-  right: object,
+function rememberSchemaPair<TLeft extends object, TRight extends object>(
+  left: TLeft,
+  right: TRight,
   seen: WeakMap<object, WeakSet<object>>,
 ): boolean {
   const existing = seen.get(left);

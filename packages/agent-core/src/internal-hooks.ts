@@ -61,8 +61,8 @@ export type InternalToolExecutionPreparer = (params: {
 const toolExecutionPreparerByTool = new WeakMap<object, InternalToolExecutionPreparer>();
 
 /** Install OpenClaw-owned loop control without adding a plugin-facing Agent option. */
-export function setInternalBeforeToolBatch(
-  agent: object,
+export function setInternalBeforeToolBatch<T extends object>(
+  agent: T,
   hook: InternalBeforeToolBatchHook | undefined,
 ): void {
   if (hook) {
@@ -72,7 +72,9 @@ export function setInternalBeforeToolBatch(
   }
 }
 
-export function getInternalBeforeToolBatch(agent: object): InternalBeforeToolBatchHook | undefined {
+export function getInternalBeforeToolBatch<T extends object>(
+  agent: T,
+): InternalBeforeToolBatchHook | undefined {
   return beforeToolBatchByAgent.get(agent);
 }
 
@@ -117,14 +119,17 @@ export function attachInternalToolExecutionPreparer<T extends object>(
   return tool;
 }
 
-export function getInternalToolExecutionPreparer(
-  tool: object,
+export function getInternalToolExecutionPreparer<T extends object>(
+  tool: T,
 ): InternalToolExecutionPreparer | undefined {
   return toolExecutionPreparerByTool.get(tool);
 }
 
 /** Preserve private execution ownership when an adapter replaces a tool object. */
-export function copyInternalToolExecutionPreparer<T extends object>(source: object, target: T): T {
+export function copyInternalToolExecutionPreparer<TSource extends object, T extends object>(
+  source: TSource,
+  target: T,
+): T {
   const preparer = toolExecutionPreparerByTool.get(source);
   if (preparer) {
     toolExecutionPreparerByTool.set(target, preparer);

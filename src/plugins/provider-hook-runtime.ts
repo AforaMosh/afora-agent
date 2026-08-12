@@ -74,8 +74,8 @@ export function attachModelProviderRuntimePluginHandle<TModel extends object>(
 }
 
 /** Reads the provider plugin handle attached to a prepared attempt model. */
-export function getModelProviderRuntimePluginHandle(
-  model: object | undefined,
+export function getModelProviderRuntimePluginHandle<TModel extends object>(
+  model: TModel | undefined,
 ): ProviderRuntimePluginHandle | undefined {
   return model
     ? (model as ModelWithProviderRuntimePluginHandle)[MODEL_PROVIDER_RUNTIME_PLUGIN_HANDLE_SYMBOL]

@@ -228,7 +228,7 @@ export class WorkerConnectionFrameDispatcher {
 
   private sendRequest(
     id: string,
-    frame: object,
+    frame: unknown,
     value: PendingRequestValue,
   ): Promise<WorkerResponseFrame> {
     const ready = this.options.isReady();

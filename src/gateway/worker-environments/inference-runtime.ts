@@ -586,7 +586,9 @@ async function resolveApprovedModel(params: {
   }
 }
 
-export function createWorkerInferenceExecutor(overrides?: object): WorkerInferenceExecutor;
+export function createWorkerInferenceExecutor(
+  overrides?: Partial<WorkerInferenceRuntimeDependencies>,
+): WorkerInferenceExecutor;
 export function createWorkerInferenceExecutor(
   overrides: Partial<WorkerInferenceRuntimeDependencies> = {},
 ): WorkerInferenceExecutor {

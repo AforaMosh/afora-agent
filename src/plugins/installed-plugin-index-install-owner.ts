@@ -23,8 +23,8 @@ export function recordInstalledPluginIndexInstallOwner<T extends object>(
   return record;
 }
 
-function readInstalledPluginIndexInstallOwner(
-  record: object,
+function readInstalledPluginIndexInstallOwner<TRecord extends object>(
+  record: TRecord,
 ): InstalledPluginIndexInstallOwner | undefined {
   const ownedRecord = record as InstalledPluginIndexRecordWithOwner;
   return ownedRecord.installOwnerAmbiguous
@@ -34,10 +34,14 @@ function readInstalledPluginIndexInstallOwner(
       : undefined;
 }
 
-export function resolveInstalledPluginIndexInstallOwner(record: object): string | undefined {
+export function resolveInstalledPluginIndexInstallOwner<TRecord extends object>(
+  record: TRecord,
+): string | undefined {
   return readInstalledPluginIndexInstallOwner(record)?.installOwner;
 }
 
-export function isInstalledPluginIndexInstallOwnerAmbiguous(record: object): boolean {
+export function isInstalledPluginIndexInstallOwnerAmbiguous<TRecord extends object>(
+  record: TRecord,
+): boolean {
   return readInstalledPluginIndexInstallOwner(record)?.ambiguous === true;
 }

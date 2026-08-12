@@ -48,7 +48,9 @@ type InFlightMemoryApply = {
 
 const inFlightMemoryApplies = new WeakMap<object, Map<string, InFlightMemoryApply>>();
 
-function memoryApplyInflightMap(dedupe: object): Map<string, InFlightMemoryApply> {
+function memoryApplyInflightMap<TDedupe extends object>(
+  dedupe: TDedupe,
+): Map<string, InFlightMemoryApply> {
   let active = inFlightMemoryApplies.get(dedupe);
   if (!active) {
     active = new Map();

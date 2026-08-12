@@ -199,7 +199,7 @@ function profileAuth(profileId: string, apiKey: string) {
   return { apiKey, profileId, source: `profile:${profileId}`, mode: "api-key" as const };
 }
 
-function profileStore(profileId: string, credential: object) {
+function profileStore<TCredential extends object>(profileId: string, credential: TCredential) {
   return vi.fn(() => ({ version: 1, profiles: { [profileId]: credential } })) as never;
 }
 

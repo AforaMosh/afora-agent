@@ -1057,8 +1057,7 @@ async function getWebSocketConstructor(): Promise<WebSocketConstructor | null> {
       process.env.https_proxy)
   ) {
     const m = await dynamicImport("proxy-from-env");
-    const getProxyForUrl = (m as { getProxyForUrl: (url: string | object | URL) => string })
-      .getProxyForUrl;
+    const getProxyForUrl = (m as { getProxyForUrl: (url: string | URL) => string }).getProxyForUrl;
 
     cachedWebsocket = class extends WebSocket {
       constructor(url: string | URL, options?: string | string[] | Record<string, unknown>) {

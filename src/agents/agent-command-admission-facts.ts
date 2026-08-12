@@ -6,15 +6,15 @@ type AgentCommandAdmissionFacts = Readonly<
 
 const factsByIngress = new WeakMap<object, AgentCommandAdmissionFacts>();
 
-export function attachAgentCommandAdmissionFacts(
-  ingress: object,
+export function attachAgentCommandAdmissionFacts<TIngress extends object>(
+  ingress: TIngress,
   facts: AgentCommandAdmissionFacts,
 ): void {
   factsByIngress.set(ingress, facts);
 }
 
-export function getAgentCommandAdmissionFacts(
-  ingress: object,
+export function getAgentCommandAdmissionFacts<TIngress extends object>(
+  ingress: TIngress,
 ): AgentCommandAdmissionFacts | undefined {
   return factsByIngress.get(ingress);
 }

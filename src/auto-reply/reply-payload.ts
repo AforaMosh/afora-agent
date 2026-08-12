@@ -315,17 +315,22 @@ export function setReplyPayloadMetadata<T extends object>(
 }
 
 /** Reads internal metadata attached to a reply payload object. */
-export function getReplyPayloadMetadata(payload: object): ReplyPayloadMetadata | undefined {
+export function getReplyPayloadMetadata<T extends object>(
+  payload: T,
+): ReplyPayloadMetadata | undefined {
   return replyPayloadMetadata.get(payload);
 }
 
 /** Returns true when a payload is the synthesized warning for a non-terminal tool error. */
-export function isReplyPayloadNonTerminalToolErrorWarning(payload: object): boolean {
+export function isReplyPayloadNonTerminalToolErrorWarning<T extends object>(payload: T): boolean {
   return getReplyPayloadMetadata(payload)?.nonTerminalToolErrorWarning === true;
 }
 
 /** Copies internal payload metadata when cloning or transforming payload objects. */
-export function copyReplyPayloadMetadata<T extends object>(source: object, payload: T): T {
+export function copyReplyPayloadMetadata<TSource extends object, T extends object>(
+  source: TSource,
+  payload: T,
+): T {
   const metadata = getReplyPayloadMetadata(source);
   return metadata ? setReplyPayloadMetadata(payload, metadata) : payload;
 }

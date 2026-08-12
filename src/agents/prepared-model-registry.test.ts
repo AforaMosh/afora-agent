@@ -36,7 +36,7 @@ vi.mock("./prepared-model-runtime.js", () => ({
   activateStandalonePreparedModelRuntime: mocks.activateSnapshot,
   getPreparedModelRuntimeSnapshot: mocks.getSnapshot,
   loadPreparedModelRuntimeSnapshot: mocks.loadSnapshot,
-  preparedModelRuntimeConfigsMatch: (left: object, right: object) =>
+  preparedModelRuntimeConfigsMatch: (left: unknown, right: unknown) =>
     JSON.stringify(left) === JSON.stringify(right),
   prepareModelRuntimeSnapshot: mocks.prepareSnapshot,
   PreparedModelRuntimeOwnerNotPublishedError: mocks.OwnerNotPublishedError,

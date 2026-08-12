@@ -85,7 +85,8 @@ function createContext(systemPrompt: string, overrides: Partial<Context> = {}): 
 }
 
 function createJwt(): string {
-  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const encode = <T extends object>(value: T) =>
+    Buffer.from(JSON.stringify(value)).toString("base64url");
   return `${encode({ alg: "none", typ: "JWT" })}.${encode({
     "https://api.openai.com/auth": { chatgpt_account_id: "acct-1" },
   })}.signature`;

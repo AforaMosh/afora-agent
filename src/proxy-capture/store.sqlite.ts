@@ -208,7 +208,10 @@ type SharedDebugProxyCaptureState = {
 
 const sharedDebugProxyCaptureStates = new WeakMap<object, SharedDebugProxyCaptureState>();
 
-function runSharedDebugProxyCaptureWrite<T>(owner: object, operation: () => T): T {
+function runSharedDebugProxyCaptureWrite<TOwner extends object, T>(
+  owner: TOwner,
+  operation: () => T,
+): T {
   const shared = sharedDebugProxyCaptureStates.get(owner);
   if (!shared) {
     throw new Error("shared debug proxy capture state is unavailable");

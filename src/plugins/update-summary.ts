@@ -61,7 +61,7 @@ export function recordPluginUpdateFailure(params: {
   return { config: params.config, changed: false };
 }
 
-export function createPluginUpdateTransactionState(params: object) {
+export function createPluginUpdateTransactionState<TParams extends object>(params: TParams) {
   return {
     transactions: [] as PluginInstallTransaction[],
     installOwnerMigrations: {} as Record<string, string>,
@@ -69,9 +69,9 @@ export function createPluginUpdateTransactionState(params: object) {
   };
 }
 
-export function recordPluginUpdateTransaction(
+export function recordPluginUpdateTransaction<TResult extends object>(
   state: ReturnType<typeof createPluginUpdateTransactionState>,
-  result: object,
+  result: TResult,
   pluginId: string,
   resolvedPluginId: string,
 ): void {

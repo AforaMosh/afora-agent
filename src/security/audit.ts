@@ -1028,7 +1028,7 @@ function describeMcporterRegistryRejection(reason: McporterRegistryRejectReason)
   }
 }
 
-function hasOwnSkillsAllowlist(entry: object | undefined): boolean {
+function hasOwnSkillsAllowlist(entry: { skills?: unknown } | undefined): boolean {
   return Boolean(entry && Object.hasOwn(entry, "skills"));
 }
 

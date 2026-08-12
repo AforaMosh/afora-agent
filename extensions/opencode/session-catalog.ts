@@ -69,7 +69,7 @@ const openCodeConfigIdentities = new WeakMap<object, number>();
 const openCodeQueryCache = new Map<string, OpenCodeQueryCacheEntry>();
 let nextOpenCodeConfigIdentity = 1;
 
-function openCodeQueryCacheKey(query: string, configIdentity: object): string {
+function openCodeQueryCacheKey<T extends object>(query: string, configIdentity: T): string {
   let identity = openCodeConfigIdentities.get(configIdentity);
   if (identity === undefined) {
     identity = nextOpenCodeConfigIdentity++;

@@ -83,7 +83,7 @@ export type RelayToExtensionMessage = (RelayCommandBody & { seq: number }) | Rel
 
 type RelayFrame = Record<string, unknown>;
 
-function hasExactOwnKeys(value: object, keys: readonly string[]): boolean {
+function hasExactOwnKeys<T extends object>(value: T, keys: readonly string[]): boolean {
   const actual = Object.keys(value);
   return actual.length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 }
@@ -119,7 +119,7 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
-function isExtensionHelloMessage(value: object): value is ExtensionHelloMessage {
+function isExtensionHelloMessage<T extends object>(value: T): value is T & ExtensionHelloMessage {
   if (
     !hasExactOwnKeys(value, ["type", "userAgent", "browserVersion", "extensionVersion", "tabs"])
   ) {

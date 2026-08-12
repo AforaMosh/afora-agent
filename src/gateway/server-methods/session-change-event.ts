@@ -35,7 +35,7 @@ const sessionsMutationVersions = new WeakMap<object, number>();
 const pendingChangesByContext = new WeakMap<object, Map<string, PendingSessionChange>>();
 const pendingSessionChanges = new Set<PendingSessionChange>();
 
-export function readSessionsMutationVersion(context: object): number {
+export function readSessionsMutationVersion<TContext extends object>(context: TContext): number {
   return sessionsMutationVersions.get(context) ?? 0;
 }
 
@@ -118,7 +118,9 @@ function finishPendingSessionChange(pending: PendingSessionChange): void {
 }
 
 /** Flush trailing notifications and release every debounce timer before gateway shutdown. */
-export function flushPendingSessionsChangedEvents(context?: object): void {
+export function flushPendingSessionsChangedEvents<TContext extends object>(
+  context?: TContext,
+): void {
   for (const pending of pendingSessionChanges) {
     if (!context || pending.context === context) {
       finishPendingSessionChange(pending);

@@ -158,13 +158,16 @@ export type ResponsesPromptObservation = {
 type ResponsesPromptObserver = (observation: ResponsesPromptObservation) => void;
 
 export const responsesPromptObserver = {
-  set(options: object, observer: ResponsesPromptObserver): void {
+  set<T extends object>(options: T, observer: ResponsesPromptObserver): void {
     Reflect.set(options, PROMPT_OBSERVER, observer);
   },
-  get(options: object) {
+  get<T extends object>(options: T) {
     return Reflect.get(options, PROMPT_OBSERVER) as ResponsesPromptObserver | undefined;
   },
-  copy(source: object | undefined, target: object): void {
+  copy<TSource extends object, TTarget extends object>(
+    source: TSource | undefined,
+    target: TTarget,
+  ): void {
     const observer = source && responsesPromptObserver.get(source);
     if (observer) {
       responsesPromptObserver.set(target, observer);

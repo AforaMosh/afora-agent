@@ -61,18 +61,24 @@ export function attachRuntimePromptMediaFacts<T extends object>(
   return message;
 }
 
-export function readRuntimePromptMediaFacts(message: object): MediaFact[] | undefined {
+export function readRuntimePromptMediaFacts<TMessage extends object>(
+  message: TMessage,
+): MediaFact[] | undefined {
   const media = (message as Record<PropertyKey, unknown>)[RUNTIME_PROMPT_MEDIA_FACTS];
   return Array.isArray(media) ? (media as MediaFact[]) : undefined;
 }
 
 /** Reads the canonical persisted media envelope without consulting legacy top-level fields. */
-export function readPersistedMediaFacts(message: object): MediaFact[] | undefined {
+export function readPersistedMediaFacts<TMessage extends object>(
+  message: TMessage,
+): MediaFact[] | undefined {
   const media = readPersistedMediaFactInputs(message);
   return media ? normalizeMediaFacts(media) : undefined;
 }
 
-function readPersistedMediaFactInputs(message: object): MediaFactInput[] | undefined {
+function readPersistedMediaFactInputs<TMessage extends object>(
+  message: TMessage,
+): MediaFactInput[] | undefined {
   const metadata = (message as Record<string, unknown>)["__openclaw"];
   const media =
     metadata && typeof metadata === "object" && !Array.isArray(metadata)
@@ -108,7 +114,9 @@ export const PERSISTED_LEGACY_MEDIA_KEYS = [
 ] as const;
 
 /** Returns whether a top-level retired carrier contains an attachment fact worth migrating. */
-export function hasMeaningfulRetiredMediaCarrier(message: object): boolean {
+export function hasMeaningfulRetiredMediaCarrier<TMessage extends object>(
+  message: TMessage,
+): boolean {
   const record = message as Record<string, unknown>;
   const retired: Record<string, unknown> = {};
   if (Array.isArray(record.media)) {
@@ -274,7 +282,9 @@ export function stripLegacyMediaContextFields(ctx: Record<string, unknown>): voi
   }
 }
 
-export function readRuntimePromptImageOrder(message: object): PromptImageOrderEntry[] | undefined {
+export function readRuntimePromptImageOrder<TMessage extends object>(
+  message: TMessage,
+): PromptImageOrderEntry[] | undefined {
   const imageOrder = (
     readRuntimePromptMediaFacts(message) as
       | (MediaFact[] & { imageOrder?: PromptImageOrderEntry[] })

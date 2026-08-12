@@ -24,8 +24,8 @@ export type LocalEmbeddingRuntimeFacts = {
 
 const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("openclaw.localEmbeddingRuntimeFacts");
 
-export function attachLocalEmbeddingRuntimeFacts(
-  target: object,
+export function attachLocalEmbeddingRuntimeFacts<T extends object>(
+  target: T,
   getFacts: () => LocalEmbeddingRuntimeFacts | undefined,
 ): void {
   Object.defineProperty(target, LOCAL_EMBEDDING_RUNTIME_FACTS, {
@@ -36,8 +36,8 @@ export function attachLocalEmbeddingRuntimeFacts(
   });
 }
 
-export function getLocalEmbeddingRuntimeFacts(
-  target: object | null | undefined,
+export function getLocalEmbeddingRuntimeFacts<T extends object>(
+  target: T | null | undefined,
 ): LocalEmbeddingRuntimeFacts | undefined {
   if (!target) {
     return undefined;

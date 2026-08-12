@@ -78,7 +78,11 @@ function descriptor(viewId: string, toolCallId: string) {
   };
 }
 
-function toolResult(viewId: string, toolCallId: string, extraDescriptor: object = {}) {
+function toolResult(
+  viewId: string,
+  toolCallId: string,
+  extraDescriptor: Record<string, unknown> = {},
+) {
   return {
     role: "toolResult",
     toolCallId,

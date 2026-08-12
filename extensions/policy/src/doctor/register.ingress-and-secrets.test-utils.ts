@@ -13,7 +13,7 @@ import {
   writePolicyFixture,
 } from "./register.test-harness.js";
 
-const scanPolicyIngress = (cfg: object) =>
+const scanPolicyIngress = <T extends object>(cfg: T) =>
   collectPolicyEvidence(cfg as Record<string, unknown>).ingress ?? [];
 
 type PolicyScenarioMode = "doctor" | "global-doctor" | "checks";
@@ -29,7 +29,11 @@ const INGRESS_POLICY = {
   },
 };
 
-async function runPolicyScenario(cfg: OpenClawConfig, policy: object, mode: PolicyScenarioMode) {
+async function runPolicyScenario<T extends object>(
+  cfg: OpenClawConfig,
+  policy: T,
+  mode: PolicyScenarioMode,
+) {
   const configPath = await writePolicyFixture(policy);
   const checkContext = ctx(configPath, cfg);
   if (mode === "doctor") {
@@ -53,15 +57,15 @@ async function runIngressPolicyScenario(channels: Record<string, unknown>) {
   };
 }
 
-function configWithPolicy(overrides: object): OpenClawConfig {
+function configWithPolicy<T extends object>(overrides: T): OpenClawConfig {
   return { ...cfgWithPolicy(), ...overrides } as unknown as OpenClawConfig;
 }
 
-function configWithAgents(agents: object): OpenClawConfig {
+function configWithAgents<T extends object>(agents: T): OpenClawConfig {
   return configWithPolicy({ agents });
 }
 
-function configWithSandbox(sandbox: object): OpenClawConfig {
+function configWithSandbox<T extends object>(sandbox: T): OpenClawConfig {
   return configWithAgents({ defaults: { sandbox } });
 }
 

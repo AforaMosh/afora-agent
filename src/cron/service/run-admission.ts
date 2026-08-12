@@ -85,10 +85,10 @@ export function reserveQueuedCronRun(
   return identity;
 }
 
-export function releaseQueuedCronRun(
+export function releaseQueuedCronRun<T extends object>(
   state: CronServiceState,
   jobId: string,
-  identity: object,
+  identity: T,
 ): boolean {
   const reservation = state.queuedRunReservationsByJobId.get(jobId);
   if (reservation?.identity !== identity) {
@@ -98,18 +98,18 @@ export function releaseQueuedCronRun(
   return true;
 }
 
-export function isQueuedCronRunReservationCurrent(
+export function isQueuedCronRunReservationCurrent<T extends object>(
   state: CronServiceState,
   jobId: string,
-  identity: object,
+  identity: T,
 ): boolean {
   return state.queuedRunReservationsByJobId.get(jobId)?.identity === identity;
 }
 
-function restoreQueuedCronRunReservationLastError(
+function restoreQueuedCronRunReservationLastError<T extends object>(
   state: CronServiceState,
   jobId: string,
-  identity: object,
+  identity: T,
   jobState: { lastError?: string },
 ): void {
   const reservation = state.queuedRunReservationsByJobId.get(jobId);
@@ -119,10 +119,10 @@ function restoreQueuedCronRunReservationLastError(
 }
 
 /** Clear a locally owned reservation, including a persisted-but-unstarted activation. */
-export function clearQueuedCronRunReservationMarker(
+export function clearQueuedCronRunReservationMarker<T extends object>(
   state: CronServiceState,
   jobId: string,
-  identity: object,
+  identity: T,
   jobState: { queuedAtMs?: number; runningAtMs?: number; lastError?: string },
   opts?: { restoreLastError?: boolean },
 ): boolean {
@@ -226,10 +226,10 @@ export async function cleanupQueuedCronRunReservations(params: {
   }
 }
 
-export function isQueuedCronRunReservationMarkerCurrent(
+export function isQueuedCronRunReservationMarkerCurrent<T extends object>(
   state: CronServiceState,
   jobId: string,
-  identity: object,
+  identity: T,
   runningAtMs: number,
 ): boolean {
   const reservation = state.queuedRunReservationsByJobId.get(jobId);

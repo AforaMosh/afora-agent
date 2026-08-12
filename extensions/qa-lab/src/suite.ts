@@ -210,7 +210,7 @@ export function markQaSuiteNestedRun<T extends object>(params: T): T {
   return params;
 }
 
-export const isQaSuiteNestedRun = (params: object | undefined) =>
+export const isQaSuiteNestedRun = <T extends object>(params: T | undefined) =>
   params !== undefined && qaSuiteNestedRuns.has(params);
 
 export function formatQaSuiteRunStartProgress(params: {

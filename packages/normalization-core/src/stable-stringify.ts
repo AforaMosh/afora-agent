@@ -48,8 +48,8 @@ function stringifyStableValue(
   }
 }
 
-function stringifyObjectValue(
-  value: object,
+function stringifyObjectValue<T extends object>(
+  value: T,
   stack: WeakSet<object>,
   normalizeString: StableStringNormalizer,
 ): string {

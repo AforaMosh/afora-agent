@@ -14,7 +14,9 @@ export function markHostPluginUsageDiagnosticEvent<T extends HostPluginUsageEven
   return event;
 }
 
-export function consumeHostPluginUsageDiagnosticEvent(event: object): string | undefined {
+export function consumeHostPluginUsageDiagnosticEvent<TEvent extends object>(
+  event: TEvent,
+): string | undefined {
   const hostPluginId = hostPluginUsageIds.get(event);
   hostPluginUsageIds.delete(event);
   return hostPluginId;

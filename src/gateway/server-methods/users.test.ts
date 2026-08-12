@@ -31,9 +31,9 @@ vi.mock("../../state/user-profiles.js", () => ({
 
 async function runUsersHandler(
   method: keyof typeof usersHandlers,
-  params: object,
-  client?: object,
-  context: object = {},
+  params: Record<string, unknown>,
+  client?: Record<string, unknown>,
+  context: Record<string, unknown> = {},
 ) {
   const respond = vi.fn();
   await expectDefined(

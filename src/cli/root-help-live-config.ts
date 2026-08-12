@@ -1,7 +1,7 @@
 // Root-help config probe for plugin-sensitive help rendering.
 import type { RootHelpRenderOptions } from "./program/root-help.js";
 
-function hasEntries(value: object | undefined): boolean {
+function hasEntries<T extends object>(value: T | undefined): boolean {
   return value !== undefined && Object.keys(value).length > 0;
 }
 

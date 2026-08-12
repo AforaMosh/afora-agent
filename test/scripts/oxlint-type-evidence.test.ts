@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 const FIXTURES = "test/fixtures/oxlint-type-evidence";
 const cases = [
   {
+    rule: "openclaw-type-evidence/no-object-parameters",
+    violation: `${FIXTURES}/no-object-parameters-violation.ts`,
+    violations: 3,
+  },
+  {
     rule: "openclaw-type-evidence/no-unknown-type-aliases",
     violation: `${FIXTURES}/no-unknown-type-aliases-violation.ts`,
     violations: 3,

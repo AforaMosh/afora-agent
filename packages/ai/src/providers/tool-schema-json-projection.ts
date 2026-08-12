@@ -54,7 +54,7 @@ function serializeToolInputSchema(value: unknown, path: string): RuntimeToolInpu
   let isRoot = true;
   let text: string | undefined;
   try {
-    text = JSON.stringify(value, function (this: object, key, entry) {
+    text = JSON.stringify(value, function (this: Record<string, unknown>, key, entry) {
       const holderPath = paths.get(this);
       const entryPath = isRoot
         ? path

@@ -21,7 +21,7 @@ function resetApiRegistry(runtime: ModelRegistryRuntime): void {
 }
 
 /** Creates the runtime facts owned by one model-registry lifecycle. */
-export function initializeModelRegistryRuntime(owner: object): void {
+export function initializeModelRegistryRuntime<TOwner extends object>(owner: TOwner): void {
   const apiRegistry = createApiRegistry();
   const llmRuntime = createLlmRuntime(apiRegistry);
   const runtime = { apiRegistry, llmRuntime };
@@ -31,7 +31,9 @@ export function initializeModelRegistryRuntime(owner: object): void {
 }
 
 /** Returns the prepared runtime facts for one model-registry lifecycle. */
-export function getModelRegistryRuntime(owner: object): ModelRegistryRuntime {
+export function getModelRegistryRuntime<TOwner extends object>(
+  owner: TOwner,
+): ModelRegistryRuntime {
   const runtime = modelRegistryRuntimes.get(owner);
   if (!runtime) {
     throw new Error("Model registry runtime is not initialized");
@@ -39,6 +41,6 @@ export function getModelRegistryRuntime(owner: object): ModelRegistryRuntime {
   return runtime;
 }
 
-export function resetModelRegistryRuntime(owner: object): void {
+export function resetModelRegistryRuntime<TOwner extends object>(owner: TOwner): void {
   resetApiRegistry(getModelRegistryRuntime(owner));
 }

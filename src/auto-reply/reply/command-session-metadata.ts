@@ -10,7 +10,10 @@ export type CommandSessionMetadataChange = {
 
 const commandSessionMetadataChanges = new WeakMap<object, CommandSessionMetadataChange[]>();
 
-function addChange(target: object, change: CommandSessionMetadataChange): void {
+function addChange<TTarget extends object>(
+  target: TTarget,
+  change: CommandSessionMetadataChange,
+): void {
   const changes = commandSessionMetadataChanges.get(target) ?? [];
   if (
     !changes.some(
@@ -49,8 +52,8 @@ export function markCommandSessionMetadataChanged(
   }
 }
 
-export function takeCommandSessionMetadataChanges(
-  target: object,
+export function takeCommandSessionMetadataChanges<TTarget extends object>(
+  target: TTarget,
 ): CommandSessionMetadataChange[] | undefined {
   const changes = commandSessionMetadataChanges.get(target);
   commandSessionMetadataChanges.delete(target);

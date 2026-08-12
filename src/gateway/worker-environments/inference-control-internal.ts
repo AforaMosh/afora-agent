@@ -10,8 +10,8 @@ type BeginWorkerInferenceSessionDrain = (sessionId: string) => WorkerInferenceSe
 // The weak registration follows the concrete service instance's lifetime.
 const sessionDrainByService = new WeakMap<object, BeginWorkerInferenceSessionDrain>();
 
-export function registerWorkerInferenceSessionDrain(
-  service: object,
+export function registerWorkerInferenceSessionDrain<TService extends object>(
+  service: TService,
   beginDrain: BeginWorkerInferenceSessionDrain,
 ): void {
   sessionDrainByService.set(service, beginDrain);
