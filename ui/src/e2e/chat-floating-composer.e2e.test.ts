@@ -4,6 +4,7 @@ import type { Page } from "playwright";
 import { expect, it } from "vitest";
 import {
   chatThreadDistanceFromBottom,
+  chatSessionListResponse,
   createChatFlowE2eSuite,
   installMockGateway,
   scrollChatThreadToTop,
@@ -36,13 +37,194 @@ async function captureProof(page: Page, theme: "dark" | "light", state: string) 
     fullPage: true,
     path: path.join(artifactDir, `${proofStage}-${theme}-${state}-context.png`),
   });
-  await page.locator(".chat-main__conversation").screenshot({
-    animations: "disabled",
-    path: path.join(artifactDir, `${proofStage}-${theme}-${state}-conversation.png`),
-  });
+  await page
+    .locator("openclaw-chat-pane[aria-hidden='false'] .chat-main__conversation")
+    .screenshot({
+      animations: "disabled",
+      path: path.join(artifactDir, `${proofStage}-${theme}-${state}-conversation.png`),
+    });
 }
 
 suite.define(() => {
+  it.each([
+    ["dark", "desktop", 1440, 900],
+    ["light", "desktop", 1440, 900],
+    ["dark", "mobile", 393, 852],
+    ["light", "mobile", 393, 852],
+  ] as const)(
+    "syncs active dock geometry when retained chats switch in %s %s mode",
+    async (theme, viewportName, viewportWidth, viewportHeight) => {
+      const context = await suite.newBrowserContext({
+        colorScheme: theme,
+        locale: "en-US",
+        serviceWorkers: "block",
+        viewport: { height: viewportHeight, width: viewportWidth },
+      });
+      const page = await context.newPage();
+      const tallKey = "agent:main:thread:aaaaaaaa-1111-4111-8111-111111111111";
+      const compactKey = "agent:main:thread:bbbbbbbb-2222-4222-8222-222222222222";
+      const baseTs = Date.now() - 100_000;
+      const historyMessages = Array.from({ length: 42 }, (_, index) => ({
+        content: [
+          {
+            text: `Retained session review ${index + 1}\n${"Verified transcript detail. ".repeat(5)}`,
+            type: "text",
+          },
+        ],
+        role: index % 2 === 0 ? "user" : "assistant",
+        timestamp: baseTs + index,
+        __openclaw: { id: `retained-history-${index}`, seq: index + 1 },
+      }));
+      await installMockGateway(page, {
+        historyMessages,
+        methodResponses: {
+          "sessions.list": chatSessionListResponse([
+            { key: tallKey, kind: "direct", label: "Tall draft", updatedAt: 2 },
+            { key: compactKey, kind: "direct", label: "Compact draft", updatedAt: 1 },
+          ]),
+        },
+        sessionKey: tallKey,
+      });
+
+      const readActiveLayout = () =>
+        page.locator("openclaw-chat-pane[aria-hidden='false']").evaluate((pane) => {
+          const shell = pane.closest<HTMLElement>(".shell");
+          const dock = pane.querySelector<HTMLElement>(".chat-bottom-dock");
+          const button = [...document.querySelectorAll<HTMLElement>(".chat-scroll-to-bottom")].find(
+            (candidate) => candidate.checkVisibility(),
+          );
+          const toast = document.querySelector<HTMLElement>(".app-toast");
+          if (!shell || !dock || !button || !toast) {
+            throw new Error(
+              `expected active layout: shell=${Boolean(shell)} dock=${Boolean(dock)} scroll=${Boolean(button)} toast=${Boolean(toast)}`,
+            );
+          }
+          const dockRect = dock.getBoundingClientRect();
+          const buttonRect = button.getBoundingClientRect();
+          const toastRect = toast.getBoundingClientRect();
+          return {
+            activeDockHeight: Number.parseFloat(
+              getComputedStyle(shell).getPropertyValue("--chat-active-bottom-dock-height"),
+            ),
+            buttonGap: dockRect.top - buttonRect.bottom,
+            dockHeight: dockRect.height,
+            toastGap: dockRect.top - toastRect.bottom,
+          };
+        });
+
+      const expectActiveLayout = async () => {
+        await expect
+          .poll(async () => {
+            const layout = await readActiveLayout();
+            return Math.abs(layout.activeDockHeight - layout.dockHeight);
+          })
+          .toBeLessThanOrEqual(1);
+        const layout = await readActiveLayout();
+        expect(layout.buttonGap).toBeGreaterThanOrEqual(8);
+        expect(layout.toastGap).toBeGreaterThanOrEqual(8);
+      };
+
+      const showToast = async () => {
+        await page.locator("openclaw-toast-host").evaluate((element) => {
+          const host = element as HTMLElement & {
+            show: (options: { durationMs: number; message: string }) => void;
+          };
+          host.show({
+            durationMs: 60_000,
+            message: "Retained session restored with its own composer height.",
+          });
+        });
+        await page.locator(".app-toast").waitFor({ state: "visible" });
+      };
+
+      const dismissToast = async () => {
+        await page.locator(".app-toast__dismiss").click();
+        await page.locator(".app-toast").waitFor({ state: "hidden" });
+      };
+
+      try {
+        await page.goto(`${suite.server.baseUrl}chat`);
+        await setThemeMode(page, theme);
+        const switchToSession = async (sessionKey: string, title: string) => {
+          if (viewportName === "mobile") {
+            await page
+              .locator(".topbar-nav-toggle:visible, .chat-pane__nav-toggle:visible")
+              .first()
+              .click();
+          }
+          await page
+            .locator(
+              `.sidebar-recent-session[data-session-key="${sessionKey}"] a.sidebar-recent-session__link`,
+            )
+            .click();
+          await page
+            .locator(".chat-pane-cache__pane--visible .chat-pane__session-title")
+            .getByText(title)
+            .waitFor();
+          if (viewportName === "mobile") {
+            await expect
+              .poll(() => page.locator(".shell").getAttribute("class"))
+              .not.toContain("shell--nav-drawer-open");
+          }
+        };
+        const activeTextarea = () =>
+          page.locator(
+            "openclaw-chat-pane[aria-hidden='false'] .agent-chat__composer-combobox textarea",
+          );
+        const activeDock = () =>
+          page.locator("openclaw-chat-pane[aria-hidden='false'] .chat-bottom-dock");
+
+        await activeTextarea().fill(
+          [
+            "Keep this retained composer expanded:",
+            "- confirm the migration path",
+            "- document the rollback signal",
+            "- attach the light and dark evidence",
+            "- notify the release owner",
+          ].join("\n"),
+        );
+        const tallDockHeight = await activeDock().evaluate(
+          (element) => element.getBoundingClientRect().height,
+        );
+        await scrollChatThreadToTop(page);
+        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
+
+        await switchToSession(compactKey, "Compact draft");
+        await activeTextarea().fill("Compact retained draft");
+        const compactDockHeight = await activeDock().evaluate(
+          (element) => element.getBoundingClientRect().height,
+        );
+        expect(compactDockHeight).toBeLessThan(tallDockHeight);
+        await scrollChatThreadToTop(page);
+        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
+        await showToast();
+        await expectActiveLayout();
+        await dismissToast();
+
+        await switchToSession(tallKey, "Tall draft");
+        await scrollChatThreadToTop(page);
+        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
+        await showToast();
+        await expectActiveLayout();
+        await captureProof(page, theme, `${viewportName}-retained-tall`);
+        await page.getByRole("button", { name: "Scroll to latest" }).click();
+        await expect
+          .poll(() => chatThreadDistanceFromBottom(page), { timeout: 10_000 })
+          .toBeLessThanOrEqual(8);
+        await dismissToast();
+
+        await switchToSession(compactKey, "Compact draft");
+        await scrollChatThreadToTop(page);
+        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
+        await showToast();
+        await expectActiveLayout();
+        await captureProof(page, theme, `${viewportName}-retained-compact`);
+      } finally {
+        await context.close();
+      }
+    },
+  );
+
   it.each([
     ["dark", "desktop", 1440, 900],
     ["light", "desktop", 1440, 900],

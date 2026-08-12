@@ -310,6 +310,14 @@ export class ChatStateController<TState extends ChatPageHost> implements Reactiv
     this.chatBottomDockResizeTarget = dock;
   }
 
+  syncActiveBottomDockHeight(): void {
+    const dock = this.chatBottomDockResizeTarget;
+    const shell = dock?.closest<HTMLElement>(".shell");
+    if (shell) {
+      syncActiveChatBottomDockHeight(shell);
+    }
+  }
+
   hostConnected() {
     this.renderLifecycleConnectionEpoch += 1;
     this.renderLifecycleConnected = true;

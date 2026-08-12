@@ -44,6 +44,9 @@ export abstract class ChatPaneRetainedPresentation extends ChatPaneBoard {
     if (presented) {
       this.boardProviderLifecycleConnected = true;
       this.minutePoll.start();
+      // Retained panes keep their layout observer while hidden, so activation
+      // must republish which dock owns the shell-level floating chrome.
+      this.chatState.syncActiveBottomDockHeight();
       this.consumeSessionHandoff(this.sessionKey);
       this.syncActiveBindings();
       void this.refreshSessionPullRequests();
