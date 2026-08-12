@@ -71,7 +71,7 @@ import {
 } from "./update-command-config.js";
 import {
   completePostCorePluginUpdate,
-  withUpdateFinalizationEnv,
+  withPrePluginUpdateDoctorEnv,
 } from "./update-command-fresh-doctor.js";
 import {
   updatePluginsAfterCoreUpdate,
@@ -202,7 +202,7 @@ export async function updateFinalizeCommand(opts: UpdateFinalizeOptions): Promis
   }
 
   const completedPluginUpdate = await withPluginLifecycleLease({}, async () => {
-    const initialPluginUpdate = await withUpdateFinalizationEnv(async () => {
+    const initialPluginUpdate = await withPrePluginUpdateDoctorEnv(async () => {
       await createUpdateConfigSnapshot();
       await doctorCommand(defaultRuntime, {
         nonInteractive: true,
