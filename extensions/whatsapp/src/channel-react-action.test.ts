@@ -455,6 +455,39 @@ describe("whatsapp react action messageId resolution", () => {
     );
   });
 
+  it("does not JS-trim an unsafe requester into an inferred group participant", async () => {
+    await handleWhatsAppMessageAction({
+      action: "react",
+      params: { emoji: "👍", to: "12345@g.us" },
+      cfg: baseCfg,
+      accountId: "default",
+      requesterSenderId: "\u00a0123@lid\u00a0",
+      toolContext: {
+        currentChannelId: "whatsapp:12345@g.us",
+        currentChannelProvider: "whatsapp",
+        currentMessageId: "ctx-msg-42",
+      },
+    });
+    expect(hoisted.handleWhatsAppAction).toHaveBeenCalledWith(
+      expect.objectContaining({ participant: undefined }),
+      baseCfg,
+    );
+  });
+
+  it("preserves unsafe target characters for canonical delivery validation", async () => {
+    const rawTarget = "\ufeff+1555\ufeff";
+    await handleWhatsAppMessageAction({
+      action: "react",
+      params: { emoji: "👍", to: rawTarget, messageId: "msg-unsafe" },
+      cfg: baseCfg,
+      accountId: "default",
+    });
+    expect(hoisted.handleWhatsAppAction).toHaveBeenCalledWith(
+      expect.objectContaining({ chatJid: rawTarget }),
+      baseCfg,
+    );
+  });
+
   it("keeps direct-chat reactions without an inferred participant", async () => {
     await handleWhatsAppMessageAction({
       action: "react",

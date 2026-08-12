@@ -237,7 +237,14 @@ describe("WhatsApp call tool", () => {
     },
   );
 
-  it.each(["\n123456789@lid", "123456789@hosted.lid\t", "whatsapp:\n123456789@lid"])(
+  it.each([
+    "\n123456789@lid",
+    "123456789@hosted.lid\t",
+    "whatsapp:\n123456789@lid",
+    "\u2028123456789@lid\u2028",
+    "\u00a0123456789@hosted.lid\u00a0",
+    "\ufeff123456789@lid\ufeff",
+  ])(
     "rejects control-wrapped requester identity %j before LID mapping",
     async (requesterSenderId) => {
       await fs.writeFile(path.join(stateDir, "wa-voip.db"), "sqlite");

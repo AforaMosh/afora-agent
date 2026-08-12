@@ -14,7 +14,7 @@ import {
   sliceMarkdownIR,
 } from "openclaw/plugin-sdk/text-chunking";
 import { CONFIG_DIR, resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
-import { normalizeWhatsAppPhoneInput } from "./phone-input.js";
+import { normalizeWhatsAppPhoneInput, parseWhatsAppJid } from "./phone-input.js";
 
 const WHATSAPP_FORMAT_CAPABILITIES = FormatCapabilityProfile.define({
   mechanism: "markdown",
@@ -72,13 +72,23 @@ export function isSelfChatMode(
 }
 
 export function toWhatsappJid(number: string): string {
-  const withoutPrefix = number.replace(/^whatsapp:/i, "").trim();
-  if (withoutPrefix.includes("@")) {
-    return withoutPrefix;
+  return requireWhatsAppDeliveryTarget(number).jid;
+}
+
+const INVALID_WHATSAPP_TARGET_ERROR =
+  "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID.";
+
+function requireWhatsAppDeliveryTarget(value: string): { jid: string; phoneDigits?: string } {
+  const parsedJid = parseWhatsAppJid(value);
+  if (parsedJid) {
+    return { jid: parsedJid.jid };
   }
-  const e164 = normalizeE164(withoutPrefix);
-  const digits = e164.replace(/\D/g, "");
-  return `${digits}@s.whatsapp.net`;
+  const phone = normalizeWhatsAppPhoneInput(value);
+  if (!phone) {
+    throw new Error(INVALID_WHATSAPP_TARGET_ERROR);
+  }
+  const phoneDigits = phone.slice(1);
+  return { jid: `${phoneDigits}@s.whatsapp.net`, phoneDigits };
 }
 
 // LID-aware outbound JID resolver. When a forward mapping file
@@ -87,12 +97,11 @@ export function toWhatsappJid(number: string): string {
 // ghost-chat failure mode where messages route to a sender-only thread that
 // never reaches recipients whose contact is internally LID-based (#67378).
 export function toWhatsappJidWithLid(number: string, opts?: JidToE164Options): string {
-  const stripped = number.replace(/^whatsapp:/i, "").trim();
-  if (stripped.includes("@")) {
-    return stripped;
+  const target = requireWhatsAppDeliveryTarget(number);
+  if (!target.phoneDigits) {
+    return target.jid;
   }
-  const e164 = normalizeE164(stripped);
-  const phoneDigits = e164.replace(/\D/g, "");
+  const phoneDigits = target.phoneDigits;
   const lid = readLidForwardMapping({ phoneDigits, opts });
   return lid ? `${lid}@lid` : `${phoneDigits}@s.whatsapp.net`;
 }

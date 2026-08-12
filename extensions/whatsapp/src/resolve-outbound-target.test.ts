@@ -260,7 +260,7 @@ describe("resolveWhatsAppOutboundTarget", () => {
   });
 
   describe("whitespace handling", () => {
-    it("trims whitespace from to parameter", () => {
+    it("passes raw ASCII-spaced targets to the canonical normalizer", () => {
       mockNormalizedDirectMessage(PRIMARY_TARGET);
 
       expectResolutionOk(
@@ -271,10 +271,12 @@ describe("resolveWhatsAppOutboundTarget", () => {
         },
         PRIMARY_TARGET,
       );
-      expect(vi.mocked(normalize.normalizeWhatsAppTarget)).toHaveBeenCalledWith(PRIMARY_TARGET);
+      expect(vi.mocked(normalize.normalizeWhatsAppTarget)).toHaveBeenCalledWith(
+        `  ${PRIMARY_TARGET}  `,
+      );
     });
 
-    it("trims whitespace from allowList entries", () => {
+    it("passes raw ASCII-spaced allowList entries to the canonical normalizer", () => {
       mockNormalizedDirectMessage(PRIMARY_TARGET, PRIMARY_TARGET);
 
       resolveWhatsAppOutboundTarget({
@@ -283,7 +285,39 @@ describe("resolveWhatsAppOutboundTarget", () => {
         mode: undefined,
       });
 
-      expect(vi.mocked(normalize.normalizeWhatsAppTarget)).toHaveBeenCalledWith(PRIMARY_TARGET);
+      expect(vi.mocked(normalize.normalizeWhatsAppTarget)).toHaveBeenNthCalledWith(
+        2,
+        `  ${PRIMARY_TARGET}  `,
+      );
     });
+
+    it.each(["\u2028", "\u00a0", "\ufeff", "\u0000", "\u007f"])(
+      "does not trim unsafe %j from outbound or allowlisted targets",
+      (unsafe) => {
+        vi.mocked(normalize.normalizeWhatsAppTarget)
+          .mockReturnValueOnce(null)
+          .mockReturnValueOnce(PRIMARY_TARGET)
+          .mockReturnValueOnce(null);
+
+        expectResolutionError({
+          to: `${unsafe}${PRIMARY_TARGET}${unsafe}`,
+          allowFrom: undefined,
+          mode: undefined,
+        });
+        expectDeniedForTarget({
+          to: PRIMARY_TARGET,
+          allowFrom: [`${unsafe}${PRIMARY_TARGET}${unsafe}`],
+          mode: "implicit",
+        });
+        expect(vi.mocked(normalize.normalizeWhatsAppTarget)).toHaveBeenNthCalledWith(
+          1,
+          `${unsafe}${PRIMARY_TARGET}${unsafe}`,
+        );
+        expect(vi.mocked(normalize.normalizeWhatsAppTarget)).toHaveBeenNthCalledWith(
+          3,
+          `${unsafe}${PRIMARY_TARGET}${unsafe}`,
+        );
+      },
+    );
   });
 });

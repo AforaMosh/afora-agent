@@ -115,6 +115,19 @@ describe("web monitor inbox socket lifecycle", () => {
     }
   });
 
+  it("socket readiness rejects unsafe targets before querying reachout state", async () => {
+    const { listener, sock } = await startInboxMonitor(vi.fn(async () => {}) as InboxOnMessage);
+    try {
+      await expect(listener.assertSendReady!("\u2028+1555\u2028")).rejects.toThrow(
+        "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
+      );
+      expect(sock.fetchAccountReachoutTimelock).not.toHaveBeenCalled();
+      expect(sock.sendMessage).not.toHaveBeenCalled();
+    } finally {
+      await listener.close();
+    }
+  });
+
   it("socket session stays unavailable on connect in self-chat mode", async () => {
     const { listener, sock } = await startInboxMonitor(vi.fn(async () => {}) as InboxOnMessage, {
       selfChatMode: true,

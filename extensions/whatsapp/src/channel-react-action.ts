@@ -15,6 +15,7 @@ import {
   sendMessageWhatsApp,
   type OpenClawConfig,
 } from "./channel-react-action.runtime.js";
+import { normalizeWhatsAppDirectIdentity } from "./normalize-target.js";
 
 const WHATSAPP_CHANNEL = "whatsapp" as const;
 
@@ -62,7 +63,8 @@ function hasUploadFileBufferPayload(args: Record<string, unknown>): boolean {
 
 function readWhatsAppActionChatJid(params: WhatsAppMessageActionParams): string | undefined {
   const explicit =
-    readStringParam(params.params, "chatJid") ?? readStringParam(params.params, "to");
+    readStringParam(params.params, "chatJid", { trim: false }) ??
+    readStringParam(params.params, "to", { trim: false });
   if (explicit) {
     return explicit;
   }
@@ -132,7 +134,8 @@ async function handleWhatsAppUploadFileAction(params: WhatsAppMessageActionParam
     );
   }
   const to =
-    readWhatsAppActionChatJid(params) ?? readStringParam(params.params, "to", { required: true });
+    readWhatsAppActionChatJid(params) ??
+    readStringParam(params.params, "to", { required: true, trim: false });
   const resolved = resolveAuthorizedWhatsAppOutboundTarget({
     cfg: params.cfg,
     chatJid: to,
@@ -214,7 +217,11 @@ export async function handleWhatsAppMessageAction(params: WhatsAppMessageActionP
   const explicitMessageId = readStringOrNumberParam(params.params, "messageId");
   const emoji = readStringParam(params.params, "emoji", { allowEmpty: true });
   const remove = typeof params.params.remove === "boolean" ? params.params.remove : undefined;
-  const explicitParticipant = readStringParam(params.params, "participant");
+  const explicitParticipant = readStringParam(params.params, "participant", { trim: false });
+  const normalizedRequesterParticipant =
+    typeof params.requesterSenderId === "string"
+      ? (normalizeWhatsAppDirectIdentity(params.requesterSenderId) ?? undefined)
+      : undefined;
   const inferredParticipant =
     explicitParticipant ||
     explicitMessageId != null ||
@@ -222,15 +229,13 @@ export async function handleWhatsAppMessageAction(params: WhatsAppMessageActionP
     isCrossChat ||
     !isWhatsAppGroupJid(explicitTarget ?? params.toolContext?.currentChannelId ?? "")
       ? undefined
-      : typeof params.requesterSenderId === "string" && params.requesterSenderId.trim().length > 0
-        ? params.requesterSenderId.trim()
-        : undefined;
+      : normalizedRequesterParticipant;
   return await handleWhatsAppAction(
     {
       action: "react",
       chatJid:
         readWhatsAppActionChatJid(params) ??
-        readStringParam(params.params, "to", { required: true }),
+        readStringParam(params.params, "to", { required: true, trim: false }),
       messageId,
       emoji,
       remove,

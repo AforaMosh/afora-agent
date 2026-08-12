@@ -142,6 +142,46 @@ describe("web outbound", () => {
   });
 
   it.each([
+    {
+      surface: "message send",
+      run: () =>
+        sendMessageWhatsApp("\u00a0+1555\u00a0", "hi", {
+          verbose: false,
+          cfg: WHATSAPP_TEST_CFG,
+        }),
+    },
+    {
+      surface: "typing",
+      run: () => sendTypingWhatsApp("\u2028+1555\u2028", { cfg: WHATSAPP_TEST_CFG }),
+    },
+    {
+      surface: "reaction",
+      run: () =>
+        sendReactionWhatsApp("\ufeff1555@s.whatsapp.net\ufeff", "msg123", "✅", {
+          verbose: false,
+          cfg: WHATSAPP_TEST_CFG,
+        }),
+    },
+    {
+      surface: "poll",
+      run: () =>
+        sendPollWhatsApp(
+          "\u0000+1555",
+          { question: "Lunch?", options: ["Pizza", "Sushi"] },
+          { verbose: false, cfg: WHATSAPP_TEST_CFG },
+        ),
+    },
+  ])("rejects unsafe targets before $surface reaches the active listener", async ({ run }) => {
+    await expect(run()).rejects.toThrow(
+      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
+    );
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(sendComposingTo).not.toHaveBeenCalled();
+    expect(sendReaction).not.toHaveBeenCalled();
+    expect(sendPoll).not.toHaveBeenCalled();
+  });
+
+  it.each([
     { kind: "text", mediaUrl: undefined, contentType: undefined },
     { kind: "image", mediaUrl: "/tmp/pic.png", contentType: "image/png" },
     { kind: "document", mediaUrl: "/tmp/report.pdf", contentType: "application/pdf" },

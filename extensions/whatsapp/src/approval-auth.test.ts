@@ -59,4 +59,12 @@ describe("whatsappApprovalAuth", () => {
       }),
     ).toEqual({ authorized: true });
   });
+
+  it("accepts ASCII-spaced wildcards without JS-trimming unsafe Unicode whitespace", () => {
+    expect(
+      getWhatsAppApprovalApprovers({
+        cfg: { channels: { whatsapp: { allowFrom: ["  *  ", "\u00a0*\u00a0"] } } },
+      }),
+    ).toEqual(["*"]);
+  });
 });

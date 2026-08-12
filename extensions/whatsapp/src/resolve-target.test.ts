@@ -80,6 +80,27 @@ describe("normalizeWhatsAppTarget", () => {
     expect(normalizeWhatsAppTarget("abc@newsletter")).toBeNull();
   });
 
+  it.each([
+    ["phone", "+15551234567"],
+    ["LID", "123456789@lid"],
+    ["hosted LID", "123456789@hosted.lid"],
+    ["group", "123456789-987654321@g.us"],
+  ])("rejects JS-trimmed Unicode whitespace around %s targets", (_name, target) => {
+    for (const whitespace of ["\u2028", "\u00a0", "\ufeff"]) {
+      expect(normalizeWhatsAppTarget(`${whitespace}${target}${whitespace}`)).toBeNull();
+      expect(looksLikeWhatsAppTargetId(`${whitespace}${target}${whitespace}`)).toBe(false);
+    }
+  });
+
+  it("continues to allow ASCII spaces around valid targets", () => {
+    expect(normalizeWhatsAppTarget("  +1 (555) 123-4567  ")).toBe("+15551234567");
+    expect(normalizeWhatsAppTarget("  123456789@lid  ")).toBe("123456789@lid");
+    expect(normalizeWhatsAppTarget("  123456789@hosted.lid  ")).toBe("123456789@hosted.lid");
+    expect(normalizeWhatsAppTarget("  123456789-987654321@g.us  ")).toBe(
+      "123456789-987654321@g.us",
+    );
+  });
+
   it("rejects non-WhatsApp provider-prefixed phone-like targets", () => {
     expect(normalizeWhatsAppTarget("telegram:1234567890")).toBeNull();
     expect(normalizeWhatsAppTarget("tg:1234567890")).toBeNull();
@@ -186,6 +207,17 @@ describe("normalizeWhatsAppAllowFromEntries", () => {
       ]),
     ).toEqual(["15551234567"]);
   });
+
+  it("accepts ASCII-spaced entries without JS-trimming unsafe Unicode whitespace", () => {
+    expect(
+      normalizeWhatsAppAllowFromEntries([
+        "  +15551234567  ",
+        "  *  ",
+        "\u00a0+15551234567\u00a0",
+        "\ufeff*\ufeff",
+      ]),
+    ).toEqual(["15551234567", "*"]);
+  });
 });
 
 describe("looksLikeWhatsAppTargetId", () => {
@@ -195,6 +227,7 @@ describe("looksLikeWhatsAppTargetId", () => {
     expect(looksLikeWhatsAppTargetId("120363401234567890@newsletter")).toBe(true);
     expect(looksLikeWhatsAppTargetId("whatsapp:group:120363401234567890@g.us")).toBe(true);
     expect(looksLikeWhatsAppTargetId("+15555550123")).toBe(true);
+    expect(looksLikeWhatsAppTargetId("  +15555550123  ")).toBe(true);
     expect(looksLikeWhatsAppTargetId("")).toBe(false);
   });
 });

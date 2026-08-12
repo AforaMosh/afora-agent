@@ -2,6 +2,7 @@
 import { createChannelApprovalAuth } from "openclaw/plugin-sdk/approval-auth-runtime";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { normalizeWhatsAppTarget } from "./normalize.js";
+import { trimWhatsAppAsciiSpaces } from "./phone-input.js";
 
 function normalizeWhatsAppApproverId(value: string | number): string | undefined {
   const normalized = normalizeWhatsAppTarget(String(value));
@@ -12,7 +13,7 @@ function normalizeWhatsAppApproverId(value: string | number): string | undefined
 }
 
 function normalizeWhatsAppApproverEntry(value: string | number): string | undefined {
-  return String(value).trim() === "*" ? "*" : normalizeWhatsAppApproverId(value);
+  return trimWhatsAppAsciiSpaces(String(value)) === "*" ? "*" : normalizeWhatsAppApproverId(value);
 }
 
 const whatsappApproval = createChannelApprovalAuth({

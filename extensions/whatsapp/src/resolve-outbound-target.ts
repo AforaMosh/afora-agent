@@ -1,11 +1,11 @@
 // Whatsapp plugin module implements resolve outbound target behavior.
 import { missingTargetError } from "openclaw/plugin-sdk/channel-feedback";
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
 import {
   isWhatsAppGroupJid,
   isWhatsAppNewsletterJid,
   normalizeWhatsAppTarget,
 } from "./normalize-target.js";
+import { trimWhatsAppAsciiSpaces } from "./phone-input.js";
 
 type WhatsAppOutboundTargetResolution = { ok: true; to: string } | { ok: false; error: Error };
 
@@ -18,15 +18,15 @@ export function resolveWhatsAppOutboundTarget(params: {
   allowFrom: Array<string | number> | null | undefined;
   mode: string | null | undefined;
 }): WhatsAppOutboundTargetResolution {
-  const trimmed = params.to?.trim() ?? "";
-  if (!trimmed) {
+  const rawTo = params.to ?? "";
+  if (!rawTo) {
     return {
       ok: false,
       error: missingTargetError("WhatsApp", "<E.164|group JID|newsletter JID>"),
     };
   }
 
-  const normalizedTo = normalizeWhatsAppTarget(trimmed);
+  const normalizedTo = normalizeWhatsAppTarget(rawTo);
   if (!normalizedTo) {
     return {
       ok: false,
@@ -37,13 +37,13 @@ export function resolveWhatsAppOutboundTarget(params: {
     return { ok: true, to: normalizedTo };
   }
 
-  const allowListRaw = normalizeStringEntries(params.allowFrom ?? []);
-  const hasWildcard = allowListRaw.includes("*");
+  const allowListRaw = (params.allowFrom ?? []).map(String);
+  const hasWildcard = allowListRaw.some((entry) => trimWhatsAppAsciiSpaces(entry) === "*");
   const allowList = allowListRaw
-    .filter((entry) => entry !== "*")
+    .filter((entry) => trimWhatsAppAsciiSpaces(entry) !== "*")
     .map((entry) => normalizeWhatsAppTarget(entry))
     .filter((entry): entry is string => Boolean(entry));
-  if (hasWildcard || allowList.length === 0) {
+  if (hasWildcard || allowListRaw.length === 0) {
     return { ok: true, to: normalizedTo };
   }
   if (allowList.includes(normalizedTo)) {

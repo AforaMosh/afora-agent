@@ -238,6 +238,19 @@ describe("createWebSendApi", () => {
     });
   });
 
+  it.each([
+    ["message", () => api.sendMessage("\u2028+1555\u2028", "hello")],
+    ["poll", () => api.sendPoll("\u00a0+1555\u00a0", { question: "Q?", options: ["a"] })],
+    ["reaction", () => api.sendReaction("\ufeff1555@s.whatsapp.net\ufeff", "msg", "👍", false)],
+    ["typing", () => api.sendComposingTo("\u0000+1555")],
+  ])("rejects unsafe %s targets before the socket boundary", async (_surface, run) => {
+    await expect(run()).rejects.toThrow(
+      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
+    );
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(sendPresenceUpdate).not.toHaveBeenCalled();
+  });
+
   it("sends structured contact messages through the canonical send path", async () => {
     const res = await api.sendContact("+1555", {
       displayName: "QA Contact",
@@ -810,6 +823,32 @@ describe("createWebSendApi", () => {
       remoteJid: "277038292303944@lid",
       id: "quoted-1",
     });
+  });
+
+  it("rejects an unsafe quoted participant before sending", async () => {
+    await expect(
+      api.sendMessage("+1555", "hello", undefined, undefined, {
+        quotedMessageKey: {
+          id: "quoted-unsafe",
+          remoteJid: "12345@g.us",
+          fromMe: false,
+          participant: "\u00a01234@s.whatsapp.net\u00a0",
+          messageText: "quoted body",
+        },
+      }),
+    ).rejects.toThrow(
+      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
+    );
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unsafe reaction participant before sending", async () => {
+    await expect(
+      api.sendReaction("12345@g.us", "msg-2", "👍", false, "\ufeff123@lid\ufeff"),
+    ).rejects.toThrow(
+      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
+    );
+    expect(sendMessage).not.toHaveBeenCalled();
   });
 
   it("aligns a lookup-proven LID quote with the final PN destination", async () => {

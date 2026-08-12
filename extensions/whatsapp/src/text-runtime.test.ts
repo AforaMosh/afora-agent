@@ -276,6 +276,31 @@ describe("toWhatsappJid", () => {
     expect(toWhatsappJid("123456789-987654321@g.us")).toBe("123456789-987654321@g.us");
     expect(toWhatsappJid("whatsapp:123456789-987654321@g.us")).toBe("123456789-987654321@g.us");
     expect(toWhatsappJid("1555123@s.whatsapp.net")).toBe("1555123@s.whatsapp.net");
+    expect(toWhatsappJid("1555123:2@hosted")).toBe("1555123:2@hosted");
+    expect(toWhatsappJid("123456789@hosted.lid")).toBe("123456789@hosted.lid");
+    expect(toWhatsappJid("120363401234567890@newsletter")).toBe("120363401234567890@newsletter");
+  });
+
+  it.each([
+    "wat",
+    "telegram:1555123",
+    "abc@example.com",
+    "123@g.us.example",
+    "123@lid:0",
+    "123:device@hosted",
+    "\u2028+1555123\u2028",
+    "\u00a0123@lid\u00a0",
+    "\ufeff123@hosted.lid\ufeff",
+    "\u0000123@g.us",
+    "123@newsletter\u007f",
+  ])("rejects invalid delivery target %j", (target) => {
+    expect(() => toWhatsappJid(target)).toThrow(
+      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
+    );
+  });
+
+  it("allows ASCII spaces at the delivery boundary", () => {
+    expect(toWhatsappJid("  whatsapp:+555 123 4567  ")).toBe("5551234567@s.whatsapp.net");
   });
 });
 
@@ -369,6 +394,20 @@ describe("toWhatsappJidWithLid (issue #67378)", () => {
         "1555123@s.whatsapp.net",
       );
       expect(toWhatsappJidWithLid("999@lid", { authDir })).toBe("999@lid");
+    });
+  });
+
+  it.each([
+    "telegram:+15555550000",
+    "abc@example.com",
+    "\u2028+15555550000\u2028",
+    "\u00a0999@lid\u00a0",
+    "\ufeff999@hosted.lid\ufeff",
+  ])("rejects invalid LID-aware delivery target %j", async (target) => {
+    await withTempDir("openclaw-fwd-", (authDir) => {
+      expect(() => toWhatsappJidWithLid(target, { authDir })).toThrow(
+        "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
+      );
     });
   });
 });
