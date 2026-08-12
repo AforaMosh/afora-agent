@@ -30,14 +30,11 @@ Docs: https://docs.openclaw.ai
 - **Buzz native mentions:** resolve unique current room-member names and explicit NIP-27 identities into native mentions while rejecting out-of-room identities and unresolved names without an explicit identity. (#117927) Thanks @shakkernerd.
 - **Custodian setup controls:** render the Gateway's sanitized `WizardStep` as native chat controls without removing text-only setup flows. (#114631) Thanks @jesse-merhi.
 
-### Upcoming deprecations
-
-- **Context engine host parameters:** compatibility record `context-engine-legacy-host-param-default` remains active through 2026-08-12. Plugin authors must declare `ContextEngineInfo.acceptedHostParams`; after that date, undeclared engines receive all current host fields. See https://docs.openclaw.ai/concepts/context-engine#the-contextengine-interface.
-
 ### Fixes
 
 - **Security and private context:** harden external tool-result sanitization, keep loader-identified private root memory out of shared chats, and update NanoID past pathological-input denial-of-service behavior. Fixes #84466. (#118984, #119198, #120368) Thanks @vincentkoc and @Kakuzen93.
 - **Codex and legacy node compatibility:** keep shipped protocol-v3 node hosts from silently losing `system.which`, and align Codex 0.147 structured input semantics and protocol export. (#120442, #120594) Thanks @vincentkoc.
+- **Context engine host parameters:** remove the undeclared context-engine host-parameter compatibility default; engines without `ContextEngineInfo.acceptedHostParams` now receive all current host fields, while engines that need restricted projection must declare `acceptedHostParams`. See https://docs.openclaw.ai/concepts/context-engine#the-contextengine-interface. Thanks @vincentkoc.
 - **Yielded parent wake ownership:** transfer terminal subagent completion delivery ownership when a requester yields and fence stale delivery after transcript waits, so completed children reliably wake the parent instead of leaving the run hung. (#120538)
 - **Hosted setup and recovery:** defer config-triggered Gateway restarts until multi-step wizard root work settles, keep guided `--skip-ui` routing on the guided path, and give browser and app users surface-correct recovery guidance. (#120582, #118737, #114633) Thanks @jesse-merhi and @shakkernerd.
 - **Control UI authorization:** gate agent and skill actions by Gateway capabilities, honor operator scopes across session actions, and allow write-scoped deletion of archived sessions. Fixes #119176 and #117786. (#119286, #117920, #117468) Thanks @shakkernerd.
@@ -47,10 +44,15 @@ Docs: https://docs.openclaw.ai
 - **Meeting and realtime media:** bound retained meeting audio and terminal processes, make close idempotent, and ignore provisional or late duplicate WebRTC tool events. (#117733, #117732) Thanks @vincentkoc.
 - **Plugin and update lifecycle:** remove exact or realpath-equivalent recorded load paths on uninstall, keep Gateway-startup plugin repair aligned with the environment-selected compatibility release, migrate Fish Audio to its current plugin identity, and keep targeted official updates on the core release channel. (#118930, #120085, #119900, #119799) Thanks @vincentkoc and @AgentSolomon.
 - **Session and Gateway reliability:** finish successful sessions after timestamp races, fence restart recovery, preserve chat history and active-run timing, route steering to active harnesses, and keep memory RPCs responsive during and after startup. (#119752, #119776, #119729, #119594, #119676, #119710) Thanks @Patrick-Erichsen, @vincentkoc, @fuller-stack-dev, and @hannesrudolph.
+- **Agent direct-ingress runtimes:** bind a scoped plugin registry for direct ingress runs, so forced Codex and other configured plugin-owned runtimes no longer fail before the turn starts. Thanks @vincentkoc.
+- **Subagent requester settlement:** keep yielded requesters parked while any surviving frozen child is still running, then wake once after terminal settlement instead of continuing early. (#120601) Thanks @VACInc.
+- **Session thread routing:** preserve an established external thread across internal turns while explicit thread fields still win and external non-thread turns still clear stale routing. (#121492)
+- **OpenCode Go packaging:** restore OpenCode Go to the bundled OpenClaw package and defer standalone npm and ClawHub publication, so existing profiles, onboarding, model listing, and `openclaw doctor --fix` work without a separate plugin install. (#120985)
+- **Concurrent startup migrations:** wait for another local startup migration to finish and refresh authoritative state after acquiring the lease, so first-run setup no longer fails when multiple OpenClaw processes start together. (#120959)
 
 ### Complete contribution record
 
-This audited record covers the complete 183db47e97f5960df46f8accbcb2ad2d0cc0613a..da4e341b070b54c9fd3639453f88708eae226bf0 history: 1,998 in-range PRs + 0 retained seed-only PRs = 1,998 unique PRs. The generation manifest also supplies direct commits as editorial input; the grouped notes above prioritize user impact.
+This audited record covers the complete 183db47e97f5960df46f8accbcb2ad2d0cc0613a..f154935c0a4182f615c6f628251793ee2a24859a history: 2,025 in-range PRs + 4 retained seed-only PRs = 2,029 unique PRs. The generation manifest also supplies direct commits as editorial input; the grouped notes above prioritize user impact.
 
 Shipped baseline exclusions: v2026.7.2-beta.7 (16 PRs: #109950, #110008, #111290, #111385, #112059, #113193, #115248, #116440, #116580, #116633, #116726, #116740, #116744, #116773, #117260, #117405).
 
@@ -2041,7 +2043,6 @@ Shipped baseline exclusions: v2026.7.2-beta.7 (16 PRs: #109950, #110008, #111290
 - **PR #119897** Thanks @vincentkoc.
 - **PR #119951** Thanks @vincentkoc.
 - **PR #119669**
-- **PR #120085** Thanks @vincentkoc.
 - **PR #120084** Thanks @vincentkoc.
 - **PR #120082** Thanks @vincentkoc.
 - **PR #120090** Thanks @vincentkoc.
@@ -2049,11 +2050,43 @@ Shipped baseline exclusions: v2026.7.2-beta.7 (16 PRs: #109950, #110008, #111290
 - **PR #120368**
 - **PR #120427**
 - **PR #120442**
-- **PR #120479**
-- **PR #120538**
+- **PR #120480**
+- **PR #120540**
 - **PR #120582**
+- **PR #120584**
 - **PR #120594** Thanks @vincentkoc.
+- **PR #120817** Thanks @Takhoffman.
+- **PR #120985**
+- **PR #120877**
+- **PR #120931**
+- **PR #121321**
+- **PR #121492**
+- **PR #120601** Thanks @VACInc.
+- **PR #121787** Thanks @vincentkoc.
+- **PR #119812** Related #119811.
+- **PR #119911** Related #119905.
+- **PR #120628** Related #120624.
+- **PR #120653** Thanks @vincentkoc.
+- **PR #120959**
+- **PR #119876** Related #119867.
+- **PR #119990** Related #119980.
+- **PR #120636** Related #120635.
+- **PR #120089** Thanks @vincentkoc.
+- **PR #119928** Thanks @vincentkoc.
+- **PR #106216**
+- **PR #122203** Thanks @vincentkoc.
+- **PR #120137** Related #120135.
+- **PR #120195** Related #120194.
+- **PR #96080** Related #96046. Thanks @tangtaizong666 and @vincentkoc and @hearace1.
+- **PR #122319** Thanks @vincentkoc.
+- **PR #120203** Related #120202.
+- **PR #122534** Thanks @vincentkoc.
+- **PR #122434**
+- **PR #122584** Thanks @vincentkoc.
+- **PR #120538**
 - **PR #120527** Thanks @Takhoffman.
+- **PR #120085** Thanks @vincentkoc.
+- **PR #120479**
 ## 2026.7.1
 
 OpenClaw v2026.7.1 brings major Control UI and onboarding overhauls, major updates to the official iOS, Android, and macOS apps, expanded model and provider support including GPT-5.6 compatibility, Tencent Hy3, and Meta Muse Spark 1.1, and stronger Codex and connected coding-agent workflows. Telegram, Slack, Discord, and Apple Messages each receive substantial updates, while Gateway crash loops, scheduled work, remote browser control, workspace terminals, sessions, and goals also improve. There are also many general fixes and refinements throughout OpenClaw.
