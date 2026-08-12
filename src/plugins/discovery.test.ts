@@ -920,6 +920,44 @@ describe("discoverOpenClawPlugins", () => {
     expect(diagnostics).toStrictEqual([]);
   });
 
+  it("keeps one bundled candidate while inheriting its managed install owner", () => {
+    const stateDir = makeTempDir();
+    const packageRoot = path.join(stateDir, "node_modules", "openclaw");
+    const bundledRoot = path.join(packageRoot, "dist", "extensions");
+    const pluginDir = path.join(bundledRoot, "managed-bundled");
+    createPackagePluginWithEntry({
+      packageDir: pluginDir,
+      packageName: "@openclaw/managed-bundled",
+      pluginId: "managed-bundled",
+      entryPath: "index.js",
+    });
+
+    const { candidates, diagnostics } = withOpenClawPackageArgv(packageRoot, () =>
+      discoverOpenClawPlugins({
+        env: {
+          ...buildDiscoveryEnv(stateDir),
+          OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
+        },
+        installRecords: {
+          "package-owner": {
+            source: "path",
+            sourcePath: pluginDir,
+            installPath: pluginDir,
+          },
+        },
+      }),
+    );
+
+    const matches = candidates.filter((candidate) => candidate.idHint === "managed-bundled");
+    expect(matches).toHaveLength(1);
+    expectCandidateFields(matches[0], {
+      origin: "bundled",
+      installOwner: "package-owner",
+    });
+    expect(diagnostics).toStrictEqual([]);
+  });
+
   it("loads package extension packs", async () => {
     const stateDir = makeTempDir();
     const globalExt = path.join(stateDir, "extensions", "pack");

@@ -1636,6 +1636,7 @@ export function discoverOpenClawPlugins(params: {
         });
       }
       if (params.rootScope !== "bundled") {
+        const managedSeen = new Set<string>();
         const installedPaths = collectInstalledPluginRecordPaths(
           params.installRecords,
           env,
@@ -1664,7 +1665,7 @@ export function discoverOpenClawPlugins(params: {
             env,
             candidates: result.candidates,
             diagnostics: result.diagnostics,
-            seen,
+            seen: managedSeen,
             realpathCache,
             packageManifestCache,
           });
@@ -1680,7 +1681,7 @@ export function discoverOpenClawPlugins(params: {
           skipRootDirKeys: installedPluginDirKeys,
           candidates: result.candidates,
           diagnostics: result.diagnostics,
-          seen,
+          seen: managedSeen,
           realpathCache,
           packageManifestCache,
         });
