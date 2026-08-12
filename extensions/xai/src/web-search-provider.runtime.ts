@@ -45,7 +45,7 @@ const X_SEARCH_MODEL_OPTIONS = [
   {
     value: XAI_DEFAULT_X_SEARCH_MODEL,
     label: XAI_DEFAULT_X_SEARCH_MODEL,
-    hint: "default · reasoning disabled",
+    hint: "default · low reasoning",
   },
 ] as const;
 

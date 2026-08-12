@@ -559,9 +559,9 @@ describe("xai web search config resolution", () => {
     expect(fetchCallHeader(mockFetch, 1, "Authorization")).toBe("Bearer xai-env-fallback-key");
   });
 
-  it("offers plugin-owned xSearch setup after Grok is selected", async () => {
+  it("offers plugin-owned xSearch setup with an accurate default reasoning hint", async () => {
     const provider = createXaiWebSearchProvider();
-    const select = vi.fn().mockResolvedValueOnce("yes").mockResolvedValueOnce("grok-4.3");
+    const select = vi.fn().mockResolvedValueOnce("yes").mockResolvedValueOnce("grok-4.6");
     const prompter = createTestWizardPrompter({
       select: select as never,
     });
@@ -589,7 +589,20 @@ describe("xai web search config resolution", () => {
       | { enabled?: boolean; model?: string }
       | undefined;
     expect(xSearch?.enabled).toBe(true);
-    expect(xSearch?.model).toBe("grok-4.3");
+    expect(xSearch?.model).toBe("grok-4.6");
+    expect(select).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        initialValue: "grok-4.6",
+        options: expect.arrayContaining([
+          {
+            value: "grok-4.6",
+            label: "grok-4.6",
+            hint: "default · low reasoning",
+          },
+        ]),
+      }),
+    );
   });
 
   it("keeps explicit xSearch disablement untouched during provider-owned setup", async () => {
