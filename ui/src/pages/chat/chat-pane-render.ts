@@ -508,6 +508,7 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
       onRequestUpdate: state.requestUpdate,
       onHistoryKeydown: state.handleChatInputHistoryKey,
       onSlashIntent: () => refreshChatCommands(state),
+      onSlashCommand: (command) => void state.handleSendChat(command),
       showNewMessages: state.chatNewMessagesBelow,
       onScrollToBottom: state.scrollToBottom,
       attachments: state.chatAttachments,
