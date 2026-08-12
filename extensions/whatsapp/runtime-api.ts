@@ -12,7 +12,6 @@ export {
   getWebAuthAgeMs,
   hasWebCredsSync,
   logWebSelfId,
-  logoutWeb,
   pickWebChannel,
   readCredsJsonRaw,
   readWebAuthExistsBestEffort,
@@ -33,6 +32,7 @@ export {
   WhatsAppAuthUnstableError,
   type WhatsAppWebAuthState,
 } from "./src/auth-store.js";
+export { logoutWeb } from "./src/credential-reset.js";
 export {
   DEFAULT_WEB_MEDIA_BYTES,
   HEARTBEAT_PROMPT,

@@ -99,15 +99,16 @@ export function createWhatsAppInboundMessageNormalizer(options: {
     if (directPeerPreparation?.kind === "error") {
       return { kind: "retryable-error", error: directPeerPreparation.error };
     }
-    let directPeer = directPeerPreparation?.peer ?? null;
-    let from = group
+    const directPeer = directPeerPreparation?.peer ?? null;
+    const initialFrom = group
       ? remoteJid
       : directPeer
         ? directPeer.peerId
         : await socketSession.resolveInboundJid(remoteJid);
-    if (!from) {
+    if (!initialFrom) {
       return null;
     }
+    let from = initialFrom;
     let senderE164 = group
       ? participantJid
         ? await socketSession.resolveInboundJid(participantJid)
@@ -160,7 +161,6 @@ export function createWhatsAppInboundMessageNormalizer(options: {
       if (claimed.peerId !== directPeer?.peerId || claimed.e164 !== directPeer?.e164) {
         // A concurrent admitted message may win the stable identity claim. Recheck
         // policy with that authoritative owner before routing this message.
-        directPeer = claimed;
         from = claimed.peerId;
         senderE164 = claimed.e164;
         access = await checkAccess();

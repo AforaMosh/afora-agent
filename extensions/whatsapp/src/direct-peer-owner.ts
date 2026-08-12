@@ -32,13 +32,13 @@ type WhatsAppDirectPeerResolution =
   | WhatsAppResolvedDirectPeer
   | WhatsAppDirectPeerResolutionErrorResult;
 
-export type WhatsAppPreparedDirectPeer = {
+type WhatsAppPreparedDirectPeer = {
   kind: "prepared";
   peer: WhatsAppResolvedDirectPeer;
   pendingOwner: StoredDirectPeerOwner | null;
 };
 
-export type WhatsAppDirectPeerPreparation =
+type WhatsAppDirectPeerPreparation =
   | WhatsAppPreparedDirectPeer
   | WhatsAppDirectPeerResolutionErrorResult;
 
