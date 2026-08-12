@@ -382,7 +382,9 @@ describe("Codex remote WebSocket connection health", () => {
 
     await service.start(ctx);
     await vi.waitFor(() => expect(client.request).toHaveBeenCalledOnce());
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
     expect(client.request).toHaveBeenCalledOnce();
 
     diagnosticMocks.emitTrustedDiagnosticEvent.mockClear();

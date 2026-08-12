@@ -212,7 +212,8 @@ export function createModelRecorders(runtime: DiagnosticsRecorderRuntime) {
     recordModelCallStarted,
     recordModelCallCompleted,
     recordModelCallError,
-    recordModelAuthState: runtime.recordModelAuthState,
-    clearModelAuthState: runtime.clearModelAuthState,
+    recordModelAuthState: (evt: Extract<DiagnosticEventPayload, { type: "model.auth.state" }>) =>
+      runtime.recordModelAuthState(evt),
+    clearModelAuthState: () => runtime.clearModelAuthState(),
   };
 }

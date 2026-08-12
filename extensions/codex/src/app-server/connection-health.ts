@@ -59,7 +59,7 @@ export function createCodexAppServerConnectionHealthService(
       try {
         pluginConfig = options.getPluginConfig();
         runtime = resolveCodexAppServerRuntimeOptions({ pluginConfig });
-      } catch (error) {
+      } catch {
         if (!signal.aborted) {
           ctx.logger.error(
             "codex app-server remote WebSocket configuration is invalid; update the configuration before reconnecting",
