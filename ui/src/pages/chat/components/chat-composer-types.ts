@@ -168,7 +168,7 @@ export type ChatComposerState = {
   slashMenuOpen: boolean;
   slashMenuItems: SlashCommandDef[];
   slashMenuIndex: number;
-  slashMenuMode: "command" | "args";
+  slashMenuMode: "command" | "args" | "freeform-args";
   slashMenuCommand: SlashCommandDef | null;
   slashMenuArgItems: string[];
   slashCommandRefreshPending: boolean;
