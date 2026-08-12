@@ -137,6 +137,27 @@ describe("applyGroupGating audio preflight mention text", () => {
       sender: { lid: "777@hosted.lid" },
       shouldProcess: true,
     },
+    {
+      name: "malformed multi-device LID activation owner",
+      command: "/activation always",
+      allowFrom: "777@lid",
+      sender: { lid: "777:4:5@lid" },
+      shouldProcess: false,
+    },
+    {
+      name: "malformed multi-device PN control owner",
+      command: "/status",
+      allowFrom: "+15550000002",
+      sender: { jid: "15550000002:4:5@s.whatsapp.net" },
+      shouldProcess: false,
+    },
+    {
+      name: "single-device LID control owner",
+      command: "/status",
+      allowFrom: "777@lid",
+      sender: { lid: "777:4@lid" },
+      shouldProcess: true,
+    },
   ])("applies typed identity to $name", async ({ command, allowFrom, sender, shouldProcess }) => {
     const msg = createTestWebInboundMessage({
       payload: { body: command },

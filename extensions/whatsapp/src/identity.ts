@@ -64,7 +64,10 @@ type LegacyMentionsLike = {
 };
 
 function normalizeDeviceScopedJid(jid: string | null | undefined): string | null {
-  return jid ? jid.replace(/:\d+/, "") : null;
+  const parsed = typeof jid === "string" ? parseWhatsAppJid(jid) : null;
+  return parsed?.kind === "pn" || parsed?.kind === "lid"
+    ? `${parsed.digits}@${parsed.domain}`
+    : (jid ?? null);
 }
 
 function isWhatsAppLidJid(jid: string | null | undefined): boolean {

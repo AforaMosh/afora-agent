@@ -31,4 +31,24 @@ describe("normalizeWhatsAppLidJid", () => {
     expect(resolveComparableIdentity({ lid: "\u00a0123@lid\u00a0" }).lid).toBeNull();
     expect(resolveComparableIdentity({ lid: "123:4@hosted.lid" }).lid).toBe("123@hosted.lid");
   });
+
+  it.each(["123:4:5@lid", "123:4:5@hosted.lid", "123:4:5@s.whatsapp.net", "123:4:5@hosted"])(
+    "keeps malformed multi-device JID %j non-comparable",
+    (jid) => {
+      expect(resolveComparableIdentity({ jid })).toEqual({
+        jid,
+        lid: null,
+        e164: null,
+      });
+    },
+  );
+
+  it.each([
+    ["123:4@s.whatsapp.net", { jid: "123@s.whatsapp.net", lid: null, e164: "+123" }],
+    ["123:4@hosted", { jid: "123@hosted", lid: null, e164: "+123" }],
+    ["123:4@lid", { jid: null, lid: "123@lid", e164: null }],
+    ["123:4@hosted.lid", { jid: null, lid: "123@hosted.lid", e164: null }],
+  ])("canonicalizes exactly one device segment in %j", (jid, expected) => {
+    expect(resolveComparableIdentity({ jid })).toEqual(expected);
+  });
 });

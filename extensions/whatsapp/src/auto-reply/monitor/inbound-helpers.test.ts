@@ -1,5 +1,7 @@
 // Whatsapp tests cover inbound context plugin behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { getComparableIdentityValues } from "../../identity.js";
+import { describeReplyContext } from "../../inbound/extract.js";
 import { createTestWebInboundMessage } from "../../inbound/test-message.test-helper.js";
 import { createEchoTracker } from "./echo.js";
 import { formatGroupMembers, noteGroupMember } from "./group-members.js";
@@ -176,6 +178,47 @@ describe("whatsapp inbound context visibility", () => {
         label: "Mallory (+999)",
       },
     });
+  });
+
+  it("keeps a malformed native quote participant out of comparable identity facts", () => {
+    const malformedParticipant = "777:4:5@lid";
+    const context = describeReplyContext({
+      extendedTextMessage: {
+        text: "current",
+        contextInfo: {
+          stanzaId: "malformed-native-quote",
+          participant: malformedParticipant,
+          quotedMessage: { conversation: "Private quoted text" },
+        },
+      },
+    });
+    if (!context) {
+      throw new Error("expected native quote context");
+    }
+    const msg = makeBlockedQuotedReplyMessage("msg-malformed-native-quote");
+    msg.quote = { context };
+
+    expect(
+      resolveVisibleWhatsAppReplyContext({
+        msg,
+        mode: "allowlist",
+        groupPolicy: "allowlist",
+        groupAllowFrom: ["777@lid"],
+      }),
+    ).toBeNull();
+    const visibleQuote = resolveVisibleWhatsAppReplyContext({
+      msg,
+      mode: "allowlist_quote",
+      groupPolicy: "allowlist",
+      groupAllowFrom: ["777@lid"],
+    });
+    expect(visibleQuote?.body).toBe("Private quoted text");
+    expect(visibleQuote?.sender).toMatchObject({
+      jid: malformedParticipant,
+      lid: null,
+      e164: null,
+    });
+    expect(getComparableIdentityValues(visibleQuote?.sender)).not.toContain("777@lid");
   });
 
   it("renders structured quoted media only at the visible preview boundary", () => {

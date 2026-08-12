@@ -143,6 +143,40 @@ describe("typed WhatsApp direct identity access", () => {
   });
 
   it.each([
+    ["123:4:5@lid", "123@lid", false],
+    ["123:4:5@hosted.lid", "123@hosted.lid", false],
+    ["15550001111:4:5@s.whatsapp.net", "+15550001111", false],
+    ["15550001111:4:5@hosted", "+15550001111", false],
+    ["123:4@lid", "123@lid", true],
+    ["123:4@hosted.lid", "123@hosted.lid", true],
+    ["15550001111:4@s.whatsapp.net", "+15550001111", true],
+    ["15550001111:4@hosted", "+15550001111", true],
+  ])(
+    "authorizes group command sender %j against exact direct entry %j as %j",
+    async (senderJid, allowFrom, expected) => {
+      const cfg = {
+        channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: [allowFrom] } },
+      };
+      const authorized = await resolveWhatsAppCommandAuthorized({
+        cfg: cfg as never,
+        msg: createTestWebInboundMessage({
+          payload: { body: "/status" },
+          platform: {
+            chatJid: "120363401234567890@g.us",
+            senderJid,
+            selfE164: "+15550009999",
+          },
+          admission: {
+            conversation: { id: "120363401234567890@g.us", kind: "group" },
+          },
+        }) as never,
+      });
+
+      expect(authorized).toBe(expected);
+    },
+  );
+
+  it.each([
     { name: "omitted", selfChatMode: undefined },
     { name: "enabled", selfChatMode: true },
   ])(
