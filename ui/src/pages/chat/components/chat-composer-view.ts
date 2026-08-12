@@ -156,26 +156,28 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
   ).join(", ");
 
   return html`
-    ${renderChatQueue({
-      queue: props.queue,
-      canAbort: showAbortableUi,
-      onQueueRetry: props.connected && canCompose ? props.onQueueRetry : undefined,
-      onQueueSteer: props.connected && canCompose ? props.onQueueSteer : undefined,
-      // Reordering is local bookkeeping, so it stays available while offline —
-      // exactly when a queue is long enough to need it.
-      onQueueMove: props.onQueueMove,
-      onQueueEdit: props.queuedEdit?.onEdit,
-      editingId: props.queuedEdit?.editingId ?? null,
-      onQueueRemove: props.onQueueRemove,
-    })}
-    ${props.runError
-      ? html`
-          <div class="chat-run-error" role="alert">
-            <span class="chat-run-error__icon" aria-hidden="true">${icons.alertTriangle}</span>
-            <span class="chat-run-error__summary">${props.runError.summary}</span>
-          </div>
-        `
-      : nothing}
+    <div class="chat-composer-adjuncts">
+      ${renderChatQueue({
+        queue: props.queue,
+        canAbort: showAbortableUi,
+        onQueueRetry: props.connected && canCompose ? props.onQueueRetry : undefined,
+        onQueueSteer: props.connected && canCompose ? props.onQueueSteer : undefined,
+        // Reordering is local bookkeeping, so it stays available while offline —
+        // exactly when a queue is long enough to need it.
+        onQueueMove: props.onQueueMove,
+        onQueueEdit: props.queuedEdit?.onEdit,
+        editingId: props.queuedEdit?.editingId ?? null,
+        onQueueRemove: props.onQueueRemove,
+      })}
+      ${props.runError
+        ? html`
+            <div class="chat-run-error" role="alert">
+              <span class="chat-run-error__icon" aria-hidden="true">${icons.alertTriangle}</span>
+              <span class="chat-run-error__summary">${props.runError.summary}</span>
+            </div>
+          `
+        : nothing}
+    </div>
     ${showComposerInput && props.typingActors?.length
       ? html`<div
           class="agent-chat__typing-indicator agent-chat__typing-indicator--outside"
