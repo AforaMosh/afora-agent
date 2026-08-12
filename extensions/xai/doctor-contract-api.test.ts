@@ -64,8 +64,8 @@ describe("xAI doctor contract", () => {
     expect(result.changes).toHaveLength(4);
     expect(result.config).not.toBe(config);
     expect(result.config.plugins?.entries?.xai?.config).toEqual({
-      webSearch: { model: "grok-4.5", timeoutSeconds: 60 },
-      xSearch: { model: "grok-4.5", inlineCitations: true },
+      webSearch: { model: "grok-4.6", timeoutSeconds: 60 },
+      xSearch: { model: "grok-4.6", inlineCitations: true },
       codeExecution: { model: "grok-build-0.1", maxTurns: 2 },
     });
     expect(result.config.tools?.web).toEqual(config.tools?.web);

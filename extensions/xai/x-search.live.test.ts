@@ -67,7 +67,7 @@ describeLive("xai x_search live", () => {
 
     expect(details.error, details.message).toBeUndefined();
     expect(details.provider).toBe("xai");
-    expect(details.model).toBe("grok-4.5");
+    expect(details.model).toBe("grok-4.6");
     expect(details.content?.trim().length ?? 0).toBeGreaterThan(0);
 
     const citationCount =

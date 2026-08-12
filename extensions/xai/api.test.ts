@@ -58,7 +58,7 @@ describe("xai api helpers", () => {
         providerId: "xai",
         ctx: {
           provider,
-          modelId: "grok-4.5",
+          modelId: "grok-4.6",
           modelRegistry: { find: () => null } as never,
           providerConfig: { baseUrl: "", models: [] },
         },

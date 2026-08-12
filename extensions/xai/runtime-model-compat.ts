@@ -2,6 +2,7 @@
 // Reasoning effort is configurable only for current flagship Grok models; encrypted reasoning
 // include/replay is handled separately in stream.ts for every reasoning-capable xAI model.
 import { applyXaiModelCompat } from "./model-compat.js";
+import { isXaiFrontierModelId } from "./model-id.js";
 
 type XaiRuntimeModelCompat = {
   compat?: unknown;
@@ -43,7 +44,7 @@ function normalizeXaiCompatModelId(id: unknown): string {
 
 function supportsConfigurableXaiReasoningEffort(model: XaiRuntimeModelCompat): boolean {
   const id = normalizeXaiCompatModelId(model.id);
-  const isConfigurableModel = isGrok43Model(id) || id === "grok-4.5" || id.startsWith("grok-4.5-");
+  const isConfigurableModel = isGrok43Model(id) || isXaiFrontierModelId(id);
   return model.reasoning === true && isConfigurableModel;
 }
 

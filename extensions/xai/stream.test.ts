@@ -108,7 +108,7 @@ function runXaiToolPayloadWrapper(params: {
 
 async function captureXaiResponsesPayloadWithThinking(
   reasoning: ModelThinkingLevel = "low",
-  modelId = "grok-4.5",
+  modelId = "grok-4.6",
 ): Promise<Record<string, unknown>> {
   const model = applyXaiRuntimeModelCompat({
     api: "openai-responses",
@@ -545,7 +545,7 @@ describe("xai stream wrappers", () => {
     expect(payload.include).toEqual(["reasoning.encrypted_content"]);
   }, 10_000);
 
-  it("clamps unsupported Grok 4.5 off reasoning to low", async () => {
+  it("clamps unsupported Grok 4.6 off reasoning to low", async () => {
     const payload = await captureXaiResponsesPayloadWithThinking("off");
 
     expect(payload.reasoning).toEqual({ effort: "low", summary: "auto" });

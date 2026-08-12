@@ -43,23 +43,23 @@ function getToolFunction(tool: Record<string, unknown>): Record<string, unknown>
   return undefined;
 }
 
-function resolveLiveXaiModel(modelId: "grok-4.3" | "grok-4.5") {
-  const isGrok45 = modelId === "grok-4.5";
+function resolveLiveXaiModel(modelId: "grok-4.3" | "grok-4.5" | "grok-4.6") {
+  const isFrontier = modelId === "grok-4.5" || modelId === "grok-4.6";
   return {
     id: modelId,
-    name: isGrok45 ? "Grok 4.5" : "Grok 4.3",
+    name: isFrontier ? `Grok ${modelId.slice("grok-".length)}` : "Grok 4.3",
     api: "openai-responses",
     provider: "xai",
     baseUrl: "https://api.x.ai/v1",
     reasoning: true,
     input: ["text", "image"],
-    cost: isGrok45
+    cost: isFrontier
       ? { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 }
       : { input: 1.25, output: 2.5, cacheRead: 0.2, cacheWrite: 0 },
-    contextWindow: isGrok45 ? 500_000 : 1_000_000,
+    contextWindow: isFrontier ? 500_000 : 1_000_000,
     maxTokens: 64_000,
     thinkingLevelMap: {
-      off: isGrok45 ? null : "none",
+      off: isFrontier ? null : "none",
       minimal: "low",
       low: "low",
       medium: "medium",
@@ -123,7 +123,7 @@ async function collectDoneMessage(
 }
 
 describeLive("xai live", () => {
-  for (const modelId of ["grok-4.3", "grok-4.5"] as const) {
+  for (const modelId of ["grok-4.3", "grok-4.5", "grok-4.6"] as const) {
     it(
       `returns assistant text for ${modelId}`,
       async () => {
@@ -150,7 +150,7 @@ describeLive("xai live", () => {
     );
   }
 
-  for (const modelId of ["grok-4.3", "grok-4.5"] as const) {
+  for (const modelId of ["grok-4.3", "grok-4.5", "grok-4.6"] as const) {
     it(`sends wrapped ${modelId} tool payloads live`, async () => {
       await runXaiLiveCase("tool-call", async () => {
         const model = requireLiveValue(resolveLiveXaiModel(modelId), "xAI model");

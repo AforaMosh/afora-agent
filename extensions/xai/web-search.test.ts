@@ -244,7 +244,7 @@ describe("xai web search config resolution", () => {
 
   it("prefers configured api keys and resolves grok scoped defaults", () => {
     expect(resolveXaiWebSearchCredential({ grok: { apiKey: "xai-secret" } })).toBe("xai-secret");
-    expect(resolveXaiWebSearchModel()).toBe("grok-4.5");
+    expect(resolveXaiWebSearchModel()).toBe("grok-4.6");
     expect(resolveXaiInlineCitations()).toBe(false);
   });
 
@@ -644,8 +644,8 @@ describe("xai web search config resolution", () => {
   });
 
   it("uses default model when not specified", () => {
-    expect(resolveXaiWebSearchModel({})).toBe("grok-4.5");
-    expect(resolveXaiWebSearchModel(undefined)).toBe("grok-4.5");
+    expect(resolveXaiWebSearchModel({})).toBe("grok-4.6");
+    expect(resolveXaiWebSearchModel(undefined)).toBe("grok-4.6");
   });
 
   it("uses a Grok-specific 60s default timeout while preserving overrides", () => {
@@ -676,7 +676,7 @@ describe("xai web search config resolution", () => {
 
     expect(firstFetchUrl(mockFetch)).toBe("https://api.x.ai/proxy/v1/responses");
     expect(firstFetchBody(mockFetch)).toMatchObject({
-      model: "grok-4.5",
+      model: "grok-4.6",
       store: false,
       reasoning: { effort: "low" },
       tools: [{ type: "web_search" }],
@@ -924,12 +924,24 @@ describe("xai web search response parsing", () => {
 describe("xai provider models", () => {
   it("publishes only current selectable chat models newest first", () => {
     expect(buildXaiCatalogModels().map((model) => model.id)).toEqual([
+      "grok-4.6",
       "grok-4.5",
       "grok-build-0.1",
       "grok-4.3",
       "grok-4.20-0309-reasoning",
       "grok-4.20-0309-non-reasoning",
     ]);
+  });
+
+  it("publishes Grok 4.6 with its current metadata", () => {
+    expectCatalogEntry("grok-4.6", {
+      id: "grok-4.6",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 500_000,
+      maxTokens: 64_000,
+      cost: { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+    });
   });
 
   it("publishes Grok 4.5 with its current metadata", () => {
@@ -1051,6 +1063,7 @@ describe("xai provider models", () => {
   });
 
   it("marks current Grok families as modern while excluding multi-agent ids", () => {
+    expect(isModernXaiModel("grok-4.6")).toBe(true);
     expect(isModernXaiModel("grok-4.5")).toBe(true);
     expect(isModernXaiModel("grok-4.3")).toBe(true);
     expect(isModernXaiModel("grok-build-0.1")).toBe(true);

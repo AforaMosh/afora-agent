@@ -27,9 +27,11 @@ describe("xai provider thinking policy", () => {
   });
 
   it.each([
+    ["xai", "grok-4.6"],
     ["xai", "grok-4.5"],
     ["xai", "grok-4.5-latest"],
     ["xai", "grok-build-latest"],
+    ["x-ai", "grok-4.6"],
     ["x-ai", "grok-4.5"],
     ["x-ai", "grok-4.5-latest"],
     ["x-ai", "grok-build-latest"],
