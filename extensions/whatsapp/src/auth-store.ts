@@ -336,7 +336,7 @@ async function classifyWebAuthDirOwnership(authDir: string): Promise<WebAuthDirO
   return { kind: "owned", authDir: resolvedAuthDir };
 }
 
-export async function logoutWeb(params: {
+export async function clearWebCredentials(params: {
   authDir?: string;
   isLegacyAuthDir?: boolean;
   runtime?: RuntimeEnv;
@@ -344,7 +344,7 @@ export async function logoutWeb(params: {
 }) {
   const runtime = params.runtime ?? defaultRuntime;
   const resolvedAuthDir = resolveUserPath(params.authDir ?? resolveDefaultWebAuthDir());
-  const barrierResult = await waitForWebAuthBarrier(resolvedAuthDir, "logoutWeb");
+  const barrierResult = await waitForWebAuthBarrier(resolvedAuthDir, "clearWebCredentials");
   if (barrierResult === "timed_out") {
     runtime.log(
       info("WhatsApp auth state is still stabilizing; clearing cached credentials anyway."),

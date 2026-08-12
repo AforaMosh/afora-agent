@@ -295,6 +295,7 @@ function throwIfCredentialPersistenceFailed(
 }
 
 export async function waitForWhatsAppLoginResult(params: {
+  accountId: string;
   sock: WaSocket;
   authDir: string;
   isLegacyAuthDir: boolean;
@@ -407,6 +408,7 @@ export async function waitForWhatsAppLoginResult(params: {
         }
         closeWaSocket(currentSock);
         const cleared = await logoutWeb({
+          accountId: params.accountId,
           authDir: params.authDir,
           isLegacyAuthDir: params.isLegacyAuthDir,
           runtime: params.runtime,

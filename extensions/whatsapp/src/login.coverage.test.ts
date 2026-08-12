@@ -63,7 +63,7 @@ vi.mock("./session.js", async () => {
       outcome: "stable" as const,
       exists: true,
     })),
-    logoutWeb: vi.fn(async (params: { authDir?: string }) => {
+    logoutWeb: vi.fn(async (params: { accountId: string; authDir?: string }) => {
       await fs.rm(params.authDir ?? authDir, {
         recursive: true,
         force: true,

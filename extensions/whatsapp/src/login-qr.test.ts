@@ -288,6 +288,7 @@ describe("login-qr", () => {
 
     expectScanQrResult(result);
     expect(logoutWebMock).toHaveBeenCalledWith({
+      accountId,
       authDir: expect.stringContaining(accountId),
       isLegacyAuthDir: false,
       runtime: expect.anything(),
@@ -310,6 +311,7 @@ describe("login-qr", () => {
 
     expectScanQrResult(result, "qr-after-restart-logout");
     expect(logoutWebMock).toHaveBeenCalledWith({
+      accountId,
       authDir: expect.stringContaining(accountId),
       isLegacyAuthDir: false,
       runtime: expect.anything(),

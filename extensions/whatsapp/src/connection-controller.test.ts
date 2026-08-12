@@ -120,6 +120,7 @@ function createLoginResultHarness() {
       onSocketReplaced?: (sock: unknown) => void;
     }) =>
       waitForWhatsAppLoginResult({
+        accountId: "default",
         sock: initialSock as never,
         authDir: loginAuthDir,
         isLegacyAuthDir: false,
@@ -374,6 +375,7 @@ describe("WhatsAppConnectionController", () => {
       sock: harness.replacementSock,
     });
     expect(logoutWebMock).toHaveBeenCalledWith({
+      accountId: "default",
       authDir: loginAuthDir,
       isLegacyAuthDir: false,
       runtime: harness.runtime,
@@ -406,6 +408,7 @@ describe("WhatsAppConnectionController", () => {
       error,
     });
     expect(logoutWebMock).toHaveBeenCalledWith({
+      accountId: "default",
       authDir: loginAuthDir,
       isLegacyAuthDir: false,
       runtime: harness.runtime,
@@ -485,6 +488,7 @@ describe("WhatsAppConnectionController", () => {
     const waitForCredentialPersistence = vi.fn(async () => {});
 
     const result = await waitForWhatsAppLoginResult({
+      accountId: "default",
       sock: harness.initialSock as never,
       authDir: loginAuthDir,
       isLegacyAuthDir: false,
@@ -514,6 +518,7 @@ describe("WhatsAppConnectionController", () => {
     const waitForConnection = vi.fn().mockResolvedValueOnce(undefined);
 
     const result = await waitForWhatsAppLoginResult({
+      accountId: "default",
       sock: createSocketWithTransportEmitter() as never,
       authDir: "/tmp/wa-auth",
       isLegacyAuthDir: false,
@@ -537,6 +542,7 @@ describe("WhatsAppConnectionController", () => {
       resolvePersistenceFailure = resolve;
     });
     const pendingResult = waitForWhatsAppLoginResult({
+      accountId: "default",
       sock: createSocketWithTransportEmitter() as never,
       authDir: "/tmp/wa-auth",
       isLegacyAuthDir: false,
@@ -559,6 +565,7 @@ describe("WhatsAppConnectionController", () => {
     const waitForConnection = vi.fn().mockResolvedValueOnce(undefined);
 
     const result = await waitForWhatsAppLoginResult({
+      accountId: "default",
       sock: createSocketWithTransportEmitter() as never,
       authDir: "/tmp/wa-auth",
       isLegacyAuthDir: false,
@@ -580,6 +587,7 @@ describe("WhatsAppConnectionController", () => {
     const sock = createSocketWithTransportEmitter();
 
     const result = await waitForWhatsAppLoginResult({
+      accountId: "default",
       sock: sock as never,
       authDir: "/tmp/wa-auth",
       isLegacyAuthDir: false,
@@ -615,6 +623,7 @@ describe("WhatsAppConnectionController", () => {
       );
 
       const result = await waitForWhatsAppLoginResult({
+        accountId: "default",
         sock: createSocketWithTransportEmitter() as never,
         authDir,
         isLegacyAuthDir: false,

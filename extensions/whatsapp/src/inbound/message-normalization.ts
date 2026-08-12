@@ -1,7 +1,8 @@
 // Whatsapp plugin module normalizes inbound identity and access facts.
 import type { AnyMessageContent, WAMessage } from "baileys";
 import {
-  resolveWhatsAppDirectPeer,
+  claimWhatsAppDirectPeer,
+  prepareWhatsAppDirectPeer,
   type WhatsAppDirectPeerResolutionError,
 } from "../direct-peer-owner.js";
 import { normalizeExactWhatsAppLidJid } from "../identity.js";
@@ -88,29 +89,30 @@ export function createWhatsAppInboundMessageNormalizer(options: {
     const participantJid = msg.key?.participant ?? undefined;
     const directLid = group ? null : normalizeExactWhatsAppLidJid(remoteJid);
     const canonicalRemoteJid = directLid ?? remoteJid;
-    const directPeer = directLid
-      ? await resolveWhatsAppDirectPeer({
+    const directPeerPreparation = directLid
+      ? await prepareWhatsAppDirectPeer({
           accountId: options.accountId,
           jid: directLid,
           mapping: await socketSession.resolveInboundJidMapping(remoteJid),
         })
       : null;
-    if (directPeer?.kind === "error") {
-      return { kind: "retryable-error", error: directPeer.error };
+    if (directPeerPreparation?.kind === "error") {
+      return { kind: "retryable-error", error: directPeerPreparation.error };
     }
-    const from = group
+    let directPeer = directPeerPreparation?.peer ?? null;
+    let from = group
       ? remoteJid
-      : directPeer?.kind === "resolved"
+      : directPeer
         ? directPeer.peerId
         : await socketSession.resolveInboundJid(remoteJid);
     if (!from) {
       return null;
     }
-    const senderE164 = group
+    let senderE164 = group
       ? participantJid
         ? await socketSession.resolveInboundJid(participantJid)
         : null
-      : directPeer?.kind === "resolved"
+      : directPeer
         ? directPeer.e164
         : from;
     const senderJid = group ? participantJid : (directLid ?? remoteJid);
@@ -125,27 +127,47 @@ export function createWhatsAppInboundMessageNormalizer(options: {
     const messageTimestampSeconds = options.parseTimestampSeconds(msg.messageTimestamp);
     const messageTimestampMs =
       messageTimestampSeconds !== undefined ? messageTimestampSeconds * 1000 : undefined;
-    const access = await checkInboundAccessControl({
-      cfg: options.loadConfig?.() ?? options.cfg,
-      accountId: options.accountId,
-      from,
-      selfE164: socketSession.self.e164 ?? null,
-      senderE164,
-      senderJid,
-      group,
-      pushName: msg.pushName ?? undefined,
-      isFromMe: Boolean(msg.key?.fromMe),
-      messageTimestampMs,
-      connectedAtMs: socketSession.connectedAtMs,
-      verbose: options.verbose,
-      sock: {
-        sendMessage: (jid: string, content: AnyMessageContent) =>
-          socketSession.sendTrackedMessage(jid, content),
-      },
-      remoteJid: canonicalRemoteJid,
-    });
+    const checkAccess = async () =>
+      await checkInboundAccessControl({
+        cfg: options.loadConfig?.() ?? options.cfg,
+        accountId: options.accountId,
+        from,
+        selfE164: socketSession.self.e164 ?? null,
+        senderE164,
+        senderJid,
+        group,
+        pushName: msg.pushName ?? undefined,
+        isFromMe: Boolean(msg.key?.fromMe),
+        messageTimestampMs,
+        connectedAtMs: socketSession.connectedAtMs,
+        verbose: options.verbose,
+        sock: {
+          sendMessage: (jid: string, content: AnyMessageContent) =>
+            socketSession.sendTrackedMessage(jid, content),
+        },
+        remoteJid: canonicalRemoteJid,
+      });
+    let access = await checkAccess();
     if (!access.allowed) {
       return null;
+    }
+
+    if (directPeerPreparation?.kind === "prepared") {
+      const claimed = await claimWhatsAppDirectPeer(directPeerPreparation);
+      if (claimed.kind === "error") {
+        return { kind: "retryable-error", error: claimed.error };
+      }
+      if (claimed.peerId !== directPeer?.peerId || claimed.e164 !== directPeer?.e164) {
+        // A concurrent admitted message may win the stable identity claim. Recheck
+        // policy with that authoritative owner before routing this message.
+        directPeer = claimed;
+        from = claimed.peerId;
+        senderE164 = claimed.e164;
+        access = await checkAccess();
+        if (!access.allowed) {
+          return null;
+        }
+      }
     }
 
     return {

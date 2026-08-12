@@ -15,18 +15,32 @@ type StoredDirectPeerOwner = {
   lid: string;
 } & ({ owner: "lid" } | { owner: "e164"; e164: string });
 
+type WhatsAppResolvedDirectPeer = {
+  kind: "resolved";
+  peerId: string;
+  lid: string;
+  e164: string | null;
+  mapping: WhatsAppJidMappingOutcome;
+};
+
+type WhatsAppDirectPeerResolutionErrorResult = {
+  kind: "error";
+  error: WhatsAppDirectPeerResolutionError;
+};
+
 type WhatsAppDirectPeerResolution =
-  | {
-      kind: "resolved";
-      peerId: string;
-      lid: string;
-      e164: string | null;
-      mapping: WhatsAppJidMappingOutcome;
-    }
-  | {
-      kind: "error";
-      error: WhatsAppDirectPeerResolutionError;
-    };
+  | WhatsAppResolvedDirectPeer
+  | WhatsAppDirectPeerResolutionErrorResult;
+
+export type WhatsAppPreparedDirectPeer = {
+  kind: "prepared";
+  peer: WhatsAppResolvedDirectPeer;
+  pendingOwner: StoredDirectPeerOwner | null;
+};
+
+export type WhatsAppDirectPeerPreparation =
+  | WhatsAppPreparedDirectPeer
+  | WhatsAppDirectPeerResolutionErrorResult;
 
 export class WhatsAppDirectPeerResolutionError extends Error {
   readonly code: "mapping-error" | "owner-state-error";
@@ -75,7 +89,7 @@ function formatMappingError(mapping: Extract<WhatsAppJidMappingOutcome, { kind: 
   return `WhatsApp LID mapping lookup failed across ${sourceSummary}; repair the failing source and retry.`;
 }
 
-function ownerStateError(cause: unknown): WhatsAppDirectPeerResolution {
+function ownerStateError(cause: unknown): WhatsAppDirectPeerResolutionErrorResult {
   return {
     kind: "error",
     error: new WhatsAppDirectPeerResolutionError(
@@ -113,7 +127,7 @@ function readStoredOwner(
 function resolveStoredOwner(params: {
   owner: StoredDirectPeerOwner;
   mapping: WhatsAppJidMappingOutcome;
-}): WhatsAppDirectPeerResolution {
+}): WhatsAppResolvedDirectPeer {
   const e164 =
     params.mapping.kind === "mapped"
       ? params.mapping.e164
@@ -129,11 +143,11 @@ function resolveStoredOwner(params: {
   };
 }
 
-export async function resolveWhatsAppDirectPeer(params: {
+export async function prepareWhatsAppDirectPeer(params: {
   accountId: string;
   jid: string;
   mapping: WhatsAppJidMappingOutcome;
-}): Promise<WhatsAppDirectPeerResolution> {
+}): Promise<WhatsAppDirectPeerPreparation> {
   const lid = normalizeWhatsAppLidJid(params.jid);
   if (!lid) {
     return ownerStateError(new Error("direct peer is not a canonical LID"));
@@ -159,7 +173,11 @@ export async function resolveWhatsAppDirectPeer(params: {
     if (!stored) {
       return ownerStateError(new Error("direct-peer owner record is invalid"));
     }
-    return resolveStoredOwner({ owner: stored, mapping: params.mapping });
+    return {
+      kind: "prepared",
+      peer: resolveStoredOwner({ owner: stored, mapping: params.mapping }),
+      pendingOwner: null,
+    };
   }
   let pairedEntries: string[];
   try {
@@ -173,16 +191,32 @@ export async function resolveWhatsAppDirectPeer(params: {
     params.mapping.kind === "mapped" && !exactLidPairing
       ? { accountId: params.accountId, lid, owner: "e164", e164: params.mapping.e164 }
       : { accountId: params.accountId, lid, owner: "lid" };
+  return {
+    kind: "prepared",
+    peer: resolveStoredOwner({ owner, mapping: params.mapping }),
+    pendingOwner: owner,
+  };
+}
+
+export async function claimWhatsAppDirectPeer(
+  prepared: WhatsAppPreparedDirectPeer,
+): Promise<WhatsAppDirectPeerResolution> {
+  const owner = prepared.pendingOwner;
+  if (!owner) {
+    return prepared.peer;
+  }
+  const store = ownerStore();
   try {
-    if (await store.registerIfAbsent(ownerKey(params.accountId, lid), owner)) {
-      return resolveStoredOwner({ owner, mapping: params.mapping });
+    const key = ownerKey(owner.accountId, owner.lid);
+    if (await store.registerIfAbsent(key, owner)) {
+      return prepared.peer;
     }
-    const existing = readStoredOwner(await store.lookup(ownerKey(params.accountId, lid)), {
-      accountId: params.accountId,
-      lid,
+    const existing = readStoredOwner(await store.lookup(key), {
+      accountId: owner.accountId,
+      lid: owner.lid,
     });
     return existing
-      ? resolveStoredOwner({ owner: existing, mapping: params.mapping })
+      ? resolveStoredOwner({ owner: existing, mapping: prepared.peer.mapping })
       : ownerStateError(new Error("direct-peer owner record is invalid"));
   } catch (error) {
     return ownerStateError(error);

@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getWebAuthAgeMs,
   hasWebCredsSync,
-  logoutWeb,
+  clearWebCredentials,
   pickWebChannel,
   readCredsJsonRaw,
   readWebAuthSnapshot,
@@ -295,7 +295,7 @@ describe("auth-store", () => {
         exit: vi.fn(),
       };
 
-      await expect(logoutWeb({ authDir, runtime: runtime as never })).resolves.toBe(true);
+      await expect(clearWebCredentials({ authDir, runtime: runtime as never })).resolves.toBe(true);
       expect(fsSync.existsSync(authDir)).toBe(false);
     });
   });
@@ -307,7 +307,7 @@ describe("auth-store", () => {
       fsSync.writeFileSync(credsPath, "{}", "utf-8");
 
       await expect(
-        logoutWeb({
+        clearWebCredentials({
           authDir,
           beforeCredentialPersistence: async () => {
             throw guardError;
@@ -340,7 +340,7 @@ describe("auth-store", () => {
 
     try {
       await expect(
-        logoutWeb({ authDir, isLegacyAuthDir: true, runtime: runtime as never }),
+        clearWebCredentials({ authDir, isLegacyAuthDir: true, runtime: runtime as never }),
       ).rejects.toThrow("EACCES");
       expect(fsSync.existsSync(authDir)).toBe(true);
       expect(fsSync.existsSync(path.join(authDir, "oauth.json"))).toBe(true);
@@ -383,7 +383,7 @@ describe("auth-store", () => {
         path.join(authDir, "session-linked.json"),
       );
 
-      await expect(logoutWeb({ authDir, isLegacyAuthDir: true })).resolves.toBe(true);
+      await expect(clearWebCredentials({ authDir, isLegacyAuthDir: true })).resolves.toBe(true);
 
       for (const file of authFiles) {
         expect(fsSync.existsSync(path.join(authDir, file)), file).toBe(false);
@@ -413,7 +413,7 @@ describe("auth-store", () => {
         exit: vi.fn(),
       };
 
-      await expect(logoutWeb({ authDir, runtime: runtime as never })).resolves.toBe(true);
+      await expect(clearWebCredentials({ authDir, runtime: runtime as never })).resolves.toBe(true);
       expect(fsSync.existsSync(authDir)).toBe(false);
       readdirSpy.mockRestore();
     });
@@ -432,7 +432,7 @@ describe("auth-store", () => {
       exit: vi.fn(),
     };
 
-    await expect(logoutWeb({ authDir, runtime: runtime as never })).resolves.toBe(false);
+    await expect(clearWebCredentials({ authDir, runtime: runtime as never })).resolves.toBe(false);
     expect(fsSync.existsSync(authDir)).toBe(true);
     expect(fsSync.existsSync(path.join(authDir, "creds.json"))).toBe(true);
     expect(fsSync.existsSync(path.join(authDir, "notes.txt"))).toBe(true);
@@ -456,7 +456,9 @@ describe("auth-store", () => {
         exit: vi.fn(),
       };
 
-      await expect(logoutWeb({ authDir, runtime: runtime as never })).resolves.toBe(false);
+      await expect(clearWebCredentials({ authDir, runtime: runtime as never })).resolves.toBe(
+        false,
+      );
       expect(fsSync.existsSync(authDir)).toBe(true);
       expect(fsSync.existsSync(path.join(externalDir, "creds.json"))).toBe(true);
       expect(fsSync.existsSync(path.join(externalDir, "notes.txt"))).toBe(true);
@@ -487,7 +489,9 @@ describe("auth-store", () => {
         exit: vi.fn(),
       };
 
-      await expect(logoutWeb({ authDir, runtime: runtime as never })).resolves.toBe(false);
+      await expect(clearWebCredentials({ authDir, runtime: runtime as never })).resolves.toBe(
+        false,
+      );
       expect(fsSync.existsSync(authDir)).toBe(true);
       expect(fsSync.existsSync(path.join(externalAuthDir, "creds.json"))).toBe(true);
       expect(fsSync.existsSync(path.join(externalAuthDir, "notes.txt"))).toBe(true);
@@ -507,7 +511,7 @@ describe("auth-store", () => {
       exit: vi.fn(),
     };
 
-    await expect(logoutWeb({ authDir, runtime: runtime as never })).resolves.toBe(false);
+    await expect(clearWebCredentials({ authDir, runtime: runtime as never })).resolves.toBe(false);
     expect(fsSync.existsSync(authDir)).toBe(true);
     expect(fsSync.existsSync(path.join(authDir, "notes.txt"))).toBe(true);
   });

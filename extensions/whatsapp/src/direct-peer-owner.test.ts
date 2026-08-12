@@ -23,7 +23,11 @@ vi.mock("openclaw/plugin-sdk/channel-pairing", async () => {
   };
 });
 
-import { clearWhatsAppDirectPeerOwners, resolveWhatsAppDirectPeer } from "./direct-peer-owner.js";
+import {
+  claimWhatsAppDirectPeer,
+  clearWhatsAppDirectPeerOwners,
+  prepareWhatsAppDirectPeer,
+} from "./direct-peer-owner.js";
 
 type Entry = { key: string; value: unknown; createdAt: number };
 const state = {
@@ -66,6 +70,15 @@ const mapped: WhatsAppJidMappingOutcome = {
   e164: "+15550001111",
   evidence: [{ source: "baileys", outcome: "mapped" }],
 };
+
+async function resolveWhatsAppDirectPeer(params: {
+  accountId: string;
+  jid: string;
+  mapping: WhatsAppJidMappingOutcome;
+}) {
+  const prepared = await prepareWhatsAppDirectPeer(params);
+  return prepared.kind === "error" ? prepared : await claimWhatsAppDirectPeer(prepared);
+}
 
 describe("direct-peer owner", () => {
   beforeEach(() => {

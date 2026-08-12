@@ -7,7 +7,6 @@ import { getActiveWebListener as getActiveWebListenerImpl } from "./active-liste
 import {
   getWebAuthAgeMs as getWebAuthAgeMsImpl,
   logWebSelfId as logWebSelfIdImpl,
-  logoutWeb as logoutWebImpl,
   readWebAuthSnapshot as readWebAuthSnapshotImpl,
   readWebAuthState as readWebAuthStateImpl,
   readWebAuthExistsBestEffort as readWebAuthExistsBestEffortImpl,
@@ -17,13 +16,14 @@ import {
   webAuthExists as webAuthExistsImpl,
 } from "./auth-store.js";
 import { monitorWebChannel as monitorWebChannelImpl } from "./auto-reply/monitor.js";
+import { logoutWeb as logoutWebImpl } from "./credential-reset.js";
 import { loginWeb as loginWebImpl } from "./login.js";
 import { whatsappSetupWizard as whatsappSetupWizardImpl } from "./setup-surface.js";
 
 type GetActiveWebListener = typeof import("./active-listener.js").getActiveWebListener;
 type GetWebAuthAgeMs = typeof import("./auth-store.js").getWebAuthAgeMs;
 type LogWebSelfId = typeof import("./auth-store.js").logWebSelfId;
-type LogoutWeb = typeof import("./auth-store.js").logoutWeb;
+type LogoutWeb = typeof import("./credential-reset.js").logoutWeb;
 type ReadWebAuthSnapshot = typeof import("./auth-store.js").readWebAuthSnapshot;
 type ReadWebAuthState = typeof import("./auth-store.js").readWebAuthState;
 type ReadWebAuthExistsBestEffort = typeof import("./auth-store.js").readWebAuthExistsBestEffort;

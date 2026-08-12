@@ -50,12 +50,12 @@ export { formatError, getStatusCode } from "./session-errors.js";
 
 export {
   getWebAuthAgeMs,
-  logoutWeb,
   readWebAuthExistsForDecision,
   readWebSelfId,
   WHATSAPP_AUTH_UNSTABLE_CODE,
   WhatsAppAuthUnstableError,
 } from "./auth-store.js";
+export { logoutWeb } from "./credential-reset.js";
 export {
   waitForCredsSaveQueue,
   waitForCredsSaveQueueWithTimeout,

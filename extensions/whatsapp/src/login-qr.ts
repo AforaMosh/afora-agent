@@ -190,6 +190,7 @@ function renderLatestQrDataUrlInBackground(params: {
 
 function attachLoginWaiter(accountId: string, login: ActiveLogin) {
   login.waitPromise = waitForWhatsAppLoginResult({
+    accountId,
     sock: login.sock,
     authDir: login.authDir,
     isLegacyAuthDir: login.isLegacyAuthDir,
@@ -340,6 +341,7 @@ export async function startWebLoginWithQr(
   if (authState.exists && opts.force) {
     try {
       const cleared = await logoutWeb({
+        accountId: account.accountId,
         authDir: account.authDir,
         isLegacyAuthDir: account.isLegacyAuthDir,
         runtime,
