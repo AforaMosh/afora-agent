@@ -79,14 +79,6 @@ export function normalizeWhatsAppLidJid(jid: string | null | undefined): string 
     : null;
 }
 
-export function normalizeWhatsAppDirectIdentity(value: string): string | null {
-  const normalized = value.replace(/^whatsapp:/iu, "").trim();
-  return (
-    normalizeWhatsAppLidJid(normalized) ??
-    (normalized.includes("@") ? jidToE164(normalized) : normalizeE164(normalized))
-  );
-}
-
 export function resolveComparableIdentity(
   identity: WhatsAppIdentity | WhatsAppSelfIdentity | null | undefined,
   authDir?: string,

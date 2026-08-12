@@ -13,17 +13,13 @@ import type {
 } from "openclaw/plugin-sdk/config-contracts";
 import { resolveDefaultGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
 import { resolveWhatsAppAccount, type ResolvedWhatsAppAccount } from "./accounts.js";
-import {
-  getSelfIdentity,
-  getSenderIdentity,
-  normalizeWhatsAppDirectIdentity,
-  normalizeWhatsAppLidJid,
-} from "./identity.js";
+import { getSelfIdentity, getSenderIdentity, normalizeWhatsAppLidJid } from "./identity.js";
 import { requireWhatsAppInboundAdmission } from "./inbound/admission.js";
 import { resolveWhatsAppGroupConversationId } from "./inbound/group-conversation.js";
 import type { AdmittedWebInboundMessage } from "./inbound/types.js";
+import { normalizeWhatsAppDirectIdentity } from "./normalize-target.js";
 import { resolveWhatsAppRuntimeGroupPolicy } from "./runtime-group-policy.js";
-import { isSelfChatMode, normalizeE164 } from "./text-runtime.js";
+import { isSelfChatMode } from "./text-runtime.js";
 
 type ResolvedWhatsAppInboundPolicy = {
   account: ResolvedWhatsAppAccount;
@@ -40,11 +36,8 @@ type ResolvedWhatsAppInboundPolicy = {
 };
 
 function normalizeWhatsAppIngressPhone(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed.includes("@")) {
-    return null;
-  }
-  return normalizeE164(trimmed);
+  const normalized = normalizeWhatsAppDirectIdentity(value);
+  return normalized?.startsWith("+") ? normalized : null;
 }
 
 function buildResolvedWhatsAppGroupConfig(params: {

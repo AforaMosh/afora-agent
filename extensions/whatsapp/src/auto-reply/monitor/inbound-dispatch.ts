@@ -18,9 +18,9 @@ import {
   normalizeOptionalString,
   normalizeStringEntries,
 } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { normalizeWhatsAppDirectIdentity } from "../../identity.js";
 import { requireWhatsAppInboundAdmission } from "../../inbound/admission.js";
 import type { AdmittedWebInboundMessage } from "../../inbound/types.js";
+import { normalizeWhatsAppDirectIdentity } from "../../normalize-target.js";
 import {
   type DeliverableWhatsAppOutboundPayload,
   normalizeWhatsAppOutboundPayload,

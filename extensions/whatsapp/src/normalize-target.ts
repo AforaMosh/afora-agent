@@ -106,6 +106,14 @@ export function normalizeWhatsAppTarget(value: string): string | null {
   return normalized.length > 1 ? normalized : null;
 }
 
+export function normalizeWhatsAppDirectIdentity(value: string): string | null {
+  const normalized = normalizeWhatsAppTarget(value);
+  if (!normalized || isWhatsAppGroupJid(normalized) || isWhatsAppNewsletterJid(normalized)) {
+    return null;
+  }
+  return normalized;
+}
+
 export function normalizeWhatsAppMessagingTarget(raw: string): string | undefined {
   const trimmed = raw.trim();
   if (!trimmed) {

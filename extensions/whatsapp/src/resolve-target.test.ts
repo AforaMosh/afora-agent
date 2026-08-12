@@ -6,6 +6,7 @@ import {
   looksLikeWhatsAppTargetId,
   isWhatsAppUserTarget,
   normalizeWhatsAppAllowFromEntries,
+  normalizeWhatsAppDirectIdentity,
   normalizeWhatsAppMessagingTarget,
   normalizeWhatsAppTarget,
 } from "./normalize-target.js";
@@ -77,6 +78,22 @@ describe("normalizeWhatsAppTarget", () => {
   it("handles repeated prefixes", () => {
     expect(normalizeWhatsAppTarget("whatsapp:whatsapp:+1555")).toBe("+1555");
     expect(normalizeWhatsAppTarget("group:group:120@g.us")).toBeNull();
+  });
+});
+
+describe("normalizeWhatsAppDirectIdentity", () => {
+  it("shares WhatsApp target prefix and provider policy", () => {
+    expect(normalizeWhatsAppDirectIdentity("whatsapp:whatsapp:123456789@lid")).toBe(
+      "123456789@lid",
+    );
+    expect(normalizeWhatsAppDirectIdentity("telegram:1555")).toBeNull();
+    expect(normalizeWhatsAppDirectIdentity("sms:+1555")).toBeNull();
+  });
+
+  it("accepts formatted phones and exact direct JIDs", () => {
+    expect(normalizeWhatsAppDirectIdentity("+1 (555) 123-4567")).toBe("+15551234567");
+    expect(normalizeWhatsAppDirectIdentity("15551234567@s.whatsapp.net")).toBe("+15551234567");
+    expect(normalizeWhatsAppDirectIdentity("123456789@hosted.lid")).toBe("123456789@hosted.lid");
   });
 });
 

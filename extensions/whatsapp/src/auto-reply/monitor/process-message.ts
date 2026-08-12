@@ -20,12 +20,7 @@ import {
 } from "openclaw/plugin-sdk/hook-runtime";
 import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
 import { resolveBatchedReplyThreadingPolicy } from "openclaw/plugin-sdk/reply-reference";
-import {
-  getPrimaryIdentityId,
-  getSelfIdentity,
-  getSenderIdentity,
-  normalizeWhatsAppDirectIdentity,
-} from "../../identity.js";
+import { getPrimaryIdentityId, getSelfIdentity, getSenderIdentity } from "../../identity.js";
 import {
   resolveWhatsAppCommandAuthorized,
   resolveWhatsAppInboundPolicy,
@@ -33,6 +28,7 @@ import {
 import { requireWhatsAppInboundAdmission } from "../../inbound/admission.js";
 import { resolveWhatsAppIngressLifecycle } from "../../inbound/ingress-lifecycle.js";
 import type { AdmittedWebInboundMessage } from "../../inbound/types.js";
+import { normalizeWhatsAppDirectIdentity } from "../../normalize-target.js";
 import { newConnectionId } from "../../reconnect.js";
 import { formatError } from "../../session.js";
 import {
