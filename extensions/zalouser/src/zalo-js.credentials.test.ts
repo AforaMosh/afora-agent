@@ -35,7 +35,6 @@ import {
   type StoredZaloCredentials,
 } from "./session-state.js";
 import {
-  cancelZaloQrLogin,
   checkZaloAuthenticated,
   listZaloFriends,
   sendZaloLink,
@@ -195,10 +194,6 @@ describe("zalouser credential persistence", () => {
   it("rejects a non-PNG QR image and allows an immediate valid retry", async () => {
     const profile = "qr-invalid-image-retry";
     const firstAbort = vi.fn();
-    let rejectFirstLogin: (error: Error) => void = () => undefined;
-    const firstLogin = new Promise<API>((_resolve, reject) => {
-      rejectFirstLogin = reject;
-    });
     let resolveSecondLogin: (api: API) => void = () => undefined;
     const secondLogin = new Promise<API>((resolve) => {
       resolveSecondLogin = resolve;
@@ -223,13 +218,11 @@ describe("zalouser credential persistence", () => {
             actions: {
               saveToFile: vi.fn(async () => undefined),
               retry: vi.fn(),
-              abort: () => {
-                firstAbort();
-                rejectFirstLogin(new Error("aborted invalid QR login"));
-              },
+              abort: firstAbort,
             },
           });
-          return await firstLogin;
+          // Model a vendor that completes immediately despite the abort call.
+          return api;
         },
       })
       .mockResolvedValueOnce({
@@ -256,6 +249,7 @@ describe("zalouser credential persistence", () => {
     expect(rejected.qrDataUrl).toBeUndefined();
     expect(rejected.message).toContain("invalid or non-PNG QR image");
     expect(firstAbort).toHaveBeenCalledTimes(1);
+    expect(loadStoredZaloCredentials(profile)).toBeNull();
 
     const started = await startZaloQrLogin({ profile, timeoutMs: 1000 });
     expect(started.qrDataUrl).toBe(`data:image/png;base64,${PNG_1X1}`);
@@ -298,11 +292,12 @@ describe("zalouser credential persistence", () => {
     try {
       await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
         const started = await startZaloQrLogin({ profile, timeoutMs: 3000 });
-        expect(started).toEqual({
+        expect(started).toMatchObject({
           message: "Still preparing QR. Call wait to continue checking login status.",
         });
 
-        cancelZaloQrLogin(profile);
+        expect(started.cancel).toBeTypeOf("function");
+        started.cancel?.();
         resolveLogin(api);
         await new Promise<void>((resolve) => {
           setImmediate(resolve);
@@ -357,7 +352,8 @@ describe("zalouser credential persistence", () => {
           message: "Still waiting for QR scan confirmation.",
         });
 
-        cancelZaloQrLogin(profile);
+        expect(started.cancel).toBeTypeOf("function");
+        started.cancel?.();
         resolveLogin(api);
         await new Promise<void>((resolve) => {
           setImmediate(resolve);
@@ -365,6 +361,109 @@ describe("zalouser credential persistence", () => {
 
         expect(abort).toHaveBeenCalledTimes(1);
         expect(loadStoredZaloCredentials(profile)).toBeNull();
+      });
+    } finally {
+      await rm(stateDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not let stale cleanup cancel a replacement QR generation", async () => {
+    const stateDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-zalouser-credentials-"));
+    const profile = "qr-generation-replacement";
+    const firstAbort = vi.fn();
+    let rejectFirstLogin: (error: Error) => void = () => undefined;
+    const firstLogin = new Promise<API>((_resolve, reject) => {
+      rejectFirstLogin = reject;
+    });
+    const secondAbort = vi.fn();
+    let secondCallback: ((event: LoginQRCallbackEvent) => unknown) | undefined;
+    let resolveSecondLogin: (api: API) => void = () => undefined;
+    const secondLogin = new Promise<API>((resolve) => {
+      resolveSecondLogin = resolve;
+    });
+    const api = createMockApi({
+      imei: "replacement-imei",
+      userAgent: "replacement-user-agent",
+      language: "vi",
+      cookies: [{ key: "zpsid", value: "replacement", domain: "chat.zalo.me" }],
+    });
+
+    createZaloMock
+      .mockResolvedValueOnce({
+        loginQR: async (_options: unknown, callback?: (event: LoginQRCallbackEvent) => unknown) => {
+          callback?.({
+            type: LoginQRCallbackEventType.QRCodeGenerated,
+            data: {
+              code: "first-qr",
+              image: `data:image/png;base64,${PNG_1X1}`,
+            },
+            actions: {
+              saveToFile: vi.fn(async () => undefined),
+              retry: vi.fn(),
+              abort: () => {
+                firstAbort();
+                rejectFirstLogin(new Error("first generation replaced"));
+              },
+            },
+          });
+          return await firstLogin;
+        },
+      })
+      .mockResolvedValueOnce({
+        loginQR: async (_options: unknown, callback?: (event: LoginQRCallbackEvent) => unknown) => {
+          secondCallback = callback;
+          callback?.({
+            type: LoginQRCallbackEventType.QRCodeGenerated,
+            data: {
+              code: "replacement-qr",
+              image: `data:image/png;base64,${PNG_1X1}`,
+            },
+            actions: {
+              saveToFile: vi.fn(async () => undefined),
+              retry: vi.fn(),
+              abort: secondAbort,
+            },
+          });
+          return await secondLogin;
+        },
+      });
+
+    try {
+      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+        const first = await startZaloQrLogin({
+          profile,
+          timeoutMs: 1000,
+          beforeCredentialPersistence: async () => undefined,
+        });
+        const replacement = await startZaloQrLogin({
+          profile,
+          timeoutMs: 1000,
+          beforeCredentialPersistence: async () => undefined,
+        });
+
+        expect(firstAbort).toHaveBeenCalledOnce();
+        expect(first.cancel).toBeTypeOf("function");
+        expect(replacement.qrDataUrl).toBe(`data:image/png;base64,${PNG_1X1}`);
+
+        first.cancel?.();
+        expect(secondAbort).not.toHaveBeenCalled();
+
+        secondCallback?.({
+          type: LoginQRCallbackEventType.GotLoginInfo,
+          data: {
+            cookie: [{ key: "zpsid", value: "replacement", domain: "chat.zalo.me" }],
+            imei: "replacement-imei",
+            userAgent: "replacement-user-agent",
+          },
+          actions: null,
+        });
+        resolveSecondLogin(api);
+
+        await expect(waitForZaloQrLogin({ profile, timeoutMs: 1000 })).resolves.toEqual({
+          connected: true,
+          message: "Login successful.",
+        });
+        expect(loadStoredZaloCredentials(profile)?.imei).toBe("replacement-imei");
       });
     } finally {
       await rm(stateDir, { recursive: true, force: true });

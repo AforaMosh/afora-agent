@@ -11,7 +11,6 @@ import "./zalo-js.test-mocks.js";
 import { zalouserSetupWizard } from "./setup-surface.js";
 import { zalouserSetupPlugin } from "./setup-test-helpers.js";
 import {
-  cancelZaloQrLoginMock,
   checkZaloAuthenticatedMock,
   logoutZaloProfileMock,
   resolveZaloAllowFromEntriesMock,
@@ -223,12 +222,13 @@ describe("zalouser setup wizard", () => {
     { name: "first login", authenticated: false },
     { name: "forced re-login", authenticated: true },
   ])("recovers when $name cannot present its QR image", async ({ authenticated }) => {
-    cancelZaloQrLoginMock.mockClear();
+    const cancel = vi.fn();
     writeQrDataUrlToTempFileMock.mockResolvedValueOnce(null);
     checkZaloAuthenticatedMock.mockResolvedValueOnce(authenticated);
     startZaloQrLoginMock.mockResolvedValueOnce({
       message: "qr pending",
       qrDataUrl: "data:text/plain;base64,bm90LWEtcG5n",
+      cancel,
     });
     waitForZaloQrLoginMock.mockClear();
     const note = vi.fn(async (_message: string, _title?: string) => {});
@@ -251,20 +251,19 @@ describe("zalouser setup wizard", () => {
       expect.stringContaining("Scan + approve on phone, then continue."),
       "QR Login",
     );
-    expect(cancelZaloQrLoginMock.mock.invocationCallOrder[0]).toBeLessThan(
-      note.mock.invocationCallOrder.at(-1)!,
-    );
+    expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(note.mock.invocationCallOrder.at(-1)!);
     expect(confirmations).not.toContain("Did you scan and approve the QR on your phone?");
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
-    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+    expect(cancel).toHaveBeenCalledOnce();
   });
 
   it("cancels the active QR login when writing its image throws", async () => {
     checkZaloAuthenticatedMock.mockResolvedValueOnce(false);
-    cancelZaloQrLoginMock.mockClear();
+    const cancel = vi.fn();
     startZaloQrLoginMock.mockResolvedValueOnce({
       message: "qr ready",
       qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+      cancel,
     });
     writeQrDataUrlToTempFileMock.mockRejectedValueOnce(new Error("disk full"));
     const prompter = createTestWizardPrompter({
@@ -274,16 +273,17 @@ describe("zalouser setup wizard", () => {
     });
 
     await expect(runSetup({ prompter })).rejects.toThrow("disk full");
-    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+    expect(cancel).toHaveBeenCalledOnce();
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
   });
 
   it("cancels the active QR login when scan confirmation is declined", async () => {
     checkZaloAuthenticatedMock.mockResolvedValueOnce(false);
-    cancelZaloQrLoginMock.mockClear();
+    const cancel = vi.fn();
     startZaloQrLoginMock.mockResolvedValueOnce({
       message: "qr ready",
       qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+      cancel,
     });
     waitForZaloQrLoginMock.mockClear();
     const prompter = createTestWizardPrompter({
@@ -297,7 +297,7 @@ describe("zalouser setup wizard", () => {
 
     await runSetup({ prompter });
 
-    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+    expect(cancel).toHaveBeenCalledOnce();
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
   });
 
@@ -308,11 +308,12 @@ describe("zalouser setup wizard", () => {
     "cancels $name when QR startup remains pending",
     async ({ authenticated, expectedLogouts }) => {
       checkZaloAuthenticatedMock.mockResolvedValueOnce(authenticated);
-      cancelZaloQrLoginMock.mockClear();
+      const cancel = vi.fn();
       logoutZaloProfileMock.mockClear();
       startZaloQrLoginMock.mockClear();
       startZaloQrLoginMock.mockResolvedValueOnce({
         message: "Still preparing QR. Call wait to continue checking login status.",
+        cancel,
       });
       waitForZaloQrLoginMock.mockClear();
       const note = vi.fn(async (_message: string, _title?: string) => {});
@@ -339,8 +340,8 @@ describe("zalouser setup wizard", () => {
         expect.stringContaining("Call wait"),
         expect.anything(),
       );
-      expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
-      expect(cancelZaloQrLoginMock.mock.invocationCallOrder[0]).toBeLessThan(
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(
         note.mock.invocationCallOrder.at(-1)!,
       );
       expect(logoutZaloProfileMock).toHaveBeenCalledTimes(expectedLogouts);
@@ -358,10 +359,11 @@ describe("zalouser setup wizard", () => {
 
   it("cancels a disconnected QR wait before reporting retry guidance", async () => {
     checkZaloAuthenticatedMock.mockResolvedValueOnce(false);
-    cancelZaloQrLoginMock.mockClear();
+    const cancel = vi.fn();
     startZaloQrLoginMock.mockResolvedValueOnce({
       message: "Scan this QR with the Zalo app.",
       qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+      cancel,
     });
     waitForZaloQrLoginMock.mockResolvedValueOnce({
       connected: false,
@@ -380,14 +382,12 @@ describe("zalouser setup wizard", () => {
 
     await runSetup({ prompter });
 
-    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("default");
+    expect(cancel).toHaveBeenCalledOnce();
     expect(note).toHaveBeenLastCalledWith(
       "Still waiting for QR scan confirmation.\nQR login stopped. Start login again to retry.",
       "QR Login",
     );
-    expect(cancelZaloQrLoginMock.mock.invocationCallOrder[0]).toBeLessThan(
-      note.mock.invocationCallOrder.at(-1)!,
-    );
+    expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(note.mock.invocationCallOrder.at(-1)!);
   });
 
   it("prompts DM policy before group access in quickstart", async () => {

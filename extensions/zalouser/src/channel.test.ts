@@ -19,10 +19,10 @@ describe("zalouser target classification", () => {
     expect(zalouserMessagingAdapter.inferTargetChatType({ to: "group:456" })).toBe("group");
   });
 });
+import { zalouserPlugin } from "./channel.js";
 import { setZalouserRuntime } from "./runtime.js";
 import { sendMessageZalouser, sendReactionZalouser } from "./send.js";
 import {
-  cancelZaloQrLoginMock,
   listZaloFriendsMatchingMock,
   startZaloQrLoginMock,
   waitForZaloQrLoginMock,
@@ -486,7 +486,6 @@ describe("zalouser channel policies", () => {
 
 describe("zalouser account resolution", () => {
   beforeEach(() => {
-    cancelZaloQrLoginMock.mockReset();
     listZaloFriendsMatchingMock.mockReset();
     startZaloQrLoginMock.mockReset();
     waitForZaloQrLoginMock.mockReset();
@@ -578,15 +577,36 @@ describe("zalouser account resolution", () => {
     });
   });
 
+  it("keeps the QR generation cancel capability inside the plugin", async () => {
+    const cancel = vi.fn();
+    startZaloQrLoginMock.mockResolvedValue({
+      message: "scan qr",
+      qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+      cancel,
+    } as never);
+    const loginWithQrStart = zalouserPlugin.gateway?.loginWithQrStart;
+    if (!loginWithQrStart) {
+      throw new Error("zalouser gateway.loginWithQrStart unavailable");
+    }
+
+    await expect(loginWithQrStart({ accountId: "work", timeoutMs: 1000 })).resolves.toEqual({
+      message: "scan qr",
+      qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+    });
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
   it("stops direct qr login before polling when the image is unusable", async () => {
     const login = zalouserAuthAdapter.login;
     if (!login) {
       throw new Error("zalouser auth.login unavailable");
     }
 
+    const cancel = vi.fn();
     startZaloQrLoginMock.mockResolvedValue({
       message: "qr ready",
       qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+      cancel,
     } as never);
     writeQrDataUrlToTempFileMock.mockResolvedValue(null);
 
@@ -608,7 +628,7 @@ describe("zalouser account resolution", () => {
       }),
     ).rejects.toThrow("Zalo QR login returned an unusable image. Start login again.");
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
-    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("work-profile");
+    expect(cancel).toHaveBeenCalledOnce();
   });
 
   it("cancels direct qr login when writing its image throws", async () => {
@@ -617,9 +637,11 @@ describe("zalouser account resolution", () => {
       throw new Error("zalouser auth.login unavailable");
     }
 
+    const cancel = vi.fn();
     startZaloQrLoginMock.mockResolvedValue({
       message: "qr ready",
       qrDataUrl: `data:image/png;base64,${PNG_1X1}`,
+      cancel,
     } as never);
     writeQrDataUrlToTempFileMock.mockRejectedValueOnce(new Error("disk full"));
 
@@ -640,7 +662,7 @@ describe("zalouser account resolution", () => {
         runtime: createNonExitingRuntimeEnv(),
       }),
     ).rejects.toThrow("disk full");
-    expect(cancelZaloQrLoginMock).toHaveBeenCalledWith("work-profile");
+    expect(cancel).toHaveBeenCalledOnce();
     expect(waitForZaloQrLoginMock).not.toHaveBeenCalled();
   });
 });

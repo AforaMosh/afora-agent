@@ -24,7 +24,6 @@ import {
 } from "./accounts.js";
 import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
 import {
-  cancelZaloQrLogin,
   logoutZaloProfile,
   resolveZaloAllowFromEntries,
   resolveZaloGroupsByEntries,
@@ -294,7 +293,7 @@ async function runZalouserQrLogin(params: {
   if (!start.qrDataUrl) {
     // Setup has no follow-up wait once it returns. Retire ownership before the
     // operator-facing note so a late vendor result cannot persist credentials.
-    cancelZaloQrLogin(params.profile);
+    start.cancel?.();
     await params.prompter.note(
       t("wizard.zalouser.qrLoginRetry"),
       t("wizard.zalouser.qrLoginTitle"),
@@ -306,13 +305,13 @@ async function runZalouserQrLogin(params: {
   try {
     qrPath = await writeQrDataUrlToTempFile(start.qrDataUrl, params.profile);
   } catch (error) {
-    cancelZaloQrLogin(params.profile);
+    start.cancel?.();
     throw error;
   }
   if (!qrPath) {
     // Retire ownership before awaiting the operator-visible failure note; the
     // vendor worker must not persist credentials during that await.
-    cancelZaloQrLogin(params.profile);
+    start.cancel?.();
   }
   try {
     await params.prompter.note(
@@ -326,7 +325,7 @@ async function runZalouserQrLogin(params: {
       t("wizard.zalouser.qrLoginTitle"),
     );
   } catch (error) {
-    cancelZaloQrLogin(params.profile);
+    start.cancel?.();
     throw error;
   }
   if (!qrPath) {
@@ -338,7 +337,7 @@ async function runZalouserQrLogin(params: {
     initialValue: true,
   });
   if (!scanned) {
-    cancelZaloQrLogin(params.profile);
+    start.cancel?.();
     return;
   }
 
@@ -349,7 +348,7 @@ async function runZalouserQrLogin(params: {
   if (!waited.connected) {
     // A wait timeout deliberately leaves the generic QR session active. Setup
     // is terminal here, so release it before any awaited presentation work.
-    cancelZaloQrLogin(params.profile);
+    start.cancel?.();
   }
   await params.prompter.note(
     waited.connected

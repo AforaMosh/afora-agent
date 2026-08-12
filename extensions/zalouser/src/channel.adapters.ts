@@ -400,8 +400,7 @@ export const zalouserAuthAdapter = {
     accountId?: string | null;
     runtime: RuntimeEnv;
   }) => {
-    const { cancelZaloQrLogin, startZaloQrLogin, waitForZaloQrLogin } =
-      await loadZalouserChannelRuntime();
+    const { startZaloQrLogin, waitForZaloQrLogin } = await loadZalouserChannelRuntime();
     const account = resolveZalouserAccountSync({
       cfg,
       accountId: accountId ?? resolveDefaultZalouserAccountId(cfg),
@@ -416,7 +415,7 @@ export const zalouserAuthAdapter = {
       timeoutMs: 35_000,
     });
     if (!started.qrDataUrl) {
-      cancelZaloQrLogin(account.profile);
+      started.cancel?.();
       throw new Error("Zalo QR login did not produce a scannable image. Start login again.");
     }
 
@@ -427,7 +426,7 @@ export const zalouserAuthAdapter = {
       if (!qrPath) {
         // The QR vendor login can persist credentials asynchronously. Cancel at
         // its lifecycle owner whenever presentation fails or throws.
-        cancelZaloQrLogin(account.profile);
+        started.cancel?.();
       }
     }
     if (!qrPath) {
@@ -437,7 +436,7 @@ export const zalouserAuthAdapter = {
 
     const waited = await waitForZaloQrLogin({ profile: account.profile, timeoutMs: 180_000 });
     if (!waited.connected) {
-      cancelZaloQrLogin(account.profile);
+      started.cancel?.();
       throw new Error(waited.message || "Zalouser login failed");
     }
 
