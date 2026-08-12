@@ -109,7 +109,9 @@ export function getComparableIdentityValues(
   identity: WhatsAppIdentity | WhatsAppSelfIdentity | null | undefined,
 ): string[] {
   const resolved = resolveComparableIdentity(identity);
-  return [resolved.e164, resolved.jid, resolved.lid].filter((value): value is string =>
+  const parsedJid = resolved.jid ? parseExactWhatsAppJid(resolved.jid) : null;
+  const comparableJid = parsedJid?.kind === "pn" || parsedJid?.kind === "lid" ? resolved.jid : null;
+  return [resolved.e164, comparableJid, resolved.lid].filter((value): value is string =>
     Boolean(value),
   );
 }

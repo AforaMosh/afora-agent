@@ -151,6 +151,10 @@ describe("typed WhatsApp direct identity access", () => {
     ["123:4@hosted.lid", "123@hosted.lid", true],
     ["15550001111:4@s.whatsapp.net", "+15550001111", true],
     ["15550001111:4@hosted", "+15550001111", true],
+    ["123@LID", "123@lid", false],
+    ["123:4@HOSTED.LID", "123@hosted.lid", false],
+    ["15550001111@S.WHATSAPP.NET", "+15550001111", false],
+    ["15550001111:4@HOSTED", "+15550001111", false],
   ])(
     "authorizes group command sender %j against exact direct entry %j as %j",
     async (senderJid, allowFrom, expected) => {

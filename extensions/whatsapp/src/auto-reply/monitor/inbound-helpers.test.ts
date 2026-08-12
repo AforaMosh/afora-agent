@@ -185,6 +185,12 @@ describe("whatsapp inbound context visibility", () => {
     ["whatsapp:777@lid", "777@lid"],
     ["whatsapp:whatsapp:777@hosted.lid", "777@hosted.lid"],
     [" 777@s.whatsapp.net ", "+777"],
+    ["777@S.WHATSAPP.NET", "+777"],
+    ["777@HOSTED", "+777"],
+    ["777@LID", "777@lid"],
+    ["777@HOSTED.LID", "777@hosted.lid"],
+    ["123-456@G.US", "123-456@g.us"],
+    ["777@NEWSLETTER", "777@newsletter"],
   ])("keeps raw native quote participant %j out of comparable facts", (participant, allowFrom) => {
     const context = describeReplyContext({
       extendedTextMessage: {

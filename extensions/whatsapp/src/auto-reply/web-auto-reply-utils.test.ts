@@ -246,16 +246,21 @@ describe("isBotMentionedFromTargets", () => {
   });
 
   it.each([
-    "whatsapp:216372600647751@lid",
-    "whatsapp:whatsapp:216372600647751@lid",
-    " 216372600647751@lid ",
-  ])("does not treat raw native mention %j as a self mention", (mentionedJid) => {
+    ["whatsapp:216372600647751@lid", "216372600647751@lid"],
+    ["whatsapp:whatsapp:216372600647751@lid", "216372600647751@lid"],
+    [" 216372600647751@lid ", "216372600647751@lid"],
+    ["216372600647751@LID", "216372600647751@lid"],
+    ["15551234567@S.WHATSAPP.NET", "15551234567@s.whatsapp.net"],
+    ["216372600647751@LID", "216372600647751@LID"],
+    ["123-456@G.US", "123-456@G.US"],
+    ["216372600647751@NEWSLETTER", "216372600647751@NEWSLETTER"],
+  ])("does not treat raw native mention %j as self identity %j", (mentionedJid, selfJid) => {
     const msg = makeMsg({
       body: "hey",
       mentionedJids: [mentionedJid],
       selfE164: "+15551234567",
-      selfJid: "15551234567@s.whatsapp.net",
-      selfLid: "216372600647751@lid",
+      selfJid,
+      selfLid: selfJid.includes("@lid") || selfJid.includes("@LID") ? selfJid : undefined,
     });
 
     expectMentioned(msg, mentionCfg, false);

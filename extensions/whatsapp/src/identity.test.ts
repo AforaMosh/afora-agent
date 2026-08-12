@@ -1,6 +1,7 @@
 // Whatsapp identity tests cover strict provider identity aliases.
 import { describe, expect, it } from "vitest";
 import { normalizeWhatsAppLidJid, resolveComparableIdentity } from "./identity.js";
+import { parseExactWhatsAppJid, parseWhatsAppJid } from "./phone-input.js";
 
 describe("normalizeWhatsAppLidJid", () => {
   it.each([
@@ -65,5 +66,19 @@ describe("normalizeWhatsAppLidJid", () => {
     expect(normalizeWhatsAppLidJid("  whatsapp:whatsapp:123:4@HOSTED.LID  ")).toBe(
       "123@hosted.lid",
     );
+  });
+
+  it.each([
+    ["123@S.WHATSAPP.NET", "123@s.whatsapp.net"],
+    ["123:4@HOSTED", "123:4@hosted"],
+    ["123@LID", "123@lid"],
+    ["123:4@HOSTED.LID", "123:4@hosted.lid"],
+    ["123-456@G.US", "123-456@g.us"],
+    ["123@NEWSLETTER", "123@newsletter"],
+  ])("keeps raw domain case exact while convenience-normalizing %j", (raw, canonical) => {
+    expect(parseExactWhatsAppJid(raw)).toBeNull();
+    expect(parseWhatsAppJid(raw)?.jid).toBe(canonical);
+    const resolved = resolveComparableIdentity({ jid: raw });
+    expect(resolved).toEqual({ jid: raw, lid: null, e164: null });
   });
 });

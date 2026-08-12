@@ -210,7 +210,7 @@ export async function resolveWhatsAppCommandAuthorized(params: {
     });
   const isGroup = admission.conversation.kind === "group";
   const sender = getSenderIdentity(params.msg, params.authDir);
-  const stableSender = isGroup ? (sender.e164 ?? sender.lid ?? sender.jid) : admission.sender.id;
+  const stableSender = isGroup ? (sender.e164 ?? sender.lid) : admission.sender.id;
   if (!stableSender) {
     return false;
   }

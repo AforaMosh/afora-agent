@@ -1,11 +1,11 @@
 // Whatsapp helper module owns dependency-free strict phone input parsing.
 const WHATSAPP_PHONE_INPUT_RE = /^\+?[\d ().-]+$/;
 const WHATSAPP_JID_PATTERNS = [
-  ["pn", /^(\d+)(?::(\d+))?@(s\.whatsapp\.net|hosted)$/i],
-  ["pn", /^(\d+)()@(c\.us)$/i],
-  ["lid", /^(\d+)(?::(\d+))?@(lid|hosted\.lid)$/i],
-  ["group", /^([0-9]+(?:-[0-9]+)*)()@(g\.us)$/i],
-  ["newsletter", /^([0-9]+)()@(newsletter)$/i],
+  ["pn", /^(\d+)(?::(\d+))?@(s\.whatsapp\.net|hosted)$/],
+  ["pn", /^(\d+)()@(c\.us)$/],
+  ["lid", /^(\d+)(?::(\d+))?@(lid|hosted\.lid)$/],
+  ["group", /^([0-9]+(?:-[0-9]+)*)()@(g\.us)$/],
+  ["newsletter", /^([0-9]+)()@(newsletter)$/],
 ] as const;
 
 type ParsedWhatsAppJid = {
@@ -43,7 +43,7 @@ export function parseExactWhatsAppJid(value: string): ParsedWhatsAppJid | null {
   for (const [kind, pattern] of WHATSAPP_JID_PATTERNS) {
     const match = value.match(pattern);
     const digits = match?.[1];
-    const domain = match?.[3]?.toLowerCase();
+    const domain = match?.[3];
     if (!digits || !domain) {
       continue;
     }
@@ -57,7 +57,7 @@ export function parseWhatsAppJid(value: string): ParsedWhatsAppJid | null {
   const stripped = stripWhatsAppTargetPrefixes(value);
   const hasGroupPrefix = /^group:/i.test(stripped);
   const candidate = trimWhatsAppAsciiSpaces(stripped.replace(/^group:/i, ""));
-  const parsed = parseExactWhatsAppJid(candidate);
+  const parsed = parseExactWhatsAppJid(candidate.toLowerCase());
   return hasGroupPrefix && parsed?.kind !== "group" ? null : parsed;
 }
 

@@ -242,7 +242,7 @@ vi.mock("./session.js", async () => {
         groupFetchAllParticipating: vi.fn().mockResolvedValue({}),
         updateMediaMessage: vi.fn(),
         logger: {},
-        user: { id: "me@s.whatsapp.net" },
+        user: { id: "15550001111@s.whatsapp.net" },
       };
       return currentMockSocket;
     }),
@@ -442,7 +442,7 @@ describe("web inbound media saves with extension", () => {
               contextInfo: {
                 stanzaId: "quoted-image",
                 participant: "222@s.whatsapp.net",
-                mentionedJid: ["me@s.whatsapp.net"],
+                mentionedJid: ["15550001111@s.whatsapp.net"],
                 quotedMessage: {
                   imageMessage: { mimetype: "image/jpeg" },
                 },
@@ -490,7 +490,7 @@ describe("web inbound media saves with extension", () => {
               text: "what is in your image?",
               contextInfo: {
                 stanzaId: "bot-image",
-                participant: "me@s.whatsapp.net",
+                participant: "15550001111@s.whatsapp.net",
                 quotedMessage: { imageMessage: { mimetype: "image/jpeg" } },
               },
             },
@@ -510,7 +510,7 @@ describe("web inbound media saves with extension", () => {
     const retry = encryptMediaRetryRequest(
       quoted!.key as never,
       Buffer.alloc(32, 1),
-      "me@s.whatsapp.net",
+      "15550001111@s.whatsapp.net",
     );
     const retryNode = Array.isArray(retry.content)
       ? retry.content.find((node) => node.tag === "rmr")
