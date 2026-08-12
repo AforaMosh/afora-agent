@@ -43,11 +43,7 @@ function isWhatsAppSupplementalSenderAllowed(params: {
     return false;
   }
   for (const entry of params.allowFrom) {
-    const rawEntry = entry.trim();
-    if (!rawEntry) {
-      continue;
-    }
-    const normalizedEntry = normalizeWhatsAppDirectIdentity(rawEntry);
+    const normalizedEntry = normalizeWhatsAppDirectIdentity(entry);
     if (normalizedEntry && senderValues.has(normalizedEntry)) {
       return true;
     }

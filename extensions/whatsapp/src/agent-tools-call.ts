@@ -16,6 +16,7 @@ import { jsonResult } from "openclaw/plugin-sdk/tool-results";
 import { Type } from "typebox";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { getWhatsAppConnectionController } from "./connection-controller-runtime-context.js";
+import { normalizeWhatsAppDirectIdentity } from "./normalize-target.js";
 import { normalizeWhatsAppPhoneInput } from "./phone-input.js";
 import { resolveJidToE164 } from "./targets-runtime.js";
 
@@ -146,9 +147,9 @@ async function resolveRequesterE164(params: {
   cfg: NonNullable<OpenClawPluginToolContext["config"]>;
   requesterSenderId: string;
 }): Promise<string | null> {
-  const senderId = params.requesterSenderId.trim();
-  if (!senderId.includes("@")) {
-    return normalizeWhatsAppPhoneInput(senderId);
+  const senderId = normalizeWhatsAppDirectIdentity(params.requesterSenderId);
+  if (!senderId || senderId.startsWith("+")) {
+    return senderId;
   }
 
   const account = resolveWhatsAppAccount({ cfg: params.cfg, accountId: params.accountId });
@@ -191,7 +192,7 @@ function createWhatsAppCallToolWithDependencies(
 ): AnyAgentTool | null {
   const cfg = resolveRuntimeConfig(api, context);
   const isActionEnabled = createActionGate(cfg.channels?.whatsapp?.actions);
-  const requesterSenderId = context.requesterSenderId?.trim();
+  const requesterSenderId = context.requesterSenderId;
   if (
     !isActionEnabled("calls", false) ||
     context.messageChannel !== "whatsapp" ||

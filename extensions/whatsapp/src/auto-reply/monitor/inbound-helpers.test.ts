@@ -48,18 +48,21 @@ const makeBlockedQuotedReplyMessage = (id: string): ReplyContextParams["msg"] =>
   });
 
 describe("whatsapp inbound context visibility", () => {
-  it("does not expose group history through a foreign provider prefix", () => {
-    const history = resolveVisibleWhatsAppGroupHistory({
-      history: [
-        { sender: "Alice (+111)", body: "Private context", senderJid: "111@s.whatsapp.net" },
-      ],
-      mode: "allowlist",
-      groupPolicy: "allowlist",
-      groupAllowFrom: ["signal:+111"],
-    });
+  it.each(["signal:+111", "\n+111"])(
+    "does not expose group history through invalid allow entry %j",
+    (allowFrom) => {
+      const history = resolveVisibleWhatsAppGroupHistory({
+        history: [
+          { sender: "Alice (+111)", body: "Private context", senderJid: "111@s.whatsapp.net" },
+        ],
+        mode: "allowlist",
+        groupPolicy: "allowlist",
+        groupAllowFrom: [allowFrom],
+      });
 
-    expect(history).toEqual([]);
-  });
+      expect(history).toEqual([]);
+    },
+  );
 
   it.each([
     ["whatsapp:whatsapp:777@lid", "777@lid"],
@@ -114,16 +117,19 @@ describe("whatsapp inbound context visibility", () => {
     expect(reply).toBeNull();
   });
 
-  it("does not expose quoted context through a foreign provider prefix", () => {
-    const reply = resolveVisibleWhatsAppReplyContext({
-      msg: makeBlockedQuotedReplyMessage("msg-foreign-quote"),
-      mode: "allowlist",
-      groupPolicy: "allowlist",
-      groupAllowFrom: ["signal:+999"],
-    });
+  it.each(["signal:+999", "+999\t"])(
+    "does not expose quoted context through invalid allow entry %j",
+    (allowFrom) => {
+      const reply = resolveVisibleWhatsAppReplyContext({
+        msg: makeBlockedQuotedReplyMessage("msg-foreign-quote"),
+        mode: "allowlist",
+        groupPolicy: "allowlist",
+        groupAllowFrom: [allowFrom],
+      });
 
-    expect(reply).toBeNull();
-  });
+      expect(reply).toBeNull();
+    },
+  );
 
   it.each([
     ["whatsapp:whatsapp:777@lid", "777@lid"],

@@ -234,12 +234,15 @@ describe("WhatsApp call tool", () => {
     expect(vi.mocked(runCommand).mock.calls[0]?.[0]).toContain("+15551234567");
   });
 
-  it("rejects a foreign-prefixed requester identity", async () => {
+  it.each([
+    "signal:+15551234567",
+    "\n+15551234567",
+    "+15551234567\t",
+    "\n15551234567@s.whatsapp.net",
+    "15551234567@s.whatsapp.net\t",
+  ])("rejects non-canonical requester identity %j", async (requesterSenderId) => {
     await fs.writeFile(path.join(stateDir, "wa-voip.db"), "sqlite");
-    const tool = resolveRegisteredCallTool(
-      createApi(),
-      createContext({ requesterSenderId: "signal:+15551234567" }),
-    );
+    const tool = resolveRegisteredCallTool(createApi(), createContext({ requesterSenderId }));
 
     await expect(
       tool?.execute("call-foreign", { action: "call", message: "Hello" }),
