@@ -45,6 +45,75 @@ async function checkMappedLidSelf(params: { selfChatMode?: boolean; senderE164: 
 }
 
 describe("typed WhatsApp direct identity access", () => {
+  it.each(["15550001111@hosted", "15550001111:2@hosted"])(
+    "authorizes exact hosted PN identity %s through its canonical phone alias",
+    async (jid) => {
+      setAccessControlTestConfig({
+        channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: ["+15550001111"] } },
+      });
+      await expect(
+        checkInboundAccessControl({
+          cfg: getAccessControlTestConfig() as never,
+          accountId: "default",
+          from: jid,
+          selfE164: "+15550009999",
+          senderE164: null,
+          senderJid: jid,
+          group: false,
+          isFromMe: false,
+          sock: { sendMessage: sendMessageMock },
+          remoteJid: jid,
+        }),
+      ).resolves.toMatchObject({ allowed: true });
+    },
+  );
+
+  it("authorizes a stable E164 owner through its current mapped phone fact", async () => {
+    setAccessControlTestConfig({
+      channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: ["+15550002222"] } },
+    });
+    const result = await checkInboundAccessControl({
+      cfg: getAccessControlTestConfig() as never,
+      accountId: "default",
+      from: "+15550001111",
+      selfE164: "+15550009999",
+      senderE164: "+15550002222",
+      senderJid: "999@lid",
+      group: false,
+      isFromMe: false,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "999@lid",
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) {
+      throw new Error("expected current mapped phone fact to authorize stable owner");
+    }
+    expect(result.admission.sender.id).toBe("+15550001111");
+  });
+
+  it("recognizes a stable E164 owner as self through its current mapped phone fact", async () => {
+    setAccessControlTestConfig({ channels: { whatsapp: { dmPolicy: "pairing" } } });
+    const result = await checkInboundAccessControl({
+      cfg: getAccessControlTestConfig() as never,
+      accountId: "default",
+      from: "+15550001111",
+      selfE164: "+15550002222",
+      senderE164: "+15550002222",
+      senderJid: "999@lid",
+      group: false,
+      isFromMe: true,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "999@lid",
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) {
+      throw new Error("expected current mapped phone fact to identify stable owner as self");
+    }
+    expect(result.admission.sender).toEqual({ id: "+15550001111", isSamePhone: true });
+  });
+
   it.each([
     "telegram:1555",
     "sms:+1555",

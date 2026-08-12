@@ -1,7 +1,11 @@
 // Whatsapp tests cover inbound dispatch plugin behavior.
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { createTestWebInboundMessage } from "../../inbound/test-message.test-helper.js";
+import { normalizeAdmittedWebInboundMessage } from "../../inbound/message-aliases.js";
+import {
+  createTestLegacyFlatWebInboundMessage,
+  createTestWebInboundMessage,
+} from "../../inbound/test-message.test-helper.js";
 
 let capturedDispatchParams: unknown;
 
@@ -2228,16 +2232,35 @@ describe("whatsapp inbound dispatch", () => {
     expect(
       resolveWhatsAppDmRouteTarget({
         msg: makeMsg({ admission: directAdmission("+15550003333") }),
-        normalizeE164: (value) => value,
       }),
     ).toBe("+15550003333");
 
     expect(
       resolveWhatsAppDmRouteTarget({
         msg: makeMsg({ admission: directAdmission("999@lid") }),
-        normalizeE164: () => null,
       }),
     ).toBe("999@lid");
+
+    expect(
+      resolveWhatsAppDmRouteTarget({
+        msg: makeMsg({ admission: directAdmission("15550003333:2@hosted") }),
+      }),
+    ).toBe("+15550003333");
+  });
+
+  it("rejects an invalid owner from the deprecated flat adapter", () => {
+    const msg = normalizeAdmittedWebInboundMessage(
+      createTestLegacyFlatWebInboundMessage({
+        from: "signal_:+15550003333",
+        conversationId: "signal_:+15550003333",
+      }),
+    );
+
+    expect(
+      resolveWhatsAppDmRouteTarget({
+        msg,
+      }),
+    ).toBeUndefined();
   });
 });
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

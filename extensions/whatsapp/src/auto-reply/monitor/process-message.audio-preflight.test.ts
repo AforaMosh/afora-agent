@@ -78,7 +78,6 @@ vi.mock("./runtime-api.js", () => ({
   formatInboundEnvelope: (p: { body: string }) => p.body,
   isControlCommandMessage: () => false,
   logVerbose: () => {},
-  normalizeE164: (v: string) => v,
   readStoreAllowFromForDmPolicy: async () => [],
   recordSessionMetaFromInbound: async () => {},
   resolveChannelContextVisibilityMode: () => "standard",

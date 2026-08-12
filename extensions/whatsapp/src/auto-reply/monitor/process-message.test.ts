@@ -159,7 +159,6 @@ vi.mock("./runtime-api.js", async (importOriginal) => {
     }),
     formatInboundEnvelope: () => "hi",
     logVerbose: () => {},
-    normalizeE164: (v: string) => v,
     recordSessionMetaFromInbound: async () => {},
     resolveChannelContextVisibilityMode: () => "off",
     resolveInboundSessionEnvelopeContext: () => ({

@@ -61,7 +61,6 @@ import {
   createChannelMessageReplyPipeline,
   formatInboundEnvelope,
   logVerbose,
-  normalizeE164,
   resolveChannelContextVisibilityMode,
   resolveInboundSessionEnvelopeContext,
   resolvePinnedMainDmOwnerFromAllowlist,
@@ -438,10 +437,7 @@ export async function processMessage(params: {
 
   const sender = getSenderIdentity(params.msg);
   const commandBody = params.msg.payload.commandBody ?? params.msg.payload.body;
-  const dmRouteTarget = resolveWhatsAppDmRouteTarget({
-    msg: params.msg,
-    normalizeE164,
-  });
+  const dmRouteTarget = resolveWhatsAppDmRouteTarget({ msg: params.msg });
   const shouldCheckCommandAuth = shouldComputeCommandAuthorized(commandBody, params.cfg);
   const isTextCommand = isControlCommandMessage(commandBody, params.cfg);
   const commandAuthorized = shouldCheckCommandAuth

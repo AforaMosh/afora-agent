@@ -47,6 +47,8 @@ describe("normalizeWhatsAppTarget", () => {
     expect(normalizeWhatsAppTarget("41796666864:0@s.whatsapp.net")).toBe("+41796666864");
     expect(normalizeWhatsAppTarget("1234567890:123@s.whatsapp.net")).toBe("+1234567890");
     expect(normalizeWhatsAppTarget("41796666864@s.whatsapp.net")).toBe("+41796666864");
+    expect(normalizeWhatsAppTarget("41796666864@hosted")).toBe("+41796666864");
+    expect(normalizeWhatsAppTarget("41796666864:2@hosted")).toBe("+41796666864");
   });
 
   it("preserves canonical LID JIDs without fabricating E.164", () => {
@@ -65,6 +67,9 @@ describe("normalizeWhatsAppTarget", () => {
     expect(normalizeWhatsAppTarget("group:abc@g.us")).toBeNull();
     expect(normalizeWhatsAppTarget("group:120363401234567890@newsletter")).toBeNull();
     expect(normalizeWhatsAppTarget("abc@s.whatsapp.net")).toBeNull();
+    expect(normalizeWhatsAppTarget("abc@hosted")).toBeNull();
+    expect(normalizeWhatsAppTarget("123:device@hosted")).toBeNull();
+    expect(normalizeWhatsAppTarget("123@hosted.example")).toBeNull();
     expect(normalizeWhatsAppTarget("abc@newsletter")).toBeNull();
   });
 
@@ -104,6 +109,8 @@ describe("normalizeWhatsAppDirectIdentity", () => {
   it("accepts formatted phones and exact direct JIDs", () => {
     expect(normalizeWhatsAppDirectIdentity("+1 (555) 123-4567")).toBe("+15551234567");
     expect(normalizeWhatsAppDirectIdentity("15551234567@s.whatsapp.net")).toBe("+15551234567");
+    expect(normalizeWhatsAppDirectIdentity("15551234567@hosted")).toBe("+15551234567");
+    expect(normalizeWhatsAppDirectIdentity("15551234567:3@hosted")).toBe("+15551234567");
     expect(normalizeWhatsAppDirectIdentity("123456789@hosted.lid")).toBe("123456789@hosted.lid");
   });
 });
@@ -112,6 +119,8 @@ describe("isWhatsAppUserTarget", () => {
   it("detects user JIDs with various formats", () => {
     expect(isWhatsAppUserTarget("41796666864:0@s.whatsapp.net")).toBe(true);
     expect(isWhatsAppUserTarget("1234567890@s.whatsapp.net")).toBe(true);
+    expect(isWhatsAppUserTarget("1234567890@hosted")).toBe(true);
+    expect(isWhatsAppUserTarget("1234567890:2@hosted")).toBe(true);
     expect(isWhatsAppUserTarget("123456789@lid")).toBe(true);
     expect(isWhatsAppUserTarget("123456789@LID")).toBe(true);
     expect(isWhatsAppUserTarget("123456789:2@hosted.lid")).toBe(true);

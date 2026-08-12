@@ -115,10 +115,10 @@ function resolveStoredOwner(params: {
   mapping: WhatsAppJidMappingOutcome;
 }): WhatsAppDirectPeerResolution {
   const e164 =
-    params.owner.owner === "e164"
-      ? params.owner.e164
-      : params.mapping.kind === "mapped"
-        ? params.mapping.e164
+    params.mapping.kind === "mapped"
+      ? params.mapping.e164
+      : params.owner.owner === "e164"
+        ? params.owner.e164
         : null;
   return {
     kind: "resolved",

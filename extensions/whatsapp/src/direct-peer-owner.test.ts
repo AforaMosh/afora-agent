@@ -107,8 +107,13 @@ describe("direct-peer owner", () => {
     ).resolves.toMatchObject({
       kind: "resolved",
       peerId: "+15550001111",
-      e164: "+15550001111",
+      e164: "+15550002222",
     });
+    expect(
+      Array.from(state.stores.values()).flatMap((store) =>
+        Array.from(store.values(), (entry) => entry.value),
+      ),
+    ).toEqual([{ accountId: "default", lid: "999@lid", owner: "e164", e164: "+15550001111" }]);
 
     await expect(
       resolveWhatsAppDirectPeer({

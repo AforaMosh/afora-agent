@@ -526,14 +526,12 @@ export async function prepareWhatsAppInboundContext(params: {
 
 export function resolveWhatsAppDmRouteTarget(params: {
   msg: AdmittedWebInboundMessage;
-  normalizeE164: (value: string) => string | null;
 }): string | undefined {
   const admission = requireWhatsAppInboundAdmission(params.msg);
   if (admission.conversation.kind === "group") {
     return undefined;
   }
-  const ownerId = admission.sender.id;
-  return normalizeWhatsAppDirectIdentity(ownerId) ?? params.normalizeE164(ownerId) ?? undefined;
+  return normalizeWhatsAppDirectIdentity(admission.sender.id) ?? undefined;
 }
 
 export function updateWhatsAppMainLastRoute(params: {
