@@ -236,13 +236,13 @@
   }
 }
 
-.chat-text :where(a) {
-  color: var(--accent);
+:is(.chat-text, .chat-thinking) :where(a) {
+  color: var(--chat-link);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.chat-text :where(a:hover) {
+:is(.chat-text, .chat-thinking) :where(a:hover) {
   opacity: 0.8;
 }
 
@@ -292,7 +292,7 @@
    purpose: each renderer's own :where(a) and code rules would otherwise win on
    source order, and sidebar-markdown.css is imported after this file. */
 :is(.chat-text, .sidebar-markdown) a.markdown-file-link {
-  color: var(--accent);
+  color: var(--chat-link);
   /* File links are href-less anchors (driven by data-file-path), so the UA
      link pointer does not apply; they are content links and keep the hand. */
   cursor: pointer;
@@ -427,7 +427,7 @@
    rather than resetting them here, so no theme override has to be out-specified;
    this rule only has to undo the separate mono-font declarations. */
 :is(.chat-text, .sidebar-markdown) a.markdown-file-link > code {
-  color: var(--accent);
+  color: var(--chat-link);
   font-family: inherit;
   font-size: inherit;
 }

@@ -39,6 +39,11 @@ async function expectText(locator: Locator, text: string): Promise<void> {
   await expect.poll(() => locator.textContent()).toContain(text);
 }
 
+const TRANSCRIPT_LINK_TOKENS = {
+  dark: "oklch(70.7% 0.165 254.624)",
+  light: "oklch(48.8% 0.243 264.376)",
+} as const;
+
 describeControlUiE2e("GitHub link hover cards", () => {
   beforeAll(async () => {
     if (!chromiumAvailable) {
@@ -121,12 +126,17 @@ describeControlUiE2e("GitHub link hover cards", () => {
             {
               type: "text",
               text: [
-                "Review https://github.com/openclaw/openclaw/pull/99816,",
-                "then https://github.com/openclaw/openclaw/issues/99815.",
+                "### Release review",
+                "",
+                "The rollout plan is in [the docs](https://docs.openclaw.ai/web/control-ui).",
+                "",
+                "- Review https://github.com/openclaw/openclaw/pull/99816.",
+                "- Confirm https://github.com/openclaw/openclaw/issues/99815.",
+                "- Update `README.md:12` and ui/src/styles/chat/text.css.",
+                "- Ask the [release crew](mailto:release@example.com) if the [repository](https://github.com/openclaw/openclaw) needs another pass.",
+                "",
                 "A [missing item](https://github.com/openclaw/openclaw/issues/999999) stays usable.",
-                "The [repository](https://github.com/openclaw/openclaw) has no item preview.",
-                "Styling notes live in [the docs](https://docs.openclaw.ai/web/control-ui).",
-              ].join(" "),
+              ].join("\n"),
             },
           ],
           role: "assistant",
@@ -146,28 +156,87 @@ describeControlUiE2e("GitHub link hover cards", () => {
     });
     await page.goto(`${server.baseUrl}chat`);
 
-    const message = page.locator(".chat-text").filter({ hasText: "Review" });
+    const message = page.locator(".chat-text").filter({ hasText: "Release review" });
+    const pullLink = page.getByRole("link", { name: "openclaw/openclaw#99816" });
+    const docsLink = page.getByRole("link", { name: "the docs" });
+    const fileLink = page.locator('a.markdown-file-link[data-file-path="README.md"]');
+    const card = page.locator(".github-link-hovercard");
     const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
-    if (artifactDir) {
+    const capture = async (name: string, fullPage = false, target = message) => {
+      if (!artifactDir) {
+        return;
+      }
       await mkdir(artifactDir, { recursive: true });
-      await message.screenshot({ path: path.join(artifactDir, "github-references-light.png") });
+      if (fullPage) {
+        await page.screenshot({ fullPage: true, path: path.join(artifactDir, `${name}.png`) });
+        return;
+      }
+      await target.screenshot({ path: path.join(artifactDir, `${name}.png`) });
+    };
+    const expectTranscriptLinkColor = async (themeMode: keyof typeof TRANSCRIPT_LINK_TOKENS) => {
+      const expectedToken = TRANSCRIPT_LINK_TOKENS[themeMode];
+      const actualToken = await page
+        .locator("html")
+        .evaluate((element) => getComputedStyle(element).getPropertyValue("--chat-link").trim());
+      expect(actualToken).not.toBe("");
+      const [actualColor, expectedColor] = await page.evaluate(
+        (colors) => {
+          const probe = document.createElement("span");
+          document.body.append(probe);
+          const resolved = colors.map((color) => {
+            probe.style.color = color;
+            return getComputedStyle(probe).color;
+          });
+          probe.remove();
+          return resolved;
+        },
+        [actualToken, expectedToken],
+      );
+      expect(actualColor).toBe(expectedColor);
+      for (const link of [docsLink, pullLink, fileLink]) {
+        expect(await link.evaluate((element) => getComputedStyle(element).color)).toBe(
+          expectedColor,
+        );
+      }
+      expect(
+        await pullLink.evaluate((element) => getComputedStyle(element, "::before").backgroundColor),
+      ).toBe(expectedColor);
+      expect(
+        await fileLink.evaluate((element) => getComputedStyle(element, "::before").backgroundColor),
+      ).toBe(expectedColor);
+    };
+
+    await expect.poll(() => message.count()).toBe(1);
+    await capture("rest-light-context", true);
+    await capture("rest-light-crop");
+
+    if (artifactDir) {
       await page.emulateMedia({ colorScheme: "dark" });
       await expect.poll(() => page.locator("html").getAttribute("data-theme-mode")).toBe("dark");
-      await message.screenshot({ path: path.join(artifactDir, "github-references-dark.png") });
+      await capture("rest-dark-context", true);
+      await capture("rest-dark-crop");
       await page.emulateMedia({ colorScheme: "light" });
       await expect.poll(() => page.locator("html").getAttribute("data-theme-mode")).toBe("light");
     }
+    await expectTranscriptLinkColor("light");
+
+    await pullLink.focus();
+    await expectText(card, "Merged");
+    await capture("focus-light-context", true);
+    await capture("focus-light-crop");
+    await page.keyboard.press("Escape");
+    await expect.poll(() => card.count()).toBe(0);
+    await pullLink.evaluate((element) => element.blur());
 
     const longLink = page.getByRole("link", {
       name: "a-very-long-organization-name/a-very-long-repository-name#99817",
     });
+    const longMessage = longLink.locator("xpath=ancestor::*[contains(@class, 'chat-text')]");
     await page.setViewportSize({ height: 800, width: 360 });
     expect(await longLink.evaluate((element) => getComputedStyle(element).lineBreak)).toBe(
       "anywhere",
     );
-    const longMessageBox = await longLink
-      .locator("xpath=ancestor::*[contains(@class, 'chat-text')]")
-      .boundingBox();
+    const longMessageBox = await longMessage.boundingBox();
     const longLinkBox = await longLink.boundingBox();
     expect(longMessageBox).not.toBeNull();
     expect(longLinkBox).not.toBeNull();
@@ -175,21 +244,28 @@ describeControlUiE2e("GitHub link hover cards", () => {
     expect(longLinkBox!.x + longLinkBox!.width).toBeLessThanOrEqual(
       longMessageBox!.x + longMessageBox!.width,
     );
+    await capture("overflow-light-context", true);
+    await capture("overflow-light-crop", false, longMessage);
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect.poll(() => page.locator("html").getAttribute("data-theme-mode")).toBe("dark");
+    await capture("overflow-dark-context", true);
+    await capture("overflow-dark-crop", false, longMessage);
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect.poll(() => page.locator("html").getAttribute("data-theme-mode")).toBe("light");
     await page.setViewportSize({ height: 800, width: 1180 });
-
-    const pullLink = page.getByRole("link", { name: "openclaw/openclaw#99816" });
 
     // The mark carries the link signal at rest, so the underline only returns on
     // hover. Non-GitHub links keep the base underline, which keeps the rule scoped.
     const decorationLine = (link: Locator) =>
       link.evaluate((element) => getComputedStyle(element).textDecorationLine);
     expect(await decorationLine(pullLink)).toBe("none");
-    expect(await decorationLine(page.getByRole("link", { name: "the docs" }))).toBe("underline");
+    expect(await decorationLine(docsLink)).toBe("underline");
 
     await pullLink.hover();
     await expect.poll(() => decorationLine(pullLink)).toBe("underline");
-    const card = page.locator(".github-link-hovercard");
     await expectText(card, "Merged");
+    await capture("hover-light-context", true);
+    await capture("hover-light-crop");
     await expectText(card, "openclaw/openclaw #99816");
     await expectText(card, "+101");
     await expectText(card, "−12");
@@ -235,11 +311,16 @@ describeControlUiE2e("GitHub link hover cards", () => {
     await expect.poll(() => page.locator("html").getAttribute("data-theme-mode")).toBe("dark");
     await pullLink.hover();
     await expectText(card, "Merged");
+    await expectTranscriptLinkColor("dark");
+    await capture("hover-dark-context", true);
+    await capture("hover-dark-crop");
     expect((await gateway.getRequests("controlUi.githubPreview")).length).toBe(3);
     await page.mouse.move(1, 1);
 
     await pullLink.focus();
     await expectText(card, "Merged");
+    await capture("focus-dark-context", true);
+    await capture("focus-dark-crop");
     await page.keyboard.press("Escape");
     await expect.poll(() => card.count()).toBe(0);
     await expect

@@ -28,6 +28,7 @@
   --text: #bcbcc0;
   --text-strong: #f4f4f5;
   --chat-text: #bcbcc0;
+  --chat-link: oklch(70.7% 0.165 254.624);
   --muted: #8b8b94;
   --muted-strong: #898990;
   --muted-foreground: #8b8b94;
@@ -241,6 +242,7 @@
   --text: #403c35;
   --text-strong: #211e1a;
   --chat-text: #403c35;
+  --chat-link: oklch(48.8% 0.243 264.376);
   --muted: #6e6960;
   --muted-strong: #56524a;
   --muted-foreground: #6e6960;
