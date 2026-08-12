@@ -32,7 +32,7 @@ const resolveReceiveIdTypeMock = vi.hoisted(() => vi.fn());
 const addTypingIndicatorMock = vi.hoisted(() => vi.fn(async () => ({ messageId: "om_msg" })));
 const removeTypingIndicatorMock = vi.hoisted(() => vi.fn(async () => {}));
 const streamingInstances = vi.hoisted((): StreamingSessionStub[] => []);
-const streamingStartFailure = vi.hoisted((): { error?: unknown } => ({}));
+const streamingStartFailure = vi.hoisted((): { error?: Error } => ({}));
 const shouldSuppressFeishuTextForVoiceMediaMock = vi.hoisted(
   () =>
     (params: {

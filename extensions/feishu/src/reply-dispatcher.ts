@@ -14,6 +14,7 @@ import {
 } from "openclaw/plugin-sdk/channel-outbound";
 import {
   PlatformMessageNotDispatchedError,
+  toErrorObject,
   toStringifiedError as toFeishuError,
 } from "openclaw/plugin-sdk/error-runtime";
 import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
@@ -347,7 +348,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   let partialUpdateQueue: Promise<void> = Promise.resolve();
   let streamingStartPromise: Promise<void> | null = null;
   let streamingStartFallbackError: PlatformMessageNotDispatchedError | undefined;
-  let terminalStreamingStartError: unknown;
+  let terminalStreamingStartError: Error | undefined;
   let streamingGeneration = 0;
   let activeStreamingGeneration: number | undefined;
   let inFlightStreamingClose:
@@ -552,7 +553,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
         } else {
           // Transport failures do not prove whether the message API accepted custody.
           // Fence replay until the caller settles the ambiguous attempt.
-          terminalStreamingStartError = error;
+          terminalStreamingStartError = toErrorObject(error, "Feishu streaming start failed");
           params.runtime.error?.(
             `feishu[${account.accountId}]: streaming start failed with unknown delivery state: ${String(error)}`,
           );
