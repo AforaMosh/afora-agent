@@ -66,6 +66,7 @@ function createEnvironmentSummarySchema() {
     label: Type.Optional(NonEmptyString),
     status: EnvironmentStatusSchema,
     capabilities: Type.Optional(Type.Array(NonEmptyString)),
+    desktop: Type.Optional(Type.Boolean()),
     worker: Type.Optional(WorkerEnvironmentMetadataSchema),
   });
 }
