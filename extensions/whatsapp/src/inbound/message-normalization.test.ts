@@ -66,6 +66,6 @@ describe("inbound message normalization", () => {
         pushName: "Rejected sender",
       }),
     ).resolves.toBeNull();
-    expect([...stores.values()].flatMap((store) => [...store.values()])).toHaveLength(0);
+    expect([...stores.values()].flatMap((store) => Array.from(store.values()))).toHaveLength(0);
   });
 });
