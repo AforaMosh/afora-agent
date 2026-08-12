@@ -72,6 +72,11 @@ describe("normalizeWhatsAppTarget", () => {
     expect(normalizeWhatsAppTarget("123@hosted.example")).toBeNull();
     expect(normalizeWhatsAppTarget("+15551234567\t")).toBeNull();
     expect(normalizeWhatsAppTarget("\n+15551234567")).toBeNull();
+    expect(normalizeWhatsAppTarget("\n123456789@lid")).toBeNull();
+    expect(normalizeWhatsAppTarget("123456789@lid\t")).toBeNull();
+    expect(normalizeWhatsAppTarget("\n123456789@hosted.lid")).toBeNull();
+    expect(normalizeWhatsAppTarget("123456789@hosted.lid\t")).toBeNull();
+    expect(normalizeWhatsAppTarget("whatsapp:\n123456789@lid")).toBeNull();
     expect(normalizeWhatsAppTarget("abc@newsletter")).toBeNull();
   });
 
@@ -160,6 +165,12 @@ describe("isWhatsAppGroupJid", () => {
 describe("normalizeWhatsAppMessagingTarget", () => {
   it("normalizes blank inputs to undefined", () => {
     expect(normalizeWhatsAppMessagingTarget("   ")).toBeUndefined();
+  });
+
+  it("preserves ASCII-spaced direct targets but rejects control-wrapped targets", () => {
+    expect(normalizeWhatsAppMessagingTarget("  whatsapp:whatsapp:777@lid  ")).toBe("777@lid");
+    expect(normalizeWhatsAppMessagingTarget("whatsapp:\n777@lid")).toBeUndefined();
+    expect(normalizeWhatsAppMessagingTarget("777@hosted.lid\t")).toBeUndefined();
   });
 });
 

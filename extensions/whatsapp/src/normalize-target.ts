@@ -60,7 +60,10 @@ function extractUserJidPhone(jid: string): string | null {
 }
 
 export function normalizeWhatsAppTarget(value: string): string | null {
-  const candidate = stripWhatsAppTargetPrefixes(value);
+  const hasAsciiControl = Array.from(value).some(
+    (character) => character.charCodeAt(0) <= 0x1f || character.charCodeAt(0) === 0x7f,
+  );
+  const candidate = hasAsciiControl ? "" : stripWhatsAppTargetPrefixes(value);
   if (!candidate) {
     return null;
   }
@@ -98,11 +101,7 @@ export function normalizeWhatsAppDirectIdentity(value: string): string | null {
 }
 
 export function normalizeWhatsAppMessagingTarget(raw: string): string | undefined {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  return normalizeWhatsAppTarget(trimmed) ?? undefined;
+  return normalizeWhatsAppTarget(raw) ?? undefined;
 }
 
 export function normalizeWhatsAppAllowFromEntries(allowFrom: Array<string | number>): string[] {

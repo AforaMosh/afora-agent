@@ -202,37 +202,63 @@ describe("WhatsApp call tool", () => {
     await expect(fs.stat(path.dirname(audioPath ?? ""))).rejects.toThrow();
   });
 
-  it("resolves a requester LID through the active WhatsApp account", async () => {
-    await fs.writeFile(path.join(stateDir, "wa-voip.db"), "sqlite");
-    const runCommand = vi.fn(async () => ({
-      stdout: "",
-      stderr: "",
-      code: 0,
-      signal: null,
-      killed: false,
-      termination: "exit" as const,
-    })) as OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
-    runtimeContextMocks.controllers.set("default", {
-      getActiveListener: () => null,
-      getCurrentSock: () => ({
-        signalRepository: {
-          lidMapping: {
-            getPNForLID: vi.fn(async () => "15551234567@s.whatsapp.net"),
+  it.each(["123456789@lid", "123456789@hosted.lid"])(
+    "resolves canonical requester %s through the active WhatsApp account",
+    async (requesterSenderId) => {
+      await fs.writeFile(path.join(stateDir, "wa-voip.db"), "sqlite");
+      const runCommand = vi.fn(async () => ({
+        stdout: "",
+        stderr: "",
+        code: 0,
+        signal: null,
+        killed: false,
+        termination: "exit" as const,
+      })) as OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
+      runtimeContextMocks.controllers.set("default", {
+        getActiveListener: () => null,
+        getCurrentSock: () => ({
+          signalRepository: {
+            lidMapping: {
+              getPNForLID: vi.fn(async () => "15551234567@s.whatsapp.net"),
+            },
           },
-        },
-      }),
-      getSelfIdentity: () => null,
-    });
+        }),
+        getSelfIdentity: () => null,
+      });
 
-    const tool = resolveRegisteredCallTool(
-      createApi({ runCommand }),
-      createContext({ requesterSenderId: "123456789@lid" }),
-    );
-    await expect(
-      tool?.execute("call-lid", { action: "call", message: "Hello" }),
-    ).resolves.toBeDefined();
-    expect(vi.mocked(runCommand).mock.calls[0]?.[0]).toContain("+15551234567");
-  });
+      const tool = resolveRegisteredCallTool(
+        createApi({ runCommand }),
+        createContext({ requesterSenderId }),
+      );
+      await expect(
+        tool?.execute("call-lid", { action: "call", message: "Hello" }),
+      ).resolves.toBeDefined();
+      expect(vi.mocked(runCommand).mock.calls[0]?.[0]).toContain("+15551234567");
+    },
+  );
+
+  it.each(["\n123456789@lid", "123456789@hosted.lid\t", "whatsapp:\n123456789@lid"])(
+    "rejects control-wrapped requester identity %j before LID mapping",
+    async (requesterSenderId) => {
+      await fs.writeFile(path.join(stateDir, "wa-voip.db"), "sqlite");
+      runtimeContextMocks.controllers.set("default", {
+        getActiveListener: () => null,
+        getCurrentSock: () => ({
+          signalRepository: {
+            lidMapping: {
+              getPNForLID: vi.fn(async () => "15551234567@s.whatsapp.net"),
+            },
+          },
+        }),
+        getSelfIdentity: () => null,
+      });
+      const tool = resolveRegisteredCallTool(createApi(), createContext({ requesterSenderId }));
+
+      await expect(
+        tool?.execute("call-invalid-lid", { action: "call", message: "Hello" }),
+      ).rejects.toThrow("Could not resolve the current WhatsApp requester to a phone number");
+    },
+  );
 
   it.each([
     "signal:+15551234567",

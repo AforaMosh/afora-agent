@@ -48,21 +48,22 @@ const makeBlockedQuotedReplyMessage = (id: string): ReplyContextParams["msg"] =>
   });
 
 describe("whatsapp inbound context visibility", () => {
-  it.each(["signal:+111", "\n+111"])(
-    "does not expose group history through invalid allow entry %j",
-    (allowFrom) => {
-      const history = resolveVisibleWhatsAppGroupHistory({
-        history: [
-          { sender: "Alice (+111)", body: "Private context", senderJid: "111@s.whatsapp.net" },
-        ],
-        mode: "allowlist",
-        groupPolicy: "allowlist",
-        groupAllowFrom: [allowFrom],
-      });
+  it.each([
+    ["signal:+111", "111@s.whatsapp.net"],
+    ["\n+111", "111@s.whatsapp.net"],
+    ["\n777@lid", "777@lid"],
+    ["777@hosted.lid\t", "777@hosted.lid"],
+    ["whatsapp:\n777@lid", "777@lid"],
+  ])("does not expose group history through invalid allow entry %j", (allowFrom, senderJid) => {
+    const history = resolveVisibleWhatsAppGroupHistory({
+      history: [{ sender: "Alice", body: "Private context", senderJid }],
+      mode: "allowlist",
+      groupPolicy: "allowlist",
+      groupAllowFrom: [allowFrom],
+    });
 
-      expect(history).toEqual([]);
-    },
-  );
+    expect(history).toEqual([]);
+  });
 
   it.each([
     ["whatsapp:whatsapp:777@lid", "777@lid"],
@@ -117,19 +118,24 @@ describe("whatsapp inbound context visibility", () => {
     expect(reply).toBeNull();
   });
 
-  it.each(["signal:+999", "+999\t"])(
-    "does not expose quoted context through invalid allow entry %j",
-    (allowFrom) => {
-      const reply = resolveVisibleWhatsAppReplyContext({
-        msg: makeBlockedQuotedReplyMessage("msg-foreign-quote"),
-        mode: "allowlist",
-        groupPolicy: "allowlist",
-        groupAllowFrom: [allowFrom],
-      });
+  it.each([
+    ["signal:+999", "999@s.whatsapp.net"],
+    ["+999\t", "999@s.whatsapp.net"],
+    ["\n777@lid", "777@lid"],
+    ["777@hosted.lid\t", "777@hosted.lid"],
+    ["whatsapp:\n777@lid", "777@lid"],
+  ])("does not expose quoted context through invalid allow entry %j", (allowFrom, jid) => {
+    const msg = makeBlockedQuotedReplyMessage("msg-invalid-quote");
+    msg.quote = { id: "private-reply", body: "Private quoted text", sender: { jid } };
+    const reply = resolveVisibleWhatsAppReplyContext({
+      msg,
+      mode: "allowlist",
+      groupPolicy: "allowlist",
+      groupAllowFrom: [allowFrom],
+    });
 
-      expect(reply).toBeNull();
-    },
-  );
+    expect(reply).toBeNull();
+  });
 
   it.each([
     ["whatsapp:whatsapp:777@lid", "777@lid"],
