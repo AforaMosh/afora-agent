@@ -23,8 +23,6 @@ type CreateFeishuReplyDispatcher =
   typeof import("./reply-dispatcher.js").createFeishuReplyDispatcher;
 type DispatchChannelInboundReply =
   typeof import("openclaw/plugin-sdk/channel-inbound").dispatchChannelInboundReply;
-type IsChannelPartialDeliveryError =
-  typeof import("openclaw/plugin-sdk/channel-inbound").isChannelPartialDeliveryError;
 type SendReplyOrFallbackDirect = typeof import("./send.js").sendReplyOrFallbackDirect;
 type StreamingStartBackoffMap =
   typeof import("./reply-dispatcher-state.js").streamingStartBackoffUntilByAccount;
@@ -40,7 +38,6 @@ type FeishuTraceState = {
   setupCount: number;
   wireFaults: Array<{ fault: "rate-limit"; retryAfterMs: number }>;
   messageResult: "identified" | "no-id" | "rejected";
-  failNextReplace: boolean;
 };
 
 const traceState = vi.hoisted(
@@ -55,7 +52,6 @@ const traceState = vi.hoisted(
     setupCount: 0,
     wireFaults: [],
     messageResult: "identified",
-    failNextReplace: false,
   }),
 );
 
@@ -135,7 +131,6 @@ vi.mock("./streaming-card.js", async (importOriginal) => {
 
 let createFeishuReplyDispatcher: CreateFeishuReplyDispatcher;
 let dispatchChannelInboundReply: DispatchChannelInboundReply;
-let isChannelPartialDeliveryError: IsChannelPartialDeliveryError;
 let sendReplyOrFallbackDirect: SendReplyOrFallbackDirect;
 let streamingStartBackoffUntilByAccount: StreamingStartBackoffMap;
 
@@ -143,8 +138,7 @@ beforeAll(async () => {
   // Collection can share a worker with suites that mock the same Feishu modules.
   // Reload only after this file's hoisted mocks are registered.
   vi.resetModules();
-  ({ dispatchChannelInboundReply, isChannelPartialDeliveryError } =
-    await import("openclaw/plugin-sdk/channel-inbound"));
+  ({ dispatchChannelInboundReply } = await import("openclaw/plugin-sdk/channel-inbound"));
   ({ createFeishuReplyDispatcher } = await import("./reply-dispatcher.js"));
   ({ sendReplyOrFallbackDirect } = await import("./send.js"));
   ({ streamingStartBackoffUntilByAccount } = await import("./reply-dispatcher-state.js"));
@@ -314,14 +308,6 @@ function createRecordingCardKitFetch(): typeof fetch {
       }
       if (wirePath.endsWith("/elements/content")) {
         const body = parseJsonRecord(init?.body);
-        if (traceState.failNextReplace) {
-          traceState.failNextReplace = false;
-          record(
-            { element: parseJsonRecord(body.element), sequence: body.sequence, uuid: body.uuid },
-            { status: 500 },
-          );
-          return jsonResponse({ code: 230099, msg: "replace rejected" }, 500);
-        }
         record(
           { element: parseJsonRecord(body.element), sequence: body.sequence, uuid: body.uuid },
           { code: 0 },
@@ -370,7 +356,6 @@ function setupFeishuTrace(recorder: WireRecorder, scenario: DeliveryTraceScenari
   traceState.cardCount = 0;
   traceState.wireFaults = [];
   traceState.messageResult = "identified";
-  traceState.failNextReplace = false;
   traceState.account = makeTraceAccount(scenario);
   traceState.larkClient = createRecordingLarkClient();
   traceState.cardKitFetch = createRecordingCardKitFetch();
@@ -469,6 +454,60 @@ describe("feishu delivery trace goldens", () => {
 });
 
 describe("feishu producer custody boundaries", () => {
+  it("keeps exhausted provider throttling retryable through channel dispatch", async () => {
+    const throttled = Object.assign(new Error("Request failed with status code 429"), {
+      response: { status: 429, data: { code: 99991400, msg: "rate limited" } },
+    });
+    const client = {
+      im: {
+        message: {
+          create: vi.fn().mockRejectedValue(throttled),
+          reply: vi.fn(),
+        },
+      },
+    };
+
+    await expect(
+      dispatchChannelInboundReply({
+        cfg: {},
+        channel: "feishu",
+        accountId: "main",
+        agentId: "agent",
+        routeSessionKey: traceTurn.sessionKey,
+        storePath: traceTurn.storePath,
+        ctxPayload: createTraceContext(),
+        recordInboundSession: async () => undefined,
+        dispatchReplyWithBufferedBlockDispatcher: async ({ dispatcherOptions }) => {
+          await dispatcherOptions.deliver?.({ text: "the final answer" }, { kind: "final" });
+          return { queuedFinal: true, counts: { tool: 0, block: 0, final: 1 } };
+        },
+        delivery: {
+          deliver: async () =>
+            await sendReplyOrFallbackDirect(client, {
+              content: "{}",
+              msgType: "interactive",
+              directParams: {
+                receiveId: "oc-trace-chat",
+                receiveIdType: "chat_id",
+                content: "{}",
+                msgType: "interactive",
+              },
+              directErrorPrefix: "Feishu card send failed",
+              replyErrorPrefix: "Feishu card reply failed",
+            }),
+        },
+      }),
+    ).rejects.toMatchObject({
+      name: "PlatformMessageNotDispatchedError",
+      retryable: true,
+      publicError: { code: "429" },
+      cause: throttled,
+    });
+
+    expect(client.im.message.create).toHaveBeenCalledTimes(3);
+    expect(client.im.message.reply).not.toHaveBeenCalled();
+  });
+
   it("settles an actual rejected message producer as permanent suppression", async () => {
     const rejected = Object.assign(new Error("Request failed with status code 400"), {
       response: {
@@ -528,7 +567,7 @@ describe("feishu producer custody boundaries", () => {
     { mode: "root-create", dispatcherParams: { rootId: "om-root" } },
     { mode: "ordinary-create", dispatcherParams: {} },
   ])(
-    "keeps a permanent $mode streaming rejection terminal without static replay",
+    "preserves a permanent $mode streaming rejection when static fallback also fails",
     async ({ dispatcherParams }) => {
       const wireCalls: RecordedWireCall[] = [];
       traceState.recordWireCall = (call) => wireCalls.push(call);
@@ -562,17 +601,6 @@ describe("feishu producer custody boundaries", () => {
         ctxPayload: createTraceContext(),
         recordInboundSession: async () => undefined,
         dispatchReplyWithBufferedBlockDispatcher: async ({ dispatcherOptions }) => {
-          try {
-            await dispatcherOptions.deliver?.({ text: "the queued block" }, { kind: "block" });
-          } catch (blockError: unknown) {
-            expect(blockError).toMatchObject({
-              name: "PlatformMessageNotDispatchedError",
-              retryable: false,
-            });
-            await dispatcherOptions.onError?.(blockError, { kind: "block" });
-          }
-          // Typing TTL/cleanup can fire while the same turn still has a queued final.
-          created.dispatcherOptions.onCleanup?.();
           await dispatcherOptions.deliver?.(sourcePayload, { kind: "final" });
           return { queuedFinal: true, counts: { tool: 0, block: 0, final: 1 } };
         },
@@ -584,6 +612,10 @@ describe("feishu producer custody boundaries", () => {
       expect(error).toMatchObject({
         name: "PlatformMessageNotDispatchedError",
         retryable: false,
+        cause: {
+          name: "AggregateError",
+          message: "Feishu streaming start and static fallback failed",
+        },
       });
       await created.dispatcherOptions.onSettled?.();
       expect(settled).toHaveBeenCalledOnce();
@@ -591,7 +623,7 @@ describe("feishu producer custody boundaries", () => {
         wireCalls.filter(
           (call) => call.method === "im.message.reply" || call.method === "im.message.create",
         ),
-      ).toHaveLength(1);
+      ).toHaveLength(2);
       await created.dispatcherOptions.onIdle?.();
       await created.dispatcherOptions.onIdle?.();
       expect(streamingStartBackoffUntilByAccount.has("main")).toBe(false);
@@ -623,59 +655,7 @@ describe("feishu producer custody boundaries", () => {
         wireCalls.filter(
           (call) => call.method === "im.message.reply" || call.method === "im.message.create",
         ),
-      ).toHaveLength(2);
+      ).toHaveLength(3);
     },
   );
-
-  it("retains visible custody when no-ID preview disposition fails", async () => {
-    const wireCalls: RecordedWireCall[] = [];
-    traceState.recordWireCall = (call) => wireCalls.push(call);
-    traceState.messageCount = 0;
-    traceState.cardCount = 0;
-    traceState.messageResult = "no-id";
-    traceState.failNextReplace = true;
-    traceState.account = {
-      ...makeTraceAccount("final-only"),
-      config: FeishuConfigSchema.parse({ renderMode: "card", streaming: { mode: "partial" } }),
-    };
-    traceState.larkClient = createRecordingLarkClient();
-    traceState.cardKitFetch = createRecordingCardKitFetch();
-    const created = createFeishuReplyDispatcher({
-      cfg: {} as never,
-      agentId: "agent",
-      runtime: { log: () => {}, error: () => {} } as never,
-      chatId: "oc-trace-chat",
-      sendTarget: "oc-trace-chat",
-      replyToMessageId: "om-inbound",
-    });
-    const sourcePayload = { text: "x".repeat(4001) };
-
-    const error = await dispatchChannelInboundReply({
-      cfg: {},
-      channel: "feishu",
-      accountId: "main",
-      agentId: "agent",
-      routeSessionKey: traceTurn.sessionKey,
-      storePath: traceTurn.storePath,
-      ctxPayload: createTraceContext(),
-      recordInboundSession: async () => undefined,
-      dispatchReplyWithBufferedBlockDispatcher: async ({ dispatcherOptions }) => {
-        await dispatcherOptions.onReplyStart?.();
-        created.replyOptions.onPartialReply?.({ text: "accepted preview" });
-        await dispatcherOptions.deliver?.(sourcePayload, { kind: "final" });
-        return { queuedFinal: true, counts: { tool: 0, block: 0, final: 1 } };
-      },
-      dispatcherOptions: created.dispatcherOptions,
-      replyOptions: created.replyOptions,
-      delivery: created.delivery,
-    }).catch((caught: unknown) => caught);
-
-    expect(isChannelPartialDeliveryError(error)).toBe(true);
-    expect(error).toMatchObject({
-      deliveryResult: { visibleReplySent: true, content: "accepted preview" },
-    });
-    expect(wireCalls.filter((call) => call.method === "im.message.reply")).toHaveLength(1);
-    expect(wireCalls.some((call) => call.method === "im.message.delete")).toBe(false);
-    expect(wireCalls.filter((call) => call.method.endsWith("/elements/content"))).toHaveLength(1);
-  });
 });

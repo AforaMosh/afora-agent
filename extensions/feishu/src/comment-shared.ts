@@ -1,3 +1,4 @@
+import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
 // Feishu plugin module implements comment shared behavior.
 import { retryAsync } from "openclaw/plugin-sdk/retry-runtime";
 import {
@@ -78,17 +79,6 @@ function formatFeishuApiFailure(
   return `${errorPrefix}: ${details || "unknown error"}`;
 }
 
-function createFeishuApiError(
-  error: unknown,
-  errorPrefix: string,
-  options: {
-    includeConfigParams?: boolean;
-    includeNestedErrorLogId?: boolean;
-  } = {},
-): Error {
-  return new Error(formatFeishuApiFailure(error, errorPrefix, options), { cause: error });
-}
-
 const FEISHU_SEND_MAX_RETRIES = 2;
 const FEISHU_SEND_RETRY_BASE_MS = 500;
 
@@ -129,11 +119,22 @@ export async function requestFeishuApi<T>(
       },
     );
   } catch (error) {
+    const rateLimitCode = getFeishuSendRateLimitCode(error);
+    if (rateLimitCode !== undefined) {
+      throw new PlatformMessageNotDispatchedError(
+        formatFeishuApiFailure(error, errorPrefix, options),
+        {
+          cause: error,
+          retryable: true,
+          publicError: { code: String(rateLimitCode) },
+        },
+      );
+    }
     const rejection = createFeishuRejectedMessageApiError(error, errorPrefix);
-    if (rejection && getFeishuSendRateLimitCode(error) === undefined) {
+    if (rejection) {
       throw rejection;
     }
-    throw createFeishuApiError(error, errorPrefix, options);
+    throw new Error(formatFeishuApiFailure(error, errorPrefix, options), { cause: error });
   }
 }
 

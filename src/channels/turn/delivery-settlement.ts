@@ -8,6 +8,7 @@ import { settlePendingFinalDelivery } from "../../infra/outbound/delivery-comple
 import type { createMessageSentEmitter } from "../../infra/outbound/message-sent-hook.js";
 import { resolveMessageReceiptPrimaryId } from "../message/receipt.js";
 import {
+  createChannelPartialDeliveryError,
   isChannelPartialDeliveryError,
   type ChannelPartialDeliveryError,
 } from "./delivery-result.js";
@@ -49,22 +50,9 @@ export function isExplicitlyNonVisibleChannelDelivery(result: unknown): boolean 
   );
 }
 
-function markChannelDeliveryErrorVisible(error: unknown): unknown {
-  if (typeof error === "object" && error !== null && !Array.isArray(error)) {
-    try {
-      Object.assign(error, { sentBeforeError: true, visibleReplySent: true });
-      return error;
-    } catch {
-      // Fall back to a wrapper when a platform error object is non-extensible.
-    }
-  }
-  const visibleError = new Error("visible channel reply delivery failed", { cause: error });
-  Object.assign(visibleError, { sentBeforeError: true, visibleReplySent: true });
-  return visibleError;
-}
-
 export async function runChannelDeliveryObserver(params: {
   onDelivered: AnyChannelDeliveryAdapter["onDelivered"] | undefined;
+  onError?: (error: unknown, info: ChannelDeliveryInfo) => Promise<void> | void;
   payload: ReplyPayload;
   info: Parameters<NonNullable<ChannelEventDeliveryAdapter["onDelivered"]>>[1];
   result: Parameters<NonNullable<ChannelEventDeliveryAdapter["onDelivered"]>>[2];
@@ -75,9 +63,24 @@ export async function runChannelDeliveryObserver(params: {
   try {
     await params.onDelivered(params.payload, params.info, params.result);
   } catch (error: unknown) {
-    throw isExplicitlyNonVisibleChannelDelivery(params.result)
-      ? error
-      : markChannelDeliveryErrorVisible(error);
+    if (isExplicitlyNonVisibleChannelDelivery(params.result)) {
+      try {
+        await params.onError?.(error, params.info);
+      } catch {
+        // Error observers are best-effort and must not erase settled suppression provenance.
+      }
+      return;
+    }
+    // The send already completed; preserve its receipt in the canonical partial envelope so
+    // later settlement cannot downgrade visible custody to an ambiguous observer failure.
+    const deliveryResult: ChannelDeliveryResult = { ...params.result };
+    delete deliveryResult.deliveryIntent;
+    delete deliveryResult.suppression;
+    delete deliveryResult.finalization;
+    throw createChannelPartialDeliveryError(error, {
+      ...deliveryResult,
+      visibleReplySent: true,
+    });
   }
 }
 
@@ -113,7 +116,7 @@ export async function settleFailedPendingFinalDelivery(
 export async function settleChannelDeliveryAttempt(params: {
   attempt: PendingChannelDeliveryAttempt;
   onDelivered: AnyChannelDeliveryAdapter["onDelivered"] | undefined;
-  onFinalizationError?: (error: unknown) => Promise<void> | void;
+  onError?: (error: unknown, info: ChannelDeliveryInfo) => Promise<void> | void;
   emitMessageSent?: ReturnType<typeof createMessageSentEmitter>["emitMessageSent"];
 }): Promise<ChannelDeliveryResult | undefined> {
   const { attempt } = params;
@@ -140,7 +143,7 @@ export async function settleChannelDeliveryAttempt(params: {
       : undefined;
   } catch (error: unknown) {
     try {
-      await params.onFinalizationError?.(error);
+      await params.onError?.(error, attempt.info);
     } catch {
       // Error observers are best-effort and must not replace the native settlement failure.
     }
@@ -173,6 +176,7 @@ export async function settleChannelDeliveryAttempt(params: {
   }
   await runChannelDeliveryObserver({
     onDelivered: params.onDelivered,
+    onError: params.onError,
     payload: attempt.payload,
     info: attempt.info,
     result: finalized,
@@ -192,9 +196,7 @@ export async function settleChannelDeliveryAttempts(params: {
       const finalized = await settleChannelDeliveryAttempt({
         attempt,
         onDelivered: params.delivery.onDelivered,
-        onFinalizationError: async (error) => {
-          await Promise.resolve(params.delivery.onError?.(error, attempt.info));
-        },
+        onError: params.delivery.onError,
         emitMessageSent: params.emitMessageSent,
       });
       params.onSettled?.(attempt.info, finalized);

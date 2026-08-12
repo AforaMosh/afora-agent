@@ -4,9 +4,17 @@ import { onTrustedMessageAuditEventForTest as onTrustedMessageAuditEvent } from 
 import { PlatformMessageNotDispatchedError } from "../../infra/outbound/deliver-types.js";
 import { createChannelPartialDeliveryError } from "./delivery-result.js";
 import {
+  applySettledChannelDeliveryFailures,
   emitChannelDeliveryTerminalObservations,
-  resolveChannelDeliveryFailureTerminal,
+  resolveChannelDeliveryTerminalFromFailures,
 } from "./delivery-terminal.js";
+
+function resolveSingleFailure(error: unknown) {
+  return resolveChannelDeliveryTerminalFromFailures({
+    deliveredCount: 0,
+    failures: [{ error }],
+  });
+}
 
 describe("channel delivery terminal", () => {
   it("exposes only the provider code for a permanent pre-dispatch rejection", () => {
@@ -17,10 +25,7 @@ describe("channel delivery terminal", () => {
       publicError: { code: "230099" },
     });
 
-    const terminal = resolveChannelDeliveryFailureTerminal({
-      error,
-      deliveredBeforeFailure: false,
-    });
+    const terminal = resolveSingleFailure(error);
 
     expect(terminal).toEqual({
       outcome: "failed",
@@ -36,18 +41,106 @@ describe("channel delivery terminal", () => {
       messageIds: ["om-visible"],
     });
 
-    expect(resolveChannelDeliveryFailureTerminal({ error, deliveredBeforeFailure: false })).toEqual(
-      { outcome: "partial_failure", retryable: false },
-    );
+    expect(resolveSingleFailure(error)).toEqual({ outcome: "partial_failure", retryable: false });
+
+    for (const wrapped of [
+      new Error("observer wrapper", { cause: error }),
+      new AggregateError([new Error("observer failed"), error]),
+      new AggregateError([error, new Error("observer failed")]),
+    ]) {
+      expect(resolveSingleFailure(wrapped)).toEqual({
+        outcome: "partial_failure",
+        retryable: false,
+      });
+    }
   });
 
   it("does not invent a failed disposition for an ambiguous provider error", () => {
-    expect(
-      resolveChannelDeliveryFailureTerminal({
-        error: new Error("socket closed"),
-        deliveredBeforeFailure: false,
+    expect(resolveSingleFailure(new Error("socket closed"))).toEqual({
+      outcome: "unknown",
+      retryable: false,
+    });
+  });
+
+  it("keeps a mixed proven and ambiguous error graph unknown", () => {
+    const rejected = new PlatformMessageNotDispatchedError("streaming rejected", {
+      cause: new Error("streaming rejected"),
+      retryable: false,
+      publicError: { code: "230099" },
+    });
+    const error = new AggregateError([rejected, new Error("static fallback outcome unknown")]);
+
+    expect(resolveSingleFailure(error)).toEqual({ outcome: "unknown", retryable: false });
+  });
+
+  it("combines retryability and exposes only an agreed provider code", () => {
+    const createFailure = (code: string, retryable: boolean) => ({
+      error: new PlatformMessageNotDispatchedError("provider rejected message", {
+        cause: new Error("provider rejected message"),
+        retryable,
+        publicError: { code },
       }),
-    ).toEqual({ outcome: "unknown", retryable: false });
+    });
+
+    expect(
+      resolveChannelDeliveryTerminalFromFailures({
+        deliveredCount: 0,
+        failures: [createFailure("230099", false), createFailure("230099", true)],
+      }),
+    ).toEqual({
+      outcome: "failed",
+      retryable: true,
+      error: { code: "230099" },
+    });
+    expect(
+      resolveChannelDeliveryTerminalFromFailures({
+        deliveredCount: 0,
+        failures: [createFailure("230099", false), createFailure("230001", true)],
+      }),
+    ).toEqual({ outcome: "failed", retryable: true, error: { code: "230099" } });
+    expect(
+      resolveChannelDeliveryTerminalFromFailures({
+        deliveredCount: 0,
+        failures: [createFailure("230001", true), createFailure("230099", false)],
+      }),
+    ).toEqual({ outcome: "failed", retryable: true, error: { code: "230099" } });
+    expect(
+      resolveChannelDeliveryTerminalFromFailures({
+        deliveredCount: 0,
+        failures: [createFailure("230099", false), createFailure("230001", false)],
+      }),
+    ).toEqual({ outcome: "failed", retryable: false });
+
+    const retryableStart = createFailure("230001", true).error;
+    const permanentFallback = createFailure("230099", false).error;
+    for (const errors of [
+      [retryableStart, permanentFallback],
+      [permanentFallback, retryableStart],
+    ]) {
+      expect(
+        resolveChannelDeliveryTerminalFromFailures({
+          deliveredCount: 0,
+          failures: [{ error: new AggregateError(errors) }],
+        }),
+      ).toEqual({ outcome: "failed", retryable: true, error: { code: "230099" } });
+    }
+
+    const partial = {
+      error: createChannelPartialDeliveryError(
+        new PlatformMessageNotDispatchedError("provider rejected edit", {
+          cause: new Error("provider rejected edit"),
+          retryable: false,
+          publicError: { code: "230001" },
+        }),
+        { visibleReplySent: true },
+      ),
+    };
+    expect(
+      resolveChannelDeliveryTerminalFromFailures({
+        deliveredCount: 0,
+        failures: [partial, createFailure("230099", false)],
+      }),
+    ).toEqual({ outcome: "partial_failure", retryable: false, error: { code: "230099" } });
   });
 
   it("records delivery failure separately without raw terminal details", () => {
@@ -80,4 +173,42 @@ describe("channel delivery terminal", () => {
     expect(JSON.stringify(events)).not.toContain("230099");
     expect(JSON.stringify(events)).not.toContain("agent:main:feishu");
   });
+
+  it.each([
+    ["matching", "230099", { code: "230099" }],
+    ["conflicting", "230001", undefined],
+  ] as const)(
+    "%s provider codes remain conservative across delivery-owner merges",
+    (_name, nextCode, expectedError) => {
+      const nextFailure = new PlatformMessageNotDispatchedError("provider rejected message", {
+        cause: new Error("provider rejected message"),
+        retryable: false,
+        publicError: { code: nextCode },
+      });
+
+      expect(
+        applySettledChannelDeliveryFailures(
+          {
+            queuedFinal: true,
+            counts: { tool: 0, block: 0, final: 1 },
+            deliveryTerminal: {
+              outcome: "partial_failure",
+              retryable: false,
+              error: { code: "230099" },
+            },
+          },
+          [{ kind: "final", error: nextFailure }],
+        ),
+      ).toEqual({
+        queuedFinal: false,
+        counts: { tool: 0, block: 0, final: 0 },
+        failedCounts: { final: 1 },
+        deliveryTerminal: {
+          outcome: "partial_failure",
+          retryable: false,
+          ...(expectedError ? { error: expectedError } : {}),
+        },
+      });
+    },
+  );
 });

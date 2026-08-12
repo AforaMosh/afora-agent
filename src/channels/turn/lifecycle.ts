@@ -1,7 +1,6 @@
 import { dispatchInboundMessageWithRoutedChannelDispatcher } from "../../auto-reply/dispatch.js";
 import { copyReplyPayloadMetadata, type ReplyPayload } from "../../auto-reply/reply-payload.js";
 import { suppressPendingFinalDelivery } from "../../auto-reply/reply/dispatch-from-config.pending-final.js";
-import type { DispatchFromConfigResult } from "../../auto-reply/reply/dispatch-from-config.types.js";
 import type { ReplyDispatchKind } from "../../auto-reply/reply/reply-dispatcher.types.js";
 import { runWithSessionInitConflictRetry } from "../../auto-reply/reply/session-init-conflict-retry.js";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
@@ -17,6 +16,7 @@ import { summarizeOutboundPayloadForTransport } from "../../infra/outbound/paylo
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { createChannelReplyPipeline } from "../message/reply-pipeline.js";
 import { recordInboundSession } from "../session.js";
+import { reconcileNonVisibleChannelDeliveries } from "./delivery-reconciliation.js";
 import { createSuppressedChannelDeliveryResult } from "./delivery-result.js";
 import {
   isExplicitlyNonVisibleChannelDelivery,
@@ -28,7 +28,7 @@ import {
   type PendingChannelDeliveryAttempt,
 } from "./delivery-settlement.js";
 import {
-  applySettledChannelDeliveryFailure,
+  applySettledChannelDeliveryFailures,
   emitChannelDeliveryTerminalObservations,
 } from "./delivery-terminal.js";
 import {
@@ -173,22 +173,6 @@ async function applyRoutedDirectMessageSending(params: {
   return { payload: copyReplyPayloadMetadata(params.payload, payload) };
 }
 
-function reconcileNonVisibleChannelDeliveries(
-  result: DispatchFromConfigResult,
-  nonVisibleCounts: Readonly<Record<ReplyDispatchKind, number>>,
-): DispatchFromConfigResult {
-  const counts = {
-    tool: Math.max(0, result.counts.tool - nonVisibleCounts.tool),
-    block: Math.max(0, result.counts.block - nonVisibleCounts.block),
-    final: Math.max(0, result.counts.final - nonVisibleCounts.final),
-  };
-  return {
-    ...result,
-    queuedFinal: result.queuedFinal && counts.final > 0,
-    counts,
-  };
-}
-
 function createObserveOnlyDeliveryAdapter(): ChannelEventDeliveryAdapter {
   // Observe-only turns still run the agent, but transport delivery must remain impossible for
   // every assembled-turn entry point, including direct SDK dispatch.
@@ -308,6 +292,7 @@ async function dispatchChannelTurnWithDeliveryOwner(
                         await suppressPendingFinalDelivery(payload);
                         await runChannelDeliveryObserver({
                           onDelivered: delivery.onDelivered,
+                          onError: delivery.onError,
                           payload,
                           info,
                           result: createSuppressedChannelDeliveryResult({ reason }),
@@ -344,6 +329,7 @@ async function dispatchChannelTurnWithDeliveryOwner(
                       await suppressPendingFinalDelivery(payload);
                       await runChannelDeliveryObserver({
                         onDelivered: delivery.onDelivered,
+                        onError: delivery.onError,
                         payload,
                         info,
                         result: suppression,
@@ -373,6 +359,7 @@ async function dispatchChannelTurnWithDeliveryOwner(
                         // deliverOutboundPayloadsInternal after outbound hooks settle.
                         await runChannelDeliveryObserver({
                           onDelivered: delivery.onDelivered,
+                          onError: delivery.onError,
                           payload: preparedPayload,
                           info,
                           result: durable.delivery,
@@ -460,6 +447,7 @@ async function dispatchChannelTurnWithDeliveryOwner(
                           result,
                         },
                         onDelivered: delivery.onDelivered,
+                        onError: delivery.onError,
                         emitMessageSent: delivery.observeMessageSent
                           ? getMessageSentEmitter()?.emitMessageSent
                           : undefined,
@@ -513,13 +501,12 @@ async function dispatchChannelTurnWithDeliveryOwner(
           ownership === "routed-delivery"
             ? reconcileNonVisibleChannelDeliveries(dispatchResult!, nonVisibleDeliveryCounts)
             : dispatchResult!;
-        const finalResult = settlementFailures.reduce(
-          (result, failure) =>
-            applySettledChannelDeliveryFailure(result, {
-              error: failure.error,
-              kind: failure.info.kind,
-            }),
+        const finalResult = applySettledChannelDeliveryFailures(
           settledResult,
+          settlementFailures.map((failure) => ({
+            error: failure.error,
+            kind: failure.info.kind,
+          })),
         );
         const deliveryTerminal = finalResult.deliveryTerminal;
         if (deliveryTerminal && deliveryTerminal.outcome !== "delivered") {

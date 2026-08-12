@@ -159,6 +159,14 @@ final dispatch boundary may make this assertion. Never use the marker after a
 finalization/send call begins or returns an ambiguous result; false marking can
 duplicate messages.
 
+`retryable` defaults to `true`; use that default only for a transient,
+authoritatively proven no-send failure. Set `retryable: false` for a permanent
+payload or policy rejection that must not be replayed. If the dispatch
+controller needs a provider code, pass only an explicitly redacted,
+provider-stable value as `publicError: { code }`. The raw `cause`, response,
+message, request identifiers, and credentials stay private to the adapter and
+must not be copied into `publicError`.
+
 ## Existing outbound adapters
 
 If the channel already has a compatible `outbound` adapter, derive the

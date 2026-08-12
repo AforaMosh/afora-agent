@@ -383,6 +383,14 @@ describe("channel turn delivery", () => {
     const durable = vi.fn();
     const deliver = vi.fn();
     const onDelivered = vi.fn();
+    dispatchReplyWithRoutedChannelDispatcherCore.mockImplementationOnce(async (params) => {
+      await params.dispatcherOptions.deliver({ text: "reply" }, { kind: "final" });
+      return {
+        queuedFinal: true,
+        counts: { tool: 0, block: 0, final: 1 },
+        deliveryTerminal: { outcome: "delivered" as const },
+      };
+    });
 
     const result = await dispatchRoutedChannelTurn({
       cfg,
@@ -413,6 +421,7 @@ describe("channel turn delivery", () => {
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
+    expect(result.dispatchResult).not.toHaveProperty("deliveryTerminal");
   });
 
   it("suppresses routed direct delivery and visible counts when message hooks cancel", async () => {
@@ -425,14 +434,18 @@ describe("channel turn delivery", () => {
       })),
     });
     const deliver = vi.fn();
-    const onDelivered = vi.fn();
+    const observerError = new Error("suppression observer failed");
+    const onDelivered = vi.fn(() => {
+      throw observerError;
+    });
+    const onError = vi.fn();
 
     const result = await dispatchRoutedChannelTurn({
       cfg,
       channel: "telegram",
       route: { agentId: "main", sessionKey: "agent:main:telegram:peer" },
       ctxPayload: createCtx({ Surface: "telegram", OriginatingTo: "chat-1" }),
-      delivery: { deliver, onDelivered, observeMessageSent: true },
+      delivery: { deliver, onDelivered, onError, observeMessageSent: true },
     });
 
     expect(deliver).not.toHaveBeenCalled();
@@ -449,6 +462,7 @@ describe("channel turn delivery", () => {
       },
     );
     expect(emitMessageSent).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith(observerError, { kind: "final" });
     expectDispatched(result);
     expect(result.dispatchResult).toMatchObject({
       queuedFinal: false,
@@ -906,33 +920,37 @@ describe("channel turn delivery", () => {
 
   it("preserves visible delivery when post-delivery observers throw", async () => {
     const error = new Error("observer failed");
+    Object.freeze(error);
     const deliver = vi.fn(async () => ({ messageIds: ["local-1"], visibleReplySent: true }));
     const dispatchReplyWithBufferedBlockDispatcher = createDispatch();
 
-    await expect(
-      dispatchTestAssembledTurn({
-        channel: "telegram",
-        accountId: "acct",
-        routeSessionKey: "agent:main:telegram:peer",
-        ctxPayload: createCtx({ To: "123", OriginatingTo: "123" }),
-        recordInboundSession: createRecordInboundSession(),
-        dispatchReplyWithBufferedBlockDispatcher,
-        delivery: {
-          deliver,
-          durable: false,
-          onDelivered: () => {
-            throw error;
-          },
+    const caught = await dispatchTestAssembledTurn({
+      channel: "telegram",
+      accountId: "acct",
+      routeSessionKey: "agent:main:telegram:peer",
+      ctxPayload: createCtx({ To: "123", OriginatingTo: "123" }),
+      recordInboundSession: createRecordInboundSession(),
+      dispatchReplyWithBufferedBlockDispatcher,
+      delivery: {
+        deliver,
+        durable: false,
+        onDelivered: () => {
+          throw error;
         },
-      }),
-    ).rejects.toMatchObject({
+      },
+    }).catch((caughtError: unknown) => caughtError);
+
+    expect(caught).toMatchObject({
+      code: "CHANNEL_PARTIAL_DELIVERY",
+      cause: error,
       sentBeforeError: true,
       visibleReplySent: true,
+      deliveryResult: {
+        messageIds: ["local-1"],
+        visibleReplySent: true,
+      },
     });
-    expect(error).toMatchObject({
-      sentBeforeError: true,
-      visibleReplySent: true,
-    });
+    expect(error).not.toHaveProperty("sentBeforeError");
   });
 
   it("returns custom delivery result to the buffered dispatcher", async () => {

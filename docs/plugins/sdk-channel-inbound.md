@@ -173,6 +173,22 @@ identity, then keeps the delivery failed so callers do not mistake partial
 success for a clean send. Do not report `visibleReplySent: false` after any
 preview, draft, attachment, or final message became visible.
 
+After final delivery settles, `dispatchResult.deliveryTerminal`, when present,
+reports the redacted recipient-visible outcome:
+
+| Outcome           | Meaning                                                                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `delivered`       | The final delivery completed successfully.                                                                                                                |
+| `failed`          | Core proved no recipient-visible send began. `retryable` preserves the `PlatformMessageNotDispatchedError` disposition; permanent rejections use `false`. |
+| `partial_failure` | A preview, draft, attachment, or final message became visible before a later failure. It is never automatically retryable.                                |
+| `unknown`         | Core cannot prove whether a provider-visible send began. It is not safe to replay automatically.                                                          |
+
+Only the optional, explicitly redacted `publicError.code` from
+`PlatformMessageNotDispatchedError` can appear as `deliveryTerminal.error.code`.
+Raw causes and provider responses never cross this boundary. Do not use
+`PlatformMessageNotDispatchedError` to turn an ambiguous send into `failed`;
+leave it unmarked so core preserves the `unknown` outcome.
+
 When `reply_payload_sending` or `message_sending` is registered, those hooks
 must settle before anything provider-visible is created because either hook
 can rewrite or cancel the logical payload. An eager native preview would leak

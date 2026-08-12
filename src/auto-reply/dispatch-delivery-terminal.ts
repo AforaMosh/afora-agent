@@ -1,5 +1,4 @@
-import { isChannelPartialDeliveryError } from "../channels/turn/delivery-result.js";
-import { resolveChannelDeliveryFailureTerminal } from "../channels/turn/delivery-terminal.js";
+import { resolveChannelDeliveryTerminalFromFailures } from "../channels/turn/delivery-terminal.js";
 import type { ChannelDeliveryTerminal } from "../channels/turn/delivery-terminal.types.js";
 import type { DispatchFromConfigResult } from "./reply/dispatch-from-config.types.js";
 import { readReplyDispatcherDeliveryFailures } from "./reply/reply-dispatcher-delivery-failures.js";
@@ -16,13 +15,15 @@ function resolveFinalDeliveryTerminal(params: {
   const failures = readReplyDispatcherDeliveryFailures(params.dispatcher).filter(
     (failure) => failure.kind === "final",
   );
-  const failure = failures.at(-1);
-  return resolveChannelDeliveryFailureTerminal({
-    error: failure?.error,
-    deliveredBeforeFailure:
-      params.deliveredFinalCount > 0 ||
-      failures.some((candidate) => isChannelPartialDeliveryError(candidate.error)),
-    failedBeforeDeliver: failure?.outcome === "failed-before-deliver",
+  if (failures.length === 0) {
+    return { outcome: "unknown", retryable: false };
+  }
+  return resolveChannelDeliveryTerminalFromFailures({
+    deliveredCount: params.deliveredFinalCount,
+    failures: failures.map((failure) => ({
+      error: failure.error,
+      failedBeforeDeliver: failure.outcome === "failed-before-deliver",
+    })),
   });
 }
 

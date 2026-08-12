@@ -1,6 +1,7 @@
 import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 
-const FEISHU_SEND_RATE_LIMIT_CODES = new Set([230020, 11232]);
+// Feishu documents these as retryable per-chat, tenant, legacy V4, and gateway throttles.
+const FEISHU_SEND_RATE_LIMIT_CODES = new Set([230020, 11232, 11233, 99991400]);
 
 export function getFeishuSendRateLimitCode(error: unknown): number | undefined {
   if (!isRecord(error)) {

@@ -109,12 +109,18 @@ function isProvenPreConnectCandidate(candidate: unknown): boolean {
   return syscall === "connect" || syscall === "getaddrinfo";
 }
 
-function nestedErrorCandidates(current: Record<string, unknown>): unknown[] {
+function nestedErrorCandidates(
+  current: Record<string, unknown>,
+  includeMarkerCauses = false,
+): unknown[] {
   const retryAttempts = getRetryAttemptErrors(current);
   const retryBranches = preserveProofBranches(retryAttempts);
   // The explicit marker covers its cause: the provider owns the final dispatch
   // boundary and proved that no recipient-visible send could have completed.
-  if (isPlatformMessageNotDispatchedError(current) || isProvenPreConnectCandidate(current)) {
+  if (
+    !includeMarkerCauses &&
+    (isPlatformMessageNotDispatchedError(current) || isProvenPreConnectCandidate(current))
+  ) {
     return retryBranches;
   }
   const nested = [current.cause, current.original, current.error, current.reason];
@@ -171,7 +177,7 @@ export function findPlatformMessageRejectedError(
 }
 
 /** Finds any provider assertion that the payload did not cross the platform boundary. */
-export function findPlatformMessageNotDispatchedError(
+function findPlatformMessageNotDispatchedError(
   err: unknown,
 ): PlatformMessageNotDispatchedError | undefined {
   for (const candidate of collectErrorGraphCandidates(err, nestedErrorCandidates)) {
@@ -180,6 +186,15 @@ export function findPlatformMessageNotDispatchedError(
     }
   }
   return undefined;
+}
+
+/** Retains every provider disposition carried by aggregate delivery wrappers. */
+export function findPlatformMessageNotDispatchedErrors(
+  err: unknown,
+): PlatformMessageNotDispatchedError[] {
+  return collectErrorGraphCandidates(err, (current) => nestedErrorCandidates(current, true)).filter(
+    isPlatformMessageNotDispatchedError,
+  );
 }
 
 export function computeBackoffMs(retryCount: number): number {

@@ -61,6 +61,10 @@ describe("getFeishuSendRateLimitCode", () => {
   it("returns undefined for null", () => {
     expect(getFeishuSendRateLimitCode(null)).toBeUndefined();
   });
+
+  it.each([11233, 99991400])("returns %s for a documented HTTP-400 rate-limit body", (code) => {
+    expect(getFeishuSendRateLimitCode(axiosError(code))).toBe(code);
+  });
 });
 
 describe("requestFeishuApi — success path", () => {
@@ -227,7 +231,8 @@ describe("requestFeishuApi — retry on expanded rate-limit signals", () => {
     const err = await requestFeishuApi(request, "Feishu send failed", NO_DELAY).catch(
       (e: unknown) => e,
     );
-    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(PlatformMessageNotDispatchedError);
+    expect(err).toMatchObject({ retryable: true, publicError: { code: "11232" } });
     expect((err as Error).message).toMatch(/11232/);
     // 1 initial attempt + 2 retries
     expect(request).toHaveBeenCalledTimes(3);
@@ -239,7 +244,8 @@ describe("requestFeishuApi — retry on expanded rate-limit signals", () => {
     const err = await requestFeishuApi(request, "Feishu send failed", NO_DELAY).catch(
       (e: unknown) => e,
     );
-    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(PlatformMessageNotDispatchedError);
+    expect(err).toMatchObject({ retryable: true, publicError: { code: "429" } });
     // The error wrapper records http_status:429 in the JSON-encoded message.
     expect((err as Error).message).toMatch(/429/);
     expect(request).toHaveBeenCalledTimes(3);
@@ -256,6 +262,21 @@ describe("requestFeishuApi — retry on expanded rate-limit signals", () => {
     expect(result).toBe("ok-mixed");
     expect(request).toHaveBeenCalledTimes(3);
   });
+
+  it.each([11233, 99991400])(
+    "retries an HTTP-400 response carrying documented rate-limit code %s",
+    async (code) => {
+      const request = vi
+        .fn()
+        .mockRejectedValueOnce(axiosError(code))
+        .mockResolvedValueOnce("ok-after-rate-limit");
+
+      await expect(requestFeishuApi(request, "prefix", NO_DELAY)).resolves.toBe(
+        "ok-after-rate-limit",
+      );
+      expect(request).toHaveBeenCalledTimes(2);
+    },
+  );
 });
 
 // Feishu SDK can fulfill (no throw) with a rate-limit code in the body, e.g.
@@ -284,6 +305,10 @@ describe("getFeishuSendRateLimitCodeFromResponse — fulfilled body classificati
     expect(getFeishuSendRateLimitCodeFromResponse(null)).toBeUndefined();
     expect(getFeishuSendRateLimitCodeFromResponse(undefined)).toBeUndefined();
     expect(getFeishuSendRateLimitCodeFromResponse("oops")).toBeUndefined();
+  });
+
+  it.each([11233, 99991400])("returns %s for a fulfilled rate-limit body", (code) => {
+    expect(getFeishuSendRateLimitCodeFromResponse({ code, msg: "rate limit" })).toBe(code);
   });
 });
 
@@ -318,7 +343,8 @@ describe("requestFeishuApi — retry on fulfilled rate-limit body (no throw)", (
     const err = await requestFeishuApi(request, "Feishu send failed", NO_DELAY).catch(
       (e: unknown) => e,
     );
-    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(PlatformMessageNotDispatchedError);
+    expect(err).toMatchObject({ retryable: true, publicError: { code: "11232" } });
     expect((err as Error).message).toMatch(/Feishu send failed/);
     expect((err as Error).message).toMatch(/11232/);
     // 1 initial attempt + 2 retries
@@ -332,6 +358,22 @@ describe("requestFeishuApi — retry on fulfilled rate-limit body (no throw)", (
     expect((result as { data: { message_id: string } }).data.message_id).toBe("om_first");
     expect(request).toHaveBeenCalledTimes(1);
   });
+
+  it.each([11233, 99991400])(
+    "retries when the SDK fulfills with documented rate-limit code %s",
+    async (code) => {
+      const request = vi
+        .fn()
+        .mockResolvedValueOnce({ code, msg: "rate limit" })
+        .mockResolvedValueOnce({ code: 0, data: { message_id: "om_ok" } });
+
+      await expect(requestFeishuApi(request, "prefix", NO_DELAY)).resolves.toEqual({
+        code: 0,
+        data: { message_id: "om_ok" },
+      });
+      expect(request).toHaveBeenCalledTimes(2);
+    },
+  );
 
   it("does not retry when SDK fulfills with a non-rate-limit error code", async () => {
     // Non-retryable error codes pass through to assertFeishuMessageApiSuccess upstream.

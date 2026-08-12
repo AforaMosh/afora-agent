@@ -363,30 +363,33 @@ describe("FeishuStreamingSession", () => {
     { mode: "reply", options: { replyToMessageId: "om_parent" } },
     { mode: "root-create", options: { rootId: "om_root" } },
     { mode: "create", options: undefined },
-  ])("finalizes an accepted no-identity card in place in $mode mode", async ({ mode, options }) => {
-    const harness = createStartHarness({ code: 0, msg: "ok" });
-    const session = new FeishuStreamingSession(
-      harness.client,
-      { appId: `app_no_id_${mode}`, appSecret: "secret" },
-      undefined,
-      harness.deps,
-    );
+  ])(
+    "proves no-identity visibility after the first CardKit content write in $mode mode",
+    async ({ mode, options }) => {
+      const harness = createStartHarness({ code: 0, msg: "ok" });
+      const session = new FeishuStreamingSession(
+        harness.client,
+        { appId: `app_no_id_${mode}`, appSecret: "secret" },
+        undefined,
+        harness.deps,
+      );
 
-    await session.start("oc_chat", "chat_id", options);
-    expect(session.isActive()).toBe(true);
-    const result = await session.closeWithResult("exact final answer");
+      await session.start("oc_chat", "chat_id", options);
+      expect(session.isActive()).toBe(true);
+      const result = await session.closeWithResult("exact final answer");
 
-    expect(result).toEqual({ visibleReplySent: true, content: "exact final answer" });
-    expect(session.isActive()).toBe(false);
-    expect(harness.messageCreate.mock.calls.length + harness.messageReply.mock.calls.length).toBe(
-      1,
-    );
-    expect(
-      harness.requests.filter(({ path }) => path.includes("/elements/content/content")),
-    ).toHaveLength(1);
-    expect(harness.requests.filter(({ path }) => path.endsWith("/settings"))).toHaveLength(1);
-    expect(harness.messageDelete).not.toHaveBeenCalled();
-  });
+      expect(result).toEqual({ visibleReplySent: true, content: "exact final answer" });
+      expect(session.isActive()).toBe(false);
+      expect(harness.messageCreate.mock.calls.length + harness.messageReply.mock.calls.length).toBe(
+        1,
+      );
+      expect(
+        harness.requests.filter(({ path }) => path.includes("/elements/content/content")),
+      ).toHaveLength(1);
+      expect(harness.requests.filter(({ path }) => path.endsWith("/settings"))).toHaveLength(1);
+      expect(harness.messageDelete).not.toHaveBeenCalled();
+    },
+  );
 
   it("disposes an accepted no-identity card in place without attempting message deletion", async () => {
     const harness = createStartHarness({ code: 0, msg: "ok" });
@@ -407,7 +410,7 @@ describe("FeishuStreamingSession", () => {
   });
 
   it.each(["content", "settings"] as const)(
-    "reports accepted no-identity custody when %s finalization fails",
+    "reports no-identity visibility only after CardKit accepts content when %s finalization fails",
     async (rejectedPath) => {
       const harness = createStartHarness({ code: 0, msg: "ok" }, rejectedPath);
       const session = new FeishuStreamingSession(
@@ -425,7 +428,9 @@ describe("FeishuStreamingSession", () => {
       expect(error).toBeInstanceOf(FeishuStreamingFinalizationError);
       expect(error).toMatchObject({
         result: {
-          visibleReplySent: true,
+          ...(rejectedPath === "content"
+            ? { visibleReplySent: false, visibilityUnknown: true }
+            : { visibleReplySent: true }),
           ...(rejectedPath === "settings" ? { content: "final answer" } : {}),
         },
       });

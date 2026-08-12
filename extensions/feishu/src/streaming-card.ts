@@ -47,6 +47,7 @@ type CardKitResponse = { code?: number; msg?: string };
 
 type FeishuStreamingCloseResult = {
   visibleReplySent: boolean;
+  visibilityUnknown?: true;
   content?: string;
   messageId?: string;
 };
@@ -640,7 +641,7 @@ export class FeishuStreamingSession {
     const apiBase = resolveApiBase(this.creds.domain);
     // A failed final rewrite does not erase previously accepted visible content.
     // sentText advances only for an accepted write; the return value reports any visible content.
-    let visibleContentSent = !this.state.messageId || Boolean(this.state.sentText.trim());
+    let visibleContentSent = Boolean(this.state.sentText.trim());
     let finalWriteError: unknown;
 
     // Only send final update if content differs from what's already displayed.
@@ -722,6 +723,7 @@ export class FeishuStreamingSession {
     this.log?.(`Closed streaming: cardId=${finalState.cardId}`);
     const result: FeishuStreamingCloseResult = {
       visibleReplySent: visibleContentSent,
+      ...(!visibleContentSent && !finalState.messageId ? { visibilityUnknown: true } : {}),
       ...(finalState.sentText.trim() ? { content: finalState.sentText } : {}),
       ...(finalState.messageId ? { messageId: finalState.messageId } : {}),
     };

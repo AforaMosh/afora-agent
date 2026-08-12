@@ -177,11 +177,12 @@ describe("foreground reply freshness", () => {
     releaseOlderFinal.resolve();
     const olderResult = await olderDispatch;
 
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -209,7 +210,7 @@ describe("foreground reply freshness", () => {
       },
     });
 
-    expect(result).toMatchObject({
+    expect(result).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -250,10 +251,11 @@ describe("foreground reply freshness", () => {
       await hookStarted.promise;
       await vi.advanceTimersByTimeAsync(15_000);
 
-      await expect(dispatch).resolves.toMatchObject({
+      await expect(dispatch).resolves.toEqual({
         queuedFinal: true,
         counts: { tool: 0, block: 0, final: 1 },
         failedCounts: { tool: 0, block: 0, final: 1 },
+        deliveryTerminal: { outcome: "partial_failure", retryable: false },
       });
       expect(beforeDeliver).toHaveBeenCalledTimes(2);
       expect(deliveries).toEqual([{ kind: "final", text: "follow-up final" }]);
@@ -291,7 +293,10 @@ describe("foreground reply freshness", () => {
       expect(deliveries).toEqual([]);
       await vi.advanceTimersByTimeAsync(1_000);
 
-      await expect(dispatch).resolves.toMatchObject(queuedFinalResult());
+      await expect(dispatch).resolves.toEqual({
+        ...queuedFinalResult(),
+        deliveryTerminal: { outcome: "delivered" },
+      });
       expect(deliveries).toEqual([{ kind: "final", text: "budgeted final" }]);
       expect(vi.getTimerCount()).toBe(0);
     } finally {
@@ -340,13 +345,14 @@ describe("foreground reply freshness", () => {
     const olderResult = await olderDispatch;
 
     expect(beforeDeliver).toHaveBeenCalledTimes(1);
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
     expect(deliveries).toEqual([{ kind: "final", text: "old rewritten final" }]);
   });
@@ -403,8 +409,11 @@ describe("foreground reply freshness", () => {
     await newerStarted.promise;
     releaseOlderFinal.resolve();
 
-    await expect(olderDispatch).resolves.toMatchObject(queuedFinalResult());
-    await expect(newerDispatch).resolves.toMatchObject({
+    await expect(olderDispatch).resolves.toEqual({
+      ...queuedFinalResult(),
+      deliveryTerminal: { outcome: "delivered" },
+    });
+    await expect(newerDispatch).resolves.toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -456,8 +465,11 @@ describe("foreground reply freshness", () => {
     expect(deliveries).toEqual([]);
 
     releaseNewerFinal.resolve();
-    await expect(newerDispatch).resolves.toMatchObject(queuedFinalResult());
-    await expect(olderDispatch).resolves.toMatchObject({
+    await expect(newerDispatch).resolves.toEqual({
+      ...queuedFinalResult(),
+      deliveryTerminal: { outcome: "delivered" },
+    });
+    await expect(olderDispatch).resolves.toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -518,11 +530,12 @@ describe("foreground reply freshness", () => {
     const olderResult = await olderDispatch;
 
     expect(beforeDeliver).toHaveBeenCalledTimes(1);
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -539,14 +552,16 @@ describe("foreground reply freshness", () => {
     );
 
     expect(beforeDeliver).toHaveBeenCalledTimes(1);
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
       failedCounts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "unknown", retryable: false },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
     expect(deliveries).toEqual([{ kind: "final", text: "old rewritten final" }]);
   });
@@ -559,6 +574,7 @@ describe("foreground reply freshness", () => {
           cause: new Error("second chunk failed"),
           results: [{ channel: "whatsapp", messageId: "wa-1" }],
         }),
+      expectedTerminal: { outcome: "unknown", retryable: false } as const,
     },
     {
       label: "channel partial-delivery envelope",
@@ -568,29 +584,33 @@ describe("foreground reply freshness", () => {
           messageIds: ["provider-1"],
           visibleReplySent: true,
         }),
+      expectedTerminal: { outcome: "partial_failure", retryable: false } as const,
     },
-  ])("suppresses an older foreground final after $label", async ({ createError }) => {
-    const { beforeDeliver, deliveries, newerResult, olderResult } = await runDelayedOlderFinalRace(
-      (raceDeliveries) => ({
-        deliver: async (payload, info) => {
-          raceDeliveries.push({ kind: info.kind, text: payload.text });
-          throw createError();
-        },
-      }),
-    );
+  ])(
+    "suppresses an older foreground final after $label",
+    async ({ createError, expectedTerminal }) => {
+      const { beforeDeliver, deliveries, newerResult, olderResult } =
+        await runDelayedOlderFinalRace((raceDeliveries) => ({
+          deliver: async (payload, info) => {
+            raceDeliveries.push({ kind: info.kind, text: payload.text });
+            throw createError();
+          },
+        }));
 
-    expect(beforeDeliver).toHaveBeenCalledTimes(1);
-    expect(newerResult).toMatchObject({
-      queuedFinal: false,
-      counts: { tool: 0, block: 0, final: 0 },
-      failedCounts: { tool: 0, block: 0, final: 1 },
-    });
-    expect(olderResult).toMatchObject({
-      queuedFinal: false,
-      counts: { tool: 0, block: 0, final: 0 },
-    });
-    expect(deliveries).toEqual([{ kind: "final", text: "new final" }]);
-  });
+      expect(beforeDeliver).toHaveBeenCalledTimes(1);
+      expect(newerResult).toEqual({
+        queuedFinal: false,
+        counts: { tool: 0, block: 0, final: 0 },
+        failedCounts: { tool: 0, block: 0, final: 1 },
+        deliveryTerminal: expectedTerminal,
+      });
+      expect(olderResult).toEqual({
+        queuedFinal: false,
+        counts: { tool: 0, block: 0, final: 0 },
+      });
+      expect(deliveries).toEqual([{ kind: "final", text: "new final" }]);
+    },
+  );
 
   it("keeps an older foreground final when a newer adapter reports non-visible delivery", async () => {
     const { beforeDeliver, deliveries, newerResult, olderResult } = await runDelayedOlderFinalRace(
@@ -600,13 +620,15 @@ describe("foreground reply freshness", () => {
     );
 
     expect(beforeDeliver).toHaveBeenCalledTimes(1);
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
     expect(deliveries).toEqual([{ kind: "final", text: "old rewritten final" }]);
   });
@@ -620,11 +642,12 @@ describe("foreground reply freshness", () => {
     );
 
     expect(beforeDeliver).toHaveBeenCalledTimes(1);
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -640,11 +663,12 @@ describe("foreground reply freshness", () => {
 
     expect(beforeDeliver).toHaveBeenCalledTimes(1);
     expect(olderSettled).toHaveBeenCalledTimes(1);
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -664,11 +688,12 @@ describe("foreground reply freshness", () => {
 
     expect(beforeDeliver).toHaveBeenCalledTimes(1);
     expect(olderFreshDelivery).not.toHaveBeenCalled();
-    expect(newerResult).toMatchObject({
+    expect(newerResult).toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
-    expect(olderResult).toMatchObject({
+    expect(olderResult).toEqual({
       queuedFinal: false,
       counts: { tool: 0, block: 0, final: 0 },
     });
@@ -742,15 +767,17 @@ describe("foreground reply freshness", () => {
       }),
       deliveries,
     );
-    await expect(secondDispatch).resolves.toMatchObject({
+    await expect(secondDispatch).resolves.toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
 
     releaseFirstFinal.resolve();
-    await expect(firstDispatch).resolves.toMatchObject({
+    await expect(firstDispatch).resolves.toEqual({
       queuedFinal: true,
       counts: { tool: 0, block: 0, final: 1 },
+      deliveryTerminal: { outcome: "delivered" },
     });
     expect(deliveries).toEqual([
       { kind: "final", text: "second chat final" },

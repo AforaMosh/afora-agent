@@ -107,6 +107,31 @@ function rememberStreamingStartFailure(accountId: string, now = Date.now()): num
   return backoffUntil;
 }
 
+function combineStreamingStartFallbackFailures(
+  start: PlatformMessageNotDispatchedError,
+  fallback: unknown,
+): unknown {
+  const cause = new AggregateError(
+    [start, fallback],
+    "Feishu streaming start and static fallback failed",
+  );
+  if (!(fallback instanceof PlatformMessageNotDispatchedError)) {
+    return cause;
+  }
+  const permanentFailures = [start, fallback].filter((failure) => !failure.retryable);
+  const permanentCode = permanentFailures[0]?.publicError?.code;
+  const agreedPermanentCode =
+    permanentCode &&
+    permanentFailures.every((failure) => failure.publicError?.code === permanentCode)
+      ? permanentCode
+      : undefined;
+  return new PlatformMessageNotDispatchedError(fallback.message, {
+    cause,
+    retryable: start.retryable || fallback.retryable,
+    ...(agreedPermanentCode ? { publicError: { code: agreedPermanentCode } } : {}),
+  });
+}
+
 function normalizeEpochMs(timestamp: number | undefined): number | undefined {
   if (!Number.isFinite(timestamp) || timestamp === undefined || timestamp <= 0) {
     return undefined;
@@ -321,7 +346,8 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   let sentIndependentBlockText = false;
   let partialUpdateQueue: Promise<void> = Promise.resolve();
   let streamingStartPromise: Promise<void> | null = null;
-  let terminalStreamingStartError: PlatformMessageNotDispatchedError | undefined;
+  let streamingStartFallbackError: PlatformMessageNotDispatchedError | undefined;
+  let terminalStreamingStartError: unknown;
   let streamingGeneration = 0;
   let activeStreamingGeneration: number | undefined;
   let inFlightStreamingClose:
@@ -364,6 +390,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
     const result = createFeishuReplyDeliveryResult({
       results: [error.result],
       visibleReplySent: error.result.visibleReplySent,
+      ...(error.result.visibilityUnknown ? { visibilityUnknown: true } : {}),
       content: error.result.content,
       kind: "card",
     });
@@ -470,6 +497,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
       !streamingEnabled ||
       streamingStartPromise ||
       streaming ||
+      streamingStartFallbackError ||
       terminalStreamingStartError ||
       isStreamingStartBackedOff(account.accountId)
     ) {
@@ -511,19 +539,22 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
         });
         streamingStartBackoffUntilByAccount.delete(account.accountId);
       } catch (error) {
-        if (error instanceof PlatformMessageNotDispatchedError && !error.retryable) {
-          // A provider-declared no-send is terminal for this logical payload.
-          // Keep the fact until delivery consumes it instead of replaying statically.
-          terminalStreamingStartError = error;
+        if (error instanceof PlatformMessageNotDispatchedError) {
+          // A provider-proven no-send permits exactly one alternate static-card attempt.
+          // Keep the rejection so a failed fallback settles with the original provider fact.
+          streamingStartFallbackError = error;
+          if (error.retryable) {
+            rememberStreamingStartFailure(account.accountId);
+          }
           params.runtime.error?.(
-            `feishu[${account.accountId}]: streaming start permanently rejected: ${String(error)}`,
+            `feishu[${account.accountId}]: streaming start rejected before dispatch; using non-streaming card fallback: ${String(error)}`,
           );
         } else {
-          rememberStreamingStartFailure(account.accountId);
+          // Transport failures do not prove whether the message API accepted custody.
+          // Fence replay until the caller settles the ambiguous attempt.
+          terminalStreamingStartError = error;
           params.runtime.error?.(
-            `feishu[${account.accountId}]: streaming start failed; using non-streaming card fallback for ${
-              STREAMING_START_FAILURE_BACKOFF_MS / 1000
-            }s: ${String(error)}`,
+            `feishu[${account.accountId}]: streaming start failed with unknown delivery state: ${String(error)}`,
           );
         }
         if (streaming === session) {
@@ -628,6 +659,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
         const result = createFeishuReplyDeliveryResult({
           results: [closed],
           visibleReplySent: closed.visibleReplySent,
+          ...(closed.visibilityUnknown ? { visibilityUnknown: true } : {}),
           content: closed.content,
           kind: "card",
         });
@@ -986,7 +1018,11 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
     content: string | undefined,
     infoKind?: string,
   ): Promise<FeishuReplyDeliveryResult | undefined> => {
-    if (result?.visibleReplySent === true || !content?.trim()) {
+    if (
+      result?.visibleReplySent === true ||
+      result?.visibilityUnknown === true ||
+      !content?.trim()
+    ) {
       return result;
     }
     const cardHeader = resolveCardHeader(agentId, identity);
@@ -1259,6 +1295,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
       // Typing cleanup can run between serialized deliveries; dispatcher settlement
       // is the owner boundary that proves this turn can no longer attempt a replay.
       terminalStreamingStartError = undefined;
+      streamingStartFallbackError = undefined;
     },
     onCleanup: () => {
       typingCallbacks?.onCleanup?.();
@@ -1485,27 +1522,50 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
         if (useCard) {
           const cardHeader = resolveCardHeader(agentId, identity);
           const cardNote = resolveCardNote(agentId, identity, prefixContext.prefixContext);
-          deliveredResults.push(
-            await sendChunkedTextReply({
-              text,
-              useCard: true,
-              infoKind: info?.kind,
-              chunkMentions: requiredMentionTargets,
-              sendChunk: async ({ chunk, mentions }) =>
-                await sendStructuredCardFeishu({
-                  cfg,
-                  to: sendTarget,
-                  text: chunk,
-                  replyToMessageId: sendReplyToMessageId,
-                  replyInThread: effectiveReplyInThread,
-                  allowTopLevelReplyFallback,
-                  accountId,
-                  header: cardHeader,
-                  note: cardNote,
-                  ...(mentions ? { mentions } : {}),
-                }),
-            }),
-          );
+          try {
+            deliveredResults.push(
+              await sendChunkedTextReply({
+                text,
+                useCard: true,
+                infoKind: info?.kind,
+                chunkMentions: requiredMentionTargets,
+                sendChunk: async ({ chunk, mentions }) =>
+                  await sendStructuredCardFeishu({
+                    cfg,
+                    to: sendTarget,
+                    text: chunk,
+                    replyToMessageId: sendReplyToMessageId,
+                    replyInThread: effectiveReplyInThread,
+                    allowTopLevelReplyFallback,
+                    accountId,
+                    header: cardHeader,
+                    note: cardNote,
+                    ...(mentions ? { mentions } : {}),
+                  }),
+              }),
+            );
+            streamingStartFallbackError = undefined;
+          } catch (fallbackError: unknown) {
+            const startError = streamingStartFallbackError;
+            streamingStartFallbackError = undefined;
+            if (!startError) {
+              throw fallbackError;
+            }
+            const fallbackPartial = isChannelPartialDeliveryError(fallbackError)
+              ? fallbackError.deliveryResult
+              : undefined;
+            const fallbackCause =
+              fallbackPartial && fallbackError instanceof Error
+                ? (fallbackError.cause ?? fallbackError)
+                : fallbackError;
+            throw createFeishuPartialReplyDeliveryError(
+              combineStreamingStartFallbackFailures(startError, fallbackCause),
+              mergeFeishuReplyDeliveryResults([
+                ...deliveredResults,
+                ...(fallbackPartial ? [fallbackPartial] : []),
+              ]),
+            );
+          }
         } else {
           const firstChunkMentions =
             info?.kind === "final" && mentionTargets?.length ? mentionTargets : undefined;

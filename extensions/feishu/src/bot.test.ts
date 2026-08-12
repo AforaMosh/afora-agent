@@ -1210,6 +1210,7 @@ describe("handleFeishuMessage command authorization", () => {
         queuedFinal: false,
         counts: { tool: 0, block: 0, final: 0 },
         failedCounts: { tool: 0, block: 0, final: 1 },
+        noVisibleReplyFallbackEligible: true,
         deliveryTerminal: terminal,
       });
       const ensureNoVisibleReplyFallback = vi.fn();

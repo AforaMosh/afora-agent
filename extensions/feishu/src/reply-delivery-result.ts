@@ -17,6 +17,8 @@ export type FeishuReplyDeliveryResult = {
   threadId?: string;
   replyToId?: string;
   visibleReplySent?: boolean;
+  /** Provider accepted custody, but returned no identity proving recipient visibility. */
+  visibilityUnknown?: true;
   content?: string;
 };
 
@@ -43,6 +45,7 @@ function hasProviderIdentity(
 export function createFeishuReplyDeliveryResult(params: {
   results?: readonly (FeishuReplyDeliverySource | null | undefined)[];
   visibleReplySent: boolean;
+  visibilityUnknown?: boolean;
   content?: string;
   kind?: MessageReceiptPartKind;
 }): FeishuReplyDeliveryResult {
@@ -57,13 +60,14 @@ export function createFeishuReplyDeliveryResult(params: {
   if (!receipt) {
     return {
       visibleReplySent: params.visibleReplySent,
+      ...(params.visibilityUnknown ? { visibilityUnknown: true as const } : {}),
       ...(params.content === undefined ? {} : { content: params.content }),
     };
   }
   return {
     messageIds: [...receipt.platformMessageIds],
     receipt,
-    visibleReplySent: params.visibleReplySent,
+    visibleReplySent: true,
     ...(params.content === undefined ? {} : { content: params.content }),
   };
 }
@@ -74,9 +78,12 @@ export function mergeFeishuReplyDeliveryResults(
   content?: string,
 ): FeishuReplyDeliveryResult {
   const visible = results.filter((result) => result.visibleReplySent === true);
+  const visibilityUnknown =
+    visible.length === 0 && results.some((result) => result.visibilityUnknown === true);
   return createFeishuReplyDeliveryResult({
     results: visible,
     visibleReplySent: visible.length > 0,
+    visibilityUnknown,
     content:
       content === undefined
         ? results.find((result) => result.content !== undefined)?.content

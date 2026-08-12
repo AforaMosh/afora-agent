@@ -5,6 +5,7 @@ import {
   createChannelPartialDeliveryError,
   isChannelPartialDeliveryError,
 } from "openclaw/plugin-sdk/channel-inbound";
+import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
 import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -31,6 +32,7 @@ const resolveReceiveIdTypeMock = vi.hoisted(() => vi.fn());
 const addTypingIndicatorMock = vi.hoisted(() => vi.fn(async () => ({ messageId: "om_msg" })));
 const removeTypingIndicatorMock = vi.hoisted(() => vi.fn(async () => {}));
 const streamingInstances = vi.hoisted((): StreamingSessionStub[] => []);
+const streamingStartFailure = vi.hoisted((): { error?: unknown } => ({}));
 const shouldSuppressFeishuTextForVoiceMediaMock = vi.hoisted(
   () =>
     (params: {
@@ -115,11 +117,21 @@ vi.mock("./typing.js", () => ({
 }));
 vi.mock("./streaming-card.js", () => {
   class FeishuStreamingFinalizationError extends Error {
-    result: { visibleReplySent: boolean; content?: string; messageId?: string };
+    result: {
+      visibleReplySent: boolean;
+      visibilityUnknown?: true;
+      content?: string;
+      messageId?: string;
+    };
 
     constructor(
       cause: unknown,
-      result: { visibleReplySent: boolean; content?: string; messageId?: string },
+      result: {
+        visibleReplySent: boolean;
+        visibilityUnknown?: true;
+        content?: string;
+        messageId?: string;
+      },
     ) {
       super(cause instanceof Error ? cause.message : String(cause), { cause });
       this.result = result;
@@ -132,6 +144,9 @@ vi.mock("./streaming-card.js", () => {
       active = false;
       credentials: unknown;
       start = vi.fn(async () => {
+        if (streamingStartFailure.error !== undefined) {
+          throw streamingStartFailure.error;
+        }
         this.active = true;
       });
       update = vi.fn(async () => {});
@@ -186,6 +201,7 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
     vi.clearAllMocks();
     streamingStartBackoffUntilByAccount.clear();
     streamingInstances.length = 0;
+    streamingStartFailure.error = undefined;
     sendMediaFeishuMock.mockResolvedValue(undefined);
     sendStructuredCardFeishuMock.mockResolvedValue(undefined);
     getGlobalHookRunnerMock.mockReturnValue(null);
@@ -409,6 +425,76 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
       typeof call[0] === "string" ? call[0] : "",
     );
   }
+
+  it.each([true, false])(
+    "falls back once to a static card after a retryable=%s proven streaming no-send",
+    async (retryable) => {
+      const rejection = new PlatformMessageNotDispatchedError("streaming rejected", {
+        cause: new Error("provider rejected"),
+        retryable,
+      });
+      streamingStartFailure.error = rejection;
+      sendStructuredCardFeishuMock.mockResolvedValueOnce({ messageId: "om-static" });
+      const { options } = createDispatcherHarness();
+
+      await expect(
+        options.deliver({ text: "static recovery" }, { kind: "final" }),
+      ).resolves.toMatchObject({
+        messageIds: ["om-static"],
+        visibleReplySent: true,
+      });
+
+      expect(requireStreamingInstance(0).start).toHaveBeenCalledOnce();
+      expect(sendStructuredCardFeishuMock).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("preserves the streaming rejection and static settlement when fallback fails", async () => {
+    const rejection = new PlatformMessageNotDispatchedError("streaming rejected", {
+      cause: new Error("provider rejected"),
+      retryable: false,
+    });
+    streamingStartFailure.error = rejection;
+    const fallbackFailure = new Error("static card rejected");
+    sendStructuredCardFeishuMock.mockRejectedValueOnce(fallbackFailure);
+    const { options } = createDispatcherHarness();
+
+    const error = await options
+      .deliver({ text: "static recovery" }, { kind: "final" })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(AggregateError);
+    expect(error).toMatchObject({
+      message: "Feishu streaming start and static fallback failed",
+      errors: [rejection, fallbackFailure],
+    });
+    expect(sendStructuredCardFeishuMock).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the sole permanent fallback code independent of a retryable attempt", async () => {
+    streamingStartFailure.error = new PlatformMessageNotDispatchedError("streaming rejected", {
+      cause: new Error("streaming rejected"),
+      retryable: true,
+      publicError: { code: "230001" },
+    });
+    sendStructuredCardFeishuMock.mockRejectedValueOnce(
+      new PlatformMessageNotDispatchedError("static card rejected", {
+        cause: new Error("static card rejected"),
+        retryable: false,
+        publicError: { code: "230099" },
+      }),
+    );
+    const { options } = createDispatcherHarness();
+
+    await expect(
+      options.deliver({ text: "static recovery" }, { kind: "final" }),
+    ).rejects.toMatchObject({
+      name: "PlatformMessageNotDispatchedError",
+      retryable: true,
+      publicError: { code: "230099" },
+      cause: { message: "Feishu streaming start and static fallback failed" },
+    });
+  });
 
   it("skips typing indicator when account typingIndicator is disabled", async () => {
     resolveFeishuAccountMock.mockReturnValue({
@@ -1819,23 +1905,21 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
     expect(requireStreamingInstance(0).closeWithResult).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps identity-less accepted-card custody when final content update fails", async () => {
+  it("keeps identity-less accepted-card custody unknown when its first content update fails", async () => {
     const { result, options } = createDispatcherHarness();
     const delivery = await options.deliver({ text: "unaccepted final text" }, { kind: "final" });
     requireStreamingInstance(0).closeWithResult.mockRejectedValueOnce(
       new FeishuStreamingFinalizationError(new Error("final update failed"), {
-        visibleReplySent: true,
+        visibleReplySent: false,
+        visibilityUnknown: true,
       }),
     );
 
     await expect(options.onIdle?.()).rejects.toThrow("final update failed");
-    await expect(delivery?.finalization).rejects.toMatchObject({
-      code: "CHANNEL_PARTIAL_DELIVERY",
-      deliveryResult: { visibleReplySent: true, content: "" },
-    });
+    await expect(delivery?.finalization).rejects.toThrow("final update failed");
     expect(sendStructuredCardFeishuMock).not.toHaveBeenCalled();
     expect(sendMessageFeishuMock).not.toHaveBeenCalled();
-    await expect(result.ensureNoVisibleReplyFallback("accepted-no-id-stream")).resolves.toBe(false);
+    expect(result.getVisibleReplyState().visibleReplySent).toBe(false);
   });
 
   it("allows recovery after a final rewrite leaves only an earlier preview visible", async () => {
@@ -3358,10 +3442,9 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
     });
   });
 
-  it("backs off streaming retries after start() throws (HTTP 400)", async () => {
+  it("fences an ambiguous streaming start failure until turn settlement", async () => {
     const errorMock = vi.fn();
     let shouldFailStart = true;
-    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(1_000);
 
     // Intercept streaming instance creation to make first start() reject
     const origPush = streamingInstances.push.bind(streamingInstances);
@@ -3387,8 +3470,9 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
 
       const options = toTypingDispatcherOptions(result);
 
-      // First deliver with markdown triggers startStreaming - which will fail
-      await options.deliver({ text: "```ts\nconst x = 1\n```" }, { kind: "final" });
+      await expect(
+        options.deliver({ text: "```ts\nconst x = 1\n```" }, { kind: "final" }),
+      ).rejects.toThrow("Create card request failed with HTTP 400");
 
       // Wait for the async error to propagate
       await vi.waitFor(() => {
@@ -3397,18 +3481,16 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
         );
       });
       expect(streamingInstances).toHaveLength(1);
-      expect(sendStructuredCardFeishuMock).toHaveBeenCalledTimes(1);
+      expect(sendStructuredCardFeishuMock).not.toHaveBeenCalled();
 
-      // Immediate next markdown reply should skip a new streaming start and
-      // fall back directly to a normal card instead of paying the 400 latency.
-      await options.deliver({ text: "```ts\nconst y = 2\n```" }, { kind: "final" });
+      await expect(
+        options.deliver({ text: "```ts\nconst y = 2\n```" }, { kind: "final" }),
+      ).rejects.toThrow("Create card request failed with HTTP 400");
 
       expect(streamingInstances).toHaveLength(1);
-      expect(sendStructuredCardFeishuMock).toHaveBeenCalledTimes(2);
+      expect(sendStructuredCardFeishuMock).not.toHaveBeenCalled();
 
-      // After the short backoff expires, retry streaming so fixed permissions
-      // or transient Feishu failures recover without a process restart.
-      nowSpy.mockReturnValue(62_000);
+      options.onSettled?.();
       await options.deliver({ text: "```ts\nconst z = 3\n```" }, { kind: "final" });
       await options.onIdle?.();
 
@@ -3417,7 +3499,6 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
       expect(requireStreamingInstance(1).close).toHaveBeenCalled();
     } finally {
       streamingInstances.push = origPush;
-      nowSpy.mockRestore();
     }
   });
 });

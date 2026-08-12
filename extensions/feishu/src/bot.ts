@@ -113,6 +113,7 @@ function shouldSendNoVisibleReplyFallback(dispatchResult: {
   const finalCount = dispatchResult.counts.final ?? 0;
   const emptyEligibleDispatch =
     dispatchResult.noVisibleReplyFallbackEligible === true &&
+    dispatchResult.deliveryTerminal === undefined &&
     dispatchResult.queuedFinal !== true &&
     finalCount === 0;
   const finalDeliveryFailed =

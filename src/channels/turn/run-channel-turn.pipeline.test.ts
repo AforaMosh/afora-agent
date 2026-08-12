@@ -235,23 +235,30 @@ describe("channel turn pipeline", () => {
     const observerError = new Error("observer failed");
     const onError = vi.fn();
 
-    await expect(
-      dispatchTestAssembledTurn({
-        channel: "feishu",
-        routeSessionKey: "agent:main:feishu:peer",
-        ctxPayload: createCtx({ Surface: "feishu", Provider: "feishu" }),
-        recordInboundSession: createRecordInboundSession(),
-        dispatchReplyWithBufferedBlockDispatcher: createDispatch(),
-        delivery: {
-          observeMessageSent: true,
-          deliver: async () => ({ messageIds: ["om-visible"], visibleReplySent: true }),
-          onDelivered: () => {
-            throw observerError;
-          },
-          onError,
+    const error = await dispatchTestAssembledTurn({
+      channel: "feishu",
+      routeSessionKey: "agent:main:feishu:peer",
+      ctxPayload: createCtx({ Surface: "feishu", Provider: "feishu" }),
+      recordInboundSession: createRecordInboundSession(),
+      dispatchReplyWithBufferedBlockDispatcher: createDispatch(),
+      delivery: {
+        observeMessageSent: true,
+        deliver: async () => ({ messageIds: ["om-visible"], visibleReplySent: true }),
+        onDelivered: () => {
+          throw observerError;
         },
-      }),
-    ).rejects.toBe(observerError);
+        onError,
+      },
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({
+      code: "CHANNEL_PARTIAL_DELIVERY",
+      cause: observerError,
+      deliveryResult: {
+        messageIds: ["om-visible"],
+        visibleReplySent: true,
+      },
+    });
 
     expect(emitMessageSent).toHaveBeenCalledOnce();
     expect(emitMessageSent).toHaveBeenCalledWith({
@@ -260,6 +267,51 @@ describe("channel turn pipeline", () => {
       messageId: "om-visible",
     });
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("preserves a deferred visible result when its post-send observer throws", async () => {
+    const observerError = new Error("deferred observer failed");
+    const finalization = Promise.resolve({
+      content: "deferred reply",
+      messageIds: ["om-deferred"],
+      visibleReplySent: true as const,
+    });
+    const dispatchReplyWithBufferedBlockDispatcher = vi.fn(async (params) => {
+      await params.dispatcherOptions.deliver({ text: "deferred reply" }, { kind: "final" });
+      return {
+        queuedFinal: true,
+        counts: { tool: 0, block: 0, final: 1 },
+        deliveryTerminal: { outcome: "delivered" as const },
+      };
+    }) as DispatchReplyWithBufferedBlockDispatcher;
+
+    const result = await dispatchTestAssembledTurn({
+      channel: "feishu",
+      routeSessionKey: "agent:main:feishu:peer",
+      ctxPayload: createCtx({ Surface: "feishu", Provider: "feishu" }),
+      recordInboundSession: createRecordInboundSession(),
+      dispatchReplyWithBufferedBlockDispatcher,
+      delivery: {
+        observeMessageSent: true,
+        deliver: async () => ({ visibleReplySent: false, finalization }),
+        onDelivered: () => {
+          throw observerError;
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      dispatched: true,
+      dispatchResult: {
+        counts: { final: 1 },
+        deliveryTerminal: { outcome: "partial_failure", retryable: false },
+      },
+    });
+    expect(emitMessageSent).toHaveBeenCalledWith({
+      success: true,
+      content: "deferred reply",
+      messageId: "om-deferred",
+    });
   });
 
   it("observes early finalization rejection before reporting partial delivery", async () => {
@@ -433,6 +485,79 @@ describe("channel turn pipeline", () => {
       content: "accepted second preview",
       error: "second finalization failed",
       messageId: "om-second-preview",
+    });
+  });
+
+  it("does not infer partial delivery when every deferred finalization fails", async () => {
+    const firstFinalization = Promise.reject(new Error("first finalization failed"));
+    const secondFinalization = Promise.reject(new Error("second finalization failed"));
+    void firstFinalization.catch(() => undefined);
+    void secondFinalization.catch(() => undefined);
+    const deliver = vi
+      .fn()
+      .mockResolvedValueOnce({ visibleReplySent: false, finalization: firstFinalization })
+      .mockResolvedValueOnce({ visibleReplySent: false, finalization: secondFinalization });
+    const dispatchReplyWithBufferedBlockDispatcher = vi.fn(async (params) => {
+      await params.dispatcherOptions.deliver({ text: "first requested" }, { kind: "final" });
+      await params.dispatcherOptions.deliver({ text: "second requested" }, { kind: "final" });
+      return { queuedFinal: true, counts: { tool: 0, block: 0, final: 2 } };
+    }) as DispatchReplyWithBufferedBlockDispatcher;
+
+    const result = await dispatchTestAssembledTurn({
+      channel: "feishu",
+      routeSessionKey: "agent:main:feishu:peer",
+      ctxPayload: createCtx({ Surface: "feishu", Provider: "feishu" }),
+      recordInboundSession: createRecordInboundSession(),
+      dispatchReplyWithBufferedBlockDispatcher,
+      delivery: { observeMessageSent: true, deliver },
+    });
+
+    expect(result).toMatchObject({
+      dispatched: true,
+      dispatchResult: {
+        queuedFinal: false,
+        counts: { final: 0 },
+        failedCounts: { final: 2 },
+        deliveryTerminal: { outcome: "unknown", retryable: false },
+      },
+    });
+  });
+
+  it("keeps a successful final terminal when deferred tool delivery fails", async () => {
+    const toolFinalization = Promise.reject(new Error("tool finalization failed"));
+    void toolFinalization.catch(() => undefined);
+    const deliver = vi.fn(async (_payload: ReplyPayload, info: { kind: string }) =>
+      info.kind === "tool"
+        ? { visibleReplySent: false, finalization: toolFinalization }
+        : { visibleReplySent: true, messageIds: ["om-final"] },
+    );
+    const dispatchReplyWithBufferedBlockDispatcher = vi.fn(async (params) => {
+      await params.dispatcherOptions.deliver({ text: "tool output" }, { kind: "tool" });
+      await params.dispatcherOptions.deliver({ text: "final answer" }, { kind: "final" });
+      return {
+        queuedFinal: true,
+        counts: { tool: 1, block: 0, final: 1 },
+        deliveryTerminal: { outcome: "delivered" as const },
+      };
+    }) as DispatchReplyWithBufferedBlockDispatcher;
+
+    const result = await dispatchTestAssembledTurn({
+      channel: "feishu",
+      routeSessionKey: "agent:main:feishu:peer",
+      ctxPayload: createCtx({ Surface: "feishu", Provider: "feishu" }),
+      recordInboundSession: createRecordInboundSession(),
+      dispatchReplyWithBufferedBlockDispatcher,
+      delivery: { observeMessageSent: true, deliver },
+    });
+
+    expect(result).toMatchObject({
+      dispatched: true,
+      dispatchResult: {
+        queuedFinal: true,
+        counts: { tool: 0, final: 1 },
+        failedCounts: { tool: 1 },
+        deliveryTerminal: { outcome: "delivered" },
+      },
     });
   });
 
