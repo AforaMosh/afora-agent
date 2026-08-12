@@ -2213,6 +2213,7 @@ describe("whatsapp inbound dispatch", () => {
       backgroundTasks: new Set(),
       cfg: {} as never,
       ctx: { Body: "hello" },
+      dmRouteAliases: [],
       dmRouteTarget,
       pinnedMainDmRecipient,
       route: makeRoute(route),

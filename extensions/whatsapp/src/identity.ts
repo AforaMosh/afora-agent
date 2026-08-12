@@ -80,7 +80,11 @@ export function normalizeWhatsAppLidJid(jid: string | null | undefined): string 
 }
 
 export function normalizeWhatsAppDirectIdentity(value: string): string | null {
-  return normalizeWhatsAppLidJid(value) ?? jidToE164(value) ?? normalizeE164(value);
+  const normalized = value.replace(/^whatsapp:/iu, "").trim();
+  return (
+    normalizeWhatsAppLidJid(normalized) ??
+    (normalized.includes("@") ? jidToE164(normalized) : normalizeE164(normalized))
+  );
 }
 
 export function resolveComparableIdentity(

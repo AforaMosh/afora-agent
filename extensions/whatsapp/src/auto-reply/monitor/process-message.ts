@@ -534,10 +534,18 @@ export async function processMessage(params: {
     cfg: params.cfg,
     allowFrom: inboundPolicy.configuredAllowFrom,
   });
+  // Compare only producer-proven canonical aliases; last-route policy must not rediscover owner.
+  const dmRouteAliases = [
+    admission.sender.id,
+    params.msg.platform.sender?.e164,
+    params.msg.platform.sender?.jid,
+    params.msg.platform.sender?.lid,
+  ].filter((value): value is string => typeof value === "string");
   updateWhatsAppMainLastRoute({
     backgroundTasks: params.backgroundTasks,
     cfg: params.cfg,
     ctx: ctxPayload,
+    dmRouteAliases,
     dmRouteTarget,
     pinnedMainDmRecipient,
     route: params.route,

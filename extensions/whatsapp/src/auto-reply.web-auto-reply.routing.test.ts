@@ -83,7 +83,9 @@ function buildInboundMessage(params: {
   body?: string;
   to?: string;
   accountId?: string;
+  senderId?: string;
   senderE164?: string;
+  senderLid?: string;
   senderName?: string;
   selfE164?: string;
 }) {
@@ -98,7 +100,12 @@ function buildInboundMessage(params: {
     platform: {
       chatJid: params.chatId,
       recipientJid: params.to ?? "+2000",
+      sender:
+        params.senderE164 || params.senderLid
+          ? { e164: params.senderE164, lid: params.senderLid, name: params.senderName }
+          : undefined,
       senderE164: params.senderE164,
+      senderJid: params.senderLid,
       senderName: params.senderName,
       selfE164: params.selfE164,
     },
@@ -109,7 +116,7 @@ function buildInboundMessage(params: {
         id: params.conversationId,
       },
       sender: {
-        id: params.senderE164 ?? params.from,
+        id: params.senderId ?? params.senderE164 ?? params.from,
       },
     },
   });
@@ -196,17 +203,73 @@ describe("web auto-reply routing", () => {
     await store.cleanup();
   });
 
-  it("updates the default-main last route for an exact LID allowlist owner", async () => {
+  it.each([
+    {
+      name: "an exact LID pin",
+      allowFrom: "999@lid",
+      from: "999@lid",
+      senderId: "999@lid",
+      senderLid: "999@lid",
+      expectedTo: "999@lid",
+    },
+    {
+      name: "an E.164 pin proven as the authoritative LID owner's alias",
+      allowFrom: "+1555",
+      from: "999@lid",
+      senderId: "999@lid",
+      senderLid: "999@lid",
+      senderE164: "+1555",
+      expectedTo: "999@lid",
+    },
+    {
+      name: "a mapped-first E.164 owner",
+      allowFrom: "+1555",
+      from: "+1555",
+      senderId: "+1555",
+      senderE164: "+1555",
+      expectedTo: "+1555",
+    },
+    {
+      name: "a provider-prefixed exact LID pin",
+      allowFrom: "whatsapp:999@lid",
+      from: "999@lid",
+      senderId: "999@lid",
+      senderLid: "999@lid",
+      expectedTo: "999@lid",
+    },
+    {
+      name: "an unrelated E.164 alias",
+      allowFrom: "+1555",
+      from: "999@lid",
+      senderId: "999@lid",
+      senderLid: "999@lid",
+      senderE164: "+1666",
+      expectedTo: null,
+    },
+    {
+      name: "a same-digit phone under a provider-prefixed LID pin",
+      allowFrom: "whatsapp:999@lid",
+      from: "+999",
+      senderId: "+999",
+      senderE164: "+999",
+      expectedTo: null,
+    },
+  ])("handles $name without leaking the pinned main route", async (testCase) => {
     const now = Date.now();
     const mainSessionKey = "agent:main:main";
     const store = await makeSessionStore({
-      [mainSessionKey]: { sessionId: "sid", updatedAt: now - 1 },
+      [mainSessionKey]: {
+        sessionId: "sid",
+        updatedAt: now - 1,
+        lastChannel: "whatsapp",
+        lastTo: "+1444",
+      },
     });
     const cfg: OpenClawConfig = {
       channels: {
         whatsapp: {
           dmPolicy: "allowlist",
-          allowFrom: ["999@lid"],
+          allowFrom: [testCase.allowFrom],
         },
       },
       session: { store: store.storePath },
@@ -219,26 +282,31 @@ describe("web auto-reply routing", () => {
     await handler(
       buildInboundMessage({
         id: "lid-1",
-        from: "999@lid",
-        conversationId: "999@lid",
+        from: testCase.from,
+        conversationId: testCase.senderId,
         chatType: "direct",
-        chatId: "999@lid",
+        chatId: testCase.from,
         timestamp: now,
+        senderId: testCase.senderId,
+        senderE164: testCase.senderE164,
+        senderLid: testCase.senderLid,
       }),
     );
 
     await Promise.allSettled(backgroundTasks);
     backgroundTasks.clear();
 
-    expect(updateLastRouteInBackgroundMock).toHaveBeenCalledTimes(1);
-    expect(updateLastRouteInBackgroundMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionKey: mainSessionKey,
-        channel: "whatsapp",
-        to: "999@lid",
-        accountId: "default",
-      }),
-    );
+    expect(updateLastRouteInBackgroundMock).toHaveBeenCalledTimes(testCase.expectedTo ? 1 : 0);
+    if (testCase.expectedTo) {
+      expect(updateLastRouteInBackgroundMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionKey: mainSessionKey,
+          channel: "whatsapp",
+          to: testCase.expectedTo,
+          accountId: "default",
+        }),
+      );
+    }
 
     await store.cleanup();
   });

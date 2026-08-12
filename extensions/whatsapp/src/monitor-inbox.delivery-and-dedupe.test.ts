@@ -12,9 +12,11 @@ import {
 import {
   buildNotifyMessageUpsert,
   DEFAULT_ACCOUNT_ID,
+  mockLoadConfig,
   resetWebInboundDedupeForTests,
   settleInboundWork,
   startInboxMonitor,
+  upsertPairingRequestMock,
   waitForMessageCalls,
   type InboxOnMessage,
 } from "./monitor-inbox.test-harness.js";
@@ -237,9 +239,58 @@ describe("web monitor inbox delivery and dedupe", () => {
     sock.readMessages.mockClear();
 
     sock.ev.emit("messages.upsert", upsert);
-    await vi.waitFor(() => expect(sock.readMessages).toHaveBeenCalledTimes(1));
+    await settleInboundWork();
 
     expect(onMessage).toHaveBeenCalledTimes(1);
+    expect(sock.readMessages).not.toHaveBeenCalled();
+    await listener.close();
+  });
+
+  it("keeps completed LID duplicates side-effect free across mapping availability changes", async () => {
+    mockLoadConfig.mockReturnValue({
+      channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: ["+999"] } },
+    });
+    const onMessage = vi.fn(async () => undefined);
+    const { listener, sock } = await startInboxMonitor(onMessage as InboxOnMessage);
+    const getPNForLID = sock.signalRepository.lidMapping.getPNForLID;
+    getPNForLID.mockResolvedValue("999@s.whatsapp.net");
+    const first = buildNotifyMessageUpsert({
+      id: nextMessageId("completed-lid-owner"),
+      remoteJid: "999@lid",
+      text: "first",
+      timestamp: 1_700_000_000,
+      pushName: "Tester",
+    });
+
+    sock.ev.emit("messages.upsert", first);
+    await waitForMessageCalls(onMessage, 1);
+    await vi.waitFor(() => expect(sock.readMessages).toHaveBeenCalledTimes(1));
+    expect(inboundMessage(onMessage).admission?.conversation.id).toBe("+999");
+
+    getPNForLID.mockResolvedValue(null);
+    sock.ev.emit("messages.upsert", first);
+    await settleInboundWork();
+    expect(onMessage).toHaveBeenCalledTimes(1);
+    expect(sock.readMessages).toHaveBeenCalledTimes(1);
+    expect(upsertPairingRequestMock).not.toHaveBeenCalled();
+    expect(sock.sendMessage).not.toHaveBeenCalled();
+
+    getPNForLID.mockResolvedValue("999@s.whatsapp.net");
+    sock.ev.emit(
+      "messages.upsert",
+      buildNotifyMessageUpsert({
+        id: nextMessageId("completed-lid-owner-restored"),
+        remoteJid: "999@lid",
+        text: "second",
+        timestamp: 1_700_000_001,
+        pushName: "Tester",
+      }),
+    );
+    await waitForMessageCalls(onMessage, 2);
+
+    expect(inboundMessage(onMessage, 1).admission?.conversation.id).toBe("+999");
+    expect(upsertPairingRequestMock).not.toHaveBeenCalled();
+    expect(sock.sendMessage).not.toHaveBeenCalled();
     await listener.close();
   });
 

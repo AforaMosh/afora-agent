@@ -593,13 +593,7 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
         );
         continue;
       }
-      if (result.kind === "durable" && result.queueResult.kind === "completed") {
-        finishPreparation(undefined);
-        const inbound = await normalizeInboundMessage(msg);
-        if (inbound && !isWhatsAppRetryableNormalizationError(inbound)) {
-          await maybeMarkNonSelfChatReadReceipt(inbound, buildReadReceiptTarget(inbound));
-        }
-      } else if (result.kind === "durable" && result.queueResult.kind === "accepted") {
+      if (result.kind === "durable" && result.queueResult.kind === "accepted") {
         if (skipRecentOutboundEcho) {
           finishPreparation(null);
         } else {
@@ -614,7 +608,8 @@ export function createWhatsAppMessageDeliveryCoordinator(options: WhatsAppMessag
           }
         }
       } else {
-        // Pending redelivery leaves the first accepted delivery's preparation in place.
+        // Completed duplicates are terminal no-ops; pending redelivery leaves the first
+        // accepted delivery's preparation in place. Neither may re-normalize identity.
         finishPreparation(undefined);
       }
     }

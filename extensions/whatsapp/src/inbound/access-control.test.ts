@@ -176,6 +176,63 @@ describe("checkInboundAccessControl admission contract", () => {
     expect(result.admission.sender.id).toBe("15550001111@lid");
   });
 
+  it("canonicalizes provider-prefixed LID policy without authorizing its same-digit phone", async () => {
+    setAccessControlTestConfig({
+      channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: ["whatsapp:1555@lid"] } },
+    });
+    const lidResult = await checkInboundAccessControl({
+      cfg: getAccessControlTestConfig() as never,
+      accountId: "default",
+      from: "1555@lid",
+      selfE164: "+1999",
+      senderE164: null,
+      senderJid: "1555@lid",
+      group: false,
+      isFromMe: false,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "1555@lid",
+    });
+    expectAccepted(lidResult);
+
+    await expect(
+      checkInboundAccessControl({
+        cfg: getAccessControlTestConfig() as never,
+        accountId: "default",
+        from: "+1555",
+        selfE164: "+1999",
+        senderE164: "+1555",
+        senderJid: "1555@s.whatsapp.net",
+        group: false,
+        isFromMe: false,
+        sock: { sendMessage: sendMessageMock },
+        remoteJid: "1555@s.whatsapp.net",
+      }),
+    ).resolves.toMatchObject({ allowed: false });
+  });
+
+  it.each(["garbage1555@lid", "1555garbage@hosted.lid"])(
+    "rejects malformed typed identity %s instead of authorizing its embedded phone digits",
+    async (allowFrom) => {
+      setAccessControlTestConfig({
+        channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: [allowFrom] } },
+      });
+      await expect(
+        checkInboundAccessControl({
+          cfg: getAccessControlTestConfig() as never,
+          accountId: "default",
+          from: "+1555",
+          selfE164: "+1999",
+          senderE164: "+1555",
+          senderJid: "1555@s.whatsapp.net",
+          group: false,
+          isFromMe: false,
+          sock: { sendMessage: sendMessageMock },
+          remoteJid: "1555@s.whatsapp.net",
+        }),
+      ).resolves.toMatchObject({ allowed: false });
+    },
+  );
+
   it("uses the typed LID in pairing messages and command authorization", async () => {
     setAccessControlTestConfig({ channels: { whatsapp: { dmPolicy: "pairing" } } });
     await checkInboundAccessControl({

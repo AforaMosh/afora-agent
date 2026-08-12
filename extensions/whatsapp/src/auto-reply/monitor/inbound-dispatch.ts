@@ -540,6 +540,7 @@ export function updateWhatsAppMainLastRoute(params: {
   backgroundTasks: Set<Promise<unknown>>;
   cfg: ReturnType<LoadConfigFn>;
   ctx: Record<string, unknown>;
+  dmRouteAliases: readonly string[];
   dmRouteTarget?: string;
   pinnedMainDmRecipient: string | null;
   route: ReturnType<typeof resolveAgentRoute>;
@@ -557,7 +558,9 @@ export function updateWhatsAppMainLastRoute(params: {
   warn: ReturnType<typeof getChildLogger>["warn"];
 }) {
   const shouldUpdateMainLastRoute =
-    !params.pinnedMainDmRecipient || params.pinnedMainDmRecipient === params.dmRouteTarget;
+    !params.pinnedMainDmRecipient ||
+    params.pinnedMainDmRecipient === params.dmRouteTarget ||
+    params.dmRouteAliases.includes(params.pinnedMainDmRecipient);
   const inboundLastRouteSessionKey = resolveInboundLastRouteSessionKey({
     route: params.route,
     sessionKey: params.route.sessionKey,
