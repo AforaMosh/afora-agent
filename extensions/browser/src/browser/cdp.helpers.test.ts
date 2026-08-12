@@ -23,6 +23,7 @@ vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
   };
 });
 
+import type { LookupFn } from "../infra/net/ssrf.js";
 import {
   assertCdpEndpointAllowed,
   fetchJson,
@@ -167,7 +168,7 @@ describe("cdp helpers", () => {
     await expect(
       resolvePinnedHostnameWithPolicy("browser.example", {
         policy: scoped,
-        lookupFn: async () => [{ address: "10.0.0.8", family: 4 }],
+        lookupFn: (async () => [{ address: "10.0.0.8", family: 4 }]) as unknown as LookupFn,
       }),
     ).rejects.toThrow(/private\/internal\/special-use ip address/i);
   });
@@ -188,7 +189,7 @@ describe("cdp helpers", () => {
     await expect(
       resolvePinnedHostnameWithPolicy("browser.example", {
         policy: scoped,
-        lookupFn: async () => [{ address: "10.0.0.8", family: 4 }],
+        lookupFn: (async () => [{ address: "10.0.0.8", family: 4 }]) as unknown as LookupFn,
       }),
     ).resolves.toEqual(expect.objectContaining({ addresses: ["10.0.0.8"] }));
   });
