@@ -1,6 +1,10 @@
 import type { MediaPlaceholderTextFact } from "openclaw/plugin-sdk/channel-inbound";
 // Whatsapp plugin module implements identity behavior.
-import { normalizeWhatsAppPhoneInput, parseWhatsAppJid } from "./phone-input.js";
+import {
+  normalizeWhatsAppPhoneInput,
+  parseExactWhatsAppJid,
+  parseWhatsAppJid,
+} from "./phone-input.js";
 import { jidToE164 } from "./text-runtime.js";
 
 export type WhatsAppIdentity = {
@@ -64,14 +68,15 @@ type LegacyMentionsLike = {
 };
 
 function normalizeDeviceScopedJid(jid: string | null | undefined): string | null {
-  const parsed = typeof jid === "string" ? parseWhatsAppJid(jid) : null;
+  const parsed = typeof jid === "string" ? parseExactWhatsAppJid(jid) : null;
   return parsed?.kind === "pn" || parsed?.kind === "lid"
     ? `${parsed.digits}@${parsed.domain}`
     : (jid ?? null);
 }
 
-function isWhatsAppLidJid(jid: string | null | undefined): boolean {
-  return typeof jid === "string" && parseWhatsAppJid(jid)?.kind === "lid";
+function normalizeExactWhatsAppLidJid(jid: string | null | undefined): string | null {
+  const parsed = typeof jid === "string" ? parseExactWhatsAppJid(jid) : null;
+  return parsed?.kind === "lid" ? `${parsed.digits}@${parsed.domain}` : null;
 }
 
 export function normalizeWhatsAppLidJid(jid: string | null | undefined): string | null {
@@ -85,8 +90,8 @@ export function resolveComparableIdentity(
 ): WhatsAppIdentity {
   const rawJid = normalizeDeviceScopedJid(identity?.jid);
   const rawLid = normalizeDeviceScopedJid(identity?.lid);
-  const lid = normalizeWhatsAppLidJid(rawLid ?? rawJid);
-  const jid = rawJid && !isWhatsAppLidJid(rawJid) ? rawJid : null;
+  const lid = normalizeExactWhatsAppLidJid(rawLid ?? rawJid);
+  const jid = rawJid && !normalizeExactWhatsAppLidJid(rawJid) ? rawJid : null;
   const e164 =
     identity?.e164 != null
       ? normalizeWhatsAppPhoneInput(identity.e164)

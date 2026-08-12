@@ -44,11 +44,26 @@ describe("normalizeWhatsAppLidJid", () => {
   );
 
   it.each([
+    "whatsapp:123@lid",
+    "whatsapp:whatsapp:123@hosted.lid",
+    " 123@s.whatsapp.net ",
+    " 123@hosted ",
+  ])("keeps raw provider JID %j non-comparable", (jid) => {
+    expect(resolveComparableIdentity({ jid })).toEqual({ jid, lid: null, e164: null });
+  });
+
+  it.each([
     ["123:4@s.whatsapp.net", { jid: "123@s.whatsapp.net", lid: null, e164: "+123" }],
     ["123:4@hosted", { jid: "123@hosted", lid: null, e164: "+123" }],
     ["123:4@lid", { jid: null, lid: "123@lid", e164: null }],
     ["123:4@hosted.lid", { jid: null, lid: "123@hosted.lid", e164: null }],
   ])("canonicalizes exactly one device segment in %j", (jid, expected) => {
     expect(resolveComparableIdentity({ jid })).toEqual(expected);
+  });
+
+  it("keeps configured LID aliases on convenience parsing", () => {
+    expect(normalizeWhatsAppLidJid("  whatsapp:whatsapp:123:4@HOSTED.LID  ")).toBe(
+      "123@hosted.lid",
+    );
   });
 });

@@ -36,27 +36,29 @@ export function stripWhatsAppTargetPrefixes(value: string): string {
   return candidate;
 }
 
-export function parseWhatsAppJid(value: string): ParsedWhatsAppJid | null {
+export function parseExactWhatsAppJid(value: string): ParsedWhatsAppJid | null {
   if (hasUnsafeWhatsAppTargetCharacters(value)) {
     return null;
   }
-  const stripped = stripWhatsAppTargetPrefixes(value);
-  const hasGroupPrefix = /^group:/i.test(stripped);
-  const candidate = trimWhatsAppAsciiSpaces(stripped.replace(/^group:/i, ""));
   for (const [kind, pattern] of WHATSAPP_JID_PATTERNS) {
-    const match = candidate.match(pattern);
+    const match = value.match(pattern);
     const digits = match?.[1];
     const domain = match?.[3]?.toLowerCase();
     if (!digits || !domain) {
       continue;
     }
-    if (hasGroupPrefix && kind !== "group") {
-      return null;
-    }
     const device = match?.[2] ? `:${match[2]}` : "";
     return { kind, jid: `${digits}${device}@${domain}`, digits, domain };
   }
   return null;
+}
+
+export function parseWhatsAppJid(value: string): ParsedWhatsAppJid | null {
+  const stripped = stripWhatsAppTargetPrefixes(value);
+  const hasGroupPrefix = /^group:/i.test(stripped);
+  const candidate = trimWhatsAppAsciiSpaces(stripped.replace(/^group:/i, ""));
+  const parsed = parseExactWhatsAppJid(candidate);
+  return hasGroupPrefix && parsed?.kind !== "group" ? null : parsed;
 }
 
 export function normalizeWhatsAppPhoneInput(value: string): string | null {

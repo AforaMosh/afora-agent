@@ -245,6 +245,22 @@ describe("isBotMentionedFromTargets", () => {
     expectMentioned(msg, cfg, true);
   });
 
+  it.each([
+    "whatsapp:216372600647751@lid",
+    "whatsapp:whatsapp:216372600647751@lid",
+    " 216372600647751@lid ",
+  ])("does not treat raw native mention %j as a self mention", (mentionedJid) => {
+    const msg = makeMsg({
+      body: "hey",
+      mentionedJids: [mentionedJid],
+      selfE164: "+15551234567",
+      selfJid: "15551234567@s.whatsapp.net",
+      selfLid: "216372600647751@lid",
+    });
+
+    expectMentioned(msg, mentionCfg, false);
+  });
+
   it("honors explicit self-chat overrides without recomputing from allowFrom", () => {
     const cfg = {
       mentionRegexes: [/\bopenclaw\b/i],

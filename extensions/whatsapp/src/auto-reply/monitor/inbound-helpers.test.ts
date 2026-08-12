@@ -180,14 +180,18 @@ describe("whatsapp inbound context visibility", () => {
     });
   });
 
-  it("keeps a malformed native quote participant out of comparable identity facts", () => {
-    const malformedParticipant = "777:4:5@lid";
+  it.each([
+    ["777:4:5@lid", "777@lid"],
+    ["whatsapp:777@lid", "777@lid"],
+    ["whatsapp:whatsapp:777@hosted.lid", "777@hosted.lid"],
+    [" 777@s.whatsapp.net ", "+777"],
+  ])("keeps raw native quote participant %j out of comparable facts", (participant, allowFrom) => {
     const context = describeReplyContext({
       extendedTextMessage: {
         text: "current",
         contextInfo: {
           stanzaId: "malformed-native-quote",
-          participant: malformedParticipant,
+          participant,
           quotedMessage: { conversation: "Private quoted text" },
         },
       },
@@ -203,22 +207,22 @@ describe("whatsapp inbound context visibility", () => {
         msg,
         mode: "allowlist",
         groupPolicy: "allowlist",
-        groupAllowFrom: ["777@lid"],
+        groupAllowFrom: [allowFrom],
       }),
     ).toBeNull();
     const visibleQuote = resolveVisibleWhatsAppReplyContext({
       msg,
       mode: "allowlist_quote",
       groupPolicy: "allowlist",
-      groupAllowFrom: ["777@lid"],
+      groupAllowFrom: [allowFrom],
     });
     expect(visibleQuote?.body).toBe("Private quoted text");
     expect(visibleQuote?.sender).toMatchObject({
-      jid: malformedParticipant,
+      jid: participant,
       lid: null,
       e164: null,
     });
-    expect(getComparableIdentityValues(visibleQuote?.sender)).not.toContain("777@lid");
+    expect(getComparableIdentityValues(visibleQuote?.sender)).not.toContain(allowFrom);
   });
 
   it("renders structured quoted media only at the visible preview boundary", () => {
