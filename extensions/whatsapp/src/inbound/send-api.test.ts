@@ -805,51 +805,57 @@ describe("createWebSendApi", () => {
     expect(sendMessage).toHaveBeenCalledWith("123@s.whatsapp.net", { text: "hello" });
   });
 
-  it("preserves the quoted remoteJid provided by the outbound adapter", async () => {
-    await api.sendMessage("+1555", "hello", undefined, undefined, {
-      quotedMessageKey: {
-        id: "quoted-1",
-        remoteJid: "277038292303944@lid",
-        fromMe: false,
-        participant: "1234@s.whatsapp.net",
-        messageText: "quoted body",
-      },
-    });
-
-    expectFirstSendJid("1555@s.whatsapp.net");
-    expect(requireMockArg(sendMessage, 0, 1, "sent message")).toEqual({ text: "hello" });
-    const quoted = requireRecord(requireSendOptions().quoted, "quoted message");
-    expectRecordFields(requireRecord(quoted.key, "quoted key"), {
-      remoteJid: "277038292303944@lid",
-      id: "quoted-1",
-    });
-  });
-
-  it("rejects an unsafe quoted participant before sending", async () => {
-    await expect(
-      api.sendMessage("+1555", "hello", undefined, undefined, {
+  it.each(["1234@s.whatsapp.net", "123@lid"])(
+    "preserves a valid quoted participant %s",
+    async (participant) => {
+      await api.sendMessage("+1555", "hello", undefined, undefined, {
         quotedMessageKey: {
-          id: "quoted-unsafe",
-          remoteJid: "12345@g.us",
+          id: "quoted-1",
+          remoteJid: "277038292303944@lid",
           fromMe: false,
-          participant: "\u00a01234@s.whatsapp.net\u00a0",
+          participant,
           messageText: "quoted body",
         },
-      }),
-    ).rejects.toThrow(
-      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
-    );
-    expect(sendMessage).not.toHaveBeenCalled();
-  });
+      });
 
-  it("rejects an unsafe reaction participant before sending", async () => {
-    await expect(
-      api.sendReaction("12345@g.us", "msg-2", "👍", false, "\ufeff123@lid\ufeff"),
-    ).rejects.toThrow(
-      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
-    );
-    expect(sendMessage).not.toHaveBeenCalled();
-  });
+      expectFirstSendJid("1555@s.whatsapp.net");
+      expect(requireMockArg(sendMessage, 0, 1, "sent message")).toEqual({ text: "hello" });
+      const quoted = requireRecord(requireSendOptions().quoted, "quoted message");
+      expectRecordFields(requireRecord(quoted.key, "quoted key"), {
+        remoteJid: "277038292303944@lid",
+        id: "quoted-1",
+        participant,
+      });
+    },
+  );
+
+  it.each(["\u00a01234@s.whatsapp.net\u00a0", "12345@g.us", "120363401234567890@newsletter"])(
+    "rejects invalid quoted participant %j before sending",
+    async (participant) => {
+      await expect(
+        api.sendMessage("+1555", "hello", undefined, undefined, {
+          quotedMessageKey: {
+            id: "quoted-unsafe",
+            remoteJid: "12345@g.us",
+            fromMe: false,
+            participant,
+            messageText: "quoted body",
+          },
+        }),
+      ).rejects.toThrow(/Invalid WhatsApp (?:target|participant)/);
+      expect(sendMessage).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["\ufeff123@lid\ufeff", "12345@g.us", "120363401234567890@newsletter"])(
+    "rejects invalid reaction participant %j before sending",
+    async (participant) => {
+      await expect(
+        api.sendReaction("12345@g.us", "msg-2", "👍", false, participant),
+      ).rejects.toThrow(/Invalid WhatsApp (?:target|participant)/);
+      expect(sendMessage).not.toHaveBeenCalled();
+    },
+  );
 
   it("aligns a lookup-proven LID quote with the final PN destination", async () => {
     await api.sendMessage("+1555", "hello", undefined, undefined, {

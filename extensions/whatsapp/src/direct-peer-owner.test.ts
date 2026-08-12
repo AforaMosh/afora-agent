@@ -177,6 +177,16 @@ describe("direct-peer owner", () => {
     ).resolves.toMatchObject({ kind: "resolved", peerId: "999@lid" });
   });
 
+  it.each(["\u00a0999@lid\u00a0", "\ufeff999@lid\ufeff", "\u2028999@lid\u2028"])(
+    "does not let unsafe pairing alias %j claim LID ownership",
+    async (entry) => {
+      pairingState.entries = [entry];
+      await expect(
+        resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: mapped }),
+      ).resolves.toMatchObject({ kind: "resolved", peerId: "+15550001111" });
+    },
+  );
+
   it("keeps explicit mapping failures retryable after LID ownership is stored", async () => {
     await resolveWhatsAppDirectPeer({ accountId: "default", jid: "999@lid", mapping: noMatch });
 

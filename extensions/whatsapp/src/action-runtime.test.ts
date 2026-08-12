@@ -244,6 +244,8 @@ describe("handleWhatsAppAction", () => {
     "999@lid\t",
     "telegram:+1999",
     "999@example.com",
+    "12345@g.us",
+    "120363401234567890@newsletter",
   ])("rejects unsafe or malformed participant %j before native send", async (participant) => {
     const nativeSendMessage = installRealReactionSendBoundary();
 
@@ -258,9 +260,7 @@ describe("handleWhatsAppAction", () => {
         },
         enabledConfig,
       ),
-    ).rejects.toThrow(
-      "Invalid WhatsApp target; use an E.164 phone number or a supported WhatsApp JID",
-    );
+    ).rejects.toThrow("Invalid WhatsApp participant");
     expect(nativeSendMessage).not.toHaveBeenCalled();
   });
 

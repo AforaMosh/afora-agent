@@ -18,6 +18,7 @@ import { requireWhatsAppInboundAdmission } from "./inbound/admission.js";
 import { resolveWhatsAppGroupConversationId } from "./inbound/group-conversation.js";
 import type { AdmittedWebInboundMessage } from "./inbound/types.js";
 import { normalizeWhatsAppDirectIdentity } from "./normalize-target.js";
+import { hasUnsafeWhatsAppTargetCharacters } from "./phone-input.js";
 import { resolveWhatsAppRuntimeGroupPolicy } from "./runtime-group-policy.js";
 import { isSelfChatMode } from "./text-runtime.js";
 
@@ -38,6 +39,12 @@ type ResolvedWhatsAppInboundPolicy = {
 function normalizeWhatsAppIngressPhone(value: string): string | null {
   const normalized = normalizeWhatsAppDirectIdentity(value);
   return normalized?.startsWith("+") ? normalized : null;
+}
+
+function filterUnsafeWhatsAppIngressEntries(
+  entries: Array<string | number>,
+): Array<string | number> {
+  return entries.filter((entry) => !hasUnsafeWhatsAppTargetCharacters(String(entry)));
 }
 
 function buildResolvedWhatsAppGroupConfig(params: {
@@ -151,7 +158,9 @@ export async function resolveWhatsAppIngressAccess(params: {
     },
     cfg: params.cfg,
     readStoreAllowFrom: async ({ accountId }) =>
-      await readChannelAllowFromStore("whatsapp", process.env, accountId),
+      filterUnsafeWhatsAppIngressEntries(
+        await readChannelAllowFromStore("whatsapp", process.env, accountId),
+      ),
     subject: {
       stableId: params.senderId ?? "",
       aliases: { phone: params.senderE164, lid: params.senderJid },
@@ -172,9 +181,9 @@ export async function resolveWhatsAppIngressAccess(params: {
       params.policy.account.selfChatMode !== false &&
       params.senderId &&
       senderIsSamePhone
-        ? [...params.policy.dmAllowFrom, params.senderId]
-        : params.policy.dmAllowFrom,
-    groupAllowFrom: params.policy.groupAllowFrom,
+        ? filterUnsafeWhatsAppIngressEntries([...params.policy.dmAllowFrom, params.senderId])
+        : filterUnsafeWhatsAppIngressEntries(params.policy.dmAllowFrom),
+    groupAllowFrom: filterUnsafeWhatsAppIngressEntries(params.policy.groupAllowFrom),
     command: params.includeCommand === true ? {} : undefined,
   });
 }

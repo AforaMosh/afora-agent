@@ -8,6 +8,7 @@ import type {
 import { resolveWhatsAppDocumentFileName } from "../document-filename.js";
 import { addWhatsAppImagePreviewFields } from "../image-preview.js";
 import { isWhatsAppNewsletterJid } from "../normalize.js";
+import { toWhatsAppParticipantJid } from "../participant-target.js";
 import { buildQuotedMessageOptions } from "../quoted-message.js";
 import { toWhatsappJid, toWhatsappJidWithLid } from "../text-runtime.js";
 import {
@@ -176,9 +177,7 @@ export function createWebSendApi(params: {
         messageId: sendOptions?.quotedMessageKey?.id,
         remoteJid: sendOptions?.quotedMessageKey?.remoteJid,
         fromMe: sendOptions?.quotedMessageKey?.fromMe,
-        participant: sendOptions?.quotedMessageKey?.participant
-          ? toWhatsappJid(sendOptions.quotedMessageKey.participant)
-          : undefined,
+        participant: sendOptions?.quotedMessageKey?.participant,
         destinationJid: jid,
         requestedJid: toWhatsappJid(to),
         lookupTargetJid: sendOptions?.quotedMessageKey?.lookupTargetJid,
@@ -287,7 +286,7 @@ export function createWebSendApi(params: {
             remoteJid: jid,
             id: messageId,
             fromMe,
-            participant: participant ? toWhatsappJid(participant) : undefined,
+            participant: participant ? toWhatsAppParticipantJid(participant) : undefined,
           },
         },
       } as AnyMessageContent);

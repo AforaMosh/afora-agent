@@ -14,6 +14,7 @@ const {
   runMessageReceivedMock,
   shouldComputeCommandAuthorizedMock,
   trackBackgroundTaskMock,
+  updateLastRouteInBackgroundMock,
 } = vi.hoisted(() => ({
   resolvePolicyMock: vi.fn(),
   buildContextMock: vi.fn(),
@@ -27,6 +28,7 @@ const {
   runMessageReceivedMock: vi.fn(async () => undefined),
   shouldComputeCommandAuthorizedMock: vi.fn(() => false),
   trackBackgroundTaskMock: vi.fn(),
+  updateLastRouteInBackgroundMock: vi.fn(),
 }));
 
 vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
@@ -74,9 +76,7 @@ vi.mock("./inbound-dispatch.js", async (importOriginal) => {
         finalize: () => true,
       };
     },
-    resolveWhatsAppDmRouteTarget: () => null,
     resolveWhatsAppResponsePrefix: () => undefined,
-    updateWhatsAppMainLastRoute: () => {},
   };
 });
 
@@ -139,7 +139,7 @@ vi.mock("./last-route.js", async (importOriginal) => {
   return {
     ...actual,
     trackBackgroundTask: trackBackgroundTaskMock,
-    updateLastRouteInBackground: () => {},
+    updateLastRouteInBackground: updateLastRouteInBackgroundMock,
   };
 });
 
@@ -262,12 +262,13 @@ function callProcessMessage(
     cfg?: unknown;
     groupHistories?: Map<string, unknown[]>;
     msg?: unknown;
+    route?: unknown;
   } = {},
 ) {
   return processMessage({
     cfg: (overrides.cfg ?? {}) as never,
     msg: (overrides.msg ?? makeBaseMsg()) as never,
-    route: baseRoute as never,
+    route: (overrides.route ?? baseRoute) as never,
     groupHistoryKey: "whatsapp:default:group:123@g.us",
     groupHistories: (overrides.groupHistories ?? new Map()) as never,
     groupMemberNames: new Map(),
@@ -312,6 +313,7 @@ describe("processMessage group system prompt wiring", () => {
     shouldComputeCommandAuthorizedMock.mockReset();
     shouldComputeCommandAuthorizedMock.mockReturnValue(false);
     trackBackgroundTaskMock.mockClear();
+    updateLastRouteInBackgroundMock.mockClear();
     clearInternalHooks();
     buildContextMock.mockImplementation(
       (params: { groupSystemPrompt?: string; combinedBody?: string }) => ({
@@ -339,6 +341,73 @@ describe("processMessage group system prompt wiring", () => {
         }
       ).groupSystemPrompt,
     ).toBe("from config");
+  });
+
+  it.each([
+    {
+      name: "stable phone owner with a newer delivery phone",
+      owner: "+15550001111",
+      sender: {
+        jid: "15550002222@s.whatsapp.net",
+        e164: "+15550002222",
+      },
+      deliveryTarget: "+15550002222",
+    },
+    {
+      name: "stable LID owner with a current phone alias",
+      owner: "999@lid",
+      sender: {
+        lid: "999@lid",
+        e164: "+15550002222",
+      },
+      deliveryTarget: "999@lid",
+    },
+  ])("separates direct prompt ownership and last route for $name", async (scenario) => {
+    const account = {
+      ...makeAccount(),
+      direct: {
+        [scenario.owner]: { systemPrompt: "stable owner prompt" },
+        ...(scenario.deliveryTarget === scenario.owner
+          ? {}
+          : { [scenario.deliveryTarget]: { systemPrompt: "current delivery prompt" } }),
+      },
+    };
+    resolvePolicyMock.mockReturnValue(makePolicy(account));
+    const msg = createTestWebInboundMessage({
+      event: { id: "msg-direct", timestamp: 1710000000 },
+      payload: { body: "hi" },
+      platform: {
+        chatJid: scenario.owner,
+        recipientJid: "+15550009999",
+        sender: scenario.sender,
+        sendComposing: async () => {},
+        reply: async () => createAcceptedWhatsAppSendResult("text", "r-direct"),
+        sendMedia: async () => createAcceptedWhatsAppSendResult("media", "m-direct"),
+      },
+      admission: {
+        accountId: "default",
+        conversation: { kind: "direct", id: scenario.owner },
+        sender: { id: scenario.owner },
+      },
+    });
+    const directRoute = {
+      ...baseRoute,
+      sessionKey: "agent:main:main",
+      mainSessionKey: "agent:main:main",
+    };
+
+    await callProcessMessage({ msg, route: directRoute });
+
+    expect(
+      (
+        mockCallArg(buildContextMock, "buildWhatsAppInboundContext") as {
+          groupSystemPrompt?: string;
+        }
+      ).groupSystemPrompt,
+    ).toBe("stable owner prompt");
+    expect(updateLastRouteInBackgroundMock).toHaveBeenCalledWith(
+      expect.objectContaining({ to: scenario.deliveryTarget }),
+    );
   });
 
   it.each([

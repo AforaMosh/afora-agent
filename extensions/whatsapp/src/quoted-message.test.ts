@@ -171,6 +171,35 @@ describe("quoted message metadata cache", () => {
     );
   });
 
+  it.each([
+    ["1234@s.whatsapp.net", "1234@s.whatsapp.net"],
+    ["123@lid", "123@lid"],
+    ["+1 (999) 555-0000", "19995550000@s.whatsapp.net"],
+  ])("normalizes quoted participant %s", (participant, expected) => {
+    const quoteOptions = buildQuotedMessageOptions({
+      messageId: "participant-quote",
+      remoteJid: "15551112222@s.whatsapp.net",
+      participant,
+      messageText: "quoted body",
+    });
+
+    expect(quoteOptions?.quoted?.key.participant).toBe(expected);
+  });
+
+  it.each(["12345@g.us", "120363400000000000@newsletter", "telegram:1234", "\u00a01234@lid"])(
+    "rejects invalid quoted participant %s",
+    (participant) => {
+      expect(() =>
+        buildQuotedMessageOptions({
+          messageId: "invalid-participant-quote",
+          remoteJid: "15551112222@s.whatsapp.net",
+          participant,
+          messageText: "quoted body",
+        }),
+      ).toThrow("Invalid WhatsApp participant");
+    },
+  );
+
   it("renders a cached structured media fact into the quote preview", () => {
     const remoteJid = "15551112222@s.whatsapp.net";
     cacheInboundMessageMeta("account-media", remoteJid, "media-msg-1", {

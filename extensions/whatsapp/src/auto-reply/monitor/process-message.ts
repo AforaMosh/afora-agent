@@ -437,7 +437,8 @@ export async function processMessage(params: {
 
   const sender = getSenderIdentity(params.msg);
   const commandBody = params.msg.payload.commandBody ?? params.msg.payload.body;
-  const dmRouteTarget = resolveWhatsAppDmRouteTarget({ msg: params.msg });
+  const sessionOwnerId = conversationKind === "direct" ? admission.sender.id : undefined;
+  const currentDeliveryTarget = resolveWhatsAppDmRouteTarget({ msg: params.msg });
   const shouldCheckCommandAuth = shouldComputeCommandAuthorized(commandBody, params.cfg);
   const isTextCommand = isControlCommandMessage(commandBody, params.cfg);
   const commandAuthorized = shouldCheckCommandAuth
@@ -474,7 +475,7 @@ export async function processMessage(params: {
         })
       : resolveWhatsAppDirectSystemPrompt({
           accountConfig: account,
-          peerId: dmRouteTarget ?? conversationId,
+          peerId: sessionOwnerId ?? conversationId,
         });
 
   const commandAuthorization =
@@ -526,8 +527,8 @@ export async function processMessage(params: {
     cfg: params.cfg,
     allowFrom: inboundPolicy.configuredAllowFrom,
   });
-  // Stable session ownership and current delivery facts are producer-proven aliases for pin checks.
-  const dmRouteAliases = [
+  // Stable ownership and current delivery facts remain aliases only for pin checks.
+  const currentDeliveryAliases = [
     admission.sender.id,
     params.msg.platform.sender?.e164,
     params.msg.platform.sender?.jid,
@@ -537,8 +538,8 @@ export async function processMessage(params: {
     backgroundTasks: params.backgroundTasks,
     cfg: params.cfg,
     ctx: ctxPayload,
-    dmRouteAliases,
-    dmRouteTarget,
+    dmRouteAliases: currentDeliveryAliases,
+    dmRouteTarget: currentDeliveryTarget,
     pinnedMainDmRecipient,
     route: params.route,
     updateLastRoute: updateLastRouteInBackground,

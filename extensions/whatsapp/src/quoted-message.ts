@@ -10,6 +10,7 @@ import {
   formatMediaPlaceholderText,
   type MediaPlaceholderTextFact,
 } from "openclaw/plugin-sdk/channel-inbound";
+import { toWhatsAppParticipantJid } from "./participant-target.js";
 import { jidToE164 } from "./text-runtime.js";
 
 // ── Inbound message metadata cache ──────────────────────────────────────
@@ -249,7 +250,7 @@ export function buildQuotedMessageOptions(params: {
         remoteJid,
         id,
         fromMe: params.fromMe ?? false,
-        participant: params.participant,
+        participant: params.participant ? toWhatsAppParticipantJid(params.participant) : undefined,
       },
       message: { conversation: previewText },
     },

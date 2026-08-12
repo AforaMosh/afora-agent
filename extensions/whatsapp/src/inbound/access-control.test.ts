@@ -233,6 +233,50 @@ describe("checkInboundAccessControl admission contract", () => {
     expect(result.admission.sender.id).toBe("1555@lid");
   });
 
+  it.each(["\u00a01555@lid\u00a0", "\ufeff1555@hosted.lid\ufeff", "\u20281555@lid\u2028"])(
+    "does not authorize an unsafe LID allow alias %j",
+    async (allowFrom) => {
+      setAccessControlTestConfig({
+        channels: { whatsapp: { dmPolicy: "allowlist", allowFrom: [allowFrom] } },
+      });
+      await expect(
+        checkInboundAccessControl({
+          cfg: getAccessControlTestConfig() as never,
+          accountId: "default",
+          from: "1555@lid",
+          selfE164: "+1999",
+          senderE164: null,
+          senderJid: "1555@lid",
+          group: false,
+          isFromMe: false,
+          sock: { sendMessage: sendMessageMock },
+          remoteJid: "1555@lid",
+        }),
+      ).resolves.toMatchObject({ allowed: false });
+    },
+  );
+
+  it("does not classify an unsafe provider candidate as a LID pairing identity", async () => {
+    setAccessControlTestConfig({ channels: { whatsapp: { dmPolicy: "pairing" } } });
+    await checkInboundAccessControl({
+      cfg: getAccessControlTestConfig() as never,
+      accountId: "default",
+      from: "\u00a0999@lid\u00a0",
+      selfE164: "+15550009999",
+      senderE164: null,
+      senderJid: "\u00a0999@lid\u00a0",
+      group: false,
+      isFromMe: false,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "\u00a0999@lid\u00a0",
+    });
+
+    expect(sendMessageMock).toHaveBeenCalledWith(
+      "\u00a0999@lid\u00a0",
+      expect.objectContaining({ text: expect.stringContaining("Your WhatsApp phone number:") }),
+    );
+  });
+
   it.each(["garbage1555@lid", "1555garbage@hosted.lid"])(
     "rejects malformed typed identity %s instead of authorizing its embedded phone digits",
     async (allowFrom) => {
