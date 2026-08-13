@@ -46,6 +46,10 @@ on:
         description: Approved OpenClaw Release Publish workflow run id
         required: false
         type: string
+      release_candidate_branch:
+        description: Canonical extended-stable branch when trusted main release tooling publishes its immutable target
+        required: false
+        type: string
       preflight_only:
         description: Prepare and verify immutable plugin npm artifacts without publishing
         required: true
@@ -101,6 +105,7 @@ jobs:
           PUBLISH_SCOPE: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_scope || '' }}
           RELEASE_PLUGINS: ${{ github.event_name == 'workflow_dispatch' && inputs.plugins || '' }}
           RELEASE_PUBLISH_RUN_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.release_publish_run_id || '' }}
+          RELEASE_CANDIDATE_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.release_candidate_branch || '' }}
           SOURCE_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
           WORKFLOW_REF: ${{ github.ref }}
           WORKFLOW_SHA: ${{ github.workflow_sha }}
@@ -117,6 +122,10 @@ jobs:
             fi
             if [[ -n "${RELEASE_PUBLISH_RUN_ID// }" ]]; then
               echo "Plugin npm preflight must not include release_publish_run_id." >&2
+              exit 1
+            fi
+            if [[ -n "${RELEASE_CANDIDATE_BRANCH// }" ]]; then
+              echo "Plugin npm preflight must not include release_candidate_branch." >&2
               exit 1
             fi
           fi
@@ -138,10 +147,30 @@ jobs:
             release_month="${BASH_REMATCH[2]}"
             extended_stable_branch="extended-stable/${release_year}.${release_month}.33"
             timeout --signal=TERM --kill-after=10s 120s git fetch --no-tags origin "+refs/heads/${extended_stable_branch}:refs/remotes/origin/${extended_stable_branch}"
+            if [[ -n "${RELEASE_CANDIDATE_BRANCH// }" ]]; then
+              if [[ "${RELEASE_CANDIDATE_BRANCH}" != "${extended_stable_branch}" || "${WORKFLOW_REF}" != "refs/heads/main" ]]; then
+                echo "release_candidate_branch must be ${extended_stable_branch} and is only valid with trusted main workflow tooling." >&2
+                exit 1
+              fi
+              timeout --signal=TERM --kill-after=10s 120s git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+              if ! git merge-base --is-ancestor "${WORKFLOW_SHA}" origin/main; then
+                echo "Extended-stable plugin workflow revision is not reachable from current main." >&2
+                exit 1
+              fi
+              if git merge-base --is-ancestor HEAD "refs/remotes/origin/${extended_stable_branch}"; then
+                exit 0
+              fi
+              echo "Extended-stable plugin target must be reachable from ${extended_stable_branch}." >&2
+              exit 1
+            fi
             if [[ "${WORKFLOW_REF}" == "refs/heads/${extended_stable_branch}" ]] && [[ "$(git rev-parse HEAD)" == "$(git rev-parse "refs/remotes/origin/${extended_stable_branch}")" ]]; then
               exit 0
             fi
             echo "Extended-stable plugin npm publishes must run from ${extended_stable_branch} at its exact branch tip." >&2
+            exit 1
+          fi
+          if [[ -n "${RELEASE_CANDIDATE_BRANCH// }" ]]; then
+            echo "release_candidate_branch is only valid for extended-stable publication." >&2
             exit 1
           fi
           timeout --signal=TERM --kill-after=10s 120s git fetch --no-tags origin \
@@ -1271,9 +1300,6 @@ jobs:
           cp \
             scripts/lib/plugin-npm-package-manifest.mts \
             .publication-target/scripts/lib/plugin-npm-package-manifest.mts
-          cp \
-            scripts/lib/tsx-cli-shim.mjs \
-            .publication-target/scripts/lib/tsx-cli-shim.mjs
           cp \
             scripts/lib/tsx-cli-shim.mjs \
             .publication-target/scripts/lib/tsx-cli-shim.mjs
