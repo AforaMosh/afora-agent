@@ -1,7 +1,7 @@
 // Control UI tests cover models behavior.
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
-import { applyModelCatalogResult, loadModels } from "./models.ts";
+import { applyModelCatalogResult, loadModelPickerModels, loadModels } from "./models.ts";
 
 describe("loadModels", () => {
   it("requests the configured model list view", async () => {
@@ -91,6 +91,54 @@ describe("loadModels", () => {
     } as unknown as GatewayBrowserClient;
 
     await expect(loadModels(client)).rejects.toThrow("live model discovery failed");
+  });
+});
+
+describe("loadModelPickerModels", () => {
+  it.each([false, null])(
+    "uses chat metadata when models.list support is %s",
+    async (modelsListAdvertised) => {
+      const request = vi.fn(async (method: string) => {
+        if (method !== "chat.metadata") {
+          throw new Error(`unexpected method: ${method}`);
+        }
+        return {
+          models: [{ id: "legacy", name: "Legacy", provider: "openai" }],
+        };
+      });
+
+      const models = await loadModelPickerModels(
+        { request } as unknown as GatewayBrowserClient,
+        { modelsListAdvertised },
+      );
+
+      expect(request).toHaveBeenCalledWith("chat.metadata", {});
+      expect(models).toEqual([{ id: "legacy", name: "Legacy", provider: "openai" }]);
+    },
+  );
+
+  it("uses the live catalog only when models.list support is advertised", async () => {
+    const request = vi.fn(async (method: string) => {
+      if (method !== "models.list") {
+        throw new Error(`unexpected method: ${method}`);
+      }
+      return {
+        models: [
+          { id: "ready", name: "Ready", provider: "openai", available: true },
+          { id: "blocked", name: "Blocked", provider: "openai", available: false },
+        ],
+      };
+    });
+
+    const models = await loadModelPickerModels(
+      { request } as unknown as GatewayBrowserClient,
+      { modelsListAdvertised: true },
+    );
+
+    expect(request).toHaveBeenCalledWith("models.list", { view: "configured" });
+    expect(models).toEqual([
+      { id: "ready", name: "Ready", provider: "openai", available: true },
+    ]);
   });
 });
 

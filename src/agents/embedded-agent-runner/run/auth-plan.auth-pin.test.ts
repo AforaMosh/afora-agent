@@ -6,6 +6,7 @@ import type { OpenClawConfig } from "../../../config/types.openclaw.js";
 import type { OAuthCredential } from "../../auth-profiles.js";
 import { testing as externalAuthTesting } from "../../auth-profiles/external-auth.test-support.js";
 import { prepareAgentRuntimeAuth } from "../../runtime-plan/prepare-auth.js";
+import { resolvePreparedRuntimePreferredProfileId } from "../../runtime-plan/preferred-profile.js";
 import { testing as authPlanTesting } from "./auth-plan.test-support.js";
 
 const readCodexCliCredentialsCachedMock = vi.hoisted(() =>
@@ -98,11 +99,11 @@ describe("embedded run auth plan provider pin", () => {
         ],
       },
     } as unknown as Parameters<
-      typeof authPlanTesting.resolveEmbeddedRunPreferredProfileId
+      typeof resolvePreparedRuntimePreferredProfileId
     >[0]["preparedModelRuntime"];
 
     expect(
-      authPlanTesting.resolveEmbeddedRunPreferredProfileId({
+      resolvePreparedRuntimePreferredProfileId({
         provider: "openai",
         modelId: "gpt-5.6-terra",
         preparedModelRuntime,
@@ -111,7 +112,7 @@ describe("embedded run auth plan provider pin", () => {
       }),
     ).toBe("openai:second");
     expect(
-      authPlanTesting.resolveEmbeddedRunPreferredProfileId({
+      resolvePreparedRuntimePreferredProfileId({
         provider: "openai",
         modelId: "gpt-5.6-terra",
         preparedModelRuntime,
@@ -121,7 +122,7 @@ describe("embedded run auth plan provider pin", () => {
       }),
     ).toBe("openai:first");
     expect(
-      authPlanTesting.resolveEmbeddedRunPreferredProfileId({
+      resolvePreparedRuntimePreferredProfileId({
         provider: "openai",
         modelId: "gpt-5.6-sol",
         preparedModelRuntime,

@@ -114,7 +114,9 @@ vi.mock("./prepared-model-runtime.js", () => ({
     workspaceDir?: string;
     allowGatewaySubagentBinding?: boolean;
   }) => {
-    loadPreparedModelRuntimeSnapshotMock(params);
+    const snapshotOverrides = loadPreparedModelRuntimeSnapshotMock(params) as
+      | Record<string, unknown>
+      | undefined;
     const workspaceOptions = params.workspaceDir ? { workspaceDir: params.workspaceDir } : {};
     await ensureOpenClawModelsJsonMock(params.config, params.agentDir, workspaceOptions);
     const authStorage = discoverAuthStorageMock(params.agentDir, {
@@ -131,9 +133,11 @@ vi.mock("./prepared-model-runtime.js", () => ({
       agentDir: params.agentDir,
       config: params.config,
       workspaceDir: params.workspaceDir,
+      modelCatalog: { entries: [], routeVariants: [] },
       configuredRuntimeModels: [],
       inlineProviderModels: [],
       createStores: () => ({ authStorage, modelRegistry }),
+      ...snapshotOverrides,
     };
   },
 }));
@@ -668,7 +672,7 @@ describe("runBtwSideQuestion", () => {
     migrateSessionEntriesMock.mockReset();
     buildSessionContextMock.mockReset();
     ensureOpenClawModelsJsonMock.mockReset();
-    loadPreparedModelRuntimeSnapshotMock.mockReset();
+    loadPreparedModelRuntimeSnapshotMock.mockReset().mockReturnValue(undefined);
     discoverAuthStorageMock.mockReset();
     discoverModelsMock.mockReset();
     getModelRegistryRuntimeMock.mockReset();
@@ -2002,6 +2006,83 @@ describe("runBtwSideQuestion", () => {
       api: "openai-responses",
       baseUrl: "https://api.openai.com/v1",
     });
+  });
+
+  it("tries the later profile whose loaded catalog authorized the selected model first", async () => {
+    const model = {
+      provider: "openai",
+      id: "gpt-5.6-terra",
+      api: "openai-chatgpt-responses" as const,
+      baseUrl: "https://chatgpt.com/backend-api/codex",
+      name: "GPT-5.6 Terra",
+    };
+    const authStore = {
+      version: 1 as const,
+      profiles: {
+        "openai:first": {
+          type: "token" as const,
+          provider: "openai",
+          token: "first-token",
+          expires: Date.now() + 60_000,
+        },
+        "openai:authorizing": {
+          type: "token" as const,
+          provider: "openai",
+          token: "authorizing-token",
+          expires: Date.now() + 60_000,
+        },
+      },
+      order: { openai: ["openai:first", "openai:authorizing"] },
+    };
+    resolveModelWithRegistryMock.mockReturnValue(model);
+    resolveModelAsyncMock.mockResolvedValue({ model });
+    ensureAuthProfileStoreMock.mockReturnValue(authStore);
+    resolveSessionAuthProfileOverrideMock.mockResolvedValue("openai:first");
+    loadPreparedModelRuntimeSnapshotMock.mockReturnValue({
+      modelCatalog: {
+        entries: [],
+        routeVariants: [],
+        providerOutcomes: [
+          {
+            provider: "openai",
+            profileId: "openai:authorizing",
+            status: "ready",
+            modelIds: ["gpt-5.6-terra"],
+          },
+        ],
+      },
+    });
+    getApiKeyForModelMock.mockImplementation(async (authParams: { profileId?: string } = {}) => ({
+      apiKey: "authorizing-token",
+      mode: "token",
+      source: `profile:${authParams.profileId}`,
+      profileId: authParams.profileId,
+    }));
+    requireApiKeyMock.mockReturnValue("authorizing-token");
+    mockDoneAnswer("Catalog-authorized answer.");
+
+    await expect(
+      runSideQuestion({
+        cfg: {
+          auth: { order: authStore.order },
+          agents: {
+            defaults: {
+              models: {
+                "openai/gpt-5.6-terra": { agentRuntime: { id: "openclaw" } },
+              },
+            },
+          },
+        } as never,
+        provider: "openai",
+        model: "gpt-5.6-terra",
+      }),
+    ).resolves.toEqual({ text: "Catalog-authorized answer." });
+
+    expect(
+      getApiKeyForModelMock.mock.calls.map(
+        ([authParams]) => (authParams as { profileId?: string }).profileId,
+      ),
+    ).toEqual(["openai:authorizing"]);
   });
 
   it("uses a same-route literal fallback only after its prepared profile tier fails", async () => {

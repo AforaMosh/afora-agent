@@ -84,9 +84,9 @@ export async function loadModelPickerModels(
   },
 ): Promise<ModelCatalogEntry[]> {
   const models =
-    opts.modelsListAdvertised === false
-      ? await requestMetadataModels(client, opts)
-      : await loadModels(client, opts);
+    opts.modelsListAdvertised === true
+      ? await loadModels(client, opts)
+      : await requestMetadataModels(client, opts);
   return models.filter((entry) => entry.available !== false);
 }
 

@@ -84,6 +84,7 @@ import {
 import { registerProviderStreamForModel } from "./provider-stream.js";
 import { materializePreparedRuntimeModel } from "./runtime-plan/materialize-model.js";
 import { prepareAgentRuntimeAuth } from "./runtime-plan/prepare-auth.js";
+import { resolvePreparedRuntimePreferredProfileId } from "./runtime-plan/preferred-profile.js";
 import {
   resolvePreparedRuntimeAuthAttempts,
   resolvePreparedRuntimeModelAuth,
@@ -544,10 +545,14 @@ async function resolveRuntimeModel(params: {
     authProfileId,
     authProfileIdSource,
   });
-  const effectiveAuthProfileId =
-    authProfileStoreSelection.ignoreAutoPreferredProfile && authProfileIdSource !== "user"
-      ? undefined
-      : authProfileId;
+  const effectiveAuthProfileId = resolvePreparedRuntimePreferredProfileId({
+    provider: runtimeProvider,
+    modelId: runtimeModelId,
+    preparedModelRuntime,
+    requestedProfileId: authProfileId,
+    lockedProfileId: authProfileIdSource === "user" ? authProfileId : undefined,
+    ignoreAutoPreferredProfile: authProfileStoreSelection.ignoreAutoPreferredProfile,
+  });
   const runtimeAuthPreparation = prepareAgentRuntimeAuth({
     provider: runtimeProvider,
     modelId: runtimeModelId,

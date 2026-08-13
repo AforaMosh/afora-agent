@@ -1266,6 +1266,81 @@ describe("buildOpenAIProvider", () => {
     }
   });
 
+  it("excludes fallback rows from unavailable profiles when another profile has a ready catalog", async () => {
+    mocks.resolveApiKeyForProvider.mockImplementation(async ({ profileId }) => ({
+      mode: "oauth",
+      apiKey: `token-${profileId}`,
+      source: `profile:${profileId}`,
+      profileId,
+    }));
+    mocks.resolveProviderAuthProfileMetadata.mockImplementation(({ profileId }) => ({
+      profileId,
+      accountId: `account-${profileId}`,
+    }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      const authorization = new Headers(init?.headers).get("Authorization");
+      if (authorization === "Bearer token-openai:unavailable") {
+        throw new Error("catalog service unavailable");
+      }
+      return Response.json({
+        models: [{ slug: "gpt-5.6-terra", display_name: "GPT-5.6 Terra", visibility: "list" }],
+      });
+    });
+    const provider = buildOpenAIProvider();
+
+    try {
+      const result = await provider.catalog?.run({
+        resolveProviderAuth: () => ({
+          mode: "oauth",
+          apiKey: "token-openai:unavailable",
+          source: "profile",
+          profileId: "openai:unavailable",
+        }),
+        resolveProviderAuthProfiles: () => [
+          {
+            mode: "oauth",
+            apiKey: "token-openai:unavailable",
+            source: "profile",
+            profileId: "openai:unavailable",
+          },
+          {
+            mode: "oauth",
+            apiKey: "token-openai:ready",
+            source: "profile",
+            profileId: "openai:ready",
+          },
+        ],
+        resolveProviderApiKey: () => ({ apiKey: undefined }),
+        config: { auth: { profiles: {} } },
+        agentDir: "/tmp/openai-agent",
+        workspaceDir: "/tmp/openai-workspace",
+      } as never);
+
+      if (!result || "provider" in result) {
+        throw new Error("expected OpenAI live provider catalog");
+      }
+      expect(result.providers.openai?.models.map((model) => model.id)).toEqual([
+        "gpt-5.6-terra",
+      ]);
+      expect(result.outcomes).toEqual([
+        expect.objectContaining({
+          provider: "openai",
+          profileId: "openai:unavailable",
+          status: "unavailable",
+          modelIds: expect.arrayContaining(["gpt-5.6-sol"]),
+        }),
+        {
+          provider: "openai",
+          profileId: "openai:ready",
+          status: "ready",
+          modelIds: ["gpt-5.6-terra"],
+        },
+      ]);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
   it.each(["gpt-5.5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])(
     "prefers auth-aware Codex runtime metadata for %s over static OpenAI catalog rows",
     (modelId) => {

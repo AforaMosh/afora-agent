@@ -288,10 +288,13 @@ function mergeOpenAIProfileCatalogs(catalogs: readonly OpenAILiveProviderCatalog
   if (!first) {
     return null;
   }
+  const readyCatalogs = catalogs.filter((catalog) => catalog.outcome?.status === "ready");
+  const modelCatalogs = readyCatalogs.length > 0 ? readyCatalogs : catalogs;
+  const provider = modelCatalogs[0]?.provider ?? first.provider;
   const seen = new Set<string>();
-  const models = catalogs.flatMap(({ provider }) =>
-    provider.models.filter((model) => {
-      const key = `${model.id}\0${model.api ?? provider.api ?? ""}\0${model.baseUrl ?? provider.baseUrl}`;
+  const models = modelCatalogs.flatMap(({ provider: catalogProvider }) =>
+    catalogProvider.models.filter((model) => {
+      const key = `${model.id}\0${model.api ?? catalogProvider.api ?? ""}\0${model.baseUrl ?? catalogProvider.baseUrl}`;
       if (seen.has(key)) {
         return false;
       }
@@ -300,7 +303,7 @@ function mergeOpenAIProfileCatalogs(catalogs: readonly OpenAILiveProviderCatalog
     }),
   );
   return {
-    providers: { [PROVIDER_ID]: { ...first.provider, models } },
+    providers: { [PROVIDER_ID]: { ...provider, models } },
     outcomes: catalogs.flatMap((catalog) => (catalog.outcome ? [catalog.outcome] : [])),
   };
 }
