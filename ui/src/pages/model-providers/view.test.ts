@@ -47,6 +47,8 @@ function props(overrides: Partial<ModelProvidersViewProps> = {}): ModelProviders
     canMutate: true,
     mutationBlockedReason: null,
     probeAvailable: true,
+    profileOrderAvailable: true,
+    profileCooldownClearAvailable: true,
     busy: {},
     messages: {},
     probeResults: {},
@@ -186,6 +188,13 @@ describe("renderModelProviders", () => {
     expect(text(container)).toContain("Provider profiles");
     expect(text(container)).toContain("Primary");
     expect(text(container)).toContain("backup@example.com");
+    expect(
+      text(
+        container.querySelector(
+          '[data-profile-id="openai-codex:work"] .model-providers__profile-priority',
+        ),
+      ),
+    ).toBe("1");
     const backupMenu = container.querySelector('[data-profile-id="openai:backup"] wa-dropdown');
     backupMenu?.dispatchEvent(
       new CustomEvent("wa-select", { detail: { item: { value: "move-up" } } }),
@@ -199,6 +208,46 @@ describe("renderModelProviders", () => {
       new CustomEvent("wa-select", { detail: { item: { value: "clear-cooldown" } } }),
     );
     expect(onClearProfileCooldown).toHaveBeenCalledWith("openai", "openai", "openai:backup");
+  });
+
+  it("hides profile mutations that an older gateway does not advertise", () => {
+    const container = mount(
+      props({
+        profileOrderAvailable: false,
+        profileCooldownClearAvailable: false,
+        cards: [
+          card({
+            profiles: [
+              {
+                profileId: "openai:primary",
+                type: "oauth",
+                status: "ok",
+                logoutSupported: true,
+              },
+              {
+                profileId: "openai:backup",
+                type: "oauth",
+                status: "ok",
+                cooldownUntil: Date.now() + 60_000,
+                logoutSupported: true,
+              },
+            ],
+            profileProviderIds: {
+              "openai:primary": "openai",
+              "openai:backup": "openai",
+            },
+            profileOrder: ["openai:primary", "openai:backup"],
+          }),
+        ],
+      }),
+    );
+
+    const actions = [
+      ...container.querySelectorAll<HTMLElement>(
+        '[data-profile-id="openai:backup"] wa-dropdown-item',
+      ),
+    ].map(text);
+    expect(actions).toEqual(["Log out"]);
   });
 
   it("renders model behavior next to default models and emits canonical values", () => {

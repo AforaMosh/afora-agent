@@ -60,6 +60,8 @@ type ModelProvidersViewProps = {
   canMutate: boolean;
   mutationBlockedReason: string | null;
   probeAvailable: boolean;
+  profileOrderAvailable: boolean;
+  profileCooldownClearAvailable: boolean;
   busy: Record<string, boolean>;
   messages: Record<string, ModelProviderRowMessage>;
   probeResults: Record<string, ModelsProbeResult>;
@@ -372,25 +374,29 @@ function renderProfiles(card: ModelProviderCard, props: ModelProvidersViewProps)
             ${t("modelProviders.profiles.addAccount")}
           </button>
         </div>
-        ${profiles.map((profile, index) => {
+        ${profiles.map((profile) => {
           const provider = card.profileProviderIds[profile.profileId] ?? card.id;
           const cooldown = profileCooldown(profile);
           const ownerProfiles = orderedProfiles(card).filter(
             (candidate) => (card.profileProviderIds[candidate.profileId] ?? card.id) === provider,
           );
+          // Priority is credential-owner scoped even when provider aliases share one card.
+          // Using the card-wide order would show a priority the Gateway never persists.
           const visibleOwnerProfiles = ownerProfiles.filter(
             (candidate) => candidate.type === "oauth" || candidate.type === "token",
           );
           const ownerIndex = visibleOwnerProfiles.findIndex(
             (candidate) => candidate.profileId === profile.profileId,
           );
-          const canMoveUp = ownerIndex > 0;
-          const canMoveDown = ownerIndex < visibleOwnerProfiles.length - 1;
-          const canClearCooldown = cooldown.until > Date.now();
+          const canMoveUp = props.profileOrderAvailable && ownerIndex > 0;
+          const canMoveDown =
+            props.profileOrderAvailable && ownerIndex < visibleOwnerProfiles.length - 1;
+          const canClearCooldown =
+            props.profileCooldownClearAvailable && cooldown.until > Date.now();
           const canLogout = profile.logoutSupported === true;
           return html`
             <div class="model-providers__profile" data-profile-id=${profile.profileId}>
-              <div class="model-providers__profile-priority">${index + 1}</div>
+              <div class="model-providers__profile-priority">${ownerIndex + 1}</div>
               <div class="model-providers__profile-copy">
                 <strong>${profileLabel(profile)}</strong>
                 ${profile.email && profile.displayName
@@ -455,12 +461,20 @@ function renderProfiles(card: ModelProviderCard, props: ModelProvidersViewProps)
                     >
                       ${icon("moreHorizontal")}
                     </button>
-                    <wa-dropdown-item value="move-up" ?disabled=${!canMoveUp}>
-                      ${t("modelProviders.profiles.moveUp", { account: profileLabel(profile) })}
-                    </wa-dropdown-item>
-                    <wa-dropdown-item value="move-down" ?disabled=${!canMoveDown}>
-                      ${t("modelProviders.profiles.moveDown", { account: profileLabel(profile) })}
-                    </wa-dropdown-item>
+                    ${props.profileOrderAvailable
+                      ? html`
+                          <wa-dropdown-item value="move-up" ?disabled=${!canMoveUp}>
+                            ${t("modelProviders.profiles.moveUp", {
+                              account: profileLabel(profile),
+                            })}
+                          </wa-dropdown-item>
+                          <wa-dropdown-item value="move-down" ?disabled=${!canMoveDown}>
+                            ${t("modelProviders.profiles.moveDown", {
+                              account: profileLabel(profile),
+                            })}
+                          </wa-dropdown-item>
+                        `
+                      : nothing}
                     ${canClearCooldown
                       ? html`<wa-dropdown-item value="clear-cooldown">
                           ${t("modelProviders.profiles.clearCooldown")}

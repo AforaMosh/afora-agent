@@ -439,82 +439,133 @@ function buildModelProviderMocks(baseTime: number) {
     plan: "Business",
     windows: [{ label: "Premium requests", usedPercent: 71, resetAt: baseTime + 21 * 24 * hour }],
   };
+  const authStatus = {
+    ts: baseTime,
+    providers: [
+      {
+        provider: "anthropic",
+        displayName: "Claude",
+        status: "ok",
+        expiry: expiry(11 * 24 * hour, "11d"),
+        profiles: [
+          {
+            profileId: "anthropic:personal",
+            type: "oauth",
+            status: "ok",
+            displayName: "Personal",
+            email: "personal@example.com",
+            expiry: expiry(11 * 24 * hour, "11d"),
+            logoutSupported: true,
+          },
+          {
+            profileId: "anthropic:work",
+            type: "oauth",
+            status: "ok",
+            displayName: "Work",
+            email: "work@example.com",
+            logoutSupported: true,
+          },
+          {
+            profileId: "anthropic:backup",
+            type: "oauth",
+            status: "ok",
+            displayName: "Backup",
+            cooldownUntil: baseTime + 12 * 60_000,
+            cooldownReason: "rate_limit",
+            logoutSupported: true,
+          },
+        ],
+        profileOrder: ["anthropic:personal", "anthropic:work", "anthropic:backup"],
+        usage: {
+          providerId: "anthropic",
+          plan: anthropicUsage.plan,
+          windows: anthropicUsage.windows,
+        },
+      },
+      {
+        provider: "openai",
+        displayName: "OpenAI",
+        status: "ok",
+        expiry: expiry(6 * 24 * hour, "6d"),
+        profiles: [
+          {
+            profileId: "openai:codex",
+            type: "oauth",
+            status: "ok",
+            expiry: expiry(6 * 24 * hour, "6d"),
+          },
+        ],
+        usage: {
+          providerId: "openai",
+          plan: openaiUsage.plan,
+          windows: openaiUsage.windows,
+          billing: openaiUsage.billing,
+        },
+      },
+      {
+        provider: "github-copilot",
+        displayName: "GitHub Copilot",
+        status: "expiring",
+        expiry: expiry(26 * 60 * 1000, "26m"),
+        profiles: [
+          {
+            profileId: "github-copilot:default",
+            type: "token",
+            status: "expiring",
+            expiry: expiry(26 * 60 * 1000, "26m"),
+          },
+        ],
+        usage: {
+          providerId: "github-copilot",
+          plan: copilotUsage.plan,
+          windows: copilotUsage.windows,
+        },
+      },
+      {
+        provider: "openrouter",
+        displayName: "OpenRouter",
+        status: "static",
+        profiles: [{ profileId: "openrouter:default", type: "api_key", status: "static" }],
+      },
+      {
+        provider: "google",
+        displayName: "Gemini",
+        status: "missing",
+        profiles: [],
+      },
+    ],
+  };
+  const reorderedAuthStatus = {
+    ...authStatus,
+    providers: authStatus.providers.map((provider) =>
+      provider.provider === "anthropic"
+        ? {
+            ...provider,
+            profileOrder: ["anthropic:work", "anthropic:personal", "anthropic:backup"],
+          }
+        : provider,
+    ),
+  };
+  const cooldownClearedAuthStatus = {
+    ...reorderedAuthStatus,
+    providers: reorderedAuthStatus.providers.map((provider) =>
+      provider.provider === "anthropic"
+        ? {
+            ...provider,
+            profiles: provider.profiles.map((profile) =>
+              profile.profileId === "anthropic:backup"
+                ? { ...profile, cooldownReason: undefined, cooldownUntil: undefined }
+                : profile,
+            ),
+          }
+        : provider,
+    ),
+  };
   return {
-    authStatus: {
-      ts: baseTime,
-      providers: [
-        {
-          provider: "anthropic",
-          displayName: "Claude",
-          status: "ok",
-          expiry: expiry(11 * 24 * hour, "11d"),
-          profiles: [
-            {
-              profileId: "anthropic:default",
-              type: "oauth",
-              status: "ok",
-              expiry: expiry(11 * 24 * hour, "11d"),
-            },
-          ],
-          usage: {
-            providerId: "anthropic",
-            plan: anthropicUsage.plan,
-            windows: anthropicUsage.windows,
-          },
-        },
-        {
-          provider: "openai",
-          displayName: "OpenAI",
-          status: "ok",
-          expiry: expiry(6 * 24 * hour, "6d"),
-          profiles: [
-            {
-              profileId: "openai:codex",
-              type: "oauth",
-              status: "ok",
-              expiry: expiry(6 * 24 * hour, "6d"),
-            },
-          ],
-          usage: {
-            providerId: "openai",
-            plan: openaiUsage.plan,
-            windows: openaiUsage.windows,
-            billing: openaiUsage.billing,
-          },
-        },
-        {
-          provider: "github-copilot",
-          displayName: "GitHub Copilot",
-          status: "expiring",
-          expiry: expiry(26 * 60 * 1000, "26m"),
-          profiles: [
-            {
-              profileId: "github-copilot:default",
-              type: "token",
-              status: "expiring",
-              expiry: expiry(26 * 60 * 1000, "26m"),
-            },
-          ],
-          usage: {
-            providerId: "github-copilot",
-            plan: copilotUsage.plan,
-            windows: copilotUsage.windows,
-          },
-        },
-        {
-          provider: "openrouter",
-          displayName: "OpenRouter",
-          status: "static",
-          profiles: [{ profileId: "openrouter:default", type: "api_key", status: "static" }],
-        },
-        {
-          provider: "google",
-          displayName: "Gemini",
-          status: "missing",
-          profiles: [],
-        },
-      ],
-    },
+    authStatus,
+    // The page loads status once during bootstrap and once after config hydration.
+    // Keep both reads on the same state so later entries demonstrate mutations.
+    authStatusSequence: [authStatus, authStatus, reorderedAuthStatus, cooldownClearedAuthStatus],
     usageStatus: {
       updatedAt: baseTime,
       providers: [anthropicUsage, openaiUsage, openrouterUsage, copilotUsage],
@@ -1478,6 +1529,10 @@ async function createChatPickerScenario(
       "browser.request",
       "chat.metadata",
       "chat.startup",
+      "models.authCooldownClear",
+      "models.authLogout",
+      "models.authOrderSet",
+      "models.authStatus",
       "question.list",
       "openclaw.changes.list",
       "openclaw.chat",
@@ -1921,7 +1976,10 @@ async function createChatPickerScenario(
       "skills.proposals.historyScan": skillWorkshop.historyScan,
       "usage.cost": profileUsage.cost,
       "sessions.usage": profileUsage.sessions,
-      "models.authStatus": modelProviders.authStatus,
+      "models.authCooldownClear": { ok: true },
+      "models.authLogout": { ok: true },
+      "models.authOrderSet": { ok: true },
+      "models.authStatus": { sequence: modelProviders.authStatusSequence },
       "usage.status": modelProviders.usageStatus,
       "device.pair.list": {
         paired: [

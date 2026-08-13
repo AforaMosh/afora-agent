@@ -180,13 +180,27 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
       viewport: { height: 1200, width: 1280 },
     });
     const page = await context.newPage();
-    await installMockGateway(page, {
+    const gateway = await installMockGateway(page, {
+      featureMethods: [
+        "models.authStatus",
+        "models.authOrderSet",
+        "models.authCooldownClear",
+        "models.authLogout",
+      ],
       models: [
         { id: "claude-opus-4-8", name: "Claude Opus 4.8", provider: "anthropic", available: true },
         { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true },
         { id: "gemini-3-pro", name: "Gemini 3 Pro", provider: "google", available: false },
       ],
       methodResponses: {
+        "config.get": {
+          config: {},
+          sourceConfig: {},
+          hash: "model-provider-profiles",
+          issues: [],
+          raw: "{}",
+          valid: true,
+        },
         "models.authStatus": {
           ts: NOW,
           providers: [
@@ -237,6 +251,8 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
             },
           ],
         },
+        "models.authOrderSet": { ok: true },
+        "models.authCooldownClear": { ok: true },
         "usage.status": {
           updatedAt: NOW,
           providers: [
@@ -308,11 +324,31 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
       const profiles = claudeCard.locator(".model-providers__profiles");
       await expect.poll(async () => profiles.getAttribute("open")).toBeNull();
       await expect
-        .poll(async () => profiles.locator("summary").textContent())
+        .poll(async () =>
+          (await profiles.locator("summary").textContent())?.replace(/\s+/gu, " ").trim(),
+        )
         .toContain("3 accounts · Primary: Personal");
       await profiles.locator("summary").click();
       await expect.poll(async () => profiles.getAttribute("open")).not.toBeNull();
       await expect.poll(async () => profiles.textContent()).toContain("personal@example.com");
+
+      const workMenu = profiles.locator('[data-profile-id="anthropic:work"] wa-dropdown');
+      await workMenu.locator("button[slot=trigger]").click();
+      await workMenu.locator('wa-dropdown-item[value="move-up"]').click();
+      expect((await gateway.waitForRequest("models.authOrderSet")).params).toEqual({
+        provider: "claude-cli",
+        profileIds: ["anthropic:work", "anthropic:personal", "anthropic:backup"],
+        agentId: "main",
+      });
+
+      const backupMenu = profiles.locator('[data-profile-id="anthropic:backup"] wa-dropdown');
+      await backupMenu.locator("button[slot=trigger]").click();
+      await backupMenu.locator('wa-dropdown-item[value="clear-cooldown"]').click();
+      expect((await gateway.waitForRequest("models.authCooldownClear")).params).toEqual({
+        provider: "claude-cli",
+        profileId: "anthropic:backup",
+        agentId: "main",
+      });
 
       const openrouterCard = page.locator(".model-providers__row", { hasText: "OpenRouter" });
       await openrouterCard.waitFor();
@@ -331,11 +367,24 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
       await googleCard.waitFor();
       await expect.poll(async () => googleCard.textContent()).toContain("0 of 1 models available");
       await expect.poll(async () => page.locator(".model-providers__row").count()).toBe(4);
-      if (recordVisuals) {
-        await claudeCard.screenshot({ path: path.join(artifactDir, "profiles-desktop.png") });
-        await page.setViewportSize({ height: 844, width: 390 });
+      for (const viewport of [
+        { height: 844, name: "mobile", width: 390 },
+        { height: 1024, name: "tablet", width: 768 },
+        { height: 900, name: "desktop", width: 1440 },
+      ]) {
+        await page.setViewportSize(viewport);
         await profiles.scrollIntoViewIfNeeded();
-        await profiles.screenshot({ path: path.join(artifactDir, "profiles-mobile.png") });
+        await expect
+          .poll(() =>
+            page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+          )
+          .toBe(true);
+        if (recordVisuals) {
+          await claudeCard.screenshot({
+            animations: "disabled",
+            path: path.join(artifactDir, `profiles-${viewport.name}.png`),
+          });
+        }
       }
     } finally {
       await context.close();

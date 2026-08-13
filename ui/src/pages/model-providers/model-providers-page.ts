@@ -542,8 +542,14 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
     params: Record<string, unknown>,
     success: string,
   ) {
-    const client = this.context.gateway.snapshot.client;
-    if (!client || !this.canMutate() || this.busy[key]) {
+    const snapshot = this.context.gateway.snapshot;
+    const client = snapshot.client;
+    if (
+      !client ||
+      !this.canMutate() ||
+      this.busy[key] ||
+      isGatewayMethodAdvertised(snapshot, method) === false
+    ) {
       return;
     }
     const clientEpoch = this.clientEpoch;
@@ -653,7 +659,15 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
         .filter((provider) => Boolean(provider.apiKey) || provider.profiles.length > 0)
         .map((provider) => provider.provider) ?? []),
     ]);
-    const advertised = isGatewayMethodAdvertised(gatewaySnapshot, "models.probe");
+    const probeAdvertised = isGatewayMethodAdvertised(gatewaySnapshot, "models.probe");
+    const profileOrderAdvertised = isGatewayMethodAdvertised(
+      gatewaySnapshot,
+      "models.authOrderSet",
+    );
+    const profileCooldownClearAdvertised = isGatewayMethodAdvertised(
+      gatewaySnapshot,
+      "models.authCooldownClear",
+    );
     const blockedReason = this.mutationBlockedReason();
     const configuredModels = buildSelectableDefaultModels(data.models, defaults);
     const body = renderModelProviders({
@@ -676,7 +690,9 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
       ),
       canMutate: this.canMutate(),
       mutationBlockedReason: blockedReason,
-      probeAvailable: !this.probeUnsupported && advertised !== false,
+      probeAvailable: !this.probeUnsupported && probeAdvertised !== false,
+      profileOrderAvailable: profileOrderAdvertised !== false,
+      profileCooldownClearAvailable: profileCooldownClearAdvertised !== false,
       busy: this.busy,
       messages: this.messages,
       probeResults: this.probeResults,
