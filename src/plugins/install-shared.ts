@@ -14,6 +14,7 @@ import {
 } from "./install-transaction.js";
 import {
   PLUGIN_INSTALL_ERROR_CODE,
+  type InstallPublicationAuthority,
   type InstallPluginResult,
   type PackageManifest,
   type PluginInstallErrorCode,
@@ -226,6 +227,9 @@ function buildBlockedInstallResult(params: {
   return {
     ok: false,
     error: params.blocked.reason,
+    ...(params.blocked.installPolicyWarning
+      ? { installPolicyWarning: params.blocked.installPolicyWarning }
+      : {}),
     ...(params.blocked.code === "security_scan_failed"
       ? { code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_FAILED }
       : params.blocked.code === "security_scan_blocked"
@@ -385,6 +389,7 @@ export async function installPluginDirectoryIntoExtensions(params: {
   afterInstall?: (
     installedDir: string,
   ) => Promise<Extract<InstallPluginResult, { ok: false }> | null>;
+  publicationAuthority?: InstallPublicationAuthority;
   nameEncoder?: (pluginId: string) => string;
 }): Promise<InstallPluginResult> {
   const runtime = await loadPluginInstallRuntime();
@@ -437,12 +442,9 @@ export async function installPluginDirectoryIntoExtensions(params: {
       if (!postInstallResult) {
         return { ok: true as const };
       }
-      return {
-        ok: false as const,
-        error: postInstallResult.error,
-        ...(postInstallResult.code ? { code: postInstallResult.code } : {}),
-      };
+      return postInstallResult;
     },
+    publicationAuthority: params.publicationAuthority,
   };
   const installRes = await runtime.installPackageDir(
     isPluginInstallCommitDeferred(params)
@@ -450,11 +452,7 @@ export async function installPluginDirectoryIntoExtensions(params: {
       : packageInstallParams,
   );
   if (!installRes.ok) {
-    return {
-      ok: false,
-      error: installRes.error,
-      ...(installRes.code ? { code: installRes.code as PluginInstallErrorCode } : {}),
-    };
+    return installRes;
   }
 
   const result = {

@@ -153,17 +153,35 @@ copy as suspicious ClawHub releases; policy is then re-evaluated. Reviewed
 non-interactive direct CLI commands can use `--acknowledge-install-policy-warning`.
 That flag is consumed by the first warning in one command; a later warning
 fails closed and requires interactive review.
-Gateway-backed and automatic installs remain blocked on warnings because they
-have no operator-confirmation flow. When an equivalent direct plugin or skill
-command exists, use that command to review and approve the warning. Otherwise,
-change `security.installPolicy` to return `allow` for the reviewed request, then
-retry the managed flow. Neither `--force` nor the deprecated plugin
-install/update flag `--dangerously-force-unsafe-install` approves a policy
-warning. Plugin
+Gateway `plugins.install` clients receive structured warning details when the
+Gateway can bind the request to an immutable resolved artifact, and may make
+one explicit retry with the returned `acknowledgementToken` as
+`installPolicyWarningAcknowledgement`. Every presentation consumes the token,
+including an expired or wrong-request attempt; only its first presentation can
+authorize the same install request and resolved artifact. OpenClaw re-evaluates
+the staged source and continues when that fresh evaluation allows
+the install or repeats the unchanged warning the operator approved.
+Treat `acknowledgementToken` as a short-lived bearer secret. It is not bound to
+the Gateway connection, device, or operator that received it: any authenticated
+`operator.admin` client that has the token and submits the same install request
+may consume it once for the matching resolved artifact. Keep it only in memory
+for the immediate reviewed retry; do not log, persist, or forward it. Tokens
+expire after five minutes and are invalidated by a Gateway restart.
+A changed or later warning stops the request before commit and receives a fresh
+token when the artifact remains immutably resolved. A block or a warning without
+immutable resolution metadata is terminal and has no acknowledgement token.
+Other Gateway-backed and automatic installs remain blocked on warnings because
+they have no operator-confirmation flow. When an equivalent direct plugin or
+skill command exists, use that command to review and approve the warning.
+Otherwise, change `security.installPolicy` to return `allow` for the reviewed
+request, then retry the managed flow. Neither `--force` nor the deprecated
+plugin install/update flag `--dangerously-force-unsafe-install` approves a
+policy warning. Plugin
 `before_install` hooks run later, and only in OpenClaw processes where plugin
 hooks are loaded, so use `security.installPolicy` for operator-owned install
-decisions instead. The flag does not override a block or policy failure.
-It also does not bypass `before_install` hook blocks.
+decisions instead. `--acknowledge-install-policy-warning` does not override a
+block or policy failure. Neither acknowledgement nor the deprecated flag
+bypasses `before_install` hook blocks.
 
 See [Skills config](/tools/skills-config#operator-install-policy-security-installpolicy)
 for the shared `security.installPolicy` exec schema used by both skills and

@@ -201,6 +201,23 @@ approval after review;
 every approved warning is re-evaluated before continuing.
 The flag is consumed by the first warning in one command; a later warning
 fails closed and requires interactive review.
+Gateway `plugins.install` clients receive structured warning details when the
+Gateway can bind the request to an immutable resolved artifact, and may make
+one explicit retry with the returned `acknowledgementToken` as
+`installPolicyWarningAcknowledgement`. Every presentation consumes the token,
+including an expired or wrong-request attempt; only its first presentation can
+authorize the same install request and resolved artifact. OpenClaw re-evaluates
+the staged source and continues when that fresh evaluation allows
+the install or repeats the unchanged warning the operator approved.
+Treat `acknowledgementToken` as a short-lived bearer secret. It is not bound to
+the Gateway connection, device, or operator that received it: any authenticated
+`operator.admin` client that has the token and submits the same install request
+may consume it once for the matching resolved artifact. Keep it only in memory
+for the immediate reviewed retry; do not log, persist, or forward it. Tokens
+expire after five minutes and are invalidated by a Gateway restart.
+A changed or later warning stops the request before commit and receives a fresh
+token when the artifact remains immutably resolved. A block or a warning without
+immutable resolution metadata is terminal and has no acknowledgement token. Other
 Gateway-backed and automatic installs remain blocked on warnings because they
 have no operator-confirmation flow. Use an equivalent direct plugin or skill
 command to review and approve the warning when one exists. Otherwise, change

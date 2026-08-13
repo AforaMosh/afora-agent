@@ -279,6 +279,7 @@ type ArchiveInstallCall = {
   dangerouslyForceUnsafeInstall?: boolean;
   expectedPluginId?: string;
   onInstallPolicyWarning?: unknown;
+  publicationAuthority?: unknown;
   installPolicyRequest?: {
     kind?: string;
     requestedSpecifier?: string;
@@ -299,6 +300,7 @@ type InstallSuccess = {
 type InstallFailure = {
   code?: string;
   error: string;
+  integrity?: string;
   ok: false;
   version?: string;
   warning?: string;
@@ -1783,6 +1785,29 @@ describe("installPluginFromClawHub", () => {
     expect(archiveInstallCall().onInstallPolicyWarning).toBe(onInstallPolicyWarning);
   });
 
+  it("passes install publication authority through to archive installs", async () => {
+    const publicationAuthority = {
+      assertCurrent: vi.fn(),
+      commit: vi.fn(),
+    };
+
+    await installPluginFromClawHub({
+      spec: "clawhub:demo",
+      publicationAuthority,
+    });
+
+    expect(archiveInstallCall().publicationAuthority).toBe(publicationAuthority);
+  });
+
+  it("preserves the reviewed policy spec when retrying a pinned ClawHub version", async () => {
+    await installPluginFromClawHub({
+      spec: "clawhub:demo@2026.3.22",
+      installPolicyRequestedSpecifier: "clawhub:demo",
+    });
+
+    expect(archiveInstallCall().installPolicyRequest?.requestedSpecifier).toBe("clawhub:demo");
+  });
+
   it("cleans up the downloaded archive even when archive install fails", async () => {
     installPluginFromArchiveMock.mockResolvedValueOnce({
       ok: false,
@@ -1794,7 +1819,11 @@ describe("installPluginFromClawHub", () => {
       baseUrl: "https://clawhub.ai",
     });
 
-    expect(expectInstallFailure(result).error).toBe("bad archive");
+    expect(expectInstallFailure(result)).toMatchObject({
+      error: "bad archive",
+      integrity: DEMO_ARCHIVE_INTEGRITY,
+      version: "2026.3.22",
+    });
     expect(archiveCleanupMock).toHaveBeenCalledTimes(1);
   });
 

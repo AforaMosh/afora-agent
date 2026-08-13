@@ -2,6 +2,7 @@ import type { NpmIntegrityDrift, NpmSpecResolution } from "../infra/install-sour
 import type { InstallPolicySource } from "../security/install-policy.js";
 import type { PluginInstallArtifactInspection } from "./install-artifact-inspection.js";
 import type { InstallSafetyOverrides } from "./install-security-scan.js";
+import type { InstallPolicyWarningOccurrence } from "./install-security-scan.types.js";
 import type { PackageManifest as PluginPackageManifest, PluginManifestSetup } from "./manifest.js";
 
 export type PluginInstallLogger = {
@@ -50,7 +51,13 @@ export type InstallPluginResult =
       npmResolution?: NpmSpecResolution;
       integrityDrift?: NpmIntegrityDrift;
     }
-  | { ok: false; error: string; code?: PluginInstallErrorCode };
+  | {
+      ok: false;
+      error: string;
+      code?: PluginInstallErrorCode;
+      installPolicyWarning?: InstallPolicyWarningOccurrence;
+      npmResolution?: NpmSpecResolution;
+    };
 
 export type PluginInstallFailureResult = Extract<InstallPluginResult, { ok: false }>;
 
@@ -67,18 +74,28 @@ export type PluginInstallPolicyRequest = {
   source?: InstallPolicySource;
 };
 
-export type PackageInstallCommonParams = InstallSafetyOverrides & {
-  extensionsDir?: string;
-  npmDir?: string;
-  timeoutMs?: number;
-  logger?: PluginInstallLogger;
-  mode?: "install" | "update";
-  dryRun?: boolean;
-  expectedPluginId?: string;
-  requirePluginManifest?: boolean;
-  allowSourceTypeScriptEntries?: boolean;
-  installPolicyRequest?: PluginInstallPolicyRequest;
+export type InstallPublicationAuthority = {
+  assertCurrent: () => void;
+  commit: () => void;
 };
+
+export type InstallPublicationOptions = {
+  publicationAuthority?: InstallPublicationAuthority;
+};
+
+export type PackageInstallCommonParams = InstallSafetyOverrides &
+  InstallPublicationOptions & {
+    extensionsDir?: string;
+    npmDir?: string;
+    timeoutMs?: number;
+    logger?: PluginInstallLogger;
+    mode?: "install" | "update";
+    dryRun?: boolean;
+    expectedPluginId?: string;
+    requirePluginManifest?: boolean;
+    allowSourceTypeScriptEntries?: boolean;
+    installPolicyRequest?: PluginInstallPolicyRequest;
+  };
 
 export type InternalPackageInstallCommonParams = PackageInstallCommonParams & {
   onEffectiveMode?: (mode: "install" | "update") => void;

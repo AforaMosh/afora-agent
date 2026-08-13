@@ -32,6 +32,7 @@ import {
   isPluginInstallCommitDeferred,
   type PluginInstallTransaction,
 } from "./install-transaction.js";
+import type { InstallPublicationOptions } from "./install-types.js";
 import {
   installPluginFromInstalledPackageDir,
   PLUGIN_INSTALL_ERROR_CODE,
@@ -377,16 +378,17 @@ async function runGitCommand(params: {
 }
 
 export async function installPluginFromGitSpec(
-  params: InstallSafetyOverrides & {
-    spec: string;
-    extensionsDir?: string;
-    gitDir?: string;
-    timeoutMs?: number;
-    logger?: PluginInstallLogger;
-    mode?: "install" | "update";
-    dryRun?: boolean;
-    expectedPluginId?: string;
-  },
+  params: InstallSafetyOverrides &
+    InstallPublicationOptions & {
+      spec: string;
+      extensionsDir?: string;
+      gitDir?: string;
+      timeoutMs?: number;
+      logger?: PluginInstallLogger;
+      mode?: "install" | "update";
+      dryRun?: boolean;
+      expectedPluginId?: string;
+    },
 ): Promise<GitPluginInstallResult> {
   const parsed = parseGitPluginSpec(params.spec);
   if (!parsed) {
@@ -525,6 +527,7 @@ export async function installPluginFromGitSpec(
     }
     let transaction: PluginInstallTransaction | undefined;
     if (!params.dryRun) {
+      params.publicationAuthority?.commit();
       const replaceResult = await replaceManagedGitRepo({
         stagedRepoDir: repoDir,
         persistentRepoDir,

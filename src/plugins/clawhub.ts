@@ -53,6 +53,7 @@ import { CLAWHUB_INSTALL_ERROR_CODE, type ClawHubInstallErrorCode } from "./claw
 import type { ClawHubPluginInstallRecordFields } from "./clawhub-install-records.js";
 import type { InstallSafetyOverrides } from "./install-security-scan.js";
 import { copyPluginInstallTransactionRequest } from "./install-transaction.js";
+import type { InstallPublicationOptions } from "./install-types.js";
 import {
   installPluginFromArchive,
   PLUGIN_INSTALL_ERROR_CODE,
@@ -74,6 +75,7 @@ type ClawHubInstallFailure = {
   ok: false;
   error: string;
   code?: ClawHubInstallErrorCode;
+  integrity?: string;
   warning?: string;
   version?: string;
 };
@@ -1207,21 +1209,23 @@ function logClawHubPackageSummary(params: {
 }
 
 export async function installPluginFromClawHub(
-  params: InstallSafetyOverrides & {
-    spec: string;
-    baseUrl?: string;
-    token?: string;
-    logger?: PluginInstallLogger;
-    mode?: "install" | "update";
-    extensionsDir?: string;
-    timeoutMs?: number;
-    dryRun?: boolean;
-    expectedPluginId?: string;
-    expectedIntegrity?: string;
-    env?: RuntimeVersionEnv;
-    acknowledgeClawHubRisk?: boolean;
-    onClawHubRisk?: (request: ClawHubRiskAcknowledgementRequest) => boolean | Promise<boolean>;
-  },
+  params: InstallSafetyOverrides &
+    InstallPublicationOptions & {
+      spec: string;
+      baseUrl?: string;
+      token?: string;
+      logger?: PluginInstallLogger;
+      mode?: "install" | "update";
+      extensionsDir?: string;
+      timeoutMs?: number;
+      dryRun?: boolean;
+      expectedPluginId?: string;
+      expectedIntegrity?: string;
+      installPolicyRequestedSpecifier?: string;
+      env?: RuntimeVersionEnv;
+      acknowledgeClawHubRisk?: boolean;
+      onClawHubRisk?: (request: ClawHubRiskAcknowledgementRequest) => boolean | Promise<boolean>;
+    },
 ): Promise<
   | ({
       ok: true;
@@ -1445,6 +1449,7 @@ export async function installPluginFromClawHub(
     const installResult = await installPluginFromArchive(
       copyPluginInstallTransactionRequest(params, {
         archivePath: archive.archivePath,
+        publicationAuthority: params.publicationAuthority,
         dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
         onInstallPolicyWarning: params.onInstallPolicyWarning,
         trustedSourceLinkedOfficialInstall:
@@ -1458,7 +1463,7 @@ export async function installPluginFromClawHub(
         expectedPluginId: runtimeIdResolution.expectedPluginId,
         installPolicyRequest: {
           kind: "plugin-archive",
-          requestedSpecifier: params.spec,
+          requestedSpecifier: params.installPolicyRequestedSpecifier ?? params.spec,
           source: {
             kind: "clawhub",
             authority: officialClawHubPackage ? "official" : clawhubAuthority,
@@ -1469,7 +1474,11 @@ export async function installPluginFromClawHub(
       }),
     );
     if (!installResult.ok) {
-      return installResult;
+      return {
+        ...installResult,
+        integrity: archive.integrity,
+        version: versionState.version,
+      };
     }
 
     const pkg = detail.package!;

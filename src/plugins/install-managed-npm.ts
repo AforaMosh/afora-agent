@@ -64,6 +64,7 @@ import {
   isPluginInstallCommitDeferred,
 } from "./install-transaction.js";
 import type {
+  InstallPublicationOptions,
   InstallPluginResult,
   PluginInstallLogger,
   PluginInstallPolicyRequest,
@@ -75,27 +76,28 @@ import {
 } from "./plugin-peer-link.js";
 
 export async function installPluginFromManagedNpmRoot(
-  params: InstallSafetyOverrides & {
-    packageName: string;
-    dependencySpec?: string;
-    prepareDependencySpec?: ManagedNpmRootDependencySpecPreparation;
-    displaySpec: string;
-    installPolicyRequest: PluginInstallPolicyRequest;
-    npmResolution: NpmSpecResolution;
-    policyPreflightSourcePath?: string;
-    policyPreflightSourcePathKind?: "file" | "directory";
-    skipPolicyPreflight?: boolean;
-    extensionsDir?: string;
-    npmDir?: string;
-    timeoutMs?: number;
-    signal?: AbortSignal;
-    logger?: PluginInstallLogger;
-    mode?: "install" | "update";
-    dryRun?: boolean;
-    expectedPluginId?: string;
-    expectedReplacementPluginId?: string;
-    integrityDrift?: NpmIntegrityDrift;
-  },
+  params: InstallSafetyOverrides &
+    InstallPublicationOptions & {
+      packageName: string;
+      dependencySpec?: string;
+      prepareDependencySpec?: ManagedNpmRootDependencySpecPreparation;
+      displaySpec: string;
+      installPolicyRequest: PluginInstallPolicyRequest;
+      npmResolution: NpmSpecResolution;
+      policyPreflightSourcePath?: string;
+      policyPreflightSourcePathKind?: "file" | "directory";
+      skipPolicyPreflight?: boolean;
+      extensionsDir?: string;
+      npmDir?: string;
+      timeoutMs?: number;
+      signal?: AbortSignal;
+      logger?: PluginInstallLogger;
+      mode?: "install" | "update";
+      dryRun?: boolean;
+      expectedPluginId?: string;
+      expectedReplacementPluginId?: string;
+      integrityDrift?: NpmIntegrityDrift;
+    },
 ): Promise<InstallPluginResult> {
   const runtime = await loadPluginInstallRuntime();
   const { logger, timeoutMs, mode, dryRun } = runtime.resolveTimedInstallModeOptions(

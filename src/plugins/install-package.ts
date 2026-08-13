@@ -49,6 +49,7 @@ function pickPackageInstallCommonParams(
     config: params.config,
     dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
     onInstallPolicyWarning: params.onInstallPolicyWarning,
+    publicationAuthority: params.publicationAuthority,
     trustedSourceLinkedOfficialInstall: params.trustedSourceLinkedOfficialInstall,
     extensionsDir: params.extensionsDir,
     npmDir: params.npmDir,
@@ -195,6 +196,7 @@ async function installBundleFromSourceDir(
       copyErrorPrefix: "failed to copy plugin bundle",
       hasDeps: false,
       depsLogMessage: "",
+      publicationAuthority: params.publicationAuthority,
     }),
   );
   return installed.ok
@@ -334,6 +336,7 @@ async function installPluginFromPackageDir(
       hasDeps: shouldInstallRuntimeDeps,
       sourceHardlinks: shouldInstallRuntimeDeps ? "package-manager" : "reject",
       depsLogMessage: "Installing plugin dependencies…",
+      publicationAuthority: params.publicationAuthority,
       nameEncoder: encodePluginInstallDirName,
       afterInstall: async (installedDir) => {
         return await scanAndLinkInstalledPackage({
@@ -389,6 +392,7 @@ export async function installPluginFromArchive(
         sourceDir,
         ...pickPackageInstallCommonParams(
           copyPluginInstallTransactionRequest(params, {
+            publicationAuthority: params.publicationAuthority,
             dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
             onInstallPolicyWarning: params.onInstallPolicyWarning,
             extensionsDir: params.extensionsDir,

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { InstallPolicyWarningAcknowledgementRequest } from "../plugins/install-security-scan.types.js";
 import { resolveInstallPolicyWarningAcknowledgementCliOptions } from "./install-policy-warning-acknowledgement.ts";
 
 const promptTextMock = vi.hoisted(() => vi.fn());
@@ -47,6 +48,18 @@ describe("resolveInstallPolicyWarningAcknowledgementCliOptions", () => {
         targetName: "demo\npkg",
         targetType: "plugin",
         requestMode: fixture.requestMode,
+        approvalFingerprint: "review-required",
+        scan: {
+          requestKind: "plugin-npm",
+          originType: "plugin-npm",
+          pluginContentType: "package",
+        },
+        warning: {
+          targetName: "demo\npkg",
+          targetType: "plugin",
+          requestMode: fixture.requestMode,
+          reason: "Review required",
+        },
       }),
     ).resolves.toEqual({ status: "approved" });
 
@@ -66,6 +79,18 @@ describe("resolveInstallPolicyWarningAcknowledgementCliOptions", () => {
         targetName: "demo",
         targetType: "skill",
         requestMode: "install",
+        approvalFingerprint: "review-required",
+        scan: {
+          requestKind: "skill-install",
+          originType: "skill-managed-install",
+          skillInstallId: "demo",
+        },
+        warning: {
+          targetName: "demo",
+          targetType: "skill",
+          requestMode: "install",
+          reason: "Review required",
+        },
       }),
     ).resolves.toEqual({ status: "declined" });
   });
@@ -98,21 +123,31 @@ describe("resolveInstallPolicyWarningAcknowledgementCliOptions", () => {
     const options = resolveInstallPolicyWarningAcknowledgementCliOptions({
       acknowledgeInstallPolicyWarning: true,
     });
-
-    await expect(
-      options.onInstallPolicyWarning?.({
+    const warningRequest: InstallPolicyWarningAcknowledgementRequest = {
+      targetName: "demo",
+      targetType: "plugin",
+      requestMode: "install",
+      approvalFingerprint: "review-required",
+      scan: {
+        requestKind: "plugin-npm",
+        originType: "plugin-npm",
+        pluginContentType: "package",
+      },
+      warning: {
         targetName: "demo",
         targetType: "plugin",
         requestMode: "install",
-      }),
-    ).resolves.toEqual({ status: "approved" });
-    await expect(
-      options.onInstallPolicyWarning?.({
-        targetName: "demo-dependency",
-        targetType: "plugin",
-        requestMode: "install",
-      }),
-    ).resolves.toEqual({ status: "unavailable", reason: "approval-exhausted" });
+        reason: "Review required",
+      },
+    };
+
+    await expect(options.onInstallPolicyWarning?.(warningRequest)).resolves.toEqual({
+      status: "approved",
+    });
+    await expect(options.onInstallPolicyWarning?.(warningRequest)).resolves.toEqual({
+      status: "unavailable",
+      reason: "approval-exhausted",
+    });
     expect(promptTextMock).not.toHaveBeenCalled();
   });
 });

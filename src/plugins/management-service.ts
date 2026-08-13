@@ -1,5 +1,6 @@
 // Structured plugin catalog and lifecycle operations shared by Gateway-facing surfaces.
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { asSafeIntegerInRange } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
@@ -42,7 +43,8 @@ import {
 } from "./install-persistence.js";
 import { commitPluginInstallRecordsWithConfig } from "./install-record-commit.js";
 import type { InstallSafetyOverrides } from "./install-security-scan.js";
-import type { PluginInstallLogger } from "./install-types.js";
+import type { InstallPolicyWarningOccurrence } from "./install-security-scan.types.js";
+import type { InstallPublicationAuthority, PluginInstallLogger } from "./install-types.js";
 import {
   installPluginFromNpmPackArchive,
   installPluginFromNpmSpec,
@@ -123,14 +125,25 @@ type ManagedPluginCatalog = {
   mutationAllowed: boolean;
 };
 
-type ManagedPluginInstallRequest =
+export type ManagedPluginInstallPolicyAcknowledgement = {
+  warnings: InstallPolicyWarningOccurrence[];
+  resolvedRequest: ManagedPluginSourceInstallRequest;
+  publicationAuthority: InstallPublicationAuthority;
+};
+
+export type ManagedPluginInstallRequest =
   | {
       source: "clawhub";
       packageName: string;
       version?: string;
       acknowledgeClawHubRisk?: boolean;
+      installPolicyWarningAcknowledgement?: ManagedPluginInstallPolicyAcknowledgement;
     }
-  | { source: "official"; pluginId: string };
+  | {
+      source: "official";
+      pluginId: string;
+      installPolicyWarningAcknowledgement?: ManagedPluginInstallPolicyAcknowledgement;
+    };
 
 export type ManagedPluginSourceInstallRequest =
   | {
@@ -150,6 +163,7 @@ export type ManagedPluginSourceInstallRequest =
   | {
       source: "clawhub";
       spec: string;
+      installPolicyRequestedSpecifier?: string;
       mode?: "install" | "update";
       expectedPluginId?: string;
       expectedIntegrity?: string;
@@ -165,6 +179,7 @@ export type ManagedPluginSourceInstallRequest =
   | {
       source: "official";
       spec: string;
+      installPolicyRequestedSpecifier?: string;
       pluginId: string;
       expectedIntegrity?: string;
       mode: "install" | "update";
@@ -173,6 +188,7 @@ export type ManagedPluginSourceInstallRequest =
   | {
       source: "npm";
       spec: string;
+      installPolicyRequestedSpecifier?: string;
       mode: "install" | "update";
       pin?: boolean;
       expectedPluginId?: string;
@@ -192,10 +208,28 @@ type ManagedPluginSourceInstallResult =
       npmResolution?: NpmSpecResolution;
       clawhub?: ClawHubPluginInstallRecordFields;
     }
-  | { ok: false; error: string; code?: string; version?: string; warning?: string };
+  | {
+      ok: false;
+      error: string;
+      code?: string;
+      integrity?: string;
+      version?: string;
+      warning?: string;
+      installPolicyWarning?: InstallPolicyWarningOccurrence;
+      npmResolution?: NpmSpecResolution;
+    };
 
 type SourceInstallerResult =
-  | { ok: false; error: string; code?: string; version?: string; warning?: string }
+  | {
+      ok: false;
+      error: string;
+      code?: string;
+      integrity?: string;
+      version?: string;
+      warning?: string;
+      installPolicyWarning?: InstallPolicyWarningOccurrence;
+      npmResolution?: NpmSpecResolution;
+    }
   | {
       ok: true;
       pluginId: string;
@@ -209,6 +243,9 @@ export class ManagedPluginLifecycleError extends Error {
   readonly code?: string;
   readonly version?: string;
   readonly warning?: string;
+  readonly installPolicyWarning?: InstallPolicyWarningOccurrence;
+  readonly installPolicyAcknowledgedWarnings?: InstallPolicyWarningOccurrence[];
+  readonly installPolicyResolvedRequest?: ManagedPluginSourceInstallRequest;
 
   constructor(
     message: string,
@@ -217,6 +254,9 @@ export class ManagedPluginLifecycleError extends Error {
       code?: string;
       version?: string;
       warning?: string;
+      installPolicyWarning?: InstallPolicyWarningOccurrence;
+      installPolicyAcknowledgedWarnings?: InstallPolicyWarningOccurrence[];
+      installPolicyResolvedRequest?: ManagedPluginSourceInstallRequest;
       cause?: unknown;
     },
   ) {
@@ -226,6 +266,9 @@ export class ManagedPluginLifecycleError extends Error {
     this.code = details?.code;
     this.version = details?.version;
     this.warning = details?.warning;
+    this.installPolicyWarning = details?.installPolicyWarning;
+    this.installPolicyAcknowledgedWarnings = details?.installPolicyAcknowledgedWarnings;
+    this.installPolicyResolvedRequest = details?.installPolicyResolvedRequest;
   }
 }
 
@@ -844,6 +887,9 @@ export async function listManagedPlugins(params: {
     }
     const kind = normalizeKinds(entry.kind);
     const install = resolveCatalogInstallAction({ entry, pluginId });
+    const clawhubPackageName = resolveCatalogPackageSourceIdentities(entry).find(
+      (identity) => identity.source === "clawhub",
+    )?.packageName;
     const description = normalizeOptionalString(entry.description);
     const version = normalizeOptionalString(entry.version);
     const featuredAt =
@@ -851,6 +897,7 @@ export async function listManagedPlugins(params: {
     plugins.push({
       id: pluginId,
       name: resolveOfficialExternalPluginLabel(entry),
+      ...(clawhubPackageName ? { packageName: clawhubPackageName } : {}),
       ...(description ? { description } : {}),
       ...(version ? { version } : {}),
       ...(kind ? { kind } : {}),
@@ -981,24 +1028,84 @@ function buildClawHubSpec(packageName: string, version?: string): string {
   return `clawhub:${packageName}${version ? `@${version}` : ""}`;
 }
 
-function throwInstallFailure(result: {
-  error: string;
-  code?: string;
-  version?: string;
-  warning?: string;
-}): never {
+function pinInstallPolicyResolvedRequest(
+  request: ManagedPluginSourceInstallRequest,
+  version: string | undefined,
+  integrity: string | undefined,
+  npmResolution: NpmSpecResolution | undefined,
+): ManagedPluginSourceInstallRequest | undefined {
+  if (request.source === "official" || request.source === "npm") {
+    if (!npmResolution?.resolvedSpec || !npmResolution.integrity) {
+      return undefined;
+    }
+    return {
+      ...request,
+      spec: npmResolution.resolvedSpec,
+      installPolicyRequestedSpecifier: request.installPolicyRequestedSpecifier ?? request.spec,
+      expectedIntegrity: npmResolution.integrity,
+    };
+  }
+  if (request.source !== "clawhub") {
+    return request;
+  }
+  if (!version || !integrity) {
+    return undefined;
+  }
+  const parsed = parseClawHubPluginSpec(request.spec);
+  return parsed
+    ? {
+        ...request,
+        spec: buildClawHubSpec(parsed.name, version),
+        installPolicyRequestedSpecifier: request.installPolicyRequestedSpecifier ?? request.spec,
+        expectedIntegrity: integrity,
+      }
+    : undefined;
+}
+
+function throwInstallFailure(
+  result: {
+    error: string;
+    code?: string;
+    integrity?: string;
+    version?: string;
+    warning?: string;
+    installPolicyWarning?: InstallPolicyWarningOccurrence;
+    npmResolution?: NpmSpecResolution;
+  },
+  resolvedRequest?: ManagedPluginSourceInstallRequest,
+  installPolicyAcknowledgedWarnings?: InstallPolicyWarningOccurrence[],
+): never {
+  const installPolicyResolvedRequest =
+    result.installPolicyWarning && resolvedRequest
+      ? pinInstallPolicyResolvedRequest(
+          resolvedRequest,
+          result.version,
+          result.integrity,
+          result.npmResolution,
+        )
+      : undefined;
+  const resolutionUnavailable =
+    result.installPolicyWarning && resolvedRequest && !installPolicyResolvedRequest;
   const unavailable =
     !result.code ||
     result.code === CLAWHUB_INSTALL_ERROR_CODE.ARTIFACT_UNAVAILABLE ||
     result.code === CLAWHUB_INSTALL_ERROR_CODE.ARTIFACT_DOWNLOAD_UNAVAILABLE ||
     result.code === CLAWHUB_INSTALL_ERROR_CODE.CLAWHUB_SECURITY_UNAVAILABLE;
-  throw new ManagedPluginLifecycleError(result.error, {
-    kind: unavailable ? "unavailable" : "invalid-request",
-    code: result.code,
-    version: result.version,
-    warning: result.warning,
-    cause: result,
-  });
+  throw new ManagedPluginLifecycleError(
+    resolutionUnavailable
+      ? `${result.error}\nOpenClaw could not bind this approval to immutable artifact resolution metadata, so the warning remains terminal.`
+      : result.error,
+    {
+      kind: unavailable ? "unavailable" : "invalid-request",
+      code: result.code,
+      version: result.version,
+      warning: result.warning,
+      installPolicyWarning: result.installPolicyWarning,
+      ...(installPolicyAcknowledgedWarnings?.length ? { installPolicyAcknowledgedWarnings } : {}),
+      ...(installPolicyResolvedRequest ? { installPolicyResolvedRequest } : {}),
+      cause: result,
+    },
+  );
 }
 
 function installRecordOwnsTarget(
@@ -1078,6 +1185,9 @@ function throwPersistenceFailureWithCleanupWarnings(error: unknown, warnings: st
       code: error.code,
       version: error.version,
       warning: [error.warning, cleanupWarning].filter(Boolean).join("\n"),
+      installPolicyWarning: error.installPolicyWarning,
+      installPolicyAcknowledgedWarnings: error.installPolicyAcknowledgedWarnings,
+      installPolicyResolvedRequest: error.installPolicyResolvedRequest,
       cause: error,
     });
   }
@@ -1100,6 +1210,7 @@ async function persistManagedSourceInstall(params: {
   persistenceLogger?: PluginInstallLogger;
   successMessage?: string;
   cleanupOnPersistenceFailure?: boolean;
+  publicationAuthority?: InstallPublicationAuthority;
 }): Promise<OpenClawConfig> {
   const persist = () =>
     persistPluginInstall({
@@ -1110,6 +1221,7 @@ async function persistManagedSourceInstall(params: {
       runtime: params.runtime,
       ...(params.persistenceLogger ? { persistenceLogger: params.persistenceLogger } : {}),
       ...(params.successMessage ? { successMessage: params.successMessage } : {}),
+      ...(params.publicationAuthority ? { publicationAuthority: params.publicationAuthority } : {}),
     });
   if (!params.cleanupOnPersistenceFailure) {
     return await persist();
@@ -1134,6 +1246,7 @@ export async function installManagedPluginSource(params: {
   runtime?: RuntimeEnv;
   invalidateRuntimeCache?: boolean;
   cleanupOnPersistenceFailure?: boolean;
+  publicationAuthority?: InstallPublicationAuthority;
 }): Promise<ManagedPluginSourceInstallResult> {
   const { request } = params;
   const env = params.env ?? process.env;
@@ -1159,6 +1272,7 @@ export async function installManagedPluginSource(params: {
     config: params.snapshot.config,
     extensionsDir,
     logger: params.logger,
+    publicationAuthority: params.publicationAuthority,
   };
   const complete = async <T extends SourceInstallerResult>(
     installResult: Promise<T>,
@@ -1296,6 +1410,9 @@ export async function installManagedPluginSource(params: {
       installPluginFromClawHub({
         ...common,
         spec: request.spec,
+        ...(request.installPolicyRequestedSpecifier
+          ? { installPolicyRequestedSpecifier: request.installPolicyRequestedSpecifier }
+          : {}),
         mode: request.mode,
         ...(request.expectedPluginId ? { expectedPluginId: request.expectedPluginId } : {}),
         ...(request.expectedIntegrity ? { expectedIntegrity: request.expectedIntegrity } : {}),
@@ -1319,6 +1436,9 @@ export async function installManagedPluginSource(params: {
     installPluginFromNpmSpec({
       ...common,
       spec: request.spec,
+      ...(request.installPolicyRequestedSpecifier
+        ? { installPolicyRequestedSpecifier: request.installPolicyRequestedSpecifier }
+        : {}),
       mode: request.mode,
       ...(request.source === "official" || request.trustedSourceLinkedOfficialInstall
         ? { trustedSourceLinkedOfficialInstall: true }
@@ -1427,8 +1547,13 @@ export async function installManagedPlugin(params: {
     const officialCatalog = await loadOfficialCatalog();
     const warnings: string[] = [];
     const installLogger = createInstallLogger(warnings);
+    const remainingInstallPolicyWarnings = [
+      ...(params.request.installPolicyWarningAcknowledgement?.warnings ?? []),
+    ];
+    const acknowledgedInstallPolicyWarnings: InstallPolicyWarningOccurrence[] = [];
     const request =
-      params.request.source === "clawhub"
+      params.request.installPolicyWarningAcknowledgement?.resolvedRequest ??
+      (params.request.source === "clawhub"
         ? resolveManagedClawHubInstallRequest({
             request: params.request,
             officialEntries: officialCatalog.entries,
@@ -1436,19 +1561,51 @@ export async function installManagedPlugin(params: {
         : resolveManagedOfficialInstallRequest({
             request: params.request,
             officialEntries: officialCatalog.entries,
-          });
+          }));
     const installed = await installManagedPluginSource({
       request,
       snapshot,
       env,
       logger: installLogger,
       persistenceLogger: installLogger,
+      publicationAuthority:
+        params.request.installPolicyWarningAcknowledgement?.publicationAuthority,
+      ...(params.request.installPolicyWarningAcknowledgement
+        ? {
+            safetyOverrides: {
+              onInstallPolicyWarning: async ({
+                scan,
+                approvalFingerprint,
+                targetName,
+                targetType,
+                requestMode,
+              }) => {
+                const warningIndex = remainingInstallPolicyWarnings.findIndex(
+                  (approved) =>
+                    approved.approvalFingerprint === approvalFingerprint &&
+                    isDeepStrictEqual(approved.scan, scan) &&
+                    approved.warning.targetName === targetName &&
+                    approved.warning.targetType === targetType &&
+                    approved.warning.requestMode === requestMode,
+                );
+                if (warningIndex < 0) {
+                  return { status: "unavailable", reason: "warning-not-approved" };
+                }
+                const [approved] = remainingInstallPolicyWarnings.splice(warningIndex, 1);
+                if (approved) {
+                  acknowledgedInstallPolicyWarnings.push(approved);
+                }
+                return { status: "approved" };
+              },
+            },
+          }
+        : {}),
       cleanupOnPersistenceFailure: true,
       invalidateRuntimeCache: false,
       runtime: createSilentRuntime(),
     });
     if (!installed.ok) {
-      return throwInstallFailure(installed);
+      return throwInstallFailure(installed, request, acknowledgedInstallPolicyWarnings);
     }
     const catalog = await listManagedPlugins({
       config: installed.config,
