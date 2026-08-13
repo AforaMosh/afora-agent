@@ -166,6 +166,7 @@ suite.define(() => {
               .poll(() => page.locator(".shell").getAttribute("class"))
               .not.toContain("shell--nav-drawer-open");
           }
+          await waitForChatScrollIdle(page);
         };
         const activeTextarea = () =>
           page.locator(
@@ -183,6 +184,7 @@ suite.define(() => {
             "- notify the release owner",
           ].join("\n"),
         );
+        await waitForChatScrollIdle(page);
         const tallDockHeight = await activeDock().evaluate(
           (element) => element.getBoundingClientRect().height,
         );
@@ -191,6 +193,7 @@ suite.define(() => {
 
         await switchToSession(compactKey, "Compact draft");
         await activeTextarea().fill("Compact retained draft");
+        await waitForChatScrollIdle(page);
         const compactDockHeight = await activeDock().evaluate(
           (element) => element.getBoundingClientRect().height,
         );
