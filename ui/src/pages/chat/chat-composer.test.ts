@@ -209,12 +209,14 @@ describe("renderChatComposer controls", () => {
         actionLabel: "Unarchive",
         onAction,
       },
+      typingActors: [{ id: "ayaan", label: "Ayaan" }],
     });
 
     const banner = container.querySelector(".agent-chat__disabled-banner");
     expect(banner?.textContent).toContain("This session is archived.");
     expect(container.querySelector(".agent-chat__input")).toBeNull();
     expect(container.querySelector("textarea")).toBeNull();
+    expect(container.querySelector(".agent-chat__typing-indicator--outside")).toBeNull();
     banner?.querySelector<HTMLButtonElement>("button")?.click();
     expect(onAction).toHaveBeenCalledOnce();
     button(container, t("chat.runControls.stopGenerating")).click();
@@ -843,6 +845,7 @@ describe("renderChatComposer status", () => {
       gatewayQuestionPrompts: [],
       composerControls: html`<button type="button">Model</button>`,
       onRequestUpdate: vi.fn(),
+      typingActors: [{ id: "ayaan", label: "Ayaan" }],
     });
     composerProps.onDraftChange = (next) => {
       composerProps.draft = next;
@@ -867,6 +870,7 @@ describe("renderChatComposer status", () => {
     await panel.updateComplete;
     expect(container.querySelector(".agent-chat__input")).toBeNull();
     expect(container.querySelector(".agent-chat__composer-footer")).toBeNull();
+    expect(container.querySelector(".agent-chat__typing-indicator--outside")).toBeNull();
     expect(document.activeElement).toBe(panel.querySelector(".chat-question-panel"));
     expect(composerProps.draft).toBe("Keep this draft while composing");
 

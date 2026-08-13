@@ -8,6 +8,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DOCKER_SELECTED_PLUGIN_BUILD_IDS_ENV } from "./lib/bundled-plugin-build-entries.mjs";
+import { toErrorObject } from "./lib/error-format.mts";
 import { terminateManagedChild } from "./lib/managed-child-process.mts";
 import { resolveNpmJsonEntries } from "./lib/npm-json-output.mts";
 import { isRecord } from "./lib/record-shared.mjs";
@@ -27,6 +28,7 @@ const DEFAULT_CAPTURED_STDOUT_MAX_BYTES = 1024 * 1024;
 const MAX_TIMER_TIMEOUT_MS = 2_147_000_000;
 const AI_RUNTIME_PACKAGE = "@openclaw/ai";
 const AI_RUNTIME_BACKUP_DIR = ".openclaw-ai-package-backup";
+
 type KillChild = (signal: NodeJS.Signals) => void;
 type RunOptions = {
   captureStdout?: boolean;
@@ -164,7 +166,10 @@ function numericTimerValueMs(valueMs: unknown) {
   return Number.isFinite(value) ? Math.floor(value) : undefined;
 }
 
-function resolveTimerTimeoutMs(valueMs: unknown, fallbackMs: unknown = MAX_TIMER_TIMEOUT_MS) {
+function resolvePackageBuildTimeoutMs(
+  valueMs: unknown,
+  fallbackMs: unknown = MAX_TIMER_TIMEOUT_MS,
+) {
   const value = numericTimerValueMs(valueMs) ?? numericTimerValueMs(fallbackMs);
   return Math.min(Math.max(value ?? MAX_TIMER_TIMEOUT_MS, 1), MAX_TIMER_TIMEOUT_MS);
 }
@@ -173,7 +178,7 @@ function resolveOptionalTimerTimeoutMs(valueMs: unknown) {
   if (valueMs === undefined) {
     return undefined;
   }
-  return resolveTimerTimeoutMs(valueMs, 1);
+  return resolvePackageBuildTimeoutMs(valueMs, 1);
 }
 
 function readOptionValue(argv: string[], index: number, optionName: string) {
@@ -302,7 +307,7 @@ export function parseArgs(argv: string[]) {
 function run(command: string, args: string[], cwd: string, options: RunOptions = {}) {
   return new Promise<string>((resolve, reject) => {
     const resolvedTimeoutMs = resolveOptionalTimerTimeoutMs(options.timeoutMs);
-    const resolvedKillAfterMs = resolveTimerTimeoutMs(
+    const resolvedKillAfterMs = resolvePackageBuildTimeoutMs(
       options.killAfterMs,
       DEFAULT_TIMEOUT_KILL_AFTER_MS,
     );
@@ -356,7 +361,7 @@ function run(command: string, args: string[], cwd: string, options: RunOptions =
         process.exit(forwardedSignalExitCode);
       }
       if (error) {
-        reject(toLintErrorObject(error, "Non-Error rejection"));
+        reject(toErrorObject(error, "Non-Error rejection"));
         return;
       }
       resolve(value);
@@ -623,6 +628,7 @@ export async function prepareBundledAiRuntimePackage(
 ) {
   const packageJsonPath = path.join(sourceDir, "package.json");
   const aiRuntimePackageJsonPath = path.join(sourceDir, "packages", "ai", "package.json");
+  const aiRuntimeSourceDir = path.dirname(aiRuntimePackageJsonPath);
   const aiRuntimePath = path.join(sourceDir, "node_modules", "@openclaw", "ai");
   const aiRuntimeBackupPath = path.join(
     sourceDir,
@@ -641,6 +647,8 @@ export async function prepareBundledAiRuntimePackage(
           DEFAULT_PACKAGE_PACK_TIMEOUT_MS,
         ),
       }));
+  const prepareManifest = packageOptions.prepareManifest ?? (async () => false);
+  const restoreManifest = packageOptions.restoreManifest ?? (async () => false);
   const originalPackageJson = await fs.readFile(packageJsonPath, "utf8");
   let packageJson: MutableJsonRecord & {
     bundleDependencies?: unknown;
@@ -711,23 +719,45 @@ export async function prepareBundledAiRuntimePackage(
     originalAiRuntimeMoved = false;
     packedAiTarballs = [];
     if (cleanupError) {
-      throw toLintErrorObject(cleanupError, "Package cleanup failed.");
+      throw toErrorObject(cleanupError, "Package cleanup failed.");
     }
   };
 
   try {
-    await runCaptureImpl(
-      "pnpm",
-      ["--dir", "packages/ai", "pack", "--silent", "--pack-destination", outputDir],
-      sourceDir,
-      {
-        deferForwardedSignalExit: true,
-        timeoutMs: resolveTimeoutMs(
-          "OPENCLAW_DOCKER_PACKAGE_PACK_TIMEOUT_MS",
-          DEFAULT_PACKAGE_PACK_TIMEOUT_MS,
-        ),
-      },
-    );
+    let packError: Error | undefined;
+    await prepareManifest(aiRuntimeSourceDir);
+    try {
+      await runCaptureImpl(
+        "pnpm",
+        [
+          "--dir",
+          "packages/ai",
+          "pack",
+          "--loglevel=error",
+          "--use-stderr",
+          "--pack-destination",
+          outputDir,
+        ],
+        sourceDir,
+        {
+          deferForwardedSignalExit: true,
+          timeoutMs: resolveTimeoutMs(
+            "OPENCLAW_DOCKER_PACKAGE_PACK_TIMEOUT_MS",
+            DEFAULT_PACKAGE_PACK_TIMEOUT_MS,
+          ),
+        },
+      );
+    } catch (error) {
+      packError = toErrorObject(error, "AI runtime package failed.");
+    }
+    try {
+      await restoreManifest(aiRuntimeSourceDir);
+    } catch (restoreError) {
+      throw packError ? packagePreparationRestoreError(packError, restoreError) : restoreError;
+    }
+    if (packError) {
+      throw packError;
+    }
     packedAiTarballs = (await fs.readdir(outputDir))
       .filter(isPackedAiRuntimeTarball)
       .map((filename) => path.join(outputDir, filename));
@@ -764,11 +794,16 @@ export async function prepareBundledAiRuntimePackage(
       if (typeof version !== "string") {
         throw new Error(`packed @openclaw/ai dependency ${name} must declare a string version`);
       }
-      if (packageJson.dependencies?.[name] !== version) {
+      if (version === "0.0.0-private") {
+        continue;
+      }
+      const rootVersion = packageJson.dependencies?.[name];
+      if (rootVersion !== version && rootVersion !== `workspace:${version}`) {
         throw new Error(
           `root package.json must declare ${name}@${version} to bundle @openclaw/ai without duplicate dependencies`,
         );
       }
+      packageJson.dependencies![name] = version;
     }
     // Root owns these exact dependencies. Removing them from the staged copy keeps npm from
     // recursively bundling duplicate packages alongside the one private workspace runtime.
@@ -906,7 +941,15 @@ export async function packOpenClawPackageForDocker(
   let cleanupBundledAiRuntime = async () => {};
   try {
     await cleanPackedOpenClawTarballs(outputPath);
-    cleanupBundledAiRuntime = await prepareBundledAiRuntime(sourcePath, outputPath, runCaptureImpl);
+    cleanupBundledAiRuntime = await prepareBundledAiRuntime(
+      sourcePath,
+      outputPath,
+      runCaptureImpl,
+      {
+        prepareManifest,
+        restoreManifest,
+      },
+    );
     const packArgs =
       packTool === "pnpm"
         ? ["pack", "--silent", "--config.ignore-scripts=true", "--pack-destination", outputPath]
@@ -1030,18 +1073,4 @@ if (
       error && typeof error === "object" && "exitCode" in error ? error.exitCode : undefined;
     process.exit(typeof exitCode === "number" && Number.isInteger(exitCode) ? exitCode : 1);
   });
-}
-
-function toLintErrorObject(value: unknown, fallbackMessage: string) {
-  if (value instanceof Error) {
-    return value;
-  }
-  if (typeof value === "string") {
-    return new Error(value);
-  }
-  const error = new Error(fallbackMessage, { cause: value });
-  if ((typeof value === "object" && value !== null) || typeof value === "function") {
-    Object.assign(error, value);
-  }
-  return error;
 }
