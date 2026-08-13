@@ -1,0 +1,46 @@
+import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
+import type {
+  InstallPolicyWarningAcknowledgementRequest,
+  InstallSafetyOverrides,
+} from "../plugins/install-security-scan.types.js";
+import { promptText } from "./prompt.js";
+
+function canPromptForInstallPolicyWarning(): boolean {
+  return process.stdin.isTTY && process.stdout.isTTY;
+}
+
+export function resolveInstallPolicyWarningAcknowledgementCliOptions(params: {
+  acknowledgeInstallPolicyWarning?: boolean;
+  dangerouslyForceUnsafeInstall?: boolean;
+  allowPrompt?: boolean;
+}): Pick<InstallSafetyOverrides, "dangerouslyForceUnsafeInstall" | "onInstallPolicyWarning"> {
+  const canPrompt =
+    !params.acknowledgeInstallPolicyWarning &&
+    params.allowPrompt !== false &&
+    canPromptForInstallPolicyWarning();
+  let explicitAcknowledgementAvailable = params.acknowledgeInstallPolicyWarning === true;
+  return {
+    ...(params.dangerouslyForceUnsafeInstall ? { dangerouslyForceUnsafeInstall: true } : {}),
+    ...(params.acknowledgeInstallPolicyWarning
+      ? {
+          onInstallPolicyWarning: async () => {
+            if (!explicitAcknowledgementAvailable) {
+              return { status: "unavailable", reason: "approval-exhausted" };
+            }
+            explicitAcknowledgementAvailable = false;
+            return { status: "approved" };
+          },
+        }
+      : canPrompt
+        ? {
+            onInstallPolicyWarning: async (request: InstallPolicyWarningAcknowledgementRequest) => {
+              const targetName = sanitizeTerminalText(request.targetName);
+              const answer = await promptText(
+                `type: '${targetName}' to ${request.requestMode} anyway\n> `,
+              );
+              return answer.trim() === targetName ? { status: "approved" } : { status: "declined" };
+            },
+          }
+        : {}),
+  };
+}
