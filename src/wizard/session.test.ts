@@ -19,12 +19,36 @@ describe("WizardSession", () => {
     ["confirm", undefined, true],
     ["action", "client", true],
     ["action", "gateway", false],
+    ["qr", "client", false],
     ["note", undefined, false],
     ["progress", undefined, false],
   ] as const satisfies ReadonlyArray<
     readonly [WizardStep["type"], WizardStep["executor"], boolean]
   >)("classifies whether %s/%s awaits user input", (type, executor, expected) => {
     expect(wizardStepAwaitsInput({ id: "step", type, executor })).toBe(expected);
+  });
+
+  test("rejects answers for passive QR steps", async () => {
+    const session = new WizardSession(async (_prompter, _signal, owner) => {
+      await owner.awaitAnswer({
+        id: "qr-step",
+        type: "qr",
+        executor: "client",
+        qrDataUrl:
+          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        expiresInMs: 60_000,
+      });
+    });
+
+    const next = await session.next();
+    expect(next.step?.type).toBe("qr");
+    await expect(session.answer("qr-step", true)).rejects.toThrow(
+      "wizard: QR steps settle through their presentation owner",
+    );
+    expect(session.getStatus()).toBe("running");
+    expect((await session.next()).step?.id).toBe("qr-step");
+    session.cancel();
+    await session.whenSettled();
   });
 
   test("steps progress in order", async () => {

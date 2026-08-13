@@ -20,7 +20,7 @@ const WIZARD_STEP_INPUT_REQUIREMENT_BY_TYPE = {
   multiselect: "always",
   progress: "never",
   action: "client-executor",
-  qr: "client-executor",
+  qr: "never",
 } as const satisfies Record<WizardStep["type"], WizardStepInputRequirement>;
 
 /** Whether a step needs a user answer instead of client or gateway acknowledgement. */
@@ -352,6 +352,9 @@ export class WizardSession {
   }
 
   async answer(stepId: string, value: unknown): Promise<string | undefined> {
+    if (this.currentStep?.id === stepId && this.currentStep.type === "qr") {
+      throw new Error("wizard: QR steps settle through their presentation owner");
+    }
     const pending = this.answerDeferred.get(stepId);
     if (!pending) {
       // Gateway-owned progress steps never block the provider run. Older

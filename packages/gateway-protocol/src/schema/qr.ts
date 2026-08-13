@@ -3,6 +3,9 @@ import { Type } from "typebox";
 
 export const QR_PNG_DATA_URL_MAX_LENGTH = 16_384;
 export const QR_PNG_DATA_URL_PREFIX = "data:image/png;base64,";
+const QR_PNG_MAX_DIMENSION = 2_048;
+// At the PNG maximum of eight decoded bytes per pixel, this caps the image at 16 MiB.
+const QR_PNG_MAX_PIXELS = 2_097_152;
 
 // The first ten characters plus `o-r` encode the eight-byte PNG signature. If
 // the payload ends there, only `o=` has canonical zero pad bits. Longer values
@@ -70,13 +73,19 @@ function isValidQrPngDataUrl(value: string): boolean {
     }
 
     const type = readUint32Be(bytes, typeOffset);
+    const width = offset === PNG_SIGNATURE.length ? readUint32Be(bytes, dataOffset) : undefined;
+    const height =
+      offset === PNG_SIGNATURE.length ? readUint32Be(bytes, dataOffset + 4) : undefined;
     if (
       pngCrc32(bytes, typeOffset, crcOffset) !== readUint32Be(bytes, crcOffset) ||
       (offset === PNG_SIGNATURE.length &&
         (type !== PNG_IHDR ||
           length !== 13 ||
-          readUint32Be(bytes, dataOffset) === 0 ||
-          readUint32Be(bytes, dataOffset + 4) === 0))
+          !width ||
+          !height ||
+          width > QR_PNG_MAX_DIMENSION ||
+          height > QR_PNG_MAX_DIMENSION ||
+          width * height > QR_PNG_MAX_PIXELS))
     ) {
       return false;
     }
