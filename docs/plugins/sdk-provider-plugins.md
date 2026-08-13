@@ -369,6 +369,16 @@ catalog, API-key auth, and dynamic model resolution.
     upstream response is not an OpenAI-compatible `{ data: [{ id, object }] }`
     shape.
 
+    If model access can differ between stored auth profiles, use
+    `ctx.resolveProviderAuthProfiles?.("acme-ai")` and fall back to
+    `[ctx.resolveProviderAuth("acme-ai")]` when the optional resolver is not
+    available. The returned candidates are in runtime selection order. Use each
+    credential only for its own discovery request, keep its `profileId` on the
+    matching catalog outcome, and never log, persist, or return `apiKey` or
+    `discoveryApiKey`. A profile's successful discovery authorizes only the model
+    ids reported for that profile; do not infer access from other configured
+    credentials. Static catalog hooks receive no auth profiles.
+
     If the upstream provider uses different control tokens than OpenClaw, add a
     small bidirectional text transform instead of replacing the stream path:
 
