@@ -13,6 +13,7 @@ import { logVerbose } from "../../globals.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { generateSecureToken } from "../../infra/secure-random.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
+import { resolveInlineSkillCommandInvocation } from "../../skills/discovery/chat-command-invocation.js";
 import {
   hasSkillReferenceCandidate,
   listReservedChatSlashCommandNames,
@@ -20,6 +21,7 @@ import {
   resolveSkillReferenceInvocations,
 } from "../../skills/discovery/chat-commands.js";
 import type { ExplicitSkillSelection, SkillCommandSpec } from "../../skills/types.js";
+import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import {
   copyReplyPayloadMetadata,
   markCommandReplyForDelivery,
@@ -397,6 +399,18 @@ export async function handleInlineActions(params: {
           skillCommands,
         })
       : null;
+  if (
+    !skillInvocation &&
+    allowTextCommands &&
+    skillCommands.length > 0 &&
+    command.isAuthorizedSender &&
+    ctx.Surface === INTERNAL_MESSAGE_CHANNEL
+  ) {
+    skillInvocation = resolveInlineSkillCommandInvocation({
+      commandBodyNormalized: command.commandBodyNormalized,
+      skillCommands,
+    });
+  }
   if (skillInvocation) {
     if (!command.isAuthorizedSender) {
       if (skillInvocation.inline) {

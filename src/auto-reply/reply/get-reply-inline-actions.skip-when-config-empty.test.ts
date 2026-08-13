@@ -762,7 +762,12 @@ describe("handleInlineActions", () => {
   it("rewrites a skill marker embedded in normal prose", async () => {
     const typing = createTypingController();
     const body = "Please use /office_hours: to build me a deployment plan";
-    const ctx = buildTestCtx({ Body: body, CommandBody: body });
+    const ctx = buildTestCtx({
+      Body: body,
+      CommandBody: body,
+      Provider: "webchat",
+      Surface: "webchat",
+    });
 
     const result = await handleInlineActions(
       createHandleInlineActionsInput({
@@ -796,7 +801,12 @@ describe("handleInlineActions", () => {
   it("keeps unauthorized inline skill markers as plain text", async () => {
     const typing = createTypingController();
     const body = "Please use /office_hours: to build me a deployment plan";
-    const ctx = buildTestCtx({ Body: body, CommandBody: body });
+    const ctx = buildTestCtx({
+      Body: body,
+      CommandBody: body,
+      Provider: "webchat",
+      Surface: "webchat",
+    });
 
     const result = await handleInlineActions(
       createHandleInlineActionsInput({
@@ -820,6 +830,61 @@ describe("handleInlineActions", () => {
     expect(ctx.Body).toBe(body);
     expect(handleCommandsMock).not.toHaveBeenCalled();
   });
+
+  it("keeps authorized messaging-channel inline skill markers as plain text", async () => {
+    const typing = createTypingController();
+    const body = "Please use /office_hours: to build me a deployment plan";
+    const ctx = buildTestCtx({ Body: body, CommandBody: body });
+
+    const result = await handleInlineActions(
+      createHandleInlineActionsInput({
+        ctx,
+        typing,
+        cleanedBody: body,
+        command: {
+          isAuthorizedSender: true,
+          rawBodyNormalized: body,
+          commandBodyNormalized: body,
+        },
+        overrides: {
+          allowTextCommands: true,
+          cfg: { commands: { text: true } },
+          skillCommands: officeHoursSkillCommands(),
+        },
+      }),
+    );
+
+    expect(result).toMatchObject({ kind: "continue", cleanedBody: body });
+    expect(ctx.Body).toBe(body);
+    expect(handleCommandsMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["Review /tmp/foo before continuing", "/tmp/foo should stay a path"])(
+    "does not load workspace skills for a bare path in %j",
+    async (body) => {
+      const typing = createTypingController();
+      const ctx = buildTestCtx({ Body: body, CommandBody: body });
+
+      const result = await runTestInlineActions({
+        ctx,
+        typing,
+        cleanedBody: body,
+        command: {
+          isAuthorizedSender: true,
+          rawBodyNormalized: body,
+          commandBodyNormalized: body,
+        },
+        overrides: {
+          allowTextCommands: true,
+          cfg: { commands: { text: true } },
+          skillCommands: [],
+        },
+      });
+
+      expect(result).toMatchObject({ kind: "continue", cleanedBody: body });
+      expect(listSkillCommandsForWorkspaceMock).not.toHaveBeenCalled();
+    },
+  );
 
   it("loads workspace skills when /skill gets an empty preloaded command list", async () => {
     const typing = createTypingController();
