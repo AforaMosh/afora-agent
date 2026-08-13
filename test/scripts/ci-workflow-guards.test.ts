@@ -175,7 +175,7 @@ function runCiManifestFixture(options: {
   bundledPlanner: boolean;
   changedPlannerImportFails?: boolean;
   changedPaths?: string[] | null;
-  eventName?: "pull_request" | "workflow_dispatch";
+  eventName?: "pull_request" | "push" | "workflow_dispatch";
   historicalCompatibility?: boolean;
   iosCapabilities?: boolean;
   iosBuildCapability?: boolean;
@@ -207,9 +207,10 @@ function runCiManifestFixture(options: {
             runner: "ubuntu-24.04",
             shardName: "legacy-node-plan",
           }];
-          export const createNodeTestShardBundles = () => [{
+          export const createNodeTestShardBundles = (options = {}) => [{
             checkName: "bundled-node-plan",
             configs: ["test/vitest/bundled.config.ts"],
+            env: { OPENCLAW_CI_TEST_COMPACT_MODE: options.compactMode ?? "full" },
             requiresDist: false,
             runner: "ubuntu-24.04",
             shardName: "bundled-node-plan",
@@ -5355,7 +5356,27 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     ).toContainEqual(
       expect.objectContaining({
         check_name: "bundled-node-plan",
+        env: { OPENCLAW_CI_TEST_COMPACT_MODE: "full" },
         shard_name: "bundled-node-plan",
+      }),
+    );
+
+    const push = runCiManifestFixture({
+      bundledPlanner: true,
+      eventName: "push",
+    });
+    expect(push.status, push.output).toBe(0);
+    expect(
+      JSON.parse(
+        expectDefined(
+          push.outputs.checks_node_core_nondist_matrix,
+          "push node core nondist matrix output",
+        ),
+      ).include,
+    ).toContainEqual(
+      expect.objectContaining({
+        check_name: "bundled-node-plan",
+        env: { OPENCLAW_CI_TEST_COMPACT_MODE: "push" },
       }),
     );
 
@@ -5410,7 +5431,10 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       ).include,
     ).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ check_name: "bundled-node-plan" }),
+        expect.objectContaining({
+          check_name: "bundled-node-plan",
+          env: { OPENCLAW_CI_TEST_COMPACT_MODE: "pull-request" },
+        }),
         expect.objectContaining({ check_name: "changed-extension-fallback-plan" }),
       ]),
     );
