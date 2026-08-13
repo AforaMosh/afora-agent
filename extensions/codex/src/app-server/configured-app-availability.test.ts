@@ -1,8 +1,10 @@
 import { embeddedAgentLog } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CodexConfiguredAppAvailabilityMonitor } from "./configured-app-availability.js";
 
 describe("configured Codex app availability", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("warns once when an explicitly enabled app is not installed or authorized", async () => {
     const warn = vi.spyOn(embeddedAgentLog, "warn").mockImplementation(() => undefined);
     const request = vi.fn(async (method: string) =>
