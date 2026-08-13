@@ -792,7 +792,10 @@ describe("chat typing status", () => {
       "typing status",
     );
 
-    expect(indicator.previousElementSibling?.classList.contains("chat-run-error")).toBe(true);
+    const adjuncts = requireElement(container, ".chat-composer-adjuncts", "composer adjuncts");
+    expect(adjuncts.querySelector(".chat-queue")).not.toBeNull();
+    expect(adjuncts.lastElementChild?.classList.contains("chat-run-error")).toBe(true);
+    expect(indicator.previousElementSibling).toBe(adjuncts);
     expect(indicator.nextElementSibling?.classList.contains("agent-chat__composer-shell")).toBe(
       true,
     );
