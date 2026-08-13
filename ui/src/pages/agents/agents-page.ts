@@ -40,13 +40,14 @@ import {
 } from "../../lib/cron/index.ts";
 import {
   canCallGatewayMethod,
+  isGatewayMethodAdvertised,
   type GatewayMethodOperatorScope,
 } from "../../lib/gateway-methods.ts";
 import { parseAgentSessionKey } from "../../lib/sessions/session-key.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
-import { loadModels } from "../chat/models.ts";
+import { loadModelPickerModels } from "../chat/models.ts";
 import { loadAgentFileContent, saveAgentFile } from "./files.ts";
 import {
   resetIdentityDraft,
@@ -575,7 +576,11 @@ class AgentsPage
     const request = { client, generation, agentId };
     this.chatModelCatalogRequest = request;
     this.chatModelCatalogError = null;
-    void loadModels(client, { agentId, refresh: true })
+    void loadModelPickerModels(client, {
+      agentId,
+      modelsListAdvertised: isGatewayMethodAdvertised(this.gateway.snapshot ?? {}, "models.list"),
+      refresh: true,
+    })
       .then((models) => {
         if (this.isCurrentRequest(client, generation, agentId)) {
           this.chatModelCatalog = models;

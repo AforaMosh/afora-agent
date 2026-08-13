@@ -12,7 +12,7 @@ import { NewSessionModelControl } from "./model-control.ts";
 function contextWith(
   models: ModelCatalogEntry[],
   runtime = "openclaw",
-  featureMethods: string[] = [],
+  featureMethods: string[] = ["models.list"],
 ) {
   const request = vi.fn().mockResolvedValue({ models });
   const context = {
@@ -414,6 +414,30 @@ describe("new-session model runtime", () => {
     const container = renderControl(control, context);
     expect(modelOptions(container)).toHaveLength(1);
     expect(container.querySelector('[data-chat-model-catalog-retry="true"]')).toBeNull();
+  });
+
+  it("uses agent-scoped chat metadata when a legacy Gateway lacks models.list", async () => {
+    const models: ModelCatalogEntry[] = [
+      { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true },
+      { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai", available: false },
+    ];
+    const { context, request } = contextWith(models, "openclaw", ["chat.metadata"]);
+    const control = new NewSessionModelControl(() => undefined);
+
+    control.load(context, "main", true);
+
+    await vi.waitFor(() =>
+      expect(
+        renderControl(control, context).querySelectorAll("[data-chat-model-option]"),
+      ).toHaveLength(1),
+    );
+    expect(request).toHaveBeenCalledWith(
+      "chat.metadata",
+      { agentId: "main" },
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(request.mock.calls.map(([method]) => method)).toEqual(["chat.metadata"]);
+    expect(renderControl(control, context).textContent).not.toContain("GPT-5.6 Sol");
   });
 
   it("keeps a successful empty catalog explicit when its refresh fails", async () => {

@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { describe, expect, it, vi } from "vitest";
-import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import type { GatewayBrowserClient, GatewayHelloOk } from "../../api/gateway.ts";
 import type {
   AgentsFilesListResult,
   AgentsListResult,
@@ -68,8 +68,12 @@ function setPageGateway(
   client: GatewayBrowserClient | null,
   connected = true,
   sourceChanged = false,
+  featureMethods?: string[],
 ) {
-  page.gateway.applySnapshot(snapshot(client, connected), { initial: false, sourceChanged });
+  page.gateway.applySnapshot(snapshot(client, connected, featureMethods), {
+    initial: false,
+    sourceChanged,
+  });
 }
 
 function deferred<T>() {
@@ -83,13 +87,14 @@ function deferred<T>() {
 function snapshot(
   client: GatewayBrowserClient | null,
   connected = true,
+  featureMethods?: string[],
 ): ApplicationGatewaySnapshot {
   return {
     client,
     phase: connected ? "connected" : "stopped",
     offlineStable: false,
     canvasPluginSurfaceUrl: null,
-    hello: null,
+    hello: featureMethods ? ({ features: { methods: featureMethods } } as GatewayHelloOk) : null,
     assistantAgentId: null,
     sessionKey: "main",
     lastError: null,
@@ -329,6 +334,31 @@ describe("AgentsPage gateway lifecycle", () => {
     await vi.waitFor(() => expect(page.chatModelCatalog).toEqual(models));
     expect(request).toHaveBeenCalledOnce();
     expect(request).toHaveBeenCalledWith("models.list", { view: "configured", agentId: "main" });
+  });
+
+  it("uses agent-scoped chat metadata when a legacy Gateway lacks models.list", async () => {
+    const request = vi.fn(async () => ({
+      models: [
+        { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true },
+        { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai", available: false },
+      ],
+    }));
+    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    page.routeData = { panel: "overview" } as AgentsRouteData;
+    setPageGateway(page, { request } as unknown as GatewayBrowserClient, true, false, [
+      "chat.metadata",
+    ]);
+    page.agentsSelectedId = "main";
+
+    page.loadActivePanelData();
+
+    await vi.waitFor(() =>
+      expect(page.chatModelCatalog).toEqual([
+        { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true },
+      ]),
+    );
+    expect(request).toHaveBeenCalledOnce();
+    expect(request).toHaveBeenCalledWith("chat.metadata", { agentId: "main" });
   });
 
   it("caches separate configured model catalogs for the default and worker agents", async () => {

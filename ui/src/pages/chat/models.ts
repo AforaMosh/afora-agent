@@ -73,6 +73,23 @@ export async function loadModels(
   return inFlight;
 }
 
+export async function loadModelPickerModels(
+  client: GatewayBrowserClient,
+  opts: {
+    agentId?: string;
+    modelsListAdvertised: boolean | null;
+    refresh?: boolean;
+    signal?: AbortSignal;
+    timeoutMs?: number;
+  },
+): Promise<ModelCatalogEntry[]> {
+  const models =
+    opts.modelsListAdvertised === false
+      ? await requestMetadataModels(client, opts)
+      : await loadModels(client, opts);
+  return models.filter((entry) => entry.available !== false);
+}
+
 export function applyModelCatalogResult(models: unknown): ModelCatalogEntry[] | null {
   if (!Array.isArray(models)) {
     return null;
@@ -98,5 +115,27 @@ async function requestModels(
   const result = requestOptions
     ? await client.request<{ models: ModelCatalogEntry[] }>("models.list", params, requestOptions)
     : await client.request<{ models: ModelCatalogEntry[] }>("models.list", params);
+  return result?.models ?? [];
+}
+
+async function requestMetadataModels(
+  client: GatewayBrowserClient,
+  opts: { agentId?: string; signal?: AbortSignal; timeoutMs?: number },
+): Promise<ModelCatalogEntry[]> {
+  const requestOptions =
+    opts.signal || opts.timeoutMs
+      ? {
+          ...(opts.signal ? { signal: opts.signal } : {}),
+          ...(opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {}),
+        }
+      : undefined;
+  const params = opts.agentId ? { agentId: opts.agentId } : {};
+  const result = requestOptions
+    ? await client.request<{ models?: ModelCatalogEntry[] }>(
+        "chat.metadata",
+        params,
+        requestOptions,
+      )
+    : await client.request<{ models?: ModelCatalogEntry[] }>("chat.metadata", params);
   return result?.models ?? [];
 }

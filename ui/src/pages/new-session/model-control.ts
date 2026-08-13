@@ -24,7 +24,7 @@ import {
   renderChatModelControls,
   type ChatModelCatalogState,
 } from "../chat/components/chat-model-controls.ts";
-import { loadModels } from "../chat/models.ts";
+import { loadModelPickerModels } from "../chat/models.ts";
 import type { NewSessionPreference } from "./preferences.ts";
 
 const NEW_SESSION_METADATA_RETRY_WINDOW_MS = 60_000;
@@ -91,6 +91,7 @@ async function requestNewSessionMetadata(
   client: NewSessionMetadataClient,
   agentId: string,
   signal: AbortSignal,
+  modelsListAdvertised: boolean | null,
 ): Promise<{ models?: ModelCatalogEntry[] }> {
   const deadlineAt = Date.now() + NEW_SESSION_METADATA_RETRY_WINDOW_MS;
   let latestStartupError: Error | undefined;
@@ -109,8 +110,9 @@ async function requestNewSessionMetadata(
     }
 
     try {
-      const models = await loadModels(client, {
+      const models = await loadModelPickerModels(client, {
         agentId,
+        modelsListAdvertised,
         refresh: true,
         signal,
         timeoutMs: Math.min(DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS, remainingMs),
@@ -319,7 +321,11 @@ export class NewSessionModelControl {
     this.notify();
   }
 
-  private startMetadataRequest(client: NewSessionMetadataClient, agentId: string) {
+  private startMetadataRequest(
+    client: NewSessionMetadataClient,
+    agentId: string,
+    modelsListAdvertised: boolean | null,
+  ) {
     this.cancelMetadataRequest();
     const controller = new AbortController();
     const requestId = ++this.metadataRequestId;
@@ -334,7 +340,7 @@ export class NewSessionModelControl {
       status: this.metadataState.hasSnapshot ? "refreshing" : "loading",
     });
 
-    void requestNewSessionMetadata(client, agentId, controller.signal).then(
+    void requestNewSessionMetadata(client, agentId, controller.signal, modelsListAdvertised).then(
       (result) => {
         // Aborted transports may still resolve. Only the request that still
         // owns the control may publish catalog data or restore preferences.
@@ -473,7 +479,11 @@ export class NewSessionModelControl {
       this.notify();
       return;
     }
-    this.startMetadataRequest(client, normalizedAgentId);
+    this.startMetadataRequest(
+      client,
+      normalizedAgentId,
+      isGatewayMethodAdvertised(snapshot, "models.list"),
+    );
   }
 
   isRestoringPreference(): boolean {
