@@ -969,6 +969,7 @@ describe("GPT-Live gateway relay bridge", () => {
       createPeer: vi.fn(async () => ({
         createOffer: vi.fn(async () => "v=offer\r\n"),
         applyAnswer: vi.fn(async () => undefined),
+        adoptPendingAudio: vi.fn(),
         sendAudio: vi.fn(),
         close: closePeer,
       })),
