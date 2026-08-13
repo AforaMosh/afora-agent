@@ -68,7 +68,7 @@ function setPageGateway(
   client: GatewayBrowserClient | null,
   connected = true,
   sourceChanged = false,
-  featureMethods?: string[],
+  featureMethods: string[] = ["models.list"],
 ) {
   page.gateway.applySnapshot(snapshot(client, connected, featureMethods), {
     initial: false,

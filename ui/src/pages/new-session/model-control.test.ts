@@ -566,10 +566,11 @@ describe("new-session model runtime", () => {
 
     expect(modelOption(renderControl(control, context), "")).not.toBeNull();
     reconnect.resolve({ models: newModels });
-    await vi.waitFor(() => expect(modelOptions(renderControl(control, context))).toHaveLength(3));
+    await vi.waitFor(() => expect(modelOptions(renderControl(control, context))).toHaveLength(2));
     const container = renderControl(control, context);
     expect(modelSelect(container)?.textContent).not.toContain("GPT-5.6 Luna");
     expect(modelOption(container, "openai/gpt-5.6-sol")).not.toBeNull();
+    expect(modelOption(container, "openai/gpt-5.6-terra")).not.toBeNull();
   });
 
   it("clears the old catalog on agent switch and ignores the late old-agent result", async () => {
