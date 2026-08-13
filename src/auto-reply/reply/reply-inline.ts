@@ -1,5 +1,9 @@
 // Resolves inline reply directives that alter a single reply turn.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+} from "@openclaw/normalization-core/string-coerce";
+import { listReservedChatSlashCommandNames } from "../../skills/discovery/chat-commands.js";
 
 const INLINE_HORIZONTAL_WHITESPACE_RE = /[^\S\n]+/g;
 
@@ -16,6 +20,40 @@ const INLINE_SIMPLE_COMMAND_ALIASES = new Map<string, string>([
 const INLINE_SIMPLE_COMMAND_RE = /(?:^|\s)\/(help|commands|whoami|id)(?=$|\s|:)/i;
 
 const INLINE_STATUS_RE = /(?:^|\s)\/status(?=$|\s|:)(?:\s*:\s*)?/gi;
+const RESERVED_INLINE_SKILL_NAMES = listReservedChatSlashCommandNames([
+  "btw",
+  "think",
+  "verbose",
+  "reasoning",
+  "elevated",
+  "exec",
+  "model",
+  "status",
+  "queue",
+]);
+
+export function isPotentialInlineSkillName(name: string): boolean {
+  const normalized = normalizeOptionalLowercaseString(name);
+  return Boolean(
+    normalized && (normalized === "skill" || !RESERVED_INLINE_SKILL_NAMES.has(normalized)),
+  );
+}
+
+export function listColonMarkedInlineSkillNames(body: string): string[] {
+  const names: string[] = [];
+  for (const match of body.matchAll(/(?:^|\s)\/([^\s/:]+)\s*:/giu)) {
+    const name = normalizeOptionalLowercaseString(match[1]);
+    if (name) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+export function getStandaloneSlashCommandName(body: string): string | null {
+  const match = body.trim().match(/^\/([^\s/:]+)(?:\s|$)/u);
+  return normalizeOptionalLowercaseString(match?.[1]) ?? null;
+}
 
 export function extractInlineSimpleCommand(body?: string): {
   command: string;
