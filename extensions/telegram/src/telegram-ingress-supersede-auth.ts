@@ -26,6 +26,11 @@ type RawTelegramChat = {
   is_forum?: unknown;
 };
 
+type RawTelegramSender = {
+  id?: unknown;
+  username?: unknown;
+};
+
 function extractTelegramChatType(value: unknown): TelegramMessageThreadFacts["chat"]["type"] {
   switch (value) {
     case "channel":
@@ -71,10 +76,16 @@ function extractUpdateSenderFacts(update: unknown): UpdateSenderFacts | null {
   }
   const root = update as Record<string, unknown>;
   let message: Record<string, unknown> | undefined;
+  let from: RawTelegramSender | undefined;
   for (const key of ["message", "edited_message", "channel_post", "edited_channel_post"] as const) {
     const candidate = root[key];
     if (candidate && typeof candidate === "object") {
       message = candidate as Record<string, unknown>;
+      const candidateFrom = message.from;
+      from =
+        candidateFrom && typeof candidateFrom === "object"
+          ? (candidateFrom as RawTelegramSender)
+          : undefined;
       break;
     }
   }
@@ -82,29 +93,21 @@ function extractUpdateSenderFacts(update: unknown): UpdateSenderFacts | null {
     const callback = root.callback_query;
     if (callback && typeof callback === "object") {
       const cb = callback as Record<string, unknown>;
-      const from = cb.from;
       const msg = cb.message;
-      if (from && typeof from === "object" && msg && typeof msg === "object") {
-        const messageRecord = msg as Record<string, unknown>;
-        const chat = messageRecord.chat as RawTelegramChat | undefined;
-        const fromObj = from as { id?: unknown; username?: unknown };
-        if (typeof chat?.id === "number" && typeof fromObj.id === "number") {
-          const chatType = typeof chat.type === "string" ? chat.type : "private";
-          return {
-            senderId: String(fromObj.id),
-            ...(typeof fromObj.username === "string" ? { senderUsername: fromObj.username } : {}),
-            chatId: chat.id,
-            isGroup: chatType !== "private",
-            message: extractMessageThreadFacts(messageRecord, chat),
-          };
-        }
+      const callbackFrom = cb.from;
+      if (msg && typeof msg === "object") {
+        message = msg as Record<string, unknown>;
+      }
+      if (callbackFrom && typeof callbackFrom === "object") {
+        from = callbackFrom as RawTelegramSender;
       }
     }
+  }
+  if (!message || !from) {
     return null;
   }
   const chat = message.chat as RawTelegramChat | undefined;
-  const from = message.from as { id?: unknown; username?: unknown } | undefined;
-  if (typeof chat?.id !== "number" || typeof from?.id !== "number") {
+  if (typeof chat?.id !== "number" || typeof from.id !== "number") {
     return null;
   }
   const chatType = typeof chat.type === "string" ? chat.type : "private";

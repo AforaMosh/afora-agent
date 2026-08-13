@@ -436,6 +436,21 @@ describe("telegram ingress supersede policy", () => {
     ).toBe(false);
   });
 
+  it("uses callback senders with the same authorization path", async () => {
+    expect(
+      await isTelegramSpooledUpdateSenderAuthorized(
+        {
+          update_id: 1,
+          callback_query: {
+            from: { id: Number(OWNER_ID) },
+            message: { chat: { id: Number(OWNER_ID), type: "private" } },
+          },
+        },
+        auth,
+      ),
+    ).toBe(true);
+  });
+
   it("authorizes paired DM senders via the pairing store under dmPolicy pairing", async () => {
     const pairedId = "424242";
     openClawState = await createOpenClawTestState({
