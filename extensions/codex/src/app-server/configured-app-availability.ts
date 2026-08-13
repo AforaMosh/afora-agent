@@ -5,28 +5,31 @@
 import { embeddedAgentLog } from "openclaw/plugin-sdk/agent-harness-runtime";
 import { serializeCodexAppInventoryError } from "./app-inventory-cache.js";
 import type { CodexAppServerClient } from "./client.js";
-import { isJsonObject } from "./protocol.js";
 
 type ConfiguredAppAvailabilityCheckParams = {
   client: Pick<CodexAppServerClient, "request">;
   appCacheKey: string;
-  configCwd?: string;
+  requiredAppIds: readonly string[];
   timeoutMs: number;
   signal?: AbortSignal;
 };
 
 /** Coalesces live configured-app checks and logs each runtime result once. */
-export class CodexConfiguredAppAvailabilityMonitor {
+class CodexConfiguredAppAvailabilityMonitor {
   private readonly checks = new Map<string, Promise<void>>();
 
   check(params: ConfiguredAppAvailabilityCheckParams): Promise<void> {
-    const checkKey = `${params.appCacheKey}\0${params.configCwd ?? ""}`;
+    const requiredAppIds = [...new Set(params.requiredAppIds)].toSorted();
+    if (requiredAppIds.length === 0) {
+      return Promise.resolve();
+    }
+    const checkKey = `${params.appCacheKey}\0${requiredAppIds.join("\0")}`;
     const existing = this.checks.get(checkKey);
     if (existing) {
       return existing;
     }
 
-    const check = this.checkOnce(params).catch((error) => {
+    const check = this.checkOnce(params, requiredAppIds).catch((error) => {
       this.checks.delete(checkKey);
       embeddedAgentLog.warn("configured Codex app availability check failed", {
         error: serializeCodexAppInventoryError(error),
@@ -36,29 +39,19 @@ export class CodexConfiguredAppAvailabilityMonitor {
     return check;
   }
 
-  private async checkOnce(params: ConfiguredAppAvailabilityCheckParams): Promise<void> {
+  private async checkOnce(
+    params: ConfiguredAppAvailabilityCheckParams,
+    requiredAppIds: readonly string[],
+  ): Promise<void> {
     const options = { timeoutMs: params.timeoutMs, signal: params.signal };
-    const configResponse = await params.client.request(
-      "config/read",
-      {
-        includeLayers: false,
-        ...(params.configCwd ? { cwd: params.configCwd } : {}),
-      },
-      options,
-    );
-    const configuredAppIds = resolveExplicitlyEnabledAppIds(configResponse.config);
-    if (configuredAppIds.length === 0) {
-      return;
-    }
-
     const installed = await params.client.request("app/installed", { forceRefresh: true }, options);
     const installedAppIds = new Set(installed.apps.map((app) => app.id));
-    for (const appId of configuredAppIds) {
+    for (const appId of requiredAppIds) {
       if (installedAppIds.has(appId)) {
         continue;
       }
       embeddedAgentLog.warn(
-        "configured Codex app is unavailable; install or authorize it to expose its tools",
+        "required Codex app is unavailable; install or authorize it to expose its tools",
         {
           appId,
           state: "not_installed_or_authorized",
@@ -68,16 +61,11 @@ export class CodexConfiguredAppAvailabilityMonitor {
   }
 }
 
-export const defaultCodexConfiguredAppAvailabilityMonitor =
-  new CodexConfiguredAppAvailabilityMonitor();
+const defaultCodexConfiguredAppAvailabilityMonitor = new CodexConfiguredAppAvailabilityMonitor();
 
-function resolveExplicitlyEnabledAppIds(config: unknown): string[] {
-  if (!isJsonObject(config) || !isJsonObject(config.apps)) {
-    return [];
-  }
-  return Object.entries(config.apps)
-    .flatMap(([appId, value]) =>
-      appId !== "_default" && isJsonObject(value) && value.enabled === true ? [appId] : [],
-    )
-    .toSorted();
+/** Checks the apps required by the embedding runtime without changing turn policy. */
+export function checkConfiguredCodexAppAvailability(
+  params: ConfiguredAppAvailabilityCheckParams,
+): Promise<void> {
+  return defaultCodexConfiguredAppAvailabilityMonitor.check(params);
 }

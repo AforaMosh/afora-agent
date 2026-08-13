@@ -226,6 +226,7 @@ export type CodexModelBackedReviewerContext = {
 export type CodexPluginConfig = {
   codexDynamicToolsLoading?: CodexDynamicToolsLoading;
   codexDynamicToolsExclude?: string[];
+  requiredAppIds?: string[];
   sessionCatalog?: z.infer<typeof codexSessionCatalogConfigSchema>;
   discovery?: z.infer<typeof codexDiscoveryConfigSchema>;
   computerUse?: CodexComputerUseConfig;
