@@ -12,13 +12,14 @@ import {
 } from "./grouping.ts";
 
 describe("groupSidebarSessionRows", () => {
-  it("orders pinned, categories, threads, groups, then coding while preserving row order", () => {
+  it("orders pinned, categories, threads, groups, channels, then coding", () => {
     const rows = [
       row({ key: "z-1", category: "Zulu" }),
       row({ key: "p-1", pinned: true, category: "Alpha" }),
       row({ key: "a-1", category: "Alpha" }),
       row({ key: "u-1" }),
       row({ key: "g-1", kind: "group" }),
+      row({ key: "ch-1", channelSession: true }),
       row({ key: "wt-1", workSession: true }),
       row({ key: "a-2", category: "Alpha" }),
     ];
@@ -31,35 +32,42 @@ describe("groupSidebarSessionRows", () => {
       "category:Zulu",
       "ungrouped",
       "groups",
+      "channels",
       "work",
     ]);
     expect(sections[1]?.rows.map((item) => item.key)).toEqual(["a-1", "a-2"]);
     expect(sections[3]?.rows.map((item) => item.key)).toEqual(["u-1"]);
     expect(sections[4]?.groups).toBe(true);
     expect(sections[4]?.rows.map((item) => item.key)).toEqual(["g-1"]);
-    expect(sections[5]?.work).toBe(true);
-    expect(sections[5]?.rows.map((item) => item.key)).toEqual(["wt-1"]);
+    expect(sections[5]?.channels).toBe(true);
+    expect(sections[5]?.rows.map((item) => item.key)).toEqual(["ch-1"]);
+    expect(sections[6]?.work).toBe(true);
+    expect(sections[6]?.rows.map((item) => item.key)).toEqual(["wt-1"]);
   });
 
-  it("folds DM channel sessions into threads and group kinds into the groups zone", () => {
+  it("separates every message-channel shape after explicit custom groups", () => {
     const sections = groupSidebarSessionRows([
       { ...row({ key: "tg-dm" }), channel: "telegram", channelSession: true },
       { ...row({ key: "dash-1" }) },
       { ...row({ key: "wa-group", kind: "group" }), channel: "whatsapp", channelSession: true },
-      // Explicit user category beats smart group/coding classification.
-      { ...row({ key: "grouped-tg", kind: "group" }), category: "Project X" },
+      // Explicit user category beats smart channel/group classification.
+      {
+        ...row({ key: "grouped-tg", kind: "group" }),
+        category: "Project X",
+        channelSession: true,
+      },
       { ...row({ key: "acp-1" }), acpSession: true },
     ]);
 
     expect(sections.map((section) => section.id)).toEqual([
       "category:Project X",
       "ungrouped",
-      "groups",
+      "channels",
       "work",
     ]);
     expect(sections[0]?.rows.map((item) => item.key)).toEqual(["grouped-tg"]);
-    expect(sections[1]?.rows.map((item) => item.key)).toEqual(["tg-dm", "dash-1"]);
-    expect(sections[2]?.rows.map((item) => item.key)).toEqual(["wa-group"]);
+    expect(sections[1]?.rows.map((item) => item.key)).toEqual(["dash-1"]);
+    expect(sections[2]?.rows.map((item) => item.key)).toEqual(["tg-dm", "wa-group"]);
     expect(sections[3]?.rows.map((item) => item.key)).toEqual(["acp-1"]);
   });
 
@@ -77,9 +85,10 @@ describe("groupSidebarSessionRows", () => {
       "pinned",
       "ungrouped",
       "groups",
+      "channels",
       "work",
     ]);
-    expect(sections[1]?.rows.map((item) => item.key)).toEqual(["tg"]);
+    expect(sections[3]?.rows.map((item) => item.key)).toEqual(["tg"]);
   });
 
   it("always emits threads and coding so the renderer can host fallbacks and catalogs", () => {
@@ -214,6 +223,7 @@ describe("normalizeSessionSectionOrder", () => {
       "category:Beta",
       "ungrouped",
       "groups",
+      "channels",
       "work",
     ]);
   });
@@ -224,7 +234,7 @@ describe("normalizeSessionSectionOrder", () => {
         ["ungrouped", "category:Alpha", "groups", "category:Beta", "work"],
         ["Alpha", "Beta"],
       ),
-    ).toEqual(["ungrouped", "category:Alpha", "groups", "category:Beta", "work"]);
+    ).toEqual(["ungrouped", "category:Alpha", "groups", "channels", "category:Beta", "work"]);
   });
 
   it("inserts a new category before the first built-in section", () => {
@@ -233,7 +243,7 @@ describe("normalizeSessionSectionOrder", () => {
         ["category:Alpha", "ungrouped", "groups", "work"],
         ["Alpha", "Beta"],
       ),
-    ).toEqual(["category:Alpha", "category:Beta", "ungrouped", "groups", "work"]);
+    ).toEqual(["category:Alpha", "category:Beta", "ungrouped", "groups", "channels", "work"]);
   });
 
   it("drops stale category tokens", () => {
@@ -242,7 +252,7 @@ describe("normalizeSessionSectionOrder", () => {
         ["category:Stale", "category:Alpha", "ungrouped", "groups", "work"],
         ["Alpha"],
       ),
-    ).toEqual(["category:Alpha", "ungrouped", "groups", "work"]);
+    ).toEqual(["category:Alpha", "ungrouped", "groups", "channels", "work"]);
   });
 
   it("appends unseen catalogs after coding and drops disappeared catalogs", () => {
@@ -252,7 +262,7 @@ describe("normalizeSessionSectionOrder", () => {
         [],
         ["claude", "codex"],
       ),
-    ).toEqual(["catalog:codex", "ungrouped", "groups", "work", "catalog:claude"]);
+    ).toEqual(["catalog:codex", "ungrouped", "groups", "channels", "work", "catalog:claude"]);
   });
 
   it("drops invalid and duplicate tokens", () => {
@@ -261,7 +271,7 @@ describe("normalizeSessionSectionOrder", () => {
         ["category:Stale", "bogus", "category:", "ungrouped", "ungrouped", "category:Alpha"],
         ["Alpha"],
       ),
-    ).toEqual(["ungrouped", "groups", "work", "category:Alpha"]);
+    ).toEqual(["ungrouped", "groups", "channels", "work", "category:Alpha"]);
   });
 
   it("reinserts a missing built-in after its default predecessor", () => {
@@ -270,7 +280,7 @@ describe("normalizeSessionSectionOrder", () => {
         ["category:Alpha", "ungrouped", "category:Beta", "work"],
         ["Alpha", "Beta"],
       ),
-    ).toEqual(["category:Alpha", "ungrouped", "groups", "category:Beta", "work"]);
+    ).toEqual(["category:Alpha", "ungrouped", "groups", "channels", "category:Beta", "work"]);
   });
 });
 

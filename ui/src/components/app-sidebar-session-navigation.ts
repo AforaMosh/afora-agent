@@ -22,6 +22,7 @@ import {
   resolveUiDefaultAgentId,
 } from "../lib/sessions/session-key.ts";
 import { AppSidebarBase } from "./app-sidebar-base.ts";
+import { SidebarChannelSectionController } from "./app-sidebar-channel-section-controller.ts";
 import { adoptedCatalogSessionKeys } from "./app-sidebar-session-catalogs.ts";
 import {
   applySidebarSessionCreatorFilter,
@@ -125,6 +126,7 @@ export class AppSidebarSessionNavigationElement extends AppSidebarBase {
 
   private sessionSelectionAnchor: string | null = null;
   private collapsedActiveRouteKey: string | null = null;
+  protected readonly channelSection = new SidebarChannelSectionController(this);
   private readonly runtimeSampledAtByRow = new WeakMap<GatewaySessionRow, number>();
   private readonly attention = new SessionAttentionController(this);
 
@@ -139,9 +141,7 @@ export class AppSidebarSessionNavigationElement extends AppSidebarBase {
     return this.context;
   }
 
-  get collapsedSessionSections(): ReadonlySet<string> {
-    return this.sessionOrganizer.collapsedSessionSections;
-  }
+  toggleSidebarSection = (sectionId: string) => this.channelSection.toggle(sectionId);
 
   dismissTransientMenus(): boolean {
     return this.sidebarMenus.dismissTransientMenus();
@@ -198,6 +198,7 @@ export class AppSidebarSessionNavigationElement extends AppSidebarBase {
     const activeRouteKey = isSessionRouteId(this.activeRouteId) ? this.getRouteSessionKey() : "";
     if (activeRouteKey !== this.collapsedActiveRouteKey) {
       this.collapsedActiveRouteKey = activeRouteKey;
+      this.channelSection.resetDismissedAutoExpansion();
       if (this.collapsedActiveChildSessionKeys.size > 0) {
         this.collapsedActiveChildSessionKeys = new Set();
       }
@@ -341,7 +342,7 @@ export class AppSidebarSessionNavigationElement extends AppSidebarBase {
         this.sessionsStatusFilter === "archived"
           ? []
           : this.sessionData.sessionCatalogs.map((catalog) => catalog.id),
-      collapsedSections: this.collapsedSessionSections,
+      collapsedSections: this.channelSection.collapsedSections,
       hideEmptyCreatorFilteredGroup: (category, rowCount) =>
         this.hideEmptyCreatorFilteredGroup(category, rowCount),
       visibleSessionLimits: this.sessionData.visibleSessionLimits,

@@ -12,7 +12,15 @@ describe("AppSidebar session section visibility", () => {
   it("paginates each expanded section independently", async () => {
     const threadKeys = Array.from({ length: 12 }, (_, index) => `agent:main:thread-${index}`);
     const categoryKeys = Array.from({ length: 12 }, (_, index) => `agent:main:alpha-${index}`);
-    const sessions = createSessionsHarness("main", [...threadKeys, ...categoryKeys]);
+    const channelKeys = Array.from(
+      { length: 12 },
+      (_, index) => `agent:main:telegram:direct:${index}`,
+    );
+    const sessions = createSessionsHarness("main", [
+      ...threadKeys,
+      ...categoryKeys,
+      ...channelKeys,
+    ]);
     const result = sessions.sessions.state.result;
     if (!result) {
       throw new Error("expected session list fixture");
@@ -27,20 +35,81 @@ describe("AppSidebar session section visibility", () => {
     const { sidebar } = await mountSidebar(gateway, sessions.sessions);
     const category = sidebar.querySelector('[data-session-section="category:Alpha"]');
     const threads = sidebar.querySelector('[data-session-section="ungrouped"]');
+    const channels = sidebar.querySelector('[data-session-section="channels"]');
 
     expect(category?.querySelectorAll(".sidebar-recent-session")).toHaveLength(10);
     expect(threads?.querySelectorAll(".sidebar-recent-session")).toHaveLength(10);
+    expect(channels?.querySelectorAll(".sidebar-recent-session")).toHaveLength(10);
     expect(category?.querySelector('[aria-label="Show more"]')).not.toBeNull();
     expect(threads?.querySelector('[aria-label="Show more"]')).not.toBeNull();
-    expect(sidebar.querySelectorAll(".sidebar-session-pagination")).toHaveLength(2);
+    expect(channels?.querySelector('[aria-label="Show more"]')).not.toBeNull();
+    expect(sidebar.querySelectorAll(".sidebar-session-pagination")).toHaveLength(3);
 
-    threads?.querySelector<HTMLButtonElement>('[aria-label="Show more"]')?.click();
+    channels?.querySelector<HTMLButtonElement>('[aria-label="Show more"]')?.click();
     await sidebar.updateComplete;
 
     expect(category?.querySelectorAll(".sidebar-recent-session")).toHaveLength(10);
-    expect(threads?.querySelectorAll(".sidebar-recent-session")).toHaveLength(12);
+    expect(threads?.querySelectorAll(".sidebar-recent-session")).toHaveLength(10);
+    expect(channels?.querySelectorAll(".sidebar-recent-session")).toHaveLength(12);
     expect(category?.querySelector('[aria-label="Show more"]')).not.toBeNull();
-    expect(threads?.querySelector('[aria-label="Show more"]')).toBeNull();
+    expect(threads?.querySelector('[aria-label="Show more"]')).not.toBeNull();
+    expect(channels?.querySelector('[aria-label="Show more"]')).toBeNull();
+  });
+
+  it("starts Channels collapsed, surfaces unread, and reveals an active channel session", async () => {
+    localStorage.removeItem("openclaw:sidebar:sessions:collapsed-sections");
+    const firstChannelKey = "agent:main:telegram:direct:alice";
+    const secondChannelKey = "agent:main:discord:channel:operations";
+    const harness = createSessionsHarness("main", [
+      "agent:main:main",
+      "agent:main:dashboard:local",
+      firstChannelKey,
+      secondChannelKey,
+    ]);
+    const firstChannel = harness.sessions.state.result?.sessions.find(
+      (row) => row.key === firstChannelKey,
+    );
+    if (!firstChannel) {
+      throw new Error("expected channel session fixture");
+    }
+    firstChannel.unread = true;
+
+    const { sidebar } = await mountSidebar(
+      createGateway({} as GatewayBrowserClient),
+      harness.sessions,
+    );
+    sidebar.activeRouteId = "chat";
+    await sidebar.updateComplete;
+
+    let channels = sidebar.querySelector('[data-session-section="channels"]');
+    expect(channels?.querySelector('[aria-label="Channels"]')?.getAttribute("aria-expanded")).toBe(
+      "false",
+    );
+    expect(channels?.querySelector(".sidebar-session-group-unread")).not.toBeNull();
+    expect(channels?.querySelector(".sidebar-recent-session")).toBeNull();
+
+    sidebar.sessionKey = firstChannelKey;
+    await sidebar.updateComplete;
+    channels = sidebar.querySelector('[data-session-section="channels"]');
+    expect(channels?.querySelector('[aria-label="Channels"]')?.getAttribute("aria-expanded")).toBe(
+      "true",
+    );
+    expect(channels?.querySelector(`[data-session-key="${firstChannelKey}"]`)).not.toBeNull();
+
+    channels?.querySelector<HTMLButtonElement>('[aria-label="Channels"]')?.click();
+    await sidebar.updateComplete;
+    channels = sidebar.querySelector('[data-session-section="channels"]');
+    expect(channels?.querySelector('[aria-label="Channels"]')?.getAttribute("aria-expanded")).toBe(
+      "false",
+    );
+
+    sidebar.sessionKey = secondChannelKey;
+    await sidebar.updateComplete;
+    channels = sidebar.querySelector('[data-session-section="channels"]');
+    expect(channels?.querySelector('[aria-label="Channels"]')?.getAttribute("aria-expanded")).toBe(
+      "true",
+    );
+    expect(channels?.querySelector(`[data-session-key="${secondChannelKey}"]`)).not.toBeNull();
   });
 
   it("keeps global thread actions when every unpinned thread has a custom group", async () => {

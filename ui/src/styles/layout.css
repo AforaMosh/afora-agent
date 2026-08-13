@@ -1615,6 +1615,10 @@ body.update-dialog-open .sidebar-update-card__status {
   box-shadow: 0 0 6px color-mix(in srgb, var(--warn) 48%, transparent);
 }
 
+.sidebar-session-group-unread {
+  margin-left: 4px;
+}
+
 .sidebar-session-catalog-load-more {
   display: block;
   width: calc(100% - var(--sidebar-lead) - 10px);

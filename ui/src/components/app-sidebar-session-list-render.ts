@@ -61,14 +61,24 @@ function renderSessionSection(params: {
   // zonedVisibleSections removes pinned rows; AppSidebar renders them through
   // renderPinnedSidebarSession, so every section here has a header.
   const collapsed = host.collapsedSessionSections.has(section.id);
-  const label = section.groups
-    ? t("chat.sidebar.groups")
-    : section.work
-      ? t("chat.sidebar.coding")
-      : group
-        ? group
-        : t("chat.sidebar.threads");
-  const zone = section.groups ? "groups" : section.work ? "coding" : group ? "category" : "threads";
+  const label = section.channels
+    ? t("chat.sidebar.channels")
+    : section.groups
+      ? t("chat.sidebar.groups")
+      : section.work
+        ? t("chat.sidebar.coding")
+        : group
+          ? group
+          : t("chat.sidebar.threads");
+  const zone = section.channels
+    ? "channels"
+    : section.groups
+      ? "groups"
+      : section.work
+        ? "coding"
+        : group
+          ? "category"
+          : "threads";
   // Collapsed Coding still signals live runs so background work stays visible.
   const collapsedRunningDot =
     collapsed &&
@@ -77,6 +87,8 @@ function renderSessionSection(params: {
   const collapsedAttentionDot =
     collapsed &&
     section.rows.some((row) => rowDemandsVisibility(row, RowVisibilityReason.Attention));
+  const collapsedUnreadDot =
+    collapsed && section.channels && section.rows.some((row) => row.unread);
   const newSessionAccess = host.readNewSessionAccess();
   const groupWriteAccess = host.readSessionMutationAccess({
     method: "sessions.groups.put",
@@ -154,6 +166,14 @@ function renderSessionSection(params: {
                   role="img"
                   aria-label=${t("sessionsView.attentionRequired")}
                   title=${t("sessionsView.attentionRequired")}
+                ></span>`
+              : nothing}
+            ${collapsedUnreadDot
+              ? html`<span
+                  class="session-unread-dot sidebar-session-group-unread"
+                  role="img"
+                  aria-label=${t("sessionsView.unread")}
+                  title=${t("sessionsView.unread")}
                 ></span>`
               : nothing}
           </button>

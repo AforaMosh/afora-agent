@@ -4963,6 +4963,7 @@ export const en: TranslationMap = {
       serverUpdatedRefresh: "Refresh for full capabilities",
       threads: "Sessions",
       groups: "Groups",
+      channels: "Channels",
       coding: "Coding",
       noSessionsForAgent: "No sessions found for this agent",
       catalogViewOptions: "View options",

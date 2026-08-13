@@ -16,6 +16,7 @@ import {
   writeSidebarRouteDragData,
 } from "../lib/sessions/drag.ts";
 import {
+  categoryClearReturnsToChannels,
   categoryClearReturnsToGroups,
   type SidebarSessionsGrouping,
 } from "../lib/sessions/grouping.ts";
@@ -597,8 +598,11 @@ export class SessionOrganizerController implements ReactiveController {
       return true;
     }
     return (
-      sectionId === "groups" &&
-      Boolean(session && categoryClearReturnsToGroups(session, this.host.sessionsGrouping))
+      session !== undefined &&
+      ((sectionId === "groups" &&
+        categoryClearReturnsToGroups(session, this.host.sessionsGrouping)) ||
+        (sectionId === "channels" &&
+          categoryClearReturnsToChannels(session, this.host.sessionsGrouping)))
     );
   }
 

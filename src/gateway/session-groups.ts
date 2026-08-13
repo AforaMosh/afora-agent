@@ -81,7 +81,12 @@ function normalizeSidebarSectionOrder(
   for (const raw of sectionOrder) {
     const sectionId = raw.trim();
     let canonical: string | null = null;
-    if (sectionId === "ungrouped" || sectionId === "groups" || sectionId === "work") {
+    if (
+      sectionId === "ungrouped" ||
+      sectionId === "groups" ||
+      sectionId === "channels" ||
+      sectionId === "work"
+    ) {
       canonical = sectionId;
     } else if (sectionId.startsWith("category:")) {
       const name = normalizeOptionalString(sectionId.slice("category:".length));

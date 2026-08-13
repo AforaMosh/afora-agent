@@ -25,16 +25,25 @@ export type SessionRowGroup = {
 };
 
 export type SidebarSessionSection<Row> = {
-  id: "pinned" | "ungrouped" | "groups" | "work" | `category:${string}` | `catalog:${string}`;
+  id:
+    | "pinned"
+    | "ungrouped"
+    | "groups"
+    | "channels"
+    | "work"
+    | `category:${string}`
+    | `catalog:${string}`;
   category?: string;
   /** Built-in smart group-conversation section (kind "group" rows). */
   groups?: boolean;
+  /** Built-in smart section for conversations owned by message channels. */
+  channels?: boolean;
   /** Built-in smart coding section (worktree/exec-node/ACP sessions). */
   work?: boolean;
   rows: Row[];
 };
 
-const DEFAULT_SESSION_SECTION_ORDER = ["ungrouped", "groups", "work"] as const;
+const DEFAULT_SESSION_SECTION_ORDER = ["ungrouped", "groups", "channels", "work"] as const;
 
 export function normalizeSessionSectionOrder(
   stored: readonly string[],
@@ -199,6 +208,8 @@ type SidebarGroupableRow = {
   workSession?: boolean;
   /** ACP-backed harness session (Coding zone). */
   acpSession?: boolean;
+  /** Session created for a concrete external message-channel conversation. */
+  channelSession?: boolean;
 };
 
 /** Clearing the manual category reveals the built-in Groups destination. */
@@ -210,17 +221,32 @@ export function categoryClearReturnsToGroups(
     grouping === "category" &&
     row.pinned !== true &&
     Boolean(row.category?.trim()) &&
-    row.kind === "group"
+    row.kind === "group" &&
+    row.channelSession !== true
+  );
+}
+
+/** Clearing the manual category reveals the built-in Channels destination. */
+export function categoryClearReturnsToChannels(
+  row: SidebarGroupableRow,
+  grouping: SidebarSessionsGrouping,
+): boolean {
+  return (
+    grouping === "category" &&
+    row.pinned !== true &&
+    Boolean(row.category?.trim()) &&
+    row.channelSession === true
   );
 }
 
 /**
  * Zone partition: pinned, named categories (persisted `knownGroups` order,
  * new ones alphabetical), threads ("ungrouped" — the agent's chat sessions),
- * group conversations, then coding (worktree/exec-node/ACP). An explicit user
- * category wins over the smart group/coding classification so manual curation
- * sticks. `grouping: "none"` only disables categories; the kind-based Groups
- * and Coding zones always split so chat threads stay readable. The coding
+ * group conversations, message-channel conversations, then coding
+ * (worktree/exec-node/ACP). An explicit user category wins over every smart
+ * classification so manual curation sticks. `grouping: "none"` only disables
+ * categories; the Groups, Channels, and Coding zones always split so chat
+ * threads stay readable. The coding
  * section is always emitted (even empty) so its ordered position remains a
  * stable sibling of any catalog sections. Groups also stays visible while a
  * categorized group row can deterministically return there.
@@ -238,6 +264,7 @@ export function groupSidebarSessionRows<Row extends SidebarGroupableRow>(
   const pinned: Row[] = [];
   const threads: Row[] = [];
   const groups: Row[] = [];
+  const channels: Row[] = [];
   const coding: Row[] = [];
   const categories = new Map<string, Row[]>();
   if (grouping === "category") {
@@ -261,6 +288,10 @@ export function groupSidebarSessionRows<Row extends SidebarGroupableRow>(
       } else {
         categories.set(category, [row]);
       }
+      continue;
+    }
+    if (row.channelSession === true) {
+      channels.push(row);
       continue;
     }
     if (row.kind === "group") {
@@ -296,6 +327,10 @@ export function groupSidebarSessionRows<Row extends SidebarGroupableRow>(
   const hasGroupsReturnTarget = rows.some((row) => categoryClearReturnsToGroups(row, grouping));
   if (groups.length > 0 || hasGroupsReturnTarget) {
     orderedSections.push({ id: "groups", groups: true, rows: groups });
+  }
+  const hasChannelsReturnTarget = rows.some((row) => categoryClearReturnsToChannels(row, grouping));
+  if (channels.length > 0 || hasChannelsReturnTarget) {
+    orderedSections.push({ id: "channels", channels: true, rows: channels });
   }
   orderedSections.push({ id: "work", work: true, rows: coding });
   const catalogIds = [

@@ -321,7 +321,11 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
   }
 
   toggleSection(sectionId: string): void {
-    this.sessionOrganizer.toggleSection(sectionId);
+    this.toggleSidebarSection(sectionId);
+  }
+
+  get collapsedSessionSections(): ReadonlySet<string> {
+    return this.channelSection.collapsedSections;
   }
 
   handleSessionListDragOver(event: DragEvent): void {

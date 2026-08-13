@@ -69,6 +69,7 @@ describe("session groups catalog", () => {
         "category: Alpha ",
         "groups",
         "groups",
+        "channels",
         "catalog:",
         "catalog:codex",
         "pinned",
@@ -83,6 +84,7 @@ describe("session groups catalog", () => {
       "category:Beta",
       "category:Alpha",
       "groups",
+      "channels",
     ]);
 
     putSessionGroups(["Beta", "Alpha"], undefined, env);
@@ -92,6 +94,7 @@ describe("session groups catalog", () => {
       "category:Beta",
       "category:Alpha",
       "groups",
+      "channels",
     ]);
   });
 

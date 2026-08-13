@@ -20,12 +20,13 @@ describe("session group catalog readers", () => {
           "",
           42,
           "work",
+          " channels ",
           "category: Alpha ",
           " catalog: codex ",
           "catalog:",
         ],
       }),
-    ).toEqual(["work", "category:Alpha", "catalog:codex"]);
+    ).toEqual(["work", "channels", "category:Alpha", "catalog:codex"]);
     expect(readSidebarSectionOrder({})).toEqual([]);
   });
 });

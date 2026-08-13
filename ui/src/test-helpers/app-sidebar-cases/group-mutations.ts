@@ -361,7 +361,7 @@ describe("AppSidebar group section ordering", () => {
     await waitForFast(() =>
       expect(harness.groupsPut).toHaveBeenCalledWith(
         ["Alpha", "Beta"],
-        ["category:Alpha", "ungrouped", "groups", "category:Beta", "work"],
+        ["category:Alpha", "ungrouped", "groups", "channels", "category:Beta", "work"],
       ),
     );
   });
@@ -374,7 +374,7 @@ describe("AppSidebar group section ordering", () => {
     await waitForFast(() =>
       expect(harness.groupsPut).toHaveBeenCalledWith(
         ["Beta", "Alpha"],
-        ["category:Beta", "ungrouped", "groups", "category:Alpha", "work"],
+        ["category:Beta", "ungrouped", "groups", "channels", "category:Alpha", "work"],
       ),
     );
   });
@@ -389,7 +389,7 @@ describe("AppSidebar group section ordering", () => {
     await waitForFast(() =>
       expect(harness.groupsPut).toHaveBeenCalledWith(
         ["Beta", "Alpha"],
-        ["category:Beta", "ungrouped", "groups", "category:Alpha", "work"],
+        ["category:Beta", "ungrouped", "groups", "channels", "category:Alpha", "work"],
       ),
     );
     await Promise.resolve();

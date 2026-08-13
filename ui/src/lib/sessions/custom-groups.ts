@@ -2,7 +2,7 @@
 // Catalog storage and member updates live on the gateway (sessions.groups.*);
 // the SessionCapability mirrors the catalog into state.groups.
 
-const BUILT_IN_SESSION_SECTION_IDS = new Set(["ungrouped", "groups", "work"]);
+const BUILT_IN_SESSION_SECTION_IDS = new Set(["ungrouped", "groups", "channels", "work"]);
 
 export function readSessionCustomGroupNames(payload: unknown): string[] {
   const groups = (payload as { groups?: Array<{ name?: unknown }> } | null)?.groups;
