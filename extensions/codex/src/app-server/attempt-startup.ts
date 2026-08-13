@@ -38,6 +38,7 @@ import {
   type CodexPluginConfig,
   type ResolvedCodexComputerUseConfig,
 } from "./config.js";
+import { defaultCodexConfiguredAppAvailabilityMonitor } from "./configured-app-availability.js";
 import {
   resolveCodexAppServerExecutionCwd,
   resolveCodexExternalSandboxPolicyForOpenClawSandbox,
@@ -349,6 +350,13 @@ export async function startCodexAttemptThread(params: {
               envApiKeyFingerprint: params.startupEnvApiKeyCacheKey,
               appServerVersion: activeStartupClient.getServerVersion(),
               runtimeIdentity: startupRuntimeIdentity,
+            });
+            void defaultCodexConfiguredAppAvailabilityMonitor.check({
+              client: activeStartupClient,
+              appCacheKey: pluginAppCacheKey,
+              configCwd: startupExecutionCwd,
+              timeoutMs: params.appServer.requestTimeoutMs,
+              signal: startupAbandonController.signal,
             });
             const appServerRuntimeFingerprint = buildCodexAppServerRuntimeFingerprint({
               appServer: params.appServer,
