@@ -482,6 +482,18 @@ async function buildCodexTurnContextForTest(
   };
 }
 
+function readProjectedConversationContext(request: { params?: unknown } | undefined): string {
+  return (
+    (
+      request?.params as
+        | {
+            additionalContext?: Record<string, { kind: string; value: string }>;
+          }
+        | undefined
+    )?.additionalContext?.openclaw_projected_conversation?.value ?? ""
+  );
+}
+
 function createCodexToolBridgeForTest(
   params: EmbeddedRunAttemptParams,
   tools: RuntimeDynamicToolForTest[],
@@ -2743,6 +2755,9 @@ describe("runCodexAppServerAttempt", () => {
       ),
     );
     sessionManager.appendMessage(userMessage("we are fixing the Opik default project", Date.now()));
+    sessionManager.appendMessage(
+      assistantMessage("The user did not invoke $example-manual.", Date.now() + 1),
+    );
     sessionManager.appendMessage(assistantMessage("Opik default project context", Date.now() + 1));
     for (let index = 0; index < 8; index += 1) {
       sessionManager.appendMessage(
@@ -2763,14 +2778,20 @@ describe("runCodexAppServerAttempt", () => {
     await harness.completeTurn({ threadId: "thread-1", turnId: "turn-1" });
     await run;
     const turnStart = harness.requests.find((request) => request.method === "turn/start");
-    const inputText =
-      (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
-      "";
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
-    expect(inputText).toContain("older next-step anchor: keep the handoff checklist");
-    expect(inputText).toContain("we are fixing the Opik default project");
-    expect(inputText).toContain("Opik default project context");
-    expect(inputText).toContain("Current user request:");
+    const turnStartParams = turnStart?.params as
+      | {
+          additionalContext?: Record<string, { kind: string; value: string }>;
+          input?: Array<{ text?: string }>;
+        }
+      | undefined;
+    const inputText = turnStartParams?.input?.[0]?.text ?? "";
+    const projectedContext = turnStartParams?.additionalContext?.openclaw_projected_conversation;
+    expect(projectedContext).toMatchObject({ kind: "untrusted" });
+    expect(projectedContext?.value).toContain("older next-step anchor: keep the handoff checklist");
+    expect(projectedContext?.value).toContain("we are fixing the Opik default project");
+    expect(projectedContext?.value).toContain("The user did not invoke $example-manual.");
+    expect(projectedContext?.value).toContain("Opik default project context");
+    expect(inputText).not.toContain("$example-manual");
     expect(inputText).toContain("make the default webpage openclaw");
   });
   it("projects canonical SQLite continuity when starting without a native thread binding", async () => {
@@ -2800,11 +2821,11 @@ describe("runCodexAppServerAttempt", () => {
     const inputText =
       (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
       "";
+    const projectedContext = readProjectedConversationContext(turnStart);
     expect(harness.requests.map((request) => request.method)).toContain("thread/start");
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
-    expect(inputText).toContain("canonical SQLite startup question");
-    expect(inputText).toContain("canonical SQLite startup answer");
-    expect(inputText).toContain("Current user request:");
+    expect(projectedContext).toContain("OpenClaw assembled context for this turn:");
+    expect(projectedContext).toContain("canonical SQLite startup question");
+    expect(projectedContext).toContain("canonical SQLite startup answer");
     expect(inputText).toContain("continue the canonical SQLite startup");
   });
   it("keeps large fresh-thread continuity under the Codex turn/start input limit", async () => {
@@ -2839,12 +2860,12 @@ describe("runCodexAppServerAttempt", () => {
     const inputText =
       (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
       "";
+    const projectedContext = readProjectedConversationContext(turnStart);
     expect(inputText.length).toBeLessThanOrEqual(1 << 20);
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
-    expect(inputText).toContain("recent continuity anchor: resume the database migration");
-    expect(inputText).toContain("Current user request:");
+    expect(projectedContext).toContain("OpenClaw assembled context for this turn:");
+    expect(projectedContext).toContain("recent continuity anchor: resume the database migration");
     expect(inputText).toContain("current prompt survives");
-    expect(inputText).not.toContain("older next-step anchor: keep the handoff checklist");
+    expect(projectedContext).not.toContain("older next-step anchor: keep the handoff checklist");
   });
 
   it("keeps thread-start developer instructions stable when adding fresh-thread continuity", async () => {
@@ -2897,8 +2918,9 @@ describe("runCodexAppServerAttempt", () => {
     const inputText =
       (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
       "";
+    const projectedContext = readProjectedConversationContext(turnStart);
     expect(inputText).toContain("queued context");
-    expect(inputText).toContain("prior visible context");
+    expect(projectedContext).toContain("prior visible context");
     expect(inputText).not.toContain("hook-side mutation");
   });
   it("does not replay mirrored history already covered by an existing Codex binding", async () => {
@@ -3070,12 +3092,12 @@ describe("runCodexAppServerAttempt", () => {
     const inputText =
       (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
       "";
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
-    expect(inputText).not.toContain("old native-owned context");
-    expect(inputText).toContain("we were discussing the Sonnet leak screenshots");
-    expect(inputText).toContain("David Ondrej was mentioned in that prior thread");
-    expect(inputText).toContain("copilot mirror context also matters");
-    expect(inputText).toContain("Current user request:");
+    const projectedContext = readProjectedConversationContext(turnStart);
+    expect(projectedContext).toContain("OpenClaw assembled context for this turn:");
+    expect(projectedContext).not.toContain("old native-owned context");
+    expect(projectedContext).toContain("we were discussing the Sonnet leak screenshots");
+    expect(projectedContext).toContain("David Ondrej was mentioned in that prior thread");
+    expect(projectedContext).toContain("copilot mirror context also matters");
     expect(inputText).toContain("is the previous message trustworthy?");
   });
   it("projects newer canonical SQLite continuity when a resumed binding is stale", async () => {
@@ -3115,12 +3137,12 @@ describe("runCodexAppServerAttempt", () => {
     const inputText =
       (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
       "";
+    const projectedContext = readProjectedConversationContext(turnStart);
     expect(harness.requests.map((request) => request.method)).toContain("thread/resume");
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
-    expect(inputText).not.toContain("old canonical SQLite native-owned context");
-    expect(inputText).toContain("new canonical SQLite resume question");
-    expect(inputText).toContain("new canonical SQLite resume answer");
-    expect(inputText).toContain("Current user request:");
+    expect(projectedContext).toContain("OpenClaw assembled context for this turn:");
+    expect(projectedContext).not.toContain("old canonical SQLite native-owned context");
+    expect(projectedContext).toContain("new canonical SQLite resume question");
+    expect(projectedContext).toContain("new canonical SQLite resume answer");
     expect(inputText).toContain("continue the canonical SQLite resume");
   });
   it("does not project Codex mirrored transcript echoes as stale binding continuity", async () => {
@@ -3237,8 +3259,9 @@ describe("runCodexAppServerAttempt", () => {
     const firstInputText =
       (firstTurnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]
         ?.text ?? "";
-    expect(firstInputText).toContain("OpenClaw assembled context for this turn:");
-    expect(firstInputText).toContain("we were discussing the Sonnet leak screenshots");
+    const firstProjectedContext = readProjectedConversationContext(firstTurnStart);
+    expect(firstProjectedContext).toContain("OpenClaw assembled context for this turn:");
+    expect(firstProjectedContext).toContain("we were discussing the Sonnet leak screenshots");
     expect(firstInputText).toContain("is the previous message trustworthy?");
     const secondHarness = createResumeHarness();
     const secondParams = createParams(sessionFile, workspaceDir);
@@ -3253,9 +3276,10 @@ describe("runCodexAppServerAttempt", () => {
     const secondInputText =
       (secondTurnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]
         ?.text ?? "";
+    const secondProjectedContext = readProjectedConversationContext(secondTurnStart);
     expect(secondInputText).not.toContain("OpenClaw assembled context for this turn:");
-    expect(secondInputText).not.toContain("we were discussing the Sonnet leak screenshots");
-    expect(secondInputText).not.toContain("is the previous message trustworthy?");
+    expect(secondProjectedContext).not.toContain("we were discussing the Sonnet leak screenshots");
+    expect(secondProjectedContext).not.toContain("is the previous message trustworthy?");
     expect(secondInputText).toContain("continue from there");
   });
 
@@ -5280,9 +5304,11 @@ describe("runCodexAppServerAttempt", () => {
     const inputText =
       (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
       "";
-    expect(inputText).toContain("pre-binding native-owned context: keep the original plan");
-    expect(inputText).toContain("post-binding user context: resume the release checklist");
-    expect(inputText).toContain("post-binding assistant context");
+    const projectedContext = readProjectedConversationContext(turnStart);
+    expect(projectedContext).toContain("pre-binding native-owned context: keep the original plan");
+    expect(projectedContext).toContain("post-binding user context: resume the release checklist");
+    expect(projectedContext).toContain("post-binding assistant context");
+    expect(inputText).toContain("large prompt");
     const savedBinding = await readCodexAppServerBinding(sessionFile);
     expect(savedBinding?.threadId).toBe("thread-1");
   });

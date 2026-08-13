@@ -13,9 +13,8 @@ import {
   resolveContextEngineBootstrapProjectionDecision,
 } from "./attempt-context.js";
 import {
-  fitCodexProjectedContextForTurnStart,
+  fitCodexTurnStartText,
   projectContextEngineAssemblyForCodex,
-  type CodexProjectedContextRange,
 } from "./context-engine-projection.js";
 import { flattenCodexDynamicToolFunctions } from "./protocol.js";
 import type { CodexAttemptContext } from "./run-attempt-context.js";
@@ -81,7 +80,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
       maxRenderedContextChars: codexContextProjectionMaxChars,
     });
     promptState.promptText = projection.promptText;
-    promptState.promptContextRange = projection.promptContextRange;
+    promptState.additionalContext = projection.additionalContext;
     promptState.prePromptMessageCount = projection.prePromptMessageCount;
   };
   const applyActiveContextEngineProjection = async (
@@ -154,14 +153,15 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
       reason: projectionDecision.reason,
       assembledMessages: assembled.messages.length,
       originalHistoryMessages: historyState.messages.length,
-      projectedPromptChars: projection.promptText.length,
+      projectedContextChars: projection.additionalContext?.length ?? 0,
+      currentPromptChars: projection.promptText.length,
       developerInstructionAdditionChars: projection.developerInstructionAddition?.length ?? 0,
     });
     // Projection metadata and rendered prompt must advance together or retries can skip context.
     promptState.contextEngineProjection = contextEngineProjection;
     promptState.promptText = projectionDecision.project ? projection.promptText : params.prompt;
-    promptState.promptContextRange = projectionDecision.project
-      ? projection.promptContextRange
+    promptState.additionalContext = projectionDecision.project
+      ? projection.additionalContext
       : undefined;
     promptState.developerInstructions = joinPresentSections(
       baseDeveloperInstructions,
@@ -200,7 +200,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     prompt: string,
     promptInputRange: { start: number; end: number } | undefined,
     turnPromptText: string,
-  ): CodexProjectedContextRange | undefined => {
+  ): { start: number; end: number } | undefined => {
     if (
       !promptInputRange ||
       promptInputRange.start < 0 ||
@@ -216,46 +216,6 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
       end: turnPromptOffset + promptInputRange.end,
     };
   };
-  const resolveShiftedPromptContextRange = (
-    prompt: string,
-    promptInputRange: { start: number; end: number } | undefined,
-    turnPromptText: string,
-  ) => {
-    const promptTextInputOffset = promptInputRange
-      ? promptInputRange.end - promptState.promptText.length
-      : undefined;
-    if (
-      !promptState.promptContextRange ||
-      !promptInputRange ||
-      promptTextInputOffset === undefined ||
-      promptInputRange.start < 0 ||
-      promptInputRange.end < promptInputRange.start ||
-      promptInputRange.end > prompt.length ||
-      promptTextInputOffset < promptInputRange.start ||
-      prompt.slice(promptTextInputOffset, promptInputRange.end) !== promptState.promptText ||
-      !turnPromptText.endsWith(prompt)
-    ) {
-      return undefined;
-    }
-    const promptTextOffset = prompt.endsWith(promptState.promptText)
-      ? prompt.length - promptState.promptText.length
-      : promptTextInputOffset;
-    if (promptTextOffset < 0) {
-      return undefined;
-    }
-    const turnPromptOffset = turnPromptText.length - prompt.length + promptTextOffset;
-    const contextRange = {
-      start: turnPromptOffset + promptState.promptContextRange.start,
-      end: turnPromptOffset + promptState.promptContextRange.end,
-    };
-    return {
-      contextRange,
-      requestRange: {
-        start: contextRange.end,
-        end: turnPromptOffset + promptState.promptText.length,
-      },
-    };
-  };
   const decorateCodexTurnPromptText = (promptBuildResult: {
     prompt: string;
     promptInputRange?: { start: number; end: number };
@@ -269,11 +229,6 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
           params.bootstrapContextRunKind === "cron",
       },
     );
-    const projectedRanges = resolveShiftedPromptContextRange(
-      promptBuildResult.prompt,
-      promptBuildResult.promptInputRange,
-      turnPromptText,
-    );
     const preservedRange =
       resolveShiftedPromptInputRange(
         promptBuildResult.prompt,
@@ -285,10 +240,8 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
         promptInputRange: promptBuildResult.promptInputRange,
         decoratedPrompt: turnPromptText,
       });
-    return fitCodexProjectedContextForTurnStart({
+    return fitCodexTurnStartText({
       promptText: turnPromptText,
-      contextRange: projectedRanges?.contextRange,
-      requestRange: projectedRanges?.requestRange,
       preservedRange,
     });
   };
@@ -296,6 +249,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
   const turnState = {
     promptBuild: firstPromptBuild,
     codexTurnPromptText: decorateCodexTurnPromptText(firstPromptBuild),
+    codexTurnAdditionalContext: promptState.additionalContext,
   };
   const buildRenderedCodexDeveloperInstructions = () =>
     joinPresentSections(
@@ -309,6 +263,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
   const rebuildCodexPromptBuildFromCurrentProjection = async () => {
     turnState.promptBuild = await buildPromptFromCurrentInputs();
     turnState.codexTurnPromptText = decorateCodexTurnPromptText(turnState.promptBuild);
+    turnState.codexTurnAdditionalContext = promptState.additionalContext;
   };
   const rebuildCodexTurnPromptTextFromCurrentProjection = async () => {
     const nextPromptBuild = await buildPromptFromCurrentInputs();
@@ -318,6 +273,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
       promptInputRange: nextPromptBuild.promptInputRange,
     };
     turnState.codexTurnPromptText = decorateCodexTurnPromptText(nextPromptBuild);
+    turnState.codexTurnAdditionalContext = promptState.additionalContext;
   };
   const selectNewerVisibleHistoryAfterBinding = (
     binding: NonNullable<typeof mutable.startupBinding>,
@@ -369,7 +325,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
       maxRenderedContextChars: codexContextProjectionMaxChars,
     });
     promptState.promptText = projection.promptText;
-    promptState.promptContextRange = projection.promptContextRange;
+    promptState.additionalContext = projection.additionalContext;
     promptState.prePromptMessageCount = projection.prePromptMessageCount;
     return true;
   };
@@ -433,7 +389,10 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
       config: params.config,
       contextEngineActive: Boolean(activeContextEngine),
       projectedTurnTokens: estimateCodexAppServerProjectedTurnTokens({
-        prompt: turnState.codexTurnPromptText,
+        prompt: joinPresentSections(
+          turnState.codexTurnAdditionalContext,
+          turnState.codexTurnPromptText,
+        ),
         developerInstructions: buildRenderedCodexDeveloperInstructions(),
       }),
     });
@@ -451,6 +410,8 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     }
     if (activeContextEngine) {
       promptState.contextEngineProjection = undefined;
+      promptState.promptText = params.prompt;
+      promptState.additionalContext = undefined;
       try {
         await applyActiveContextEngineProjection(undefined);
       } catch (assembleErr) {

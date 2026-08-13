@@ -370,11 +370,17 @@ describe("runCodexAppServerAttempt configured MCP ownership", () => {
     const inputText =
       (turnStart?.params as { input?: Array<{ text?: string }> } | undefined)?.input?.[0]?.text ??
       "";
+    const projectedContext = (
+      turnStart?.params as
+        | {
+            additionalContext?: Record<string, { value?: string }>;
+          }
+        | undefined
+    )?.additionalContext?.openclaw_projected_conversation?.value;
     expect(inputText.length).toBeLessThanOrEqual(1 << 20);
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
-    expect(inputText).toContain("new scheduled ownership question");
-    expect(inputText).toContain("recent scheduled ownership answer");
-    expect(inputText).toContain("Current user request:");
+    expect(projectedContext).toContain("OpenClaw assembled context for this turn:");
+    expect(projectedContext).toContain("new scheduled ownership question");
+    expect(projectedContext).toContain("recent scheduled ownership answer");
     expect(inputText).toContain("continue after the scheduled ownership transition");
     expect(await readCodexAppServerBinding(sessionFile)).toMatchObject({
       threadId: "thread-1",
