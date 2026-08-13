@@ -427,9 +427,7 @@ describe("new-session model runtime", () => {
     control.load(context, "main", true);
 
     await vi.waitFor(() =>
-      expect(
-        renderControl(control, context).querySelectorAll("[data-chat-model-option]"),
-      ).toHaveLength(1),
+      expect(modelOption(renderControl(control, context), "openai/gpt-5.5")).not.toBeNull(),
     );
     expect(request).toHaveBeenCalledWith(
       "chat.metadata",
@@ -437,7 +435,9 @@ describe("new-session model runtime", () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(request.mock.calls.map(([method]) => method)).toEqual(["chat.metadata"]);
-    expect(renderControl(control, context).textContent).not.toContain("GPT-5.6 Sol");
+    const container = renderControl(control, context);
+    expect(modelOption(container, "openai/gpt-5.6-sol")).toBeNull();
+    expect(container.textContent).not.toContain("GPT-5.6 Sol");
   });
 
   it("keeps a successful empty catalog explicit when its refresh fails", async () => {
