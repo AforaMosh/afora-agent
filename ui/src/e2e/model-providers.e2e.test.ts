@@ -322,19 +322,18 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
       await expect.poll(async () => claudeCard.textContent()).toContain("$4.20");
       await claudeCard.locator(".provider-usage-progress").first().waitFor();
       const profiles = claudeCard.locator(".model-providers__profiles");
-      await expect.poll(async () => profiles.getAttribute("open")).toBeNull();
       await expect
-        .poll(async () =>
-          (await profiles.locator("summary").textContent())?.replace(/\s+/gu, " ").trim(),
-        )
-        .toContain("3 accounts · Primary: Personal");
-      await profiles.locator("summary").click();
-      await expect.poll(async () => profiles.getAttribute("open")).not.toBeNull();
+        .poll(async () => (await profiles.textContent())?.replace(/\s+/gu, " ").trim())
+        .toContain("3 accounts · drag to set priority");
       await expect.poll(async () => profiles.textContent()).toContain("personal@example.com");
+      await expect.poll(async () => profiles.textContent()).toContain("Available again in");
+      await expect.poll(async () => profiles.textContent()).not.toContain("cooldown");
 
-      const workMenu = profiles.locator('[data-profile-id="anthropic:work"] wa-dropdown');
-      await workMenu.locator("button[slot=trigger]").click();
-      await workMenu.locator('wa-dropdown-item[value="move-up"]').click();
+      const personalRow = profiles.locator('[data-profile-id="anthropic:personal"]');
+      const workRow = profiles.locator('[data-profile-id="anthropic:work"]');
+      await workRow
+        .locator(".model-providers__profile-grip")
+        .dragTo(personalRow, { targetPosition: { x: 120, y: 2 } });
       expect((await gateway.waitForRequest("models.authOrderSet")).params).toEqual({
         provider: "claude-cli",
         profileIds: ["anthropic:work", "anthropic:personal", "anthropic:backup"],

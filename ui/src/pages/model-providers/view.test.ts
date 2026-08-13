@@ -118,6 +118,40 @@ function selectSegment(group: SegmentedGroup, value: string) {
   group.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+function dragDataTransfer(): DataTransfer {
+  const values = new Map<string, string>();
+  return {
+    dropEffect: "none",
+    effectAllowed: "uninitialized",
+    files: [] as unknown as FileList,
+    getData: (type: string) => values.get(type) ?? "",
+    items: [] as unknown as DataTransferItemList,
+    setData(type: string, value: string) {
+      values.set(type, value);
+    },
+    clearData(type?: string) {
+      if (type) {
+        values.delete(type);
+      } else {
+        values.clear();
+      }
+    },
+    setDragImage: vi.fn(),
+    get types() {
+      return [...values.keys()];
+    },
+  };
+}
+
+function dragEvent(type: string, dataTransfer: DataTransfer, clientY = 0): DragEvent {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as DragEvent;
+  Object.defineProperties(event, {
+    clientY: { value: clientY },
+    dataTransfer: { value: dataTransfer },
+  });
+  return event;
+}
+
 describe("renderModelProviders", () => {
   beforeEach(async () => {
     await i18n.setLocale("en");
@@ -130,7 +164,7 @@ describe("renderModelProviders", () => {
     document.body.replaceChildren();
   });
 
-  it("renders provider profiles and emits priority and cooldown actions", () => {
+  it("renders an aligned profile roster and emits drag and availability actions", () => {
     const onProfileOrderChange = vi.fn();
     const onClearProfileCooldown = vi.fn();
     const container = mount(
@@ -178,32 +212,53 @@ describe("renderModelProviders", () => {
       }),
     );
 
-    const details = container.querySelector<HTMLDetailsElement>(".model-providers__profiles");
-    expect(details?.open).toBe(false);
-    expect(text(details?.querySelector("summary") ?? null)).toContain(
-      "3 accounts · Primary: Primary",
-    );
-    details?.querySelector("summary")?.click();
-    expect(details?.open).toBe(true);
-    expect(text(container)).toContain("Provider profiles");
-    expect(text(container)).toContain("Primary");
-    expect(text(container)).toContain("backup@example.com");
+    const roster = container.querySelector<HTMLElement>("section.model-providers__profiles");
+    expect(roster).not.toBeNull();
+    expect(container.querySelector("details.model-providers__profiles")).toBeNull();
+    expect(text(roster)).toContain("3 accounts · drag to set priority");
+    expect(text(roster)).toContain("backup@example.com");
+    expect(text(roster)).toContain("Available again in");
+    expect(text(roster)).not.toContain("cooldown");
     expect(
       text(
         container.querySelector(
-          '[data-profile-id="openai-codex:work"] .model-providers__profile-priority',
+          '[data-profile-id="openai-codex:work"] .model-providers__profile-order',
         ),
       ),
-    ).toBe("1");
-    const backupMenu = container.querySelector('[data-profile-id="openai:backup"] wa-dropdown');
-    backupMenu?.dispatchEvent(
-      new CustomEvent("wa-select", { detail: { item: { value: "move-up" } } }),
+    ).toBe("Primary");
+
+    const primaryRow = container.querySelector<HTMLElement>('[data-profile-id="openai:primary"]');
+    const backupRow = container.querySelector<HTMLElement>('[data-profile-id="openai:backup"]');
+    const backupGrip = backupRow?.querySelector<HTMLButtonElement>(
+      ".model-providers__profile-grip",
     );
+    expect(backupGrip?.draggable).toBe(true);
+    expect(backupGrip?.getAttribute("aria-keyshortcuts")).toBe("ArrowUp ArrowDown");
+    const transfer = dragDataTransfer();
+    if (primaryRow) {
+      primaryRow.getBoundingClientRect = () =>
+        ({
+          bottom: 52,
+          height: 52,
+          left: 0,
+          right: 320,
+          top: 0,
+          width: 320,
+          x: 0,
+          y: 0,
+        }) as DOMRect;
+    }
+    backupGrip?.dispatchEvent(dragEvent("dragstart", transfer));
+    primaryRow?.dispatchEvent(dragEvent("dragover", transfer, 1));
+    expect(primaryRow?.classList.contains("model-providers__profile--drop-before")).toBe(true);
+    primaryRow?.dispatchEvent(dragEvent("drop", transfer, 1));
     expect(onProfileOrderChange).toHaveBeenCalledWith("openai", "openai", [
       "openai:backup",
       "openai:key",
       "openai:primary",
     ]);
+
+    const backupMenu = container.querySelector('[data-profile-id="openai:backup"] wa-dropdown');
     backupMenu?.dispatchEvent(
       new CustomEvent("wa-select", { detail: { item: { value: "clear-cooldown" } } }),
     );
