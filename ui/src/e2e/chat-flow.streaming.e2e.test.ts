@@ -367,9 +367,13 @@ suite.define(() => {
         expect(await alert.locator("button").count()).toBe(0);
         expect(await page.locator(".chat-thread-inner").getByText(errorText).count()).toBe(0);
         expect(
-          await alert.evaluate((element) =>
-            element.nextElementSibling?.classList.contains("agent-chat__composer-shell"),
-          ),
+          await alert.evaluate((element) => {
+            const adjuncts = element.closest(".chat-composer-adjuncts");
+            return (
+              adjuncts?.lastElementChild === element &&
+              adjuncts.nextElementSibling?.classList.contains("agent-chat__composer-shell")
+            );
+          }),
         ).toBe(true);
         const [alertBox, composerBox] = await Promise.all([
           alert.boundingBox(),
