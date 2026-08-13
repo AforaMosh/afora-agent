@@ -7,6 +7,7 @@ import {
   deriveLastRoutePolicy,
   listExactDirectMessageBindingPeerIds,
   resolveAgentRoute,
+  resolveAgentRouteForKnownAgent,
   resolveInboundLastRouteSessionKey,
   resolveUnknownDirectMessageRoute,
 } from "./resolve-route.js";
@@ -1474,6 +1475,86 @@ describe("resolved route cache keys", () => {
       }),
       { agentId: "hyphen-guild", matchedBy: "binding.guild" },
     );
+  });
+});
+
+describe("resolveAgentRouteForKnownAgent", () => {
+  test("resolves an authoritative agent when ordinary default selection is ambiguous", () => {
+    const cfg: OpenClawConfig = {
+      agents: { list: [{ id: "main" }, { id: "review" }] },
+    };
+    const input = {
+      cfg,
+      channel: "demo",
+      accountId: "default",
+      peer: { kind: "direct" as const, id: "room-1" },
+    };
+
+    expect(() => resolveAgentRoute(input)).toThrowError(
+      expect.objectContaining({ code: "AGENT_SELECTION_REQUIRED" }),
+    );
+    expect(resolveAgentRouteForKnownAgent({ ...input, agentId: "review" })).toMatchObject({
+      agentId: "review",
+      mainSessionKey: "agent:review:main",
+      matchedBy: "default",
+    });
+  });
+
+  test("retains highest-precedence binding dmScope while forcing the known agent", () => {
+    const cfg: OpenClawConfig = {
+      session: { dmScope: "main" },
+      agents: { list: [{ id: "route-agent" }, { id: "review" }] },
+      bindings: [
+        {
+          agentId: "route-agent",
+          match: { channel: "demo", accountId: "default" },
+          session: { dmScope: "per-peer" },
+        },
+        {
+          agentId: "route-agent",
+          match: {
+            channel: "demo",
+            accountId: "default",
+            peer: { kind: "direct", id: "room-1" },
+          },
+          session: { dmScope: "per-account-channel-peer" },
+        },
+      ],
+    };
+
+    expect(
+      resolveAgentRouteForKnownAgent({
+        cfg,
+        agentId: "review",
+        channel: "demo",
+        accountId: "default",
+        peer: { kind: "direct", id: "room-1" },
+      }),
+    ).toMatchObject({
+      agentId: "review",
+      dmScope: "per-account-channel-peer",
+      sessionKey: "agent:review:demo:default:direct:room-1",
+      matchedBy: "binding.peer",
+    });
+  });
+
+  test("does not share cached routes with normal or other known-agent resolutions", () => {
+    const cfg: OpenClawConfig = {
+      session: { dmScope: "per-peer" },
+      agents: { list: [{ id: "main" }, { id: "alpha" }, { id: "beta" }] },
+      bindings: [{ agentId: "main", match: { channel: "demo", accountId: "default" } }],
+    };
+    const input = {
+      cfg,
+      channel: "demo",
+      accountId: "default",
+      peer: { kind: "direct" as const, id: "room-1" },
+    };
+
+    expect(resolveAgentRoute(input).agentId).toBe("main");
+    expect(resolveAgentRouteForKnownAgent({ ...input, agentId: "alpha" }).agentId).toBe("alpha");
+    expect(resolveAgentRouteForKnownAgent({ ...input, agentId: "beta" }).agentId).toBe("beta");
+    expect(resolveAgentRoute(input).agentId).toBe("main");
   });
 });
 

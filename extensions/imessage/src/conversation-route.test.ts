@@ -46,7 +46,7 @@ describe("resolveIMessageConversationRoute", () => {
     });
 
     const route = resolveIMessageConversationRoute({
-      cfg: baseCfg,
+      cfg: { ...baseCfg, bindings: [] },
       accountId: "default",
       isGroup: false,
       peerId: "+15555550123",
@@ -54,8 +54,21 @@ describe("resolveIMessageConversationRoute", () => {
     });
 
     expect(route.agentId).toBe("codex");
+    expect(route.dmScope).toBe("main");
     expect(route.sessionKey).toBe("agent:codex:acp:bound-1");
     expect(route.matchedBy).toBe("binding.channel");
     expect(touch).toHaveBeenCalledWith("default:+15555550123", undefined);
+  });
+
+  it("requires explicit agent selection when the conversation is unbound", () => {
+    expect(() =>
+      resolveIMessageConversationRoute({
+        cfg: { ...baseCfg, bindings: [] },
+        accountId: "default",
+        isGroup: false,
+        peerId: "+15555550124",
+        sender: "+15555550124",
+      }),
+    ).toThrowError(expect.objectContaining({ code: "AGENT_SELECTION_REQUIRED" }));
   });
 });

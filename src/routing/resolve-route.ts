@@ -602,7 +602,10 @@ function matchesBindingScope(match: NormalizedBindingMatch, scope: BindingScope)
   return routeBindingScopeMatches(match, scope);
 }
 
-export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentRoute {
+function resolveAgentRouteInternal(
+  input: ResolveAgentRouteInput,
+  knownAgentId?: string,
+): ResolvedAgentRoute {
   const channel = normalizeLowercaseStringOrEmpty(input.channel);
   const accountId = normalizeAccountId(input.accountId);
   const peer = input.peer
@@ -625,8 +628,8 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
       }
     : null;
 
-  const routeCache =
-    !shouldLogDebug && !identityLinks ? resolveRouteCacheForConfig(input.cfg) : null;
+  const shouldCache = knownAgentId === undefined && !shouldLogDebug && !identityLinks;
+  const routeCache = shouldCache ? resolveRouteCacheForConfig(input.cfg) : null;
   const routeCacheKey = routeCache
     ? buildResolvedRouteCacheKey({
         channel,
@@ -654,7 +657,10 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
     matchedBy: ResolvedAgentRoute["matchedBy"],
     sessionOverride?: { dmScope?: Parameters<typeof buildAgentSessionKey>[0]["dmScope"] },
   ) => {
-    const resolvedAgentId = pickFirstExistingAgentId(input.cfg, agentId);
+    const resolvedAgentId =
+      knownAgentId === undefined
+        ? pickFirstExistingAgentId(input.cfg, agentId)
+        : normalizeAgentId(agentId);
     const effectiveDmScope = sessionOverride?.dmScope ?? dmScope;
     const sessionKey = buildAgentSessionKey({
       agentId: resolvedAgentId,
@@ -795,18 +801,31 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
       if (shouldLogDebug) {
         logDebug(`[routing] match: matchedBy=${tier.matchedBy} agentId=${matched.binding.agentId}`);
       }
-      return choose(matched.binding.agentId, tier.matchedBy, matched.binding.session);
+      const agentId = knownAgentId ?? matched.binding.agentId;
+      return choose(agentId, tier.matchedBy, matched.binding.session);
     }
   }
 
   return choose(
-    tryResolveLegacyCompatibilityAgentId(input.cfg) ??
+    knownAgentId ??
+      tryResolveLegacyCompatibilityAgentId(input.cfg) ??
       resolveDefaultAgentId(input.cfg, {
         surface: `${channel} account ${accountId} routing`,
         hint: `Add a channel-wide binding for ${channel}:${accountId} or configure a sole agent.`,
       }),
     "default",
   );
+}
+
+export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentRoute {
+  return resolveAgentRouteInternal(input);
+}
+
+/** @internal Resolves normal route policy while an authoritative owner selects the agent. */
+export function resolveAgentRouteForKnownAgent(
+  input: ResolveAgentRouteInput & { agentId: string },
+): ResolvedAgentRoute {
+  return resolveAgentRouteInternal(input, input.agentId);
 }
 
 /** @internal Resolves fallback precedence for an unknown direct peer. */
