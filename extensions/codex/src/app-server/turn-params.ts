@@ -20,7 +20,6 @@ import {
 import { buildCodexUserInput } from "./user-input.js";
 
 const CODEX_CURRENT_SENDER_FIELD_MAX_CHARS = 256;
-const CODEX_PROJECTED_CONVERSATION_CONTEXT_KEY = "openclaw_projected_conversation";
 
 function buildCodexCurrentSenderContextValue(params: EmbeddedRunAttemptParams): string | undefined {
   const metadata = asOptionalRecord(
@@ -58,7 +57,6 @@ export function buildTurnStartParams(
     cwd: string;
     appServer: CodexAppServerRuntimeOptions;
     promptText?: string;
-    projectedConversationContext?: string;
     sandboxPolicy?: CodexSandboxPolicy;
     environmentSelection?: CodexTurnEnvironmentParams[];
     model?: string | null;
@@ -84,25 +82,13 @@ export function buildTurnStartParams(
   const currentSenderContext =
     params.trigger === "user" ? buildCodexCurrentSenderContextValue(params) : undefined;
   // Untrusted context exposes authenticated attribution without promoting human-controlled labels.
-  // Codex scans only UserInput text for explicit skill mentions. Keep projected
-  // history in additionalContext so old `$skill` text cannot become current intent.
-  const additionalContext: NonNullable<CodexTurnStartParams["additionalContext"]> = {
-    ...(options.projectedConversationContext
-      ? {
-          [CODEX_PROJECTED_CONVERSATION_CONTEXT_KEY]: {
-            kind: "untrusted" as const,
-            value: options.projectedConversationContext,
-          },
-        }
-      : {}),
-    ...(currentSenderContext
-      ? { openclaw_current_sender: { kind: "untrusted" as const, value: currentSenderContext } }
-      : {}),
-  };
+  const additionalContext: CodexTurnStartParams["additionalContext"] = currentSenderContext
+    ? { openclaw_current_sender: { kind: "untrusted", value: currentSenderContext } }
+    : undefined;
   return {
     threadId: options.threadId,
     input: buildCodexUserInput(options.promptText ?? params.prompt, params.images),
-    ...(Object.keys(additionalContext).length > 0 ? { additionalContext } : {}),
+    ...(additionalContext ? { additionalContext } : {}),
     cwd: options.cwd,
     approvalPolicy: options.appServer.approvalPolicy,
     approvalsReviewer: options.appServer.approvalsReviewer,

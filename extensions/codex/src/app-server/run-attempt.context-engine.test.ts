@@ -233,11 +233,11 @@ function requireArray(value: unknown, label: string): unknown[] {
   return value;
 }
 
-function expectProjectedContextContains(
+function expectRequestInputTextContains(
   harness: ReturnType<typeof createStartedThreadHarness>,
   expected: string,
 ): void {
-  expect(getProjectedContext(harness)).toContain(expected);
+  expect(getRequestInputText(harness)).toContain(expected);
 }
 
 function getRequestInputText(harness: ReturnType<typeof createStartedThreadHarness>): string {
@@ -257,16 +257,6 @@ function getRequestInputTextAt(
       return item.type === "text" ? (readStringValue(item.text) ?? "") : "";
     })
     .join("\n");
-}
-
-function getProjectedContext(harness: ReturnType<typeof createStartedThreadHarness>): string {
-  const params = requireRequestParams(harness, "turn/start");
-  const additionalContext = requireRecord(params.additionalContext, "turn/start additionalContext");
-  const projected = requireRecord(
-    additionalContext.openclaw_projected_conversation,
-    "projected conversation context",
-  );
-  return readStringValue(projected.value) ?? "";
 }
 
 setupRunAttemptTestHooks();
@@ -354,7 +344,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     expect(readStringValue(threadStartParams.developerInstructions) ?? "").toContain(
       "context-engine system",
     );
-    expectProjectedContextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
 
     await harness.completeTurn();
     await run;
@@ -438,10 +428,10 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     const run = runCodexAppServerAttempt(params);
     await harness.waitForMethod("turn/start");
 
-    const projectedContext = getProjectedContext(harness);
-    expect(projectedContext.length).toBeGreaterThan(30_000);
-    expect(projectedContext).toContain("LARGE_CONTEXT_END");
-    expect(projectedContext).not.toContain("[truncated ");
+    const inputText = getRequestInputText(harness);
+    expect(inputText.length).toBeGreaterThan(30_000);
+    expect(inputText).toContain("LARGE_CONTEXT_END");
+    expect(inputText).not.toContain("[truncated ");
 
     await harness.completeTurn();
     await run;
@@ -483,9 +473,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     await harness.waitForMethod("turn/start");
 
     const inputText = getRequestInputText(harness);
-    const projectedContext = getProjectedContext(harness);
-    expect(projectedContext.length).toBeLessThanOrEqual(1_000_000);
-    expect(projectedContext).toContain("recent anchor");
+    expect(inputText.length).toBe(CODEX_TURN_START_TEXT_INPUT_MAX_CHARS);
+    expect(inputText).toContain("recent anchor");
     expect(inputText).toContain("current inbound context survives");
     expect(inputText).toContain("current prompt survives");
     expect(inputText).toContain("hook append marker");
@@ -597,8 +586,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
 
     const firstRun = runCodexAppServerAttempt(firstParams);
     await firstHarness.waitForMethod("turn/start");
-    expectProjectedContextContains(firstHarness, "OpenClaw assembled context for this turn:");
-    expectProjectedContextContains(firstHarness, "bootstrap-only context");
+    expectRequestInputTextContains(firstHarness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(firstHarness, "bootstrap-only context");
     await firstHarness.completeTurn();
     await firstRun;
 
@@ -819,9 +808,9 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    const projectedContext = getProjectedContext(harness);
-    expect(projectedContext).toContain("OpenClaw assembled context for this turn:");
-    expect(projectedContext).toContain("reprojected context");
+    const inputText = getRequestInputText(harness);
+    expect(inputText).toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).toContain("reprojected context");
 
     await harness.completeTurn("completed", "thread-fresh");
     await run;
@@ -957,10 +946,10 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "turn/start",
     ]);
     const inputText = getRequestInputText(harness);
-    const projectedContext = getProjectedContext(harness);
-    expect(projectedContext).toContain("OpenClaw assembled context for this turn:");
-    expect(projectedContext).toContain("previous per-turn request");
-    expect(projectedContext).toContain("previous per-turn answer");
+    expect(inputText).toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).toContain("previous per-turn request");
+    expect(inputText).toContain("previous per-turn answer");
+    expect(inputText).toContain("Current user request:");
     expect(inputText).toContain("hello");
 
     await harness.completeTurn("completed", "thread-fresh");
@@ -1011,8 +1000,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    expectProjectedContextContains(harness, "OpenClaw assembled context for this turn:");
-    expectProjectedContextContains(harness, "new epoch context");
+    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "new epoch context");
 
     await harness.notify({
       method: "turn/completed",
@@ -1099,8 +1088,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    expectProjectedContextContains(harness, "OpenClaw assembled context for this turn:");
-    expectProjectedContextContains(harness, "policy changed context");
+    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "policy changed context");
 
     await harness.notify({
       method: "turn/completed",
@@ -1211,8 +1200,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
         "thread/start",
         "turn/start",
       ]);
-      expectProjectedContextContains(harness, "OpenClaw assembled context for this turn:");
-      expectProjectedContextContains(harness, "native-disabled context");
+      expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+      expectRequestInputTextContains(harness, "native-disabled context");
 
       await harness.notify({
         method: "turn/completed",
@@ -1277,8 +1266,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    expectProjectedContextContains(harness, "OpenClaw assembled context for this turn:");
-    expectProjectedContextContains(harness, "per-turn context");
+    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "per-turn context");
 
     await harness.notify({
       method: "turn/completed",
@@ -1655,7 +1644,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    expectProjectedContextContains(harness, "0123456789abcdef");
+    const inputText = getRequestInputText(harness);
+    expect(inputText).toContain("0123456789abcdef");
 
     await harness.completeTurn();
     const result = await run;
@@ -1802,8 +1792,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     await harness.waitForMethod("turn/start");
 
     const inputText = getRequestInputText(harness);
-    expectProjectedContextContains(harness, "OpenClaw assembled context for this turn:");
-    expect(inputText).toContain("\nhello");
+    expect(inputText).toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).toContain("Current user request:\nhello");
     expect(inputText).toContain("[reply target] OpenClaw: anchor REPLYCTX");
     expect(inputText.trim().startsWith("Conversation context (chronological")).toBe(true);
 
@@ -1916,7 +1906,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "assistant",
     ]);
     expect(afterTurn).not.toHaveBeenCalled();
-    expectProjectedContextContains(harness, "bootstrap context");
+    expectRequestInputTextContains(harness, "bootstrap context");
   });
 
   it("logs assemble failures as a formatted message instead of the raw error object", async () => {
