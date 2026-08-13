@@ -3752,6 +3752,21 @@ describe("chat slash menu accessibility", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
+  it("hides inline commands when the active composer has no command owner", () => {
+    let draft = "";
+    const onDraftChange = vi.fn((next: string) => {
+      draft = next;
+    });
+    const { container } = createReactiveDraftHarness({ onDraftChange });
+
+    inputDraftAtEnd(container, "catalog /statu");
+    expect(container.querySelector(".slash-menu")).toBeNull();
+
+    inputDraftAtEnd(container, "catalog /verb");
+    expect(container.querySelector(".slash-menu")).toBeNull();
+    expect(draft).toBe("catalog /verb");
+  });
+
   it("executes a selected inline command argument and preserves the surrounding draft", () => {
     let draft = "";
     const onDraftChange = vi.fn((next: string) => {
@@ -3778,7 +3793,7 @@ describe("chat slash menu accessibility", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
-  it("executes a typed inline command argument and preserves the surrounding draft", () => {
+  it("executes a typed inline command argument separately and preserves surrounding prose", () => {
     let draft = "";
     const onDraftChange = vi.fn((next: string) => {
       draft = next;

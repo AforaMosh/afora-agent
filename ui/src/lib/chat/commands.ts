@@ -69,6 +69,10 @@ const INLINE_SAFE_COMMAND_KEYS = new Set([
   "queue",
 ]);
 
+export function executesInlineImmediately(command: SlashCommandDef): boolean {
+  return INLINE_SAFE_COMMAND_KEYS.has(command.key);
+}
+
 const REMOTE_SLASH_IDENTIFIER_PATTERN = /^[a-z0-9][a-z0-9_-]*$/u;
 const MAX_REMOTE_COMMANDS = 500;
 const MAX_REMOTE_ALIAS_COUNT = 20;
