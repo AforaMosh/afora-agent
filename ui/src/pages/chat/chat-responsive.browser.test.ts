@@ -717,9 +717,11 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
       expect(searchBar.height).toBeLessThan(64);
       expect(icons).toHaveLength(2);
       for (const icon of icons) {
-        const box = await icon.boundingBox();
-        expect(box?.width).toBe(16);
-        expect(box?.height).toBe(16);
+        const size = await icon.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return { height: style.height, width: style.width };
+        });
+        expect(size).toEqual({ height: "16px", width: "16px" });
       }
       await input.focus();
       const outline = await input.evaluate((element) => {
