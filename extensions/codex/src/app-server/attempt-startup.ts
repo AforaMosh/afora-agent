@@ -351,13 +351,6 @@ export async function startCodexAttemptThread(params: {
               appServerVersion: activeStartupClient.getServerVersion(),
               runtimeIdentity: startupRuntimeIdentity,
             });
-            void defaultCodexConfiguredAppAvailabilityMonitor.check({
-              client: activeStartupClient,
-              appCacheKey: pluginAppCacheKey,
-              configCwd: startupExecutionCwd,
-              timeoutMs: params.appServer.requestTimeoutMs,
-              signal: startupAbandonController.signal,
-            });
             const appServerRuntimeFingerprint = buildCodexAppServerRuntimeFingerprint({
               appServer: params.appServer,
               appServerVersion: activeStartupClient.getServerVersion(),
@@ -440,6 +433,13 @@ export async function startCodexAttemptThread(params: {
               environment: startupSandboxEnvironment,
               nativeToolSurfaceEnabled: params.nativeToolSurfaceEnabled,
               remoteWorkspaceRoot: params.appServer.remoteWorkspaceRoot,
+            });
+            void defaultCodexConfiguredAppAvailabilityMonitor.check({
+              client: activeStartupClient,
+              appCacheKey: pluginAppCacheKey,
+              configCwd: startupExecutionCwd,
+              timeoutMs: params.appServer.requestTimeoutMs,
+              signal: startupAbandonController.signal,
             });
             const startupSandboxPolicy = startupSandboxEnvironment
               ? resolveCodexExternalSandboxPolicyForOpenClawSandbox(params.sandbox)
