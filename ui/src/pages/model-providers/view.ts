@@ -45,7 +45,6 @@ export type ModelProvidersViewProps = {
   error: string | null;
   updatedAt: number | null;
   costDays: number;
-  credentialAgentLabel: string;
   cards: ModelProviderCard[];
   configuredModels: ModelPickerEntry[];
   defaultModels: DefaultModelSelection;
@@ -239,38 +238,6 @@ function renderLocalCost(card: ModelProviderCard, costDays: number) {
   `;
 }
 
-function renderCredentialSummary(card: ModelProviderCard, agentLabel: string) {
-  const oauthCount = card.profiles.filter((profile) => profile.type === "oauth").length;
-  const tokenCount = card.profiles.filter((profile) => profile.type === "token").length;
-  const apiProfileCount = card.profiles.filter((profile) => profile.type === "api_key").length;
-  const parts = [];
-  if (oauthCount > 0) {
-    parts.push(t("modelProviders.credentials.oauth", { count: String(oauthCount) }));
-  }
-  if (tokenCount > 0) {
-    parts.push(t("modelProviders.credentials.tokenProfiles", { count: String(tokenCount) }));
-  }
-  if (card.apiKey?.source === "config" || (!card.apiKey && card.hasConfigApiKey)) {
-    parts.push(t("modelProviders.credentials.configKey"));
-  } else if (card.apiKey?.source === "env") {
-    parts.push(
-      card.apiKey.envVar
-        ? t("modelProviders.credentials.envKeyNamed", { name: card.apiKey.envVar })
-        : t("modelProviders.credentials.envKey"),
-    );
-  } else if (apiProfileCount > 0) {
-    parts.push(t("modelProviders.credentials.profileKey", { count: String(apiProfileCount) }));
-  }
-  return html`
-    <div class="model-providers__credentials">
-      <span>${t("modelProviders.credentials.label", { agent: agentLabel })}</span>
-      <strong
-        >${parts.length > 0 ? parts.join(" · ") : t("modelProviders.credentials.none")}</strong
-      >
-    </div>
-  `;
-}
-
 function renderProbeResult(result: ModelsProbeResult | undefined) {
   if (!result) {
     return nothing;
@@ -430,7 +397,7 @@ function renderProviderRow(card: ModelProviderCard, props: ModelProvidersViewPro
           ${renderProviderStatus(card)}
         </div>
       </div>
-      ${renderCredentialSummary(card, props.credentialAgentLabel)} ${renderProfiles(card, props)}
+      ${renderProfiles(card, props)}
       <div class="model-providers__global-metrics">
         <div class="model-providers__global-metrics-title">${t("modelProviders.globalUsage")}</div>
         ${card.usage

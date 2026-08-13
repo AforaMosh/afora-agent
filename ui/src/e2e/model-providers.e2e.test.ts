@@ -328,6 +328,8 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
       await expect.poll(async () => profiles.textContent()).toContain("personal@example.com");
       await expect.poll(async () => profiles.textContent()).toContain("Available again in");
       await expect.poll(async () => profiles.textContent()).not.toContain("cooldown");
+      await expect.poll(async () => claudeCard.textContent()).not.toContain("Credentials for");
+      expect(await profiles.locator("wa-dropdown").count()).toBe(0);
 
       const personalRow = profiles.locator('[data-profile-id="anthropic:personal"]');
       const workRow = profiles.locator('[data-profile-id="anthropic:work"]');
@@ -339,10 +341,18 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
         profileIds: ["anthropic:work", "anthropic:personal", "anthropic:backup"],
         agentId: "main",
       });
+      await expect
+        .poll(async () =>
+          profiles
+            .locator(".model-providers__profile")
+            .evaluateAll((rows) => rows.map((row) => (row as HTMLElement).dataset.profileId)),
+        )
+        .toEqual(["anthropic:work", "anthropic:personal", "anthropic:backup"]);
+      await expect.poll(async () => profiles.textContent()).not.toContain("priority saved");
 
-      const backupMenu = profiles.locator('[data-profile-id="anthropic:backup"] wa-dropdown');
-      await backupMenu.locator("button[slot=trigger]").click();
-      await backupMenu.locator('wa-dropdown-item[value="clear-cooldown"]').click();
+      await profiles
+        .locator('[data-profile-id="anthropic:backup"] button', { hasText: "Try again now" })
+        .click();
       expect((await gateway.waitForRequest("models.authCooldownClear")).params).toEqual({
         provider: "claude-cli",
         profileId: "anthropic:backup",
@@ -585,7 +595,10 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
       await page.goto(`${server.baseUrl}settings/model-providers`);
       const openaiCard = page.locator('[data-provider-id="openai"]');
       await openaiCard.waitFor();
-      await expect.poll(async () => openaiCard.textContent()).toContain("API key set in config");
+      await expect.poll(async () => openaiCard.textContent()).toContain("API key");
+      expect(await openaiCard.getByRole("button", { name: "Replace key" }).isVisible()).toBe(true);
+      expect(await openaiCard.getByRole("button", { name: "Remove key" }).isVisible()).toBe(true);
+      await expect.poll(async () => openaiCard.textContent()).not.toContain("Credentials for");
       await expect
         .poll(() => modelPickerValue(page.locator(".model-providers__defaults wa-select").first()))
         .toBe("openai/gpt-5.5");

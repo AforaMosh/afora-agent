@@ -4045,16 +4045,6 @@ export const en: TranslationMap = {
     saving: "Saving…",
     requestFailed: "Request failed.",
     configUnavailable: "Configuration is unavailable. Refresh and try again.",
-    credentials: {
-      label: "Credentials for {agent}",
-      oauth: "OAuth profiles: {count}",
-      tokenProfiles: "Token profiles: {count}",
-      configKey: "API key set in config",
-      envKey: "API key from environment",
-      envKeyNamed: "API key from environment ({name})",
-      profileKey: "API key profiles: {count}",
-      none: "Not configured",
-    },
     profiles: {
       title: "Provider profiles",
       accountOne: "1 account",
@@ -4068,11 +4058,7 @@ export const en: TranslationMap = {
       cooldown: "Available again in {time}",
       clearCooldown: "Try again now",
       cooldownCleared: "Account is available to try again.",
-      orderSaved: "Account priority saved.",
       reorder: "Reorder {account}, currently priority {position}",
-      moveUp: "Move {account} up",
-      moveDown: "Move {account} down",
-      actions: "Actions for {account}",
     },
     apiKey: {
       label: "API key",

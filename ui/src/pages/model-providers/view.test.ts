@@ -33,7 +33,6 @@ function props(overrides: Partial<ModelProvidersViewProps> = {}): ModelProviders
     error: null,
     updatedAt: 1,
     costDays: 30,
-    credentialAgentLabel: "Writer",
     cards: [card()],
     configuredModels: [{ id: "openai/gpt-5", provider: "openai", name: "GPT-5", available: true }],
     defaultModels: { primary: "openai/gpt-5", fallbacks: [], utilityModel: null },
@@ -258,10 +257,7 @@ describe("renderModelProviders", () => {
       "openai:primary",
     ]);
 
-    const backupMenu = container.querySelector('[data-profile-id="openai:backup"] wa-dropdown');
-    backupMenu?.dispatchEvent(
-      new CustomEvent("wa-select", { detail: { item: { value: "clear-cooldown" } } }),
-    );
+    button(backupRow!, "Try again now")?.click();
     expect(onClearProfileCooldown).toHaveBeenCalledWith("openai", "openai", "openai:backup");
   });
 
@@ -297,12 +293,10 @@ describe("renderModelProviders", () => {
       }),
     );
 
-    const actions = [
-      ...container.querySelectorAll<HTMLElement>(
-        '[data-profile-id="openai:backup"] wa-dropdown-item',
-      ),
-    ].map(text);
-    expect(actions).toEqual(["Log out"]);
+    const backup = container.querySelector('[data-profile-id="openai:backup"]')!;
+    expect(button(backup, "Log out")).toBeDefined();
+    expect(button(backup, "Try again now")).toBeUndefined();
+    expect(backup.querySelector("wa-dropdown")).toBeNull();
   });
 
   it("renders model behavior next to default models and emits canonical values", () => {
@@ -524,10 +518,7 @@ describe("renderModelProviders", () => {
     ).toBe(true);
     expect(button(provider!, "Replace key")?.disabled).toBe(true);
     expect(button(provider!, "Remove key")?.disabled).toBe(true);
-    expect(
-      provider?.querySelector<HTMLButtonElement>(".model-providers__profile-menu-trigger")
-        ?.disabled,
-    ).toBe(true);
+    expect(button(provider!, "Log out")?.disabled).toBe(true);
 
     const addForm = container.querySelector(".model-providers__add-form");
     expect(
@@ -667,7 +658,7 @@ describe("renderModelProviders", () => {
     expect(container.querySelector('[data-provider-id="openai"]')).toBeNull();
   });
 
-  it("renders credential provenance and probe results", () => {
+  it("renders probe results without a redundant credential summary", () => {
     const container = mount(
       props({
         probeResults: {
@@ -688,9 +679,8 @@ describe("renderModelProviders", () => {
       }),
     );
     const provider = container.querySelector('[data-provider-id="openai"]');
-    expect(text(provider)).toContain("Credentials for Writer");
+    expect(text(provider)).not.toContain("Credentials for");
     expect(text(provider)).toContain("Global usage and cost");
-    expect(text(provider)).toContain("API key from environment (OPENAI_API_KEY)");
     expect(text(provider)).toContain("Connected");
     expect(text(provider)).toContain("145 ms");
     expect(text(provider)).toContain("Default profile");
@@ -821,7 +811,7 @@ describe("renderModelProviders", () => {
     );
 
     const provider = container.querySelector('[data-provider-id="openai"]');
-    expect(text(provider)).toContain("Credentials for Writer");
+    expect(text(provider)).not.toContain("Credentials for");
     expect(text(provider)).toContain("Global usage and cost");
     expect(text(provider)).toContain("Global session spend · 30d");
   });
@@ -850,7 +840,7 @@ describe("renderModelProviders", () => {
     }
   });
 
-  it("shows config key provenance when auth status is unavailable", () => {
+  it("keeps configured key actions available when auth status is unavailable", () => {
     const container = mount(
       props({
         cards: [card({ apiKey: undefined, hasConfigApiKey: true })],
@@ -858,8 +848,9 @@ describe("renderModelProviders", () => {
     );
 
     const provider = container.querySelector('[data-provider-id="openai"]');
-    expect(text(provider)).toContain("API key set in config");
-    expect(text(provider)).not.toContain("Not configured");
+    expect(button(provider!, "Replace key")).toBeDefined();
+    expect(button(provider!, "Remove key")).toBeDefined();
+    expect(text(provider)).not.toContain("Credentials for");
   });
 
   it("renders categorized probe errors", () => {
@@ -1026,9 +1017,7 @@ describe("renderModelProviders", () => {
         onLogoutProfile,
       }),
     );
-    container
-      .querySelector("wa-dropdown")
-      ?.dispatchEvent(new CustomEvent("wa-select", { detail: { item: { value: "logout" } } }));
+    button(container, "Log out")?.click();
     expect(onLogoutProfile).toHaveBeenCalledWith(
       "openai",
       "openai-codex",

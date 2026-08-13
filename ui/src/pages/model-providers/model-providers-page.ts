@@ -9,7 +9,6 @@ import { applicationContext, type ApplicationContext } from "../../app/context.t
 import { hasOperatorAdminAccess } from "../../app/operator-access.ts";
 import { showConfirmDialog } from "../../components/confirm-dialog.ts";
 import { t } from "../../i18n/index.ts";
-import { normalizeAgentLabel } from "../../lib/agents/display.ts";
 import { isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
 import { normalizeAgentId } from "../../lib/sessions/session-key.ts";
 import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
@@ -65,6 +64,7 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
   @state() private addProviderKey = "";
   @state() private defaultsDraft: DefaultModelSelection | null = null;
   @state() private selectedAgentId = "main";
+  @state() private profileOrderDrafts: Record<string, Record<string, string[]>> = {};
 
   /** Client the current data was loaded from; a new client means stale data. */
   private dataClient: GatewayBrowserClient | null = null;
@@ -73,6 +73,7 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
   // Global config writes survive agent switches; their card state does not.
   private agentEpoch = 0;
   private probeEpochs = new Map<string, number>();
+  private profileOrderSaves = new Map<string, Promise<void>>();
   private readonly refreshTask = new Task(this, {
     autoRun: false,
     args: () =>
@@ -180,6 +181,7 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
     this.addProviderId = "";
     this.addProviderKey = "";
     this.defaultsDraft = null;
+    this.profileOrderDrafts = {};
     if (client !== this.dataClient) {
       this.data = null;
     }
@@ -213,6 +215,7 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
     this.busy = {};
     this.messages = {};
     this.probeResults = {};
+    this.profileOrderDrafts = {};
     return true;
   }
 
@@ -529,6 +532,115 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
     }
   }
 
+  private setProfileOrderDraft(cardId: string, provider: string, profileIds: string[] | null) {
+    const cardDrafts = { ...this.profileOrderDrafts[cardId] };
+    if (profileIds) {
+      cardDrafts[provider] = [...profileIds];
+    } else {
+      delete cardDrafts[provider];
+    }
+    const next = { ...this.profileOrderDrafts };
+    if (Object.keys(cardDrafts).length > 0) {
+      next[cardId] = cardDrafts;
+    } else {
+      delete next[cardId];
+    }
+    this.profileOrderDrafts = next;
+  }
+
+  private commitProfileOrder(provider: string, profileIds: string[]) {
+    const data = this.data;
+    const authStatus = data?.authStatus;
+    if (!data || !authStatus) {
+      return;
+    }
+    this.data = {
+      ...data,
+      authStatus: {
+        ...authStatus,
+        providers: authStatus.providers.map((row) =>
+          row.provider === provider ? { ...row, profileOrder: [...profileIds] } : row,
+        ),
+      },
+    };
+  }
+
+  private queueProfileOrder(cardId: string, provider: string, profileIds: string[]) {
+    const snapshot = this.context.gateway.snapshot;
+    const client = snapshot.client;
+    if (
+      !client ||
+      !this.canMutate() ||
+      isGatewayMethodAdvertised(snapshot, "models.authOrderSet") === false
+    ) {
+      return;
+    }
+    const clientEpoch = this.clientEpoch;
+    const agentEpoch = this.agentEpoch;
+    const agentId = this.selectedAgentId;
+    const saveKey = `${clientEpoch}:${agentEpoch}:${cardId}:${provider}`;
+    this.setProfileOrderDraft(cardId, provider, profileIds);
+    this.setMessage(`profiles:${cardId}`, null);
+    if (this.profileOrderSaves.has(saveKey)) {
+      return;
+    }
+
+    const save = this.flushProfileOrder({
+      cardId,
+      provider,
+      client,
+      clientEpoch,
+      agentEpoch,
+      agentId,
+    }).finally(() => {
+      if (this.profileOrderSaves.get(saveKey) === save) {
+        this.profileOrderSaves.delete(saveKey);
+      }
+    });
+    this.profileOrderSaves.set(saveKey, save);
+  }
+
+  private async flushProfileOrder(params: {
+    cardId: string;
+    provider: string;
+    client: GatewayBrowserClient;
+    clientEpoch: number;
+    agentEpoch: number;
+    agentId: string;
+  }) {
+    const { cardId, provider, client, clientEpoch, agentEpoch, agentId } = params;
+    while (this.isCurrentClient(client, clientEpoch) && this.agentEpoch === agentEpoch) {
+      const profileIds = this.profileOrderDrafts[cardId]?.[provider];
+      if (!profileIds) {
+        return;
+      }
+      try {
+        await client.request("models.authOrderSet", { provider, profileIds, agentId });
+      } catch (error) {
+        if (this.isCurrentClient(client, clientEpoch) && this.agentEpoch === agentEpoch) {
+          this.setProfileOrderDraft(cardId, provider, null);
+          this.setMessage(`profiles:${cardId}`, {
+            kind: "error",
+            text: modelProviderErrorMessage(error),
+          });
+        }
+        return;
+      }
+      if (!this.isCurrentClient(client, clientEpoch) || this.agentEpoch !== agentEpoch) {
+        return;
+      }
+      // Record every acknowledged order underneath the optimistic draft. If a
+      // newer queued order fails, rollback must reveal the last saved order.
+      this.commitProfileOrder(provider, profileIds);
+      const latest = this.profileOrderDrafts[cardId]?.[provider];
+      if (!latest || latest.some((profileId, index) => profileId !== profileIds[index])) {
+        continue;
+      }
+      this.setProfileOrderDraft(cardId, provider, null);
+      return;
+    }
+  }
+
   private async addProvider() {
     const provider = this.addProviderId;
     const apiKey = this.addProviderKey.trim();
@@ -585,8 +697,6 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
   override render() {
     const gatewaySnapshot = this.context.gateway.snapshot;
     const agents = this.context.agents.state.agentsList?.agents ?? [];
-    const selected = agents.find((agent) => normalizeAgentId(agent.id) === this.selectedAgentId);
-    const selectedAgentLabel = selected ? normalizeAgentLabel(selected) : this.selectedAgentId;
     const data = this.data ?? EMPTY_MODEL_PROVIDERS_DATA;
     const config = readModelProviderConfig(data.config);
     const defaults = this.defaultsDraft ?? config.defaults;
@@ -605,6 +715,33 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
       configProviderIds: config.providerIds,
       configApiKeyProviderIds: config.apiKeyProviderIds,
       configProviderAuthModes: config.providerAuthModes,
+    }).map((card) => {
+      const drafts = this.profileOrderDrafts[card.id];
+      if (!drafts) {
+        return card;
+      }
+      const profileOrder = [...card.profileOrder];
+      for (const profile of card.profiles) {
+        if (!profileOrder.includes(profile.profileId)) {
+          profileOrder.push(profile.profileId);
+        }
+      }
+      for (const [provider, draft] of Object.entries(drafts)) {
+        const ownerIds = new Set(
+          card.profiles
+            .filter(
+              (profile) => (card.profileProviderIds[profile.profileId] ?? card.id) === provider,
+            )
+            .map((profile) => profile.profileId),
+        );
+        let draftIndex = 0;
+        for (let index = 0; index < profileOrder.length; index += 1) {
+          if (ownerIds.has(profileOrder[index]!)) {
+            profileOrder[index] = draft[draftIndex++] ?? profileOrder[index]!;
+          }
+        }
+      }
+      return { ...card, profileOrder };
     });
     const configuredProviderIds = new Set([
       ...config.providerIds,
@@ -630,7 +767,6 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
       error: data.error,
       updatedAt: data.updatedAt,
       costDays: MODEL_PROVIDERS_COST_DAYS,
-      credentialAgentLabel: selectedAgentLabel,
       cards,
       configuredModels,
       defaultModels: defaults,
@@ -664,12 +800,7 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
       onLogoutProfile: (cardId, provider, profileId, label) =>
         void this.requestProfileLogout(cardId, provider, profileId, label),
       onProfileOrderChange: (cardId, provider, profileIds) =>
-        void this.mutateProfile(
-          `profiles:${cardId}`,
-          "models.authOrderSet",
-          { provider, profileIds },
-          t("modelProviders.profiles.orderSaved"),
-        ),
+        this.queueProfileOrder(cardId, provider, profileIds),
       onClearProfileCooldown: (cardId, provider, profileId) =>
         void this.mutateProfile(
           `profiles:${cardId}`,

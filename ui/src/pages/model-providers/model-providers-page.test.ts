@@ -473,6 +473,97 @@ describe("ModelProvidersPage agent scope", () => {
     });
   });
 
+  it("reorders profiles immediately without blocking another drag or showing success copy", async () => {
+    const { context, request } = createHarness("main");
+    const page = appendPage(context);
+    await vi.waitFor(() => expect(page.data?.config).toEqual({}));
+    page.data = {
+      ...EMPTY_MODEL_PROVIDERS_DATA,
+      config: {},
+      updatedAt: 1,
+      authStatus: {
+        ts: 1,
+        providers: [
+          {
+            provider: "openai",
+            displayName: "OpenAI",
+            status: "ok",
+            profiles: [
+              {
+                profileId: "openai:primary",
+                type: "oauth",
+                status: "ok",
+                email: "primary@example.com",
+              },
+              {
+                profileId: "openai:backup",
+                type: "oauth",
+                status: "ok",
+                email: "backup@example.com",
+              },
+            ],
+            profileOrder: ["openai:primary", "openai:backup"],
+          },
+        ],
+      },
+    };
+    await page.updateComplete;
+    request.mockClear();
+    const pendingOrder = deferred<unknown>();
+    request.mockImplementationOnce(async () => pendingOrder.promise);
+
+    page
+      .querySelector<HTMLButtonElement>(
+        '[data-profile-id="openai:primary"] .model-providers__profile-grip',
+      )
+      ?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    await vi.waitFor(() =>
+      expect(request).toHaveBeenCalledWith("models.authOrderSet", {
+        provider: "openai",
+        profileIds: ["openai:backup", "openai:primary"],
+        agentId: "main",
+      }),
+    );
+    await page.updateComplete;
+
+    expect(
+      [...page.querySelectorAll<HTMLElement>(".model-providers__profile")].map(
+        (row) => row.dataset.profileId,
+      ),
+    ).toEqual(["openai:backup", "openai:primary"]);
+    expect(
+      [...page.querySelectorAll<HTMLButtonElement>(".model-providers__profile-grip")].every(
+        (grip) => !grip.disabled,
+      ),
+    ).toBe(true);
+
+    page
+      .querySelector<HTMLButtonElement>(
+        '[data-profile-id="openai:backup"] .model-providers__profile-grip',
+      )
+      ?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    await page.updateComplete;
+    expect(
+      [...page.querySelectorAll<HTMLElement>(".model-providers__profile")].map(
+        (row) => row.dataset.profileId,
+      ),
+    ).toEqual(["openai:primary", "openai:backup"]);
+
+    pendingOrder.resolve({});
+    await vi.waitFor(() =>
+      expect(
+        request.mock.calls.filter(([method]) => method === "models.authOrderSet"),
+      ).toHaveLength(2),
+    );
+    expect(request.mock.calls.filter(([method]) => method === "models.authStatus")).toHaveLength(0);
+    expect(request).toHaveBeenLastCalledWith("models.authOrderSet", {
+      provider: "openai",
+      profileIds: ["openai:primary", "openai:backup"],
+      agentId: "main",
+    });
+    expect(page.messages["profiles:openai"]).toBeUndefined();
+  });
+
   it("stops queued agent-scoped logouts when route data changes the selected agent", async () => {
     const { agentSelection, context, request, snapshot } = createHarness("main");
     const page = appendPage(context);

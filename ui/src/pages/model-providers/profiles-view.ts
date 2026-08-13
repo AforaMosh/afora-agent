@@ -1,8 +1,7 @@
 import { html, nothing } from "lit";
 import { repeat } from "lit/directives/repeat.js";
-import { icon, icons } from "../../components/icons.ts";
+import { icons } from "../../components/icons.ts";
 import { renderSettingsStatus } from "../../components/settings-ui.ts";
-import "../../components/web-awesome.ts";
 import { t } from "../../i18n/index.ts";
 import { formatTimeMs } from "../../lib/format.ts";
 import type { ModelProviderCard } from "./data.ts";
@@ -22,10 +21,6 @@ const PROFILE_DRAG_MIME = "application/x-openclaw-provider-profile";
 const PROFILE_DRAGGING_CLASS = "model-providers__profile--dragging";
 const PROFILE_DROP_BEFORE_CLASS = "model-providers__profile--drop-before";
 const PROFILE_DROP_AFTER_CLASS = "model-providers__profile--drop-after";
-
-function profileLabel(profile: ProviderProfile): string {
-  return profile.displayName || profile.email || profile.profileId;
-}
 
 function profileIdentity(profile: ProviderProfile): string {
   return profile.email || profile.displayName || profile.profileId;
@@ -187,6 +182,7 @@ export function renderProfiles(card: ModelProviderCard, props: ModelProvidersVie
     return nothing;
   }
   const busy = Boolean(props.busy[`profiles:${card.id}`] || props.busy[`logout:${card.id}`]);
+  const logoutBusy = Boolean(props.busy[`logout:${card.id}`]);
   const mutationDisabled = !props.canMutate || props.configBusy;
   const message = props.messages[`profiles:${card.id}`];
   const reorderOffered =
@@ -252,9 +248,7 @@ export function renderProfiles(card: ModelProviderCard, props: ModelProvidersVie
               (candidate) => candidate.profileId === profile.profileId,
             );
             const canMove =
-              reorderOffered && visibleOwnerProfiles.length > 1 && !busy && !mutationDisabled;
-            const canMoveUp = canMove && ownerIndex > 0;
-            const canMoveDown = canMove && ownerIndex < visibleOwnerProfiles.length - 1;
+              reorderOffered && visibleOwnerProfiles.length > 1 && !logoutBusy && !mutationDisabled;
             const canClearCooldown = props.profileCooldownClearAvailable && cooldown > Date.now();
             const canLogout = profile.logoutSupported === true;
             const identity = profileIdentity(profile);
@@ -400,65 +394,30 @@ export function renderProfiles(card: ModelProviderCard, props: ModelProvidersVie
                   aria-hidden="true"
                   >${orderLabel}</span
                 >
-                ${canMoveUp || canMoveDown || canClearCooldown || canLogout
-                  ? html`<wa-dropdown
-                      class="model-providers__profile-menu"
-                      placement="bottom-end"
-                      @wa-select=${(event: CustomEvent<{ item: { value?: string } }>) => {
-                        const action = event.detail.item.value;
-                        if (action === "logout") {
-                          props.onLogoutProfile(
-                            card.id,
-                            provider,
-                            profile.profileId,
-                            profileLabel(profile),
-                          );
-                          return;
-                        }
-                        if (action === "clear-cooldown") {
-                          props.onClearProfileCooldown(card.id, provider, profile.profileId);
-                          return;
-                        }
-                        const offset = action === "move-up" ? -1 : action === "move-down" ? 1 : 0;
-                        const adjacent = visibleOwnerProfiles[ownerIndex + offset];
-                        if (offset === 0 || !adjacent) {
-                          return;
-                        }
-                        move(offset < 0 ? "before" : "after", adjacent.profileId);
-                      }}
-                    >
-                      <button
-                        slot="trigger"
+                <span class="model-providers__profile-actions">
+                  ${canClearCooldown
+                    ? html`<button
                         type="button"
-                        class="btn btn--sm btn--ghost model-providers__profile-menu-trigger"
-                        aria-label=${t("modelProviders.profiles.actions", { account: identity })}
-                        title=${t("modelProviders.profiles.actions", { account: identity })}
+                        class="btn btn--sm btn--ghost model-providers__profile-action"
                         ?disabled=${busy || mutationDisabled}
+                        @click=${() =>
+                          props.onClearProfileCooldown(card.id, provider, profile.profileId)}
                       >
-                        ${icon("moreHorizontal")}
-                      </button>
-                      ${props.profileOrderAvailable
-                        ? html`
-                            <wa-dropdown-item value="move-up" ?disabled=${!canMoveUp}>
-                              ${t("modelProviders.profiles.moveUp", { account: identity })}
-                            </wa-dropdown-item>
-                            <wa-dropdown-item value="move-down" ?disabled=${!canMoveDown}>
-                              ${t("modelProviders.profiles.moveDown", { account: identity })}
-                            </wa-dropdown-item>
-                          `
-                        : nothing}
-                      ${canClearCooldown
-                        ? html`<wa-dropdown-item value="clear-cooldown">
-                            ${t("modelProviders.profiles.clearCooldown")}
-                          </wa-dropdown-item>`
-                        : nothing}
-                      ${canLogout
-                        ? html`<wa-dropdown-item value="logout" variant="danger">
-                            ${t("modelProviders.logout.action")}
-                          </wa-dropdown-item>`
-                        : nothing}
-                    </wa-dropdown>`
-                  : html`<span class="model-providers__profile-menu-placeholder"></span>`}
+                        ${t("modelProviders.profiles.clearCooldown")}
+                      </button>`
+                    : nothing}
+                  ${canLogout
+                    ? html`<button
+                        type="button"
+                        class="btn btn--sm btn--ghost danger model-providers__profile-action"
+                        ?disabled=${busy || mutationDisabled}
+                        @click=${() =>
+                          props.onLogoutProfile(card.id, provider, profile.profileId, identity)}
+                      >
+                        ${t("modelProviders.logout.action")}
+                      </button>`
+                    : nothing}
+                </span>
               </div>
             `;
           },
