@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
 import { GPT5_HEARTBEAT_PROMPT_OVERLAY as CODEX_GPT5_HEARTBEAT_PROMPT_OVERLAY } from "openclaw/plugin-sdk/provider-model-shared";
 import {
@@ -20,6 +22,73 @@ import {
 import { buildCodexUserInput } from "./user-input.js";
 
 const CODEX_CURRENT_SENDER_FIELD_MAX_CHARS = 256;
+const CODEX_PROJECTED_CONVERSATION_CONTEXT_KEY = "openclaw_projected_conversation";
+// Codex 0.147.0 truncates every additionalContext value to 1,000 tokens. UTF-8 bytes are a
+// conservative upper bound on tokenizer output, so byte-bounded entries preserve all history.
+const CODEX_ADDITIONAL_CONTEXT_VALUE_MAX_UTF8_BYTES = 1_000;
+
+function splitTextToUtf8ByteLimit(text: string, maxBytes: number): string[] {
+  if (Buffer.byteLength(text, "utf8") <= maxBytes) {
+    return [text];
+  }
+  const chunks: string[] = [];
+  let cursor = 0;
+  while (cursor < text.length) {
+    let low = cursor + 1;
+    let high = Math.min(text.length, cursor + maxBytes);
+    let best = cursor;
+    while (low <= high) {
+      const midpoint = Math.floor((low + high) / 2);
+      if (Buffer.byteLength(text.slice(cursor, midpoint), "utf8") <= maxBytes) {
+        best = midpoint;
+        low = midpoint + 1;
+      } else {
+        high = midpoint - 1;
+      }
+    }
+    if (
+      best < text.length &&
+      best > cursor &&
+      text.charCodeAt(best - 1) >= 0xd800 &&
+      text.charCodeAt(best - 1) <= 0xdbff &&
+      text.charCodeAt(best) >= 0xdc00 &&
+      text.charCodeAt(best) <= 0xdfff
+    ) {
+      best -= 1;
+    }
+    if (best <= cursor) {
+      best = Math.min(text.length, cursor + 1);
+    }
+    chunks.push(text.slice(cursor, best));
+    cursor = best;
+  }
+  return chunks;
+}
+
+function buildCodexProjectedConversationContext(
+  projectedConversationContext: string | undefined,
+): NonNullable<CodexTurnStartParams["additionalContext"]> {
+  if (!projectedConversationContext) {
+    return {};
+  }
+  const chunks = splitTextToUtf8ByteLimit(
+    projectedConversationContext,
+    CODEX_ADDITIONAL_CONTEXT_VALUE_MAX_UTF8_BYTES,
+  );
+  // Codex retains additional-context values by key. Include the full projection identity in every
+  // chunk key so a changed projection is re-injected as one coherent snapshot, matching one-value
+  // additionalContext semantics instead of retaining unchanged prefix chunks from an older turn.
+  const projectionIdentity = createHash("sha256")
+    .update(projectedConversationContext)
+    .digest("hex")
+    .slice(0, 16);
+  return Object.fromEntries(
+    chunks.map((value, index) => [
+      `${CODEX_PROJECTED_CONVERSATION_CONTEXT_KEY}_${String(index).padStart(6, "0")}_${projectionIdentity}`,
+      { kind: "untrusted" as const, value },
+    ]),
+  );
+}
 
 function buildCodexCurrentSenderContextValue(params: EmbeddedRunAttemptParams): string | undefined {
   const metadata = asOptionalRecord(
@@ -57,6 +126,7 @@ export function buildTurnStartParams(
     cwd: string;
     appServer: CodexAppServerRuntimeOptions;
     promptText?: string;
+    projectedConversationContext?: string;
     sandboxPolicy?: CodexSandboxPolicy;
     environmentSelection?: CodexTurnEnvironmentParams[];
     model?: string | null;
@@ -82,13 +152,18 @@ export function buildTurnStartParams(
   const currentSenderContext =
     params.trigger === "user" ? buildCodexCurrentSenderContextValue(params) : undefined;
   // Untrusted context exposes authenticated attribution without promoting human-controlled labels.
-  const additionalContext: CodexTurnStartParams["additionalContext"] = currentSenderContext
-    ? { openclaw_current_sender: { kind: "untrusted", value: currentSenderContext } }
-    : undefined;
+  // Codex scans only UserInput text for explicit skill mentions. Keep projected history in
+  // additionalContext so old `$skill` text cannot become current intent.
+  const additionalContext: NonNullable<CodexTurnStartParams["additionalContext"]> = {
+    ...buildCodexProjectedConversationContext(options.projectedConversationContext),
+    ...(currentSenderContext
+      ? { openclaw_current_sender: { kind: "untrusted" as const, value: currentSenderContext } }
+      : {}),
+  };
   return {
     threadId: options.threadId,
     input: buildCodexUserInput(options.promptText ?? params.prompt, params.images),
-    ...(additionalContext ? { additionalContext } : {}),
+    ...(Object.keys(additionalContext).length > 0 ? { additionalContext } : {}),
     cwd: options.cwd,
     approvalPolicy: options.appServer.approvalPolicy,
     approvalsReviewer: options.appServer.approvalsReviewer,

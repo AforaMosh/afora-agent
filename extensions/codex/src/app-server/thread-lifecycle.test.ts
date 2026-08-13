@@ -1,4 +1,5 @@
 // Codex tests cover thread lifecycle plugin behavior.
+import { Buffer } from "node:buffer";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -1651,6 +1652,44 @@ describe("Codex app-server native code mode config", () => {
       "features.standalone_web_search": false,
       web_search: "cached",
     });
+  });
+});
+
+describe("Codex app-server projected conversation context", () => {
+  it("keeps projected history untrusted, ordered, and below Codex per-value token limits", () => {
+    const projectedConversationContext = `history head ${"😀".repeat(600)} $history-only tail`;
+    const request = buildTurnStartParams(createAttemptParams({ provider: "openai" }), {
+      threadId: "thread-1",
+      cwd: "/repo",
+      appServer: createAppServerOptions() as never,
+      projectedConversationContext,
+    });
+    const projectedEntries = Object.entries(request.additionalContext ?? {})
+      .filter(([key]) => key.startsWith("openclaw_projected_conversation"))
+      .toSorted(([left], [right]) => left.localeCompare(right));
+
+    expect(projectedEntries.length).toBeGreaterThan(1);
+    expect(projectedEntries.every(([, entry]) => entry.kind === "untrusted")).toBe(true);
+    expect(
+      projectedEntries.every(([, entry]) => Buffer.byteLength(entry.value, "utf8") <= 1_000),
+    ).toBe(true);
+    expect(projectedEntries.map(([, entry]) => entry.value).join("")).toBe(
+      projectedConversationContext,
+    );
+    expect(request.input[0]?.type === "text" ? request.input[0].text : "").not.toContain(
+      "$history-only",
+    );
+
+    const changedRequest = buildTurnStartParams(createAttemptParams({ provider: "openai" }), {
+      threadId: "thread-1",
+      cwd: "/repo",
+      appServer: createAppServerOptions() as never,
+      projectedConversationContext: `${projectedConversationContext}!`,
+    });
+    const changedKeys = Object.keys(changedRequest.additionalContext ?? {}).filter((key) =>
+      key.startsWith("openclaw_projected_conversation"),
+    );
+    expect(changedKeys).not.toEqual(projectedEntries.map(([key]) => key));
   });
 });
 
