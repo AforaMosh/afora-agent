@@ -641,16 +641,17 @@ suite.define(() => {
 
       const composer = page.locator(".agent-chat__input");
       const modelPicker = composer.locator("wa-select.chat-controls__model-picker");
-      await expect.poll(() => modelPicker.locator("wa-option").count()).toBe(2);
+      await expect.poll(() => modelPicker.locator("wa-option").count()).toBe(1);
       await expect
         .poll(async () => (await modelPicker.locator("wa-option").allTextContents()).join(" "))
         .toContain("GPT-5.5");
-      // The catalog default is unavailable, but the empty-string sentinel must
-      // remain so an existing session override can still be cleared.
-      await expect.poll(() => modelPicker.locator('wa-option[value=""]').count()).toBe(1);
+      await expect.poll(() => modelPicker.locator('wa-option[value=""]').count()).toBe(0);
       await expect
         .poll(() => modelPicker.locator('wa-option[value="openai/gpt-5.6-sol"]').count())
         .toBe(0);
+      await expect
+        .poll(async () => (await modelPicker.locator("wa-option").allTextContents()).join(" "))
+        .not.toContain("Sol");
       const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
       if (artifactDir) {
         await modelPicker.click();

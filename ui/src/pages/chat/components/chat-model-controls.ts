@@ -124,6 +124,26 @@ function resolveChatModelCatalogEntry(
   );
 }
 
+function resolveAvailableChatModelCatalogEntry(
+  value: string,
+  catalog: ModelCatalogEntry[],
+  providerHint = "",
+): ModelCatalogEntry | undefined {
+  const direct = resolveChatModelCatalogEntry(value, catalog);
+  if (direct && direct.available !== false) {
+    return direct;
+  }
+  const normalizedValue = value.trim().toLowerCase();
+  const rawMatches = catalog.filter(
+    (entry) => entry.available !== false && entry.id.trim().toLowerCase() === normalizedValue,
+  );
+  const normalizedHint = normalizeChatModelProviderId(providerHint);
+  return (
+    rawMatches.find((entry) => normalizeChatModelProviderId(entry.provider) === normalizedHint) ??
+    (rawMatches.length === 1 ? rawMatches[0] : undefined)
+  );
+}
+
 function resolveChatModelPickerLabel(
   value: string,
   fallbackLabel: string,
@@ -293,24 +313,30 @@ export function renderChatModelControls(props: ChatModelControlsProps) {
     };
   });
   if (currentOverride && !modelOptions.some((option) => option.value === currentOverride)) {
-    const catalogEntry = resolveChatModelCatalogEntry(currentOverride, props.modelCatalog);
-    const detail = [
-      catalogEntry?.contextWindow ? formatContextTokenCapacity(catalogEntry.contextWindow) : "",
-      catalogEntry?.supportsTools === false ? t("chat.modelControls.chatOnly") : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
-    modelOptions.push({
-      value: currentOverride,
-      label: catalogEntry?.name.trim() || currentOverride,
-      provider: resolveChatModelProvider(
-        currentOverride,
-        props.modelCatalog,
-        "",
-        currentProviderHint,
-      ),
-      ...(detail ? { detail } : {}),
-    });
+    const catalogEntry = resolveAvailableChatModelCatalogEntry(
+      currentOverride,
+      props.modelCatalog,
+      currentProviderHint,
+    );
+    if (catalogEntry) {
+      const detail = [
+        catalogEntry.contextWindow ? formatContextTokenCapacity(catalogEntry.contextWindow) : "",
+        catalogEntry.supportsTools === false ? t("chat.modelControls.chatOnly") : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      modelOptions.push({
+        value: currentOverride,
+        label: catalogEntry.name.trim() || currentOverride,
+        provider: resolveChatModelProvider(
+          currentOverride,
+          props.modelCatalog,
+          "",
+          currentProviderHint,
+        ),
+        ...(detail ? { detail } : {}),
+      });
+    }
   }
   const lockedModelLabel =
     props.modelSelectionRuntimeId?.trim().toLowerCase() === "codex"
@@ -371,9 +397,8 @@ export function renderChatModelControls(props: ChatModelControlsProps) {
             },
           ]
         : modelOptions.length > 0
-          ? modelOptions.some((option) => option.value === "")
-            ? modelOptions
-            : [
+          ? defaultSelectable && !modelOptions.some((option) => option.value === "")
+            ? [
                 {
                   value: "",
                   label: pickerDefaultLabel,
@@ -381,6 +406,7 @@ export function renderChatModelControls(props: ChatModelControlsProps) {
                 },
                 ...modelOptions,
               ]
+            : modelOptions
           : [
               {
                 value: currentOverride,
@@ -388,6 +414,9 @@ export function renderChatModelControls(props: ChatModelControlsProps) {
                 disabled: true,
               },
             ];
+  const pickerValue = pickerOptions.some((option) => option.value === currentOverride)
+    ? currentOverride
+    : "";
   const activeCatalogEntry = resolveChatModelCatalogEntry(
     currentOverride || defaultModel,
     props.modelCatalog,
@@ -406,7 +435,7 @@ export function renderChatModelControls(props: ChatModelControlsProps) {
             : nothing}
           ${renderModelPicker({
             label: t("chat.selectors.model"),
-            value: currentOverride,
+            value: pickerValue,
             options: pickerOptions,
             disabled: modelDisabled || props.modelSelectionLocked === true,
             title:

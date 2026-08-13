@@ -5362,6 +5362,28 @@ describe("chat model controls", () => {
     ).toContain("No models available");
   });
 
+  it("shows only usable models when the current and default models are unavailable", () => {
+    const { state } = createChatHeaderState({
+      model: "gpt-5.6-sol",
+      modelProvider: "openai",
+      models: [
+        { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", available: true },
+        {
+          id: "gpt-5.6-sol",
+          name: "GPT-5.6 Sol",
+          provider: "openai",
+          available: false,
+        },
+      ],
+    });
+    const container = renderModelControls(state, { agentDefaultModel: "openai/gpt-5.6-sol" });
+
+    const modelSelect = getChatModelSelect(container);
+    const options = Array.from(modelSelect.querySelectorAll("wa-option"));
+    expect(options.map((option) => option.getAttribute("value"))).toEqual(["openai/gpt-5.5"]);
+    expect(options.map((option) => option.textContent?.trim())).toEqual(["GPT-5.5"]);
+  });
+
   it("applies a model selection immediately", () => {
     const { state } = createOpenAiHeaderState();
     const onModelSelect = vi.fn(async () => true);
@@ -5407,6 +5429,10 @@ describe("chat model controls", () => {
     const { state } = createChatHeaderState({
       model: null,
       models: createOpenAiModelCatalog(),
+    });
+    state.sessionsResult = createSessionsListResult({
+      defaultsModel: "gpt-5.5",
+      defaultsProvider: "openai",
     });
     const container = renderModelControls(state);
 
@@ -5547,7 +5573,6 @@ describe("chat model controls", () => {
       container.querySelectorAll<HTMLElement>("wa-select.chat-controls__model-picker wa-option"),
     );
     expect(options.map((option) => option.getAttribute("value"))).toEqual([
-      "",
       "openai/gpt-5.5",
       "anthropic/claude-sonnet-4-6",
       "google/gemini-2.5-pro",
@@ -5556,7 +5581,7 @@ describe("chat model controls", () => {
       options.map((option) =>
         option.querySelector("[data-provider-icon]")?.getAttribute("data-provider-icon"),
       ),
-    ).toEqual(["codex", "codex", "claude", "gemini"]);
+    ).toEqual(["codex", "claude", "gemini"]);
     changeChatModel(container, "anthropic/claude-sonnet-4-6");
     expect(onModelSelect).toHaveBeenCalledWith("anthropic/claude-sonnet-4-6", "main");
   });
@@ -5573,7 +5598,7 @@ describe("chat model controls", () => {
     const container = renderModelControls(state);
 
     const options = container.querySelectorAll("wa-select.chat-controls__model-picker wa-option");
-    expect(options).toHaveLength(3);
+    expect(options).toHaveLength(2);
     expect(
       [...options].every((option) => option.querySelector('[data-provider-icon="codex"]')),
     ).toBe(true);
@@ -5600,7 +5625,6 @@ describe("chat model controls", () => {
       container.querySelectorAll("wa-select.chat-controls__model-picker wa-option"),
     );
     expect(options.map((option) => option.textContent?.trim())).toEqual([
-      "Default (gpt-5 · openai)",
       "Gemini 2.5 Pro",
       "Gemini CLI",
       "Sonnet",
@@ -5616,7 +5640,7 @@ describe("chat model controls", () => {
           option.querySelector("[data-provider-icon]")?.getAttribute("data-provider-icon"),
         ),
       ),
-    ).toEqual(new Set(["codex", "gemini", "opencode", "kimi"]));
+    ).toEqual(new Set(["gemini", "opencode", "kimi"]));
   });
 
   it("shows model context size inline without a redundant tooltip", () => {
