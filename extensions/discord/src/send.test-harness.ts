@@ -1,6 +1,7 @@
 // Discord plugin module implements send harness behavior.
 import { createServer } from "node:http";
 import type { MockFn } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { vi } from "vitest";
 import { RequestClient } from "./internal/discord.js";
 
@@ -24,6 +25,60 @@ type DiscordLoopbackRequest = {
   method: string | undefined;
   path: string | undefined;
 };
+
+export const DISCORD_TEST_CFG = {
+  channels: {
+    discord: {
+      accounts: {
+        default: {},
+      },
+    },
+  },
+};
+
+export type MockCallSource = {
+  mock: {
+    calls: ArrayLike<ReadonlyArray<unknown>>;
+  };
+};
+
+export const requireRecord = createRequireRecord("object", "expected-label");
+
+export function discordClientOpts(rest: ReturnType<typeof makeDiscordRest>["rest"]) {
+  return { cfg: DISCORD_TEST_CFG, rest, token: "t" };
+}
+
+export function mockArg(
+  source: MockCallSource,
+  callIndex: number,
+  argIndex: number,
+  label: string,
+) {
+  const call = source.mock.calls[callIndex];
+  if (!call) {
+    throw new Error(`expected mock call: ${label}`);
+  }
+  return call[argIndex];
+}
+
+export function requestOptions(source: MockCallSource, callIndex = 0) {
+  return requireRecord(
+    mockArg(source, callIndex, 1, `request options ${callIndex}`),
+    "request options",
+  );
+}
+
+export function requestPath(source: MockCallSource, callIndex = 0) {
+  return mockArg(source, callIndex, 0, `request path ${callIndex}`);
+}
+
+export function requestBody(source: MockCallSource, callIndex = 0) {
+  return requireRecord(requestOptions(source, callIndex).body, `request body ${callIndex}`);
+}
+
+export function timerDelayAt(source: MockCallSource, callIndex = 0) {
+  return mockArg(source, callIndex, 1, `timer delay ${callIndex}`);
+}
 
 export async function createDiscordLoopbackRest(options?: {
   respond?: (request: DiscordLoopbackRequest) => unknown;
