@@ -304,7 +304,7 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
     const context = await createContext();
     const page = await context.newPage();
     await page.route(/device-scope-upgrade\.runtime(?:-[^/.]+)?\.(?:js|ts)/u, (route) =>
-      route.abort("failed"),
+      route.fulfill({ status: 503 }),
     );
     await installMockGateway(page, { operatorScopes: LIMITED_SCOPES });
 
