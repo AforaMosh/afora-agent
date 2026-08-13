@@ -377,6 +377,42 @@ describe("ChatStateController render lifecycle", () => {
     } satisfies ReactiveControllerHost;
   }
 
+  it("publishes the activating retained pane's dock during inverse DOM-order switches", () => {
+    const shell = document.createElement("div");
+    shell.className = "shell";
+    const compactPane = document.createElement("openclaw-chat-pane");
+    compactPane.setAttribute("aria-hidden", "false");
+    const compactMain = document.createElement("div");
+    compactMain.className = "chat-main";
+    const compactDock = document.createElement("div");
+    compactDock.className = "chat-bottom-dock";
+    vi.spyOn(compactDock, "getBoundingClientRect").mockReturnValue({
+      height: 120,
+    } as DOMRect);
+    compactMain.append(compactDock);
+    compactPane.append(compactMain);
+
+    const outgoingTallPane = document.createElement("openclaw-chat-pane");
+    outgoingTallPane.setAttribute("aria-hidden", "false");
+    const outgoingTallDock = document.createElement("div");
+    outgoingTallDock.className = "chat-bottom-dock";
+    vi.spyOn(outgoingTallDock, "getBoundingClientRect").mockReturnValue({
+      height: 240,
+    } as DOMRect);
+    outgoingTallPane.append(outgoingTallDock);
+    shell.append(compactPane, outgoingTallPane);
+
+    const controller = new ChatStateController<ChatPageHost>(createControllerHost());
+    (
+      controller as unknown as { chatBottomDockResizeTarget: HTMLElement | null }
+    ).chatBottomDockResizeTarget = compactDock;
+
+    controller.syncActiveBottomDockHeight();
+
+    expect(shell.style.getPropertyValue("--chat-active-bottom-dock-height")).toBe("120px");
+    expect(compactMain.style.getPropertyValue("--chat-bottom-dock-height")).toBe("120px");
+  });
+
   function createInputHistoryState(
     renderLifecycle: NonNullable<ChatPageHost["renderLifecycle"]>,
     navigateHistory: ReturnType<typeof vi.fn>,

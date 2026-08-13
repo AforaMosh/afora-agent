@@ -79,11 +79,11 @@ suite.define(() => {
         historyMessages,
         methodResponses: {
           "sessions.list": chatSessionListResponse([
-            { key: tallKey, kind: "direct", label: "Tall draft", updatedAt: 2 },
-            { key: compactKey, kind: "direct", label: "Compact draft", updatedAt: 1 },
+            { key: compactKey, kind: "direct", label: "Compact draft", updatedAt: 2 },
+            { key: tallKey, kind: "direct", label: "Tall draft", updatedAt: 1 },
           ]),
         },
-        sessionKey: tallKey,
+        sessionKey: compactKey,
       });
 
       const readActiveLayout = () =>
@@ -175,6 +175,15 @@ suite.define(() => {
         const activeDock = () =>
           page.locator("openclaw-chat-pane[aria-hidden='false'] .chat-bottom-dock");
 
+        await activeTextarea().fill("Compact retained draft");
+        await waitForChatScrollIdle(page);
+        const compactDockHeight = await activeDock().evaluate(
+          (element) => element.getBoundingClientRect().height,
+        );
+        await scrollChatThreadToTop(page);
+        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
+
+        await switchToSession(tallKey, "Tall draft");
         await activeTextarea().fill(
           [
             "Keep this retained composer expanded:",
@@ -188,23 +197,7 @@ suite.define(() => {
         const tallDockHeight = await activeDock().evaluate(
           (element) => element.getBoundingClientRect().height,
         );
-        await scrollChatThreadToTop(page);
-        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
-
-        await switchToSession(compactKey, "Compact draft");
-        await activeTextarea().fill("Compact retained draft");
-        await waitForChatScrollIdle(page);
-        const compactDockHeight = await activeDock().evaluate(
-          (element) => element.getBoundingClientRect().height,
-        );
         expect(compactDockHeight).toBeLessThan(tallDockHeight);
-        await scrollChatThreadToTop(page);
-        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
-        await showToast();
-        await expectActiveLayout();
-        await dismissToast();
-
-        await switchToSession(tallKey, "Tall draft");
         await scrollChatThreadToTop(page);
         await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
         await showToast();
@@ -222,6 +215,13 @@ suite.define(() => {
         await showToast();
         await expectActiveLayout();
         await captureProof(page, theme, `${viewportName}-retained-compact`);
+        await dismissToast();
+
+        await switchToSession(tallKey, "Tall draft");
+        await scrollChatThreadToTop(page);
+        await page.getByRole("button", { name: "Scroll to latest" }).waitFor();
+        await showToast();
+        await expectActiveLayout();
       } finally {
         await context.close();
       }

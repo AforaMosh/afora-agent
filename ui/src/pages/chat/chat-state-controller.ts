@@ -24,16 +24,17 @@ type ChatRenderLifecycleScope = {
 const CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY = "--chat-bottom-dock-height";
 const ACTIVE_CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY = "--chat-active-bottom-dock-height";
 
-function syncActiveChatBottomDockHeight(shell: HTMLElement): void {
-  const heights = [
-    ...shell.querySelectorAll<HTMLElement>(
-      'openclaw-chat-pane[aria-hidden="false"] .chat-bottom-dock',
-    ),
-  ].map((dock) => dock.getBoundingClientRect().height);
-  shell.style.setProperty(
-    ACTIVE_CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY,
-    `${Math.ceil(Math.max(0, ...heights))}px`,
-  );
+function syncChatBottomDockHeight(dock: HTMLElement): void {
+  const height = `${Math.ceil(dock.getBoundingClientRect().height)}px`;
+  dock
+    .closest<HTMLElement>(".chat-main")
+    ?.style.setProperty(CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY, height);
+  const pane = dock.closest<HTMLElement>("openclaw-chat-pane");
+  if (pane?.getAttribute("aria-hidden") === "false") {
+    dock
+      .closest<HTMLElement>(".shell")
+      ?.style.setProperty(ACTIVE_CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY, height);
+  }
 }
 
 export class ChatStateController<TState extends ChatPageHost> implements ReactiveController {
@@ -282,16 +283,7 @@ export class ChatStateController<TState extends ChatPageHost> implements Reactiv
       return;
     }
 
-    const syncDockHeight = () => {
-      const height = Math.ceil(dock.getBoundingClientRect().height);
-      dock
-        .closest<HTMLElement>(".chat-main")
-        ?.style.setProperty(CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY, `${height}px`);
-      const shell = dock.closest<HTMLElement>(".shell");
-      if (shell) {
-        syncActiveChatBottomDockHeight(shell);
-      }
-    };
+    const syncDockHeight = () => syncChatBottomDockHeight(dock);
     syncDockHeight();
 
     // The transcript virtualizer still owns row measurement and anchoring. This
@@ -312,9 +304,8 @@ export class ChatStateController<TState extends ChatPageHost> implements Reactiv
 
   syncActiveBottomDockHeight(): void {
     const dock = this.chatBottomDockResizeTarget;
-    const shell = dock?.closest<HTMLElement>(".shell");
-    if (shell) {
-      syncActiveChatBottomDockHeight(shell);
+    if (dock) {
+      syncChatBottomDockHeight(dock);
     }
   }
 
@@ -372,7 +363,16 @@ export class ChatStateController<TState extends ChatPageHost> implements Reactiv
         .closest<HTMLElement>(".chat-main")
         ?.style.removeProperty(CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY);
       if (shell) {
-        queueMicrotask(() => syncActiveChatBottomDockHeight(shell));
+        queueMicrotask(() => {
+          const activeDock = shell.querySelector<HTMLElement>(
+            'openclaw-chat-pane[aria-hidden="false"] .chat-bottom-dock',
+          );
+          if (activeDock) {
+            syncChatBottomDockHeight(activeDock);
+          } else {
+            shell.style.setProperty(ACTIVE_CHAT_BOTTOM_DOCK_HEIGHT_PROPERTY, "0px");
+          }
+        });
       }
     }
     while (this.cleanups.length > 0) {
