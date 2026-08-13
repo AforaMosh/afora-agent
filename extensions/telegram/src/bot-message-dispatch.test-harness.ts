@@ -1,6 +1,7 @@
 import { expectDefined } from "@openclaw/normalization-core";
 // Telegram tests cover bot message dispatch plugin behavior.
 import type { Bot } from "grammy";
+import type { ChannelInboundTurnPlan } from "openclaw/plugin-sdk/channel-inbound";
 import {
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
@@ -24,6 +25,20 @@ import type { TelegramRuntime } from "./runtime.types.js";
 export type DispatchReplyWithBufferedBlockDispatcherArgs = Parameters<
   TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"]
 >[0];
+
+type TelegramProviderDelivery = ChannelInboundTurnPlan<"provider_message_sending">["delivery"];
+
+function requireTelegramProviderDelivery(
+  delivery: ChannelInboundTurnPlan["delivery"] | TelegramProviderDelivery,
+): TelegramProviderDelivery {
+  if (
+    "deliverWithProviderMessageSending" in delivery &&
+    typeof delivery.deliverWithProviderMessageSending === "function"
+  ) {
+    return delivery;
+  }
+  throw new Error("expected provider-owned Telegram delivery");
+}
 
 export function requireInvocationOrder(
   mock: { mock: { invocationCallOrder: number[] } },
@@ -206,7 +221,7 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
       if (!("route" in resolved) || !("delivery" in resolved)) {
         throw new Error("expected assembled Telegram channel turn plan");
       }
-      const delivery = messageFixtures.telegramDeliveryFixture(resolved.delivery);
+      const delivery = requireTelegramProviderDelivery(resolved.delivery);
       const testTurn = (params.raw as { turn: TestTurn }).turn;
       const result = await actual.runPreparedInboundReply({
         channel: resolved.channel,
@@ -568,61 +583,10 @@ export function expectWindowCollapsedTo(
   expect(preview?.text).toBe(barText);
 }
 
-export function createContext(overrides?: Partial<TelegramMessageContext>): TelegramMessageContext {
-  const base = messageFixtures.telegramMessageContextFixture({
-    cfg: {},
-    ctxPayload: {},
-    primaryCtx: { message: { chat: { id: 123, type: "private" } } },
-    msg: {
-      chat: { id: 123, type: "private" },
-      message_id: 456,
-      message_thread_id: 777,
-    },
-    chatId: 123,
-    isGroup: false,
-    groupConfig: undefined,
-    resolvedThreadId: undefined,
-    replyThreadId: 777,
-    threadSpec: { id: 777, scope: "dm" },
-    historyKey: undefined,
-    historyLimit: 0,
-    groupHistories: new Map(),
-    route: { agentId: "default", accountId: "default" },
-    skillFilter: undefined,
-    sendTyping: vi.fn(),
-    sendRecordVoice: vi.fn(),
-    sendChatActionHandler: { sendChatAction: vi.fn(async () => undefined) },
-    ackReactionPromise: null,
-    reactionApi: null,
-    isForum: false,
-    statusReactionController: null,
-    accountId: "default",
-    turn: {
-      storePath: "/tmp/openclaw/telegram-sessions.json",
-      recordInboundSession: vi.fn(async () => undefined),
-      record: {
-        onRecordError: vi.fn(),
-      },
-    },
-  });
-
-  return messageFixtures.telegramMessageContextFixture({
-    ...base,
-    ...overrides,
-    // Merge nested fields when overrides provide partial objects.
-    primaryCtx: {
-      ...(base.primaryCtx as object),
-      ...(overrides?.primaryCtx ? (overrides.primaryCtx as object) : null),
-    } as TelegramMessageContext["primaryCtx"],
-    msg: {
-      ...(base.msg as object),
-      ...(overrides?.msg ? (overrides.msg as object) : null),
-    } as TelegramMessageContext["msg"],
-    route: {
-      ...(base.route as object),
-      ...(overrides?.route ? (overrides.route as object) : null),
-    } as TelegramMessageContext["route"],
-  });
+export function createContext(
+  overrides?: messageFixtures.TelegramMessageContextOverrides,
+): TelegramMessageContext {
+  return messageFixtures.createTelegramMessageContextFixture(overrides);
 }
 
 export function createStatusReactionController() {
@@ -639,23 +603,14 @@ export function createStatusReactionController() {
 }
 
 export function createDirectSessionPayload(): TelegramMessageContext["ctxPayload"] {
-  return {
+  return messageFixtures.telegramContextPayloadFixture({
     SessionKey: "agent:test:telegram:direct:123",
     ChatType: "direct",
-  } as TelegramMessageContext["ctxPayload"];
+  });
 }
 
 export function createBot(): Bot {
-  return messageFixtures.telegramBotFixture({
-    api: {
-      sendMessage: vi.fn(async (_chatId, _text, params) => ({
-        message_id: typeof params?.message_thread_id === "number" ? params.message_thread_id : 1001,
-      })),
-      editMessageText: vi.fn(async () => ({ message_id: 1001 })),
-      deleteMessage: vi.fn().mockResolvedValue(true),
-      editForumTopic: vi.fn().mockResolvedValue(true),
-    },
-  });
+  return messageFixtures.createTelegramBotFixture();
 }
 
 export function createRuntime(): Parameters<typeof dispatchTelegramMessage>[0]["runtime"] {
@@ -725,11 +680,11 @@ export function createReasoningForumTopicContext(): TelegramMessageContext {
   });
   return createContext({
     ctxPayload: messageFixtures.telegramContextPayloadFixture({ SessionKey: "s1" }),
-    msg: messageFixtures.telegramMessageFixture({
+    msg: {
       chat: { id: -100123, type: "supergroup", is_forum: true },
       message_id: 456,
       message_thread_id: 88,
-    }),
+    },
     chatId: -100123,
     isGroup: true,
     threadSpec: { id: 88, scope: "forum" },

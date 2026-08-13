@@ -451,6 +451,20 @@ describe("telegram ingress supersede policy", () => {
     ).toBe(true);
   });
 
+  it("rejects unsupported raw chat types before authorization", async () => {
+    expect(
+      await isTelegramSpooledUpdateSenderAuthorized(
+        messageUpdate({
+          updateId: 1,
+          text: "stop",
+          senderId: OWNER_ID,
+          chatType: "future-chat-type",
+        }),
+        auth,
+      ),
+    ).toBe(false);
+  });
+
   it("authorizes paired DM senders via the pairing store under dmPolicy pairing", async () => {
     const pairedId = "424242";
     openClawState = await createOpenClawTestState({

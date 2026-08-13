@@ -31,7 +31,9 @@ type RawTelegramSender = {
   username?: unknown;
 };
 
-function extractTelegramChatType(value: unknown): TelegramMessageThreadFacts["chat"]["type"] {
+function parseTelegramChatType(
+  value: unknown,
+): TelegramMessageThreadFacts["chat"]["type"] | undefined {
   switch (value) {
     case "channel":
     case "group":
@@ -39,13 +41,14 @@ function extractTelegramChatType(value: unknown): TelegramMessageThreadFacts["ch
     case "supergroup":
       return value;
     default:
-      return "private";
+      return undefined;
   }
 }
 
 function extractMessageThreadFacts(
   message: Record<string, unknown>,
   chat: RawTelegramChat,
+  chatType: TelegramMessageThreadFacts["chat"]["type"],
 ): TelegramMessageThreadFacts {
   const directTopic = message.direct_messages_topic;
   const topicId =
@@ -54,7 +57,7 @@ function extractMessageThreadFacts(
       : undefined;
   return {
     chat: {
-      type: extractTelegramChatType(chat.type),
+      type: chatType,
       ...(typeof chat.is_direct_messages === "boolean"
         ? { is_direct_messages: chat.is_direct_messages }
         : {}),
@@ -110,13 +113,16 @@ function extractUpdateSenderFacts(update: unknown): UpdateSenderFacts | null {
   if (typeof chat?.id !== "number" || typeof from.id !== "number") {
     return null;
   }
-  const chatType = typeof chat.type === "string" ? chat.type : "private";
+  const chatType = parseTelegramChatType(chat.type);
+  if (!chatType) {
+    return null;
+  }
   return {
     senderId: String(from.id),
     ...(typeof from.username === "string" ? { senderUsername: from.username } : {}),
     chatId: chat.id,
     isGroup: chatType !== "private",
-    message: extractMessageThreadFacts(message, chat),
+    message: extractMessageThreadFacts(message, chat, chatType),
   };
 }
 

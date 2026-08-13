@@ -25,12 +25,11 @@ import {
   mockCallArg,
   resolveMarkdownTableMode,
 } from "./bot-message-dispatch.test-harness.js";
-import type { TelegramMessageContext } from "./bot-message-dispatch.test-harness.js";
 
 describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
   it("skips general understanding after describing a first-seen non-vision sticker", async () => {
     describeStickerImage.mockResolvedValueOnce("A curious sticker");
-    const ctxPayload = {
+    const ctxPayload = telegramContextPayloadFixture({
       media: [{ path: "/tmp/sticker.webp", kind: "sticker" as const }],
       CommandAuthorized: true,
       Sticker: {
@@ -38,7 +37,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
         fileUniqueId: "sticker-unique",
       },
       StickerMediaIncluded: true,
-    } as TelegramMessageContext["ctxPayload"];
+    });
 
     await dispatchWithContext({
       context: createContext({ ctxPayload }),
@@ -56,7 +55,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
 
   it("preserves cached sticker descriptions with user text through dispatch", async () => {
     const body = "[Sticker] Cached description\nWhat is this?";
-    const ctxPayload = {
+    const ctxPayload = telegramContextPayloadFixture({
       Body: body,
       BodyForAgent: body,
       RawBody: "What is this?",
@@ -69,7 +68,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
       },
       StickerMediaIncluded: true,
       SkipStickerMediaUnderstanding: true,
-    } as TelegramMessageContext["ctxPayload"];
+    });
 
     await dispatchWithContext({
       context: createContext({ ctxPayload }),
@@ -88,7 +87,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
 
   it("preserves supplemental context when describing a captionless sticker", async () => {
     describeStickerImage.mockResolvedValueOnce("A contextual sticker");
-    const ctxPayload = {
+    const ctxPayload = telegramContextPayloadFixture({
       Body: "reply-chain context",
       BodyForAgent: "reply-chain context",
       RawBody: "",
@@ -99,7 +98,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
         fileUniqueId: "sticker-unique",
       },
       StickerMediaIncluded: true,
-    } as TelegramMessageContext["ctxPayload"];
+    });
 
     await dispatchWithContext({ context: createContext({ ctxPayload }) });
 
@@ -108,7 +107,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
   });
 
   it("does not describe supplemental media when the sticker fact has no path", async () => {
-    const ctxPayload = {
+    const ctxPayload = telegramContextPayloadFixture({
       Body: "supplemental context",
       BodyForAgent: "supplemental context",
       RawBody: "",
@@ -122,7 +121,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
         fileUniqueId: "sticker-unique",
       },
       StickerMediaIncluded: true,
-    } as TelegramMessageContext["ctxPayload"];
+    });
 
     await dispatchWithContext({ context: createContext({ ctxPayload }) });
 
