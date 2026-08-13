@@ -815,7 +815,7 @@ suite.define(() => {
                 "operator.pairing",
               ],
             },
-            features: { events: [], methods: ["chat.startup"] },
+            features: { events: [], methods: ["chat.startup", "models.list"] },
             protocol: 4,
             server: { connId: "control-ui-e2e", version: "e2e" },
             snapshot: {

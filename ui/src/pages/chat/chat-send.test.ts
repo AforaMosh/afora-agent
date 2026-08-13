@@ -367,7 +367,7 @@ describe("refreshChat", () => {
     const startup = createDeferred<unknown>();
     const host = makeChatHost({
       hello: {
-        features: { methods: ["chat.metadata", "chat.startup"] },
+        features: { methods: ["chat.metadata", "chat.startup", "models.list"] },
       } as TestChatHost["hello"],
       requestHandlers: {
         "chat.startup": () => startup.promise,
@@ -427,7 +427,7 @@ describe("refreshChat", () => {
     const startup = createDeferred<unknown>();
     const host = makeChatHost({
       hello: {
-        features: { methods: ["chat.metadata", "chat.startup"] },
+        features: { methods: ["chat.metadata", "chat.startup", "models.list"] },
       } as TestChatHost["hello"],
       requestHandlers: {
         "chat.metadata": {},

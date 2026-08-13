@@ -205,6 +205,7 @@ export const mockedAcquireAgentRunPreparedModelRuntime = vi.fn(
             }
           : undefined,
         metadataSnapshot: { ...emptyPluginMetadataSnapshot, workspaceDir: input.workspaceDir },
+        modelCatalog: { entries: [], routeVariants: [] },
         createStores: () => ({ authStorage: {}, modelRegistry: {} }),
       },
       release: vi.fn(),
