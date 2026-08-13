@@ -227,7 +227,9 @@ async function refreshMissingChatMetadata(
   const commandsRefresh = applied.commands
     ? Promise.resolve()
     : refreshCompatibilityCommands(request);
-  const preserveModels = opts?.preserveModelCatalogOnFallback;
+  const preserveModels =
+    opts?.preserveModelCatalogOnFallback ||
+    isGatewayMethodAdvertised(request.host as unknown as ChatState, "models.list") === false;
   const modelsRefresh =
     applied.models || preserveModels
       ? Promise.resolve()
@@ -267,11 +269,12 @@ export async function refreshChatMetadata(
     if (!ownsChatMetadataRequest(request)) {
       return EMPTY_CHAT_METADATA_APPLY_RESULT;
     }
-    // chat.metadata remains the compatibility source for commands only. Picker inventory must
-    // always come from the live, agent-scoped models.list result so stale static models cannot
-    // reappear when chat.startup omits metadata or an older Gateway serves this fallback path.
+    // Current Gateways use the live, agent-scoped catalog. A Gateway that explicitly lacks
+    // models.list keeps its metadata catalog so the compatibility path does not empty the picker.
+    const useMetadataModels =
+      isGatewayMethodAdvertised(host as unknown as ChatState, "models.list") === false;
     const metadataApplied = applyChatMetadataResult(host, client, agentId, result, {
-      models: false,
+      models: useMetadataModels,
     });
     if (!metadataApplied.models || !metadataApplied.commands) {
       await refreshMissingChatMetadata(request, metadataApplied, opts);
@@ -461,9 +464,13 @@ export function refreshPageChat(host: ChatPageHost, opts?: ChatRefreshOptions) {
           return;
         }
         rememberChatMetadata(client, agentId, metadata);
-        // Startup metadata stays on the published static catalog so opening chat never waits on
-        // provider discovery. The explicit models.list read below owns the live picker inventory.
-        const applied = applyChatMetadataResult(host, client, agentId, metadata, { models: false });
+        // Only an explicitly legacy Gateway owns picker inventory through startup metadata.
+        // Current and capability-unknown Gateways continue into live, agent-scoped discovery.
+        const useMetadataModels =
+          isGatewayMethodAdvertised(host as unknown as ChatState, "models.list") === false;
+        const applied = applyChatMetadataResult(host, client, agentId, metadata, {
+          models: useMetadataModels,
+        });
         if (!applied.models || !applied.commands) {
           await refreshMissingChatMetadata(request, applied, { refreshModelCatalog: true });
         }

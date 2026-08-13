@@ -1,3 +1,4 @@
+import { listProviderModelAuthorizingProfileIds } from "../../../plugins/provider-catalog-outcome.js";
 import { resolveProviderAuthProfileId } from "../../../plugins/provider-runtime.js";
 import type { AuthProfileStore } from "../../auth-profiles.js";
 import { resolveExternalCliAuthOverlayScopeFromSelection } from "../../auth-profiles/external-cli-auth-selection.js";
@@ -7,6 +8,7 @@ import {
   ensureAuthProfileStoreWithoutExternalProfiles,
 } from "../../model-auth.js";
 import { OPENAI_PROVIDER_ID } from "../../openai-routing.js";
+import { getLoadedFullModelCatalog } from "../../prepared-model-runtime-full-catalog.js";
 import type { PreparedModelRuntimeSnapshot } from "../../prepared-model-runtime.js";
 import {
   createPreparedRuntimeModelMaterializer,
@@ -21,6 +23,35 @@ import type { RunEmbeddedAgentParams } from "./params.js";
 
 type ModelResolution = Awaited<ReturnType<typeof resolveModelAsync>>;
 type RuntimeModel = NonNullable<ModelResolution["model"]>;
+
+function resolveEmbeddedRunPreferredProfileId(params: {
+  provider: string;
+  modelId: string;
+  preparedModelRuntime?: PreparedModelRuntimeSnapshot;
+  requestedProfileId?: string;
+  lockedProfileId?: string;
+  ignoreAutoPreferredProfile: boolean;
+}): string | undefined {
+  const loadedCatalog = getLoadedFullModelCatalog(params.preparedModelRuntime);
+  const authorizingProfileIds = params.lockedProfileId
+    ? []
+    : listProviderModelAuthorizingProfileIds({
+        outcomes:
+          loadedCatalog?.providerOutcomes ??
+          params.preparedModelRuntime?.modelCatalog.providerOutcomes,
+        provider: params.provider,
+        modelId: params.modelId,
+      });
+  // Discovery made this model selectable with one of these exact profiles. Preserve an already
+  // authorizing auto-selection; otherwise bind the first attempt to catalog provenance.
+  const catalogAuthorizedProfileId =
+    params.requestedProfileId && authorizingProfileIds.includes(params.requestedProfileId)
+      ? params.requestedProfileId
+      : authorizingProfileIds[0];
+  return params.ignoreAutoPreferredProfile && !params.lockedProfileId
+    ? undefined
+    : (params.lockedProfileId ?? catalogAuthorizedProfileId ?? params.requestedProfileId);
+}
 
 function loadEmbeddedRunAuthProfileStore(params: {
   agentDir: string;
@@ -40,7 +71,7 @@ function loadEmbeddedRunAuthProfileStore(params: {
 // must stay provable without composing a full embedded runner.
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.embeddedRunAuthPlanTestApi")] =
-    { loadEmbeddedRunAuthProfileStore };
+    { loadEmbeddedRunAuthProfileStore, resolveEmbeddedRunPreferredProfileId };
 }
 
 export async function prepareEmbeddedRunAuthPlan(params: {
@@ -132,10 +163,14 @@ export async function prepareEmbeddedRunAuthPlan(params: {
 
   const requestedProfileId = runParams.authProfileId?.trim() || undefined;
   const lockedProfileId = runParams.authProfileIdSource === "user" ? requestedProfileId : undefined;
-  const preferredProfileId =
-    externalCliAuthScope.ignoreAutoPreferredProfile && !lockedProfileId
-      ? undefined
-      : requestedProfileId;
+  const preferredProfileId = resolveEmbeddedRunPreferredProfileId({
+    provider: params.provider,
+    modelId: params.modelId,
+    preparedModelRuntime: params.preparedModelRuntime,
+    requestedProfileId,
+    lockedProfileId,
+    ignoreAutoPreferredProfile: externalCliAuthScope.ignoreAutoPreferredProfile,
+  });
   const createAuthPreparation = () => {
     const harness = params.getAgentHarness();
     return prepareAgentRuntimeAuth({
@@ -180,7 +215,7 @@ export async function prepareEmbeddedRunAuthPlan(params: {
       config: runParams.config,
       getModel: params.getRuntimeModel,
       nativeModelOwned: params.nativeModelOwned,
-      requestedProfileId: runParams.authProfileId,
+      requestedProfileId: preferredProfileId,
       providerUsesProfileScopedModelMetadata,
       resolveModel: ({ config, authProfileId, authProfileMode }) =>
         resolveModelAsync(params.provider, params.modelId, params.agentDir, config, {

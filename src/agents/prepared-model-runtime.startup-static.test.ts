@@ -178,6 +178,7 @@ vi.mock("../logging/subsystem.js", () => ({
 
 const { getPreparedModelRuntimeSnapshot, refreshPreparedModelRuntimeSnapshots } =
   await import("./prepared-model-runtime.js");
+const { getLoadedFullModelCatalog } = await import("./prepared-model-runtime-full-catalog.js");
 const { prepareScopedReadOnlyLiveModelCatalog, prepareScopedReadOnlyModelCatalog } =
   await import("./prepared-model-runtime.scoped-catalog.js");
 const { resetPreparedModelRuntimeSnapshotsForTest } =
@@ -380,7 +381,9 @@ describe("prepared model runtime Gateway catalog mode", () => {
     expect(snapshot?.pluginRegistry).toBeDefined();
     expect(snapshot?.messageToolCatalog).toBeUndefined();
     expect(snapshot?.mediaCapabilityProviders).toBeDefined();
+    expect(getLoadedFullModelCatalog(snapshot)).toBeUndefined();
     const fullCatalog = await snapshot?.loadFullModelCatalog?.();
+    expect(getLoadedFullModelCatalog(snapshot)).toBe(fullCatalog);
     expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
     expect(mocks.planOpenClawModelsJsonSource).toHaveBeenCalledWith(
       config,

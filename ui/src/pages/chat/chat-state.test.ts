@@ -1410,7 +1410,7 @@ describe("refreshChatMetadata", () => {
       agentsList: null,
       assistantAgentId: "main",
       client: { request },
-      hello: { features: { methods: ["chat.metadata"] } },
+      hello: { features: { methods: ["chat.metadata", "models.list"] } },
       sessionKey: "agent:work:main",
       ...overrides,
     } as unknown as ChatPageHost;
@@ -1644,7 +1644,7 @@ describe("refreshChatMetadata", () => {
       chatMetadataRequestVersion: 2,
       chatModelCatalog: [{ id: "stale-model", name: "Stale Model", provider: "openai" }],
       chatModelsLoading: true,
-      hello: { features: { methods: [] } },
+      hello: { features: { methods: ["models.list"] } },
       sessionKey: "agent:main:main",
     });
 
@@ -1658,6 +1658,27 @@ describe("refreshChatMetadata", () => {
     expect(request).toHaveBeenCalledTimes(2);
   });
 
+  it("retains metadata models when the gateway explicitly lacks models.list", async () => {
+    const metadataModel = {
+      id: "metadata-model",
+      name: "Metadata Model",
+      provider: "openai",
+      available: true,
+    };
+    const request = vi.fn(async (method: string) => {
+      expect(method).toBe("chat.metadata");
+      return { commands: [], models: [metadataModel] };
+    });
+    const state = createMetadataState(request, {
+      hello: { features: { methods: ["chat.metadata"] } },
+    });
+
+    await refreshChatMetadata(state);
+
+    expect(state.chatModelCatalog).toEqual([metadataModel]);
+    expect(request).toHaveBeenCalledOnce();
+  });
+
   it("surfaces a first-load models.list failure instead of publishing an empty catalog", async () => {
     const request = vi.fn(async (method: string) => {
       if (method === "models.list") {
@@ -1668,7 +1689,7 @@ describe("refreshChatMetadata", () => {
     });
     const state = createMetadataState(request, {
       chatModelCatalog: [],
-      hello: { features: { methods: [] } },
+      hello: { features: { methods: ["models.list"] } },
       sessionKey: "agent:main:main",
     });
 
@@ -1715,7 +1736,7 @@ describe("refreshChatMetadata", () => {
     const state = createMetadataState(request, {
       agentsList: { defaultId: "main" } as ChatPageHost["agentsList"],
       chatModelCatalog: [{ id: "stale-model", name: "Stale Model", provider: "openai" }],
-      hello: { features: { methods: [] } },
+      hello: { features: { methods: ["models.list"] } },
     });
 
     await refreshChatMetadata(state);

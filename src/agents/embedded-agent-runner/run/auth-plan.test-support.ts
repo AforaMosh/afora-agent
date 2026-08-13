@@ -1,5 +1,6 @@
 import "./auth-plan.js";
 import type { AuthProfileStore } from "../../auth-profiles.js";
+import type { PreparedModelRuntimeSnapshot } from "../../prepared-model-runtime.js";
 import type { RunEmbeddedAgentParams } from "./params.js";
 
 type EmbeddedRunAuthPlanTestApi = {
@@ -8,6 +9,14 @@ type EmbeddedRunAuthPlanTestApi = {
     config: RunEmbeddedAgentParams["config"];
     externalCliProviderIds: Iterable<string>;
   }): AuthProfileStore;
+  resolveEmbeddedRunPreferredProfileId(params: {
+    provider: string;
+    modelId: string;
+    preparedModelRuntime?: PreparedModelRuntimeSnapshot;
+    requestedProfileId?: string;
+    lockedProfileId?: string;
+    ignoreAutoPreferredProfile: boolean;
+  }): string | undefined;
 };
 
 function getTestApi(): EmbeddedRunAuthPlanTestApi {
@@ -18,4 +27,6 @@ function getTestApi(): EmbeddedRunAuthPlanTestApi {
 
 export const testing: EmbeddedRunAuthPlanTestApi = {
   loadEmbeddedRunAuthProfileStore: (params) => getTestApi().loadEmbeddedRunAuthProfileStore(params),
+  resolveEmbeddedRunPreferredProfileId: (params) =>
+    getTestApi().resolveEmbeddedRunPreferredProfileId(params),
 };

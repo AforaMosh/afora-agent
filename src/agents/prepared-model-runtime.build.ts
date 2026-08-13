@@ -7,6 +7,7 @@ import { resolveUsableAgentCredentialModes } from "./agent-auth-credentials.js";
 import { getPreparedRuntimeAuthMaterializations } from "./auth-profiles/runtime-materializations.js";
 import type { ModelCatalogSnapshot } from "./model-catalog.types.js";
 import { setPreparedModelRuntimeAuthMaterializations } from "./prepared-model-runtime-auth.js";
+import { attachLoadedFullModelCatalogAccessor } from "./prepared-model-runtime-full-catalog.js";
 import { PreparedModelRuntimePublicationSupersededError } from "./prepared-model-runtime.errors.js";
 import {
   fingerprintPreparedRuntimeFacts,
@@ -37,6 +38,7 @@ const MAX_CONCURRENT_FULL_MODEL_CATALOG_BUILDS = 1;
 const limitFullModelCatalogBuild = pLimit(MAX_CONCURRENT_FULL_MODEL_CATALOG_BUILDS);
 
 type PreparedModelRuntimeCatalogAccess = Readonly<{
+  getLoadedFullModelCatalog: () => ModelCatalogSnapshot | undefined;
   loadFullModelCatalog: () => Promise<ModelCatalogSnapshot>;
 }>;
 type PreparedModelRuntimeBuildGuards =
@@ -117,6 +119,7 @@ function createFullModelCatalogAccess(params: {
     }
   };
   return {
+    getLoadedFullModelCatalog: () => fullCatalog,
     loadFullModelCatalog: () => {
       if (fullCatalog) {
         return Promise.resolve(fullCatalog);
@@ -177,7 +180,7 @@ function createSnapshot(
     const authStorage = AuthStorage.inMemory(credentials);
     return { authStorage, modelRegistry: templateModelRegistry.fork(authStorage) };
   };
-  const snapshot: PreparedModelRuntimeSnapshot = Object.freeze({
+  const snapshot: PreparedModelRuntimeSnapshot = {
     ...(input.agentId ? { agentId: input.agentId } : {}),
     agentDir: input.agentDir,
     activeProjectKeys: [],
@@ -195,12 +198,13 @@ function createSnapshot(
     configuredRuntimeModels,
     inlineProviderModels,
     createStores,
-  });
+  };
+  attachLoadedFullModelCatalogAccessor(snapshot, catalogAccess.getLoadedFullModelCatalog);
   setPreparedModelRuntimeAuthMaterializations(
     snapshot,
     Object.freeze([...getPreparedRuntimeAuthMaterializations(input.agentDir)]),
   );
-  return snapshot;
+  return Object.freeze(snapshot);
 }
 
 async function buildSnapshotBatch(

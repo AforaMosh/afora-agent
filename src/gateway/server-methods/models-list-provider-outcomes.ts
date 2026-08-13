@@ -1,6 +1,9 @@
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
 import type { ModelAuthAvailabilityEvaluation } from "../../agents/model-auth-availability.js";
-import type { ProviderCatalogOutcome } from "../../plugins/provider-catalog.types.js";
+import {
+  listProviderModelAuthorizingProfileIds,
+  type ProviderCatalogOutcome,
+} from "../../plugins/provider-catalog-outcome.js";
 
 export function projectPublicProviderCatalogOutcomes(
   outcomes: readonly ProviderCatalogOutcome[] | undefined,
@@ -22,14 +25,11 @@ export function applyProviderCatalogOutcomesToModelAuth(params: {
   const provider = normalizeProviderId(params.provider);
   const outcomes =
     params.outcomes?.filter((outcome) => normalizeProviderId(outcome.provider) === provider) ?? [];
-  const modelId = params.modelId.trim().toLowerCase();
-  const authorizingProfileIds = outcomes.flatMap((outcome) =>
-    outcome.status === "ready" &&
-    outcome.profileId &&
-    outcome.modelIds?.some((candidate) => candidate.trim().toLowerCase() === modelId)
-      ? [outcome.profileId]
-      : [],
-  );
+  const authorizingProfileIds = listProviderModelAuthorizingProfileIds({
+    outcomes,
+    provider,
+    modelId: params.modelId,
+  });
   if (
     authorizingProfileIds.length > 0 &&
     !authorizingProfileIds.includes(params.resolved.selectedProfileId ?? "")

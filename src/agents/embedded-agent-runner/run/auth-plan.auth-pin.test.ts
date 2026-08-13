@@ -76,4 +76,58 @@ describe("embedded run auth plan provider pin", () => {
       },
     });
   });
+
+  it("prefers the profile whose loaded catalog authorized the selected model", () => {
+    const preparedModelRuntime = {
+      modelCatalog: {
+        entries: [],
+        routeVariants: [],
+        providerOutcomes: [
+          {
+            provider: "openai",
+            profileId: "openai:first",
+            status: "ready" as const,
+            modelIds: ["gpt-5.6-sol"],
+          },
+          {
+            provider: "openai",
+            profileId: "openai:second",
+            status: "ready" as const,
+            modelIds: ["gpt-5.6-terra"],
+          },
+        ],
+      },
+    } as unknown as Parameters<
+      typeof authPlanTesting.resolveEmbeddedRunPreferredProfileId
+    >[0]["preparedModelRuntime"];
+
+    expect(
+      authPlanTesting.resolveEmbeddedRunPreferredProfileId({
+        provider: "openai",
+        modelId: "gpt-5.6-terra",
+        preparedModelRuntime,
+        requestedProfileId: "openai:first",
+        ignoreAutoPreferredProfile: false,
+      }),
+    ).toBe("openai:second");
+    expect(
+      authPlanTesting.resolveEmbeddedRunPreferredProfileId({
+        provider: "openai",
+        modelId: "gpt-5.6-terra",
+        preparedModelRuntime,
+        requestedProfileId: "openai:first",
+        lockedProfileId: "openai:first",
+        ignoreAutoPreferredProfile: false,
+      }),
+    ).toBe("openai:first");
+    expect(
+      authPlanTesting.resolveEmbeddedRunPreferredProfileId({
+        provider: "openai",
+        modelId: "gpt-5.6-sol",
+        preparedModelRuntime,
+        requestedProfileId: "openai:first",
+        ignoreAutoPreferredProfile: false,
+      }),
+    ).toBe("openai:first");
+  });
 });
