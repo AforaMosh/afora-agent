@@ -53,7 +53,7 @@ type NodeTestPlanOptions = {
   compactWholeGroupCount?: number;
 };
 
-export type CompactNodeTestPlanMode = "pull-request" | "push";
+type CompactNodeTestPlanMode = "pull-request" | "push";
 
 type PolicyTestWatch = {
   ownerGlobs?: readonly string[];
