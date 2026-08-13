@@ -18,6 +18,7 @@ const VARIANTS = Object.freeze([
   { aliasKey: "slim", suffix: "-slim" },
   { aliasKey: "browser", suffix: "-browser" },
 ]);
+
 /** @typedef {{ images: string[]; version: string }} DockerPromotionParams */
 /**
  * @typedef {object} DockerExecOptions
