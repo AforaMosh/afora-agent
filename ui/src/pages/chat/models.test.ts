@@ -107,10 +107,9 @@ describe("loadModelPickerModels", () => {
         };
       });
 
-      const models = await loadModelPickerModels(
-        { request } as unknown as GatewayBrowserClient,
-        { modelsListAdvertised },
-      );
+      const models = await loadModelPickerModels({ request } as unknown as GatewayBrowserClient, {
+        modelsListAdvertised,
+      });
 
       expect(request).toHaveBeenCalledWith("chat.metadata", {});
       expect(models).toEqual([{ id: "legacy", name: "Legacy", provider: "openai" }]);
@@ -130,15 +129,12 @@ describe("loadModelPickerModels", () => {
       };
     });
 
-    const models = await loadModelPickerModels(
-      { request } as unknown as GatewayBrowserClient,
-      { modelsListAdvertised: true },
-    );
+    const models = await loadModelPickerModels({ request } as unknown as GatewayBrowserClient, {
+      modelsListAdvertised: true,
+    });
 
     expect(request).toHaveBeenCalledWith("models.list", { view: "configured" });
-    expect(models).toEqual([
-      { id: "ready", name: "Ready", provider: "openai", available: true },
-    ]);
+    expect(models).toEqual([{ id: "ready", name: "Ready", provider: "openai", available: true }]);
   });
 });
 

@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
 import type { OAuthCredential } from "../../auth-profiles.js";
 import { testing as externalAuthTesting } from "../../auth-profiles/external-auth.test-support.js";
-import { prepareAgentRuntimeAuth } from "../../runtime-plan/prepare-auth.js";
 import { resolvePreparedRuntimePreferredProfileId } from "../../runtime-plan/preferred-profile.js";
+import { prepareAgentRuntimeAuth } from "../../runtime-plan/prepare-auth.js";
 import { testing as authPlanTesting } from "./auth-plan.test-support.js";
 
 const readCodexCliCredentialsCachedMock = vi.hoisted(() =>

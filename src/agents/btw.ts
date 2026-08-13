@@ -83,8 +83,8 @@ import {
 } from "./provider-secret-egress.js";
 import { registerProviderStreamForModel } from "./provider-stream.js";
 import { materializePreparedRuntimeModel } from "./runtime-plan/materialize-model.js";
-import { prepareAgentRuntimeAuth } from "./runtime-plan/prepare-auth.js";
 import { resolvePreparedRuntimePreferredProfileId } from "./runtime-plan/preferred-profile.js";
+import { prepareAgentRuntimeAuth } from "./runtime-plan/prepare-auth.js";
 import {
   resolvePreparedRuntimeAuthAttempts,
   resolvePreparedRuntimeModelAuth,

@@ -1319,9 +1319,7 @@ describe("buildOpenAIProvider", () => {
       if (!result || "provider" in result) {
         throw new Error("expected OpenAI live provider catalog");
       }
-      expect(result.providers.openai?.models.map((model) => model.id)).toEqual([
-        "gpt-5.6-terra",
-      ]);
+      expect(result.providers.openai?.models.map((model) => model.id)).toEqual(["gpt-5.6-terra"]);
       expect(result.outcomes).toEqual([
         expect.objectContaining({
           provider: "openai",

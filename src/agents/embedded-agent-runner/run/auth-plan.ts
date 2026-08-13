@@ -12,11 +12,11 @@ import {
   createPreparedRuntimeModelMaterializer,
   providerUsesCredentialScopedModelMetadata,
 } from "../../runtime-plan/credential-scoped-model.js";
+import { resolvePreparedRuntimePreferredProfileId } from "../../runtime-plan/preferred-profile.js";
 import {
   prepareAgentRuntimeAuth,
   type PreparedAgentRuntimeAuthAttempt,
 } from "../../runtime-plan/prepare-auth.js";
-import { resolvePreparedRuntimePreferredProfileId } from "../../runtime-plan/preferred-profile.js";
 import { resolveModelAsync } from "../model.js";
 import type { RunEmbeddedAgentParams } from "./params.js";
 
