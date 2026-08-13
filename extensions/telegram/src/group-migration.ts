@@ -9,6 +9,15 @@ type TelegramGroups = Record<string, TelegramGroupConfig>;
 
 type MigrationScope = "account" | "global";
 
+type TelegramAccountGroups = {
+  groups?: TelegramGroups;
+};
+
+type TelegramGroupsMigration = {
+  migrated: boolean;
+  skippedExisting: boolean;
+};
+
 type TelegramGroupMigrationResult = {
   migrated: boolean;
   skippedExisting: boolean;
@@ -18,7 +27,7 @@ type TelegramGroupMigrationResult = {
 function resolveAccountGroups(
   cfg: OpenClawConfig,
   accountId?: string | null,
-): { groups?: TelegramGroups } {
+): TelegramAccountGroups {
   if (!accountId) {
     return {};
   }
@@ -41,7 +50,7 @@ function migrateTelegramGroupsInPlace(
   groups: TelegramGroups | undefined,
   oldChatId: string,
   newChatId: string,
-): { migrated: boolean; skippedExisting: boolean } {
+): TelegramGroupsMigration {
   if (!groups) {
     return { migrated: false, skippedExisting: false };
   }

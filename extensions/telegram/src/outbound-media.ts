@@ -1,4 +1,5 @@
 import { InputFile } from "grammy";
+import type { Message } from "grammy/types";
 import type { MarkdownTableMode } from "openclaw/plugin-sdk/config-contracts";
 import { extensionForMime, type MediaKind } from "openclaw/plugin-sdk/media-mime";
 import { isGifMedia, kindFromMime } from "openclaw/plugin-sdk/media-runtime";
@@ -7,7 +8,6 @@ import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
 import type { loadWebMedia } from "openclaw/plugin-sdk/web-media";
 import { resolveTelegramPlainCaption, splitTelegramCaption } from "./caption.js";
 import { renderTelegramHtmlText, telegramHtmlToPlainTextFallback } from "./format.js";
-import type { TelegramOutboundPromptContextMessage } from "./outbound-message-context.js";
 import { isTelegramEmptyContentError, isTelegramHtmlParseError } from "./rich-plain-fallback.js";
 import type { TelegramApi } from "./send-context.js";
 import { isTelegramPhotoLimitError } from "./send-error-predicates.js";
@@ -37,10 +37,15 @@ type TelegramOutboundMediaPlan = {
   followUpText?: string;
 };
 
-export type TelegramOutboundMediaSender<T = TelegramOutboundPromptContextMessage> = {
+export type TelegramOutboundMediaSender = {
   label: TelegramOutboundMediaKind;
   operation: string;
-  send: (effectiveParams: Record<string, unknown>) => Promise<T>;
+  send: (effectiveParams: Record<string, unknown>) => Promise<Message>;
+};
+
+export type TelegramOutboundMediaSenders = {
+  sender: TelegramOutboundMediaSender;
+  documentSender: TelegramOutboundMediaSender;
 };
 
 function resolveTelegramOutboundMediaFilename(params: {
@@ -132,9 +137,7 @@ export function prepareTelegramOutboundMedia(params: {
   };
 }
 
-export function resolveTelegramOutboundMediaSenders<
-  T = TelegramOutboundPromptContextMessage,
->(params: {
+export function resolveTelegramOutboundMediaSenders(params: {
   api: TelegramApi;
   chatId: string;
   media: TelegramLoadedMedia;
@@ -142,29 +145,39 @@ export function resolveTelegramOutboundMediaSenders<
   forceDocument?: boolean;
   asVoice?: boolean;
   sendImageAsPhoto?: boolean;
-}): { sender: TelegramOutboundMediaSender<T>; documentSender: TelegramOutboundMediaSender<T> } {
-  const createSender = (label: TelegramOutboundMediaKind): TelegramOutboundMediaSender<T> => {
+}): TelegramOutboundMediaSenders {
+  const createSender = (label: TelegramOutboundMediaKind): TelegramOutboundMediaSender => {
     const operation = `send${label
       .split("_")
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join("")}`;
-    const method = params.api[operation as keyof TelegramApi] as unknown as (
-      chatId: string,
-      file: InputFile,
-      options: Record<string, unknown>,
-    ) => Promise<T>;
     return {
       label,
       operation,
-      send: (effectiveParams) =>
-        method.call(
-          params.api,
-          params.chatId,
-          params.plan.file,
+      send: (effectiveParams) => {
+        const options =
           label === "document" && params.forceDocument
             ? { ...effectiveParams, disable_content_type_detection: true }
-            : effectiveParams,
-        ),
+            : effectiveParams;
+        switch (label) {
+          case "animation":
+            return params.api.sendAnimation(params.chatId, params.plan.file, options);
+          case "photo":
+            return params.api.sendPhoto(params.chatId, params.plan.file, options);
+          case "video":
+            return params.api.sendVideo(params.chatId, params.plan.file, options);
+          case "video_note":
+            return params.api.sendVideoNote(params.chatId, params.plan.file, options);
+          case "voice":
+            return params.api.sendVoice(params.chatId, params.plan.file, options);
+          case "audio":
+            return params.api.sendAudio(params.chatId, params.plan.file, options);
+          case "document":
+            return params.api.sendDocument(params.chatId, params.plan.file, options);
+        }
+        label satisfies never;
+        throw new Error("Unsupported Telegram outbound media kind.");
+      },
     };
   };
   const documentSender = createSender("document");
@@ -239,11 +252,11 @@ export async function sendTelegramCaptionedMediaWithFallback<T>(params: {
         err,
       )}`,
     );
-    const plainParams: Record<string, unknown> = {
-      ...params.requestParams,
+    const { parse_mode: _parseMode, ...requestWithoutParseMode } = params.requestParams;
+    const plainParams = {
+      ...requestWithoutParseMode,
       caption: params.plainCaption,
     };
-    delete plainParams.parse_mode;
     try {
       return {
         result: await params.send(
@@ -262,11 +275,11 @@ export async function sendTelegramCaptionedMediaWithFallback<T>(params: {
   }
 }
 
-export async function sendTelegramOutboundMediaWithPhotoFallback<T, TMessage>(params: {
-  sender: TelegramOutboundMediaSender<TMessage>;
-  documentSender: TelegramOutboundMediaSender<TMessage>;
-  send: (sender: TelegramOutboundMediaSender<TMessage>) => Promise<T>;
-}): Promise<{ result: T; sender: TelegramOutboundMediaSender<TMessage> }> {
+export async function sendTelegramOutboundMediaWithPhotoFallback<T>(params: {
+  sender: TelegramOutboundMediaSender;
+  documentSender: TelegramOutboundMediaSender;
+  send: (sender: TelegramOutboundMediaSender) => Promise<T>;
+}): Promise<{ result: T; sender: TelegramOutboundMediaSender }> {
   try {
     return { result: await params.send(params.sender), sender: params.sender };
   } catch (error) {

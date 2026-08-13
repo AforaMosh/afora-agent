@@ -8,7 +8,6 @@ import {
   dispatchWithContext,
   requireInvocationOrder,
 } from "./bot-message-dispatch.test-harness.js";
-import type { TelegramMessageContext } from "./bot-message-dispatch.test-harness.js";
 
 describeTelegramDispatch("dispatchTelegramMessage status-reactions", () => {
   it("does not send visible error fallbacks for room events", async () => {
@@ -17,10 +16,12 @@ describeTelegramDispatch("dispatchTelegramMessage status-reactions", () => {
       [historyKey, [{ sender: "Alice", body: "quiet failure", timestamp: 1 }]],
     ]);
     dispatchReplyWithBufferedBlockDispatcher.mockRejectedValue(new Error("provider down"));
+    const baseContext = createContext();
 
     await dispatchWithContext({
       context: createContext({
         ctxPayload: {
+          ...baseContext.ctxPayload,
           InboundEventKind: "room_event",
           SessionKey: "agent:main:telegram:group:-100123",
           ChatType: "group",
@@ -28,11 +29,12 @@ describeTelegramDispatch("dispatchTelegramMessage status-reactions", () => {
           RawBody: "ambient failure",
           BodyForAgent: "ambient failure",
           CommandBody: "ambient failure",
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        },
         msg: {
-          chat: { id: -100123, type: "supergroup" },
+          ...baseContext.msg,
+          chat: { id: -100123, type: "supergroup", title: "Test Group" },
           message_id: 101,
-        } as unknown as TelegramMessageContext["msg"],
+        },
         chatId: -100123,
         isGroup: true,
         historyKey,

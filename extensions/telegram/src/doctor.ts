@@ -42,6 +42,11 @@ type TelegramApiRootBotEndpointHit = {
 type DoctorAllowFromList = Array<string | number>;
 type DoctorAccountRecord = Record<string, unknown>;
 
+type TelegramConfigRepairResult = {
+  config: OpenClawConfig;
+  changes: string[];
+};
+
 type TelegramAllowFromListRef = {
   pathLabel: string;
   holder: Record<string, unknown>;
@@ -270,10 +275,7 @@ function collectTelegramSelectedQuoteToolProgressWarnings(params: {
   ];
 }
 
-function maybeRepairTelegramApiRoots(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
-  changes: string[];
-} {
+function maybeRepairTelegramApiRoots(cfg: OpenClawConfig): TelegramConfigRepairResult {
   const hits = scanTelegramBotEndpointApiRoots(cfg);
   if (hits.length === 0) {
     return { config: cfg, changes: [] };
@@ -322,10 +324,9 @@ function collectTelegramMissingEnvTokenWarnings(params: {
   ];
 }
 
-async function repairTelegramConfig(params: { cfg: OpenClawConfig }): Promise<{
-  config: OpenClawConfig;
-  changes: string[];
-}> {
+async function repairTelegramConfig(params: {
+  cfg: OpenClawConfig;
+}): Promise<TelegramConfigRepairResult> {
   const apiRootRepair = maybeRepairTelegramApiRoots(params.cfg);
   const allowFromRepair = await maybeRepairTelegramAllowFromUsernames(apiRootRepair.config);
   return {
@@ -334,10 +335,9 @@ async function repairTelegramConfig(params: { cfg: OpenClawConfig }): Promise<{
   };
 }
 
-async function maybeRepairTelegramAllowFromUsernames(cfg: OpenClawConfig): Promise<{
-  config: OpenClawConfig;
-  changes: string[];
-}> {
+async function maybeRepairTelegramAllowFromUsernames(
+  cfg: OpenClawConfig,
+): Promise<TelegramConfigRepairResult> {
   const hits = scanTelegramInvalidAllowFromEntries(cfg);
   if (hits.length === 0) {
     return { config: cfg, changes: [] };

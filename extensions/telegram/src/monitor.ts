@@ -56,11 +56,11 @@ function createTelegramRunnerOptions(cfg: OpenClawConfig): RunOptions<unknown> {
   };
 }
 
-const TELEGRAM_OFFSET_ROTATION_LABELS: Record<TelegramOffsetRotationReason, string> = {
+const TELEGRAM_OFFSET_ROTATION_LABELS = {
   "bot-id-changed": "bot identity change",
   "legacy-state": "legacy update offset",
   "token-rotated": "token rotation",
-};
+} satisfies Record<TelegramOffsetRotationReason, string>;
 
 function formatTelegramOffsetRotationMessage(
   accountId: string,

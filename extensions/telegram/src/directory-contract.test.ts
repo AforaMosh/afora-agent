@@ -27,7 +27,7 @@ describe("Telegram directory contract", () => {
           groups: { "-1001": {}, "*": {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     await expectDirectoryIds(
       listTelegramDirectoryPeersFromConfig,
@@ -54,7 +54,7 @@ describe("Telegram directory contract", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } satisfies OpenClawConfig;
 
       await expectDirectoryIds(listTelegramDirectoryPeersFromConfig, cfg, ["@alice"]);
       await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
@@ -75,10 +75,23 @@ describe("Telegram directory contract", () => {
           groups: { "-1001": {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    await expectDirectoryIds(listTelegramDirectoryPeersFromConfig, cfg, ["@alice"]);
-    await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
+    const listFromRawConfig = async (
+      list: typeof listTelegramDirectoryPeersFromConfig,
+    ): Promise<string[]> => {
+      const entries: Awaited<ReturnType<typeof listTelegramDirectoryPeersFromConfig>> =
+        await Reflect.apply(list, undefined, [
+          { cfg, accountId: "default", query: null, limit: null },
+        ]);
+      return entries.map((entry) => entry.id);
+    };
+    await expect(listFromRawConfig(listTelegramDirectoryPeersFromConfig)).resolves.toEqual([
+      "@alice",
+    ]);
+    await expect(listFromRawConfig(listTelegramDirectoryGroupsFromConfig)).resolves.toEqual([
+      "-1001",
+    ]);
   });
 
   it("applies query and limit filtering for config-backed directories", async () => {
@@ -89,7 +102,7 @@ describe("Telegram directory contract", () => {
           groups: { "-1001": {}, "-1002": {}, "-2001": {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     const groups = await listTelegramDirectoryGroupsFromConfig({
       cfg,

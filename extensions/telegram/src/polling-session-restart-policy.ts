@@ -22,6 +22,11 @@ type TelegramRestartBackoffState = {
   stopTimeoutCooldownAttempts: number;
 };
 
+type TelegramRestartDelay = {
+  delayMs: number;
+  stopTimeoutSuffix: string;
+};
+
 export function createTelegramRestartBackoffState(): TelegramRestartBackoffState {
   return {
     restartAttempts: 0,
@@ -39,7 +44,7 @@ export function resetTelegramRestartBackoffState(state: TelegramRestartBackoffSt
 export function resolveTelegramRestartDelayMs(
   state: TelegramRestartBackoffState,
   opts: { stopTimedOut?: boolean } = {},
-): { delayMs: number; stopTimeoutSuffix: string } {
+): TelegramRestartDelay {
   state.restartAttempts += 1;
   let delayMs = computeBackoff(TELEGRAM_POLL_RESTART_POLICY, state.restartAttempts);
   let stopTimeoutSuffix = "";

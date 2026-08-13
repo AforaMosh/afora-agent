@@ -392,9 +392,11 @@ function buildTelegramActionSendPayload(params: {
   };
 }
 
+type TelegramActionDeliveryResult = { messageId?: string; chatId?: string };
+
 function getLastDurableTelegramActionResult(
   result: Extract<DurableMessageBatchSendResult, { status: "sent" }>,
-): { messageId?: string; chatId?: string } {
+): TelegramActionDeliveryResult {
   const lastResult = result.results.at(-1);
   const receipt = result.receipt;
   return {
@@ -1040,13 +1042,10 @@ export async function handleTelegramAction(
       },
     );
     if (result.chatId) {
-      const patch: { name?: string; iconCustomEmojiId?: string } = {};
-      if (name) {
-        patch.name = name;
-      }
-      if (iconCustomEmojiId) {
-        patch.iconCustomEmojiId = iconCustomEmojiId;
-      }
+      const patch = {
+        ...(name ? { name } : {}),
+        ...(iconCustomEmojiId ? { iconCustomEmojiId } : {}),
+      };
       if (Object.keys(patch).length > 0) {
         await updateTopicName(
           result.chatId,

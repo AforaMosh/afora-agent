@@ -1,4 +1,9 @@
 // Telegram tests cover bot message contextm topic threadid plugin behavior.
+import type {
+  BuildChannelInboundEventContextAsyncParams,
+  BuildChannelInboundEventContextParams,
+  BuiltChannelInboundEventContext,
+} from "openclaw/plugin-sdk/channel-inbound";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getRecordedUpdateLastRoute,
@@ -88,7 +93,23 @@ describe("buildTelegramMessageContext DM topic threadId in deliveryContext (#889
 
   it("builds Telegram payloads through the shared channel turn context", async () => {
     const { buildChannelInboundEventContext } = await import("openclaw/plugin-sdk/channel-inbound");
-    const buildChannelInboundEventContextMock = vi.fn(buildChannelInboundEventContext);
+    const buildChannelInboundEventContextCalls = vi.fn();
+    function buildChannelInboundEventContextMock(
+      params: BuildChannelInboundEventContextAsyncParams,
+    ): Promise<BuiltChannelInboundEventContext>;
+    function buildChannelInboundEventContextMock(
+      params: BuildChannelInboundEventContextParams,
+    ): BuiltChannelInboundEventContext;
+    function buildChannelInboundEventContextMock(
+      params: BuildChannelInboundEventContextAsyncParams | BuildChannelInboundEventContextParams,
+    ) {
+      buildChannelInboundEventContextCalls(params);
+      const builder: unknown = buildChannelInboundEventContext;
+      if (typeof builder !== "function") {
+        throw new TypeError("expected inbound context builder to be callable");
+      }
+      return Reflect.apply(builder, undefined, [params]);
+    }
 
     const ctx = await buildCtx({
       message: {
@@ -103,15 +124,14 @@ describe("buildTelegramMessageContext DM topic threadId in deliveryContext (#889
         from: { id: 42, first_name: "Alice", username: "alice_bot", is_bot: true },
       },
       sessionRuntime: {
-        buildChannelInboundEventContext:
-          buildChannelInboundEventContextMock as unknown as typeof buildChannelInboundEventContext,
+        buildChannelInboundEventContext: buildChannelInboundEventContextMock,
       },
     });
 
     expect(ctx?.ctxPayload.ReplyToBody).toBe("parent");
     expect(ctx?.ctxPayload.SenderIsBot).toBe(true);
-    expect(buildChannelInboundEventContextMock).toHaveBeenCalledOnce();
-    const [turnOptions] = buildChannelInboundEventContextMock.mock.calls.at(0) ?? [];
+    expect(buildChannelInboundEventContextCalls).toHaveBeenCalledOnce();
+    const [turnOptions] = buildChannelInboundEventContextCalls.mock.calls.at(0) ?? [];
     expect(turnOptions?.channel).toBe("telegram");
     expect(turnOptions?.from).toBe("telegram:1234");
     expect(turnOptions?.sender?.isBot).toBe(true);

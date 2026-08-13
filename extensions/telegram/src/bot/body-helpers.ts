@@ -95,6 +95,11 @@ export function buildSenderLabel(msg: Message, senderId?: number | string) {
 
 export type TelegramTextEntity = NonNullable<Message["entities"]>[number];
 
+export type TelegramTextParts = {
+  text: string;
+  entities: TelegramTextEntity[];
+};
+
 const TELEGRAM_RICH_MESSAGE_PLACEHOLDER = "[unsupported Telegram rich_message received]";
 
 type TelegramTextMessage = Pick<
@@ -239,10 +244,7 @@ function formatTelegramPollText(poll: NonNullable<Message["poll"]>): string {
   ].join("\n");
 }
 
-export function getTelegramTextParts(msg: TelegramTextMessage): {
-  text: string;
-  entities: TelegramTextEntity[];
-} {
+export function getTelegramTextParts(msg: TelegramTextMessage): TelegramTextParts {
   const text = resolveTelegramTextContent(msg.text, msg.caption);
   if (text) {
     return { text, entities: msg.entities ?? msg.caption_entities ?? [] };
@@ -253,7 +255,7 @@ export function getTelegramTextParts(msg: TelegramTextMessage): {
 export function joinTelegramTextParts(
   messages: readonly Message[],
   separator: string,
-): { text: string; entities: TelegramTextEntity[] } {
+): TelegramTextParts {
   const textParts: string[] = [];
   const entities: TelegramTextEntity[] = [];
   let offset = 0;

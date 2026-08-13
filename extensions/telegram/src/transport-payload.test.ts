@@ -1,4 +1,3 @@
-import { buffer } from "node:stream/consumers";
 import { Bot } from "grammy";
 import type { Message } from "grammy/types";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
@@ -80,7 +79,7 @@ describe("Telegram topic transport payloads", () => {
         typeof rawBody === "string"
           ? Buffer.from(rawBody)
           : rawBody
-            ? await buffer(rawBody as unknown as NodeJS.ReadableStream)
+            ? Buffer.from(await new Response(rawBody).arrayBuffer())
             : Buffer.alloc(0);
       const method = new URL(input instanceof Request ? input.url : String(input)).pathname
         .split("/")

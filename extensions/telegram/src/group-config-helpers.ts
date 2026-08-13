@@ -14,6 +14,11 @@ import type {
 } from "openclaw/plugin-sdk/config-contracts";
 import { firstDefined } from "./bot-access.js";
 
+type TelegramGroupPromptSettings = {
+  skillFilter: string[] | undefined;
+  groupSystemPrompt: string | undefined;
+};
+
 export function resolveTelegramScopedGroupConfig(
   telegramCfg: TelegramAccountConfig,
   chatId: string | number,
@@ -66,10 +71,7 @@ export function resolveTelegramGroupIngestEnabled(params: {
 export function resolveTelegramGroupPromptSettings(params: {
   groupConfig?: TelegramGroupConfig | TelegramDirectConfig;
   topicConfig?: TelegramTopicConfig;
-}): {
-  skillFilter: string[] | undefined;
-  groupSystemPrompt: string | undefined;
-} {
+}): TelegramGroupPromptSettings {
   const skillFilter = firstDefined(params.topicConfig?.skills, params.groupConfig?.skills);
   const systemPromptParts = [
     params.groupConfig?.systemPrompt?.trim() || null,

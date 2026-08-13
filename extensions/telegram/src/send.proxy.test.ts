@@ -1,6 +1,7 @@
 // Telegram tests cover send.proxy plugin behavior.
 import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TelegramApiOverride } from "./send.js";
 
 const { botApi, botCtorSpy } = vi.hoisted(() => ({
   botApi: (() => {
@@ -62,6 +63,23 @@ const { maybePersistResolvedTelegramTarget } = vi.hoisted(() => ({
 const resolveTelegramApiBase = vi.hoisted(
   () => (apiRoot?: string) => apiRoot?.trim()?.replace(/\/+$/, "") || "https://api.telegram.org",
 );
+
+function createTelegramApiOverride(value: Record<string, unknown>): TelegramApiOverride {
+  for (const method of [
+    "deleteMessage",
+    "getChat",
+    "sendDocument",
+    "sendMessage",
+    "setMessageReaction",
+  ]) {
+    if (typeof value[method] !== "function") {
+      throw new Error(`expected Telegram API method ${method}`);
+    }
+  }
+  return Reflect.apply((api: TelegramApiOverride) => api, undefined, [value]);
+}
+
+const telegramApiOverride = createTelegramApiOverride(botApi);
 
 vi.mock("openclaw/plugin-sdk/plugin-config-runtime", async () => {
   const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/plugin-config-runtime")>(
@@ -127,12 +145,12 @@ describe("telegram proxy client", () => {
   };
 
   const prepareProxyFetch = () => {
-    const proxyFetch = vi.fn();
-    const fetchImpl = vi.fn();
-    makeProxyFetch.mockReturnValue(proxyFetch as unknown as typeof fetch);
+    const proxyFetch = vi.fn<typeof fetch>();
+    const fetchImpl = vi.fn<typeof fetch>();
+    makeProxyFetch.mockReturnValue(proxyFetch);
     resolveTelegramTransport.mockReturnValue({
-      fetch: fetchImpl as unknown as typeof fetch,
-      sourceFetch: fetchImpl as unknown as typeof fetch,
+      fetch: fetchImpl,
+      sourceFetch: fetchImpl,
       close: vi.fn(async () => undefined),
     });
     return { proxyFetch, fetchImpl };
@@ -204,9 +222,9 @@ describe("telegram proxy client", () => {
     vi.stubEnv("VITEST", "");
     vi.stubEnv("NODE_ENV", "production");
     const closeSpies: Array<ReturnType<typeof vi.fn>> = [];
-    makeProxyFetch.mockImplementation(() => vi.fn() as unknown as typeof fetch);
+    makeProxyFetch.mockImplementation(() => vi.fn<typeof fetch>());
     resolveTelegramTransport.mockImplementation(() => {
-      const fetchImpl = vi.fn() as unknown as typeof fetch;
+      const fetchImpl = vi.fn<typeof fetch>();
       const close = vi.fn(async () => undefined);
       closeSpies.push(close);
       return {
@@ -292,9 +310,9 @@ describe("telegram proxy client", () => {
     vi.stubEnv("VITEST", "");
     vi.stubEnv("NODE_ENV", "production");
     const closeSpies: Array<ReturnType<typeof vi.fn>> = [];
-    makeProxyFetch.mockImplementation(() => vi.fn() as unknown as typeof fetch);
+    makeProxyFetch.mockImplementation(() => vi.fn<typeof fetch>());
     resolveTelegramTransport.mockImplementation(() => {
-      const fetchImpl = vi.fn() as unknown as typeof fetch;
+      const fetchImpl = vi.fn<typeof fetch>();
       const close = vi.fn(async () => undefined);
       closeSpies.push(close);
       return {
@@ -350,9 +368,9 @@ describe("telegram proxy client", () => {
     vi.stubEnv("VITEST", "");
     vi.stubEnv("NODE_ENV", "production");
     const closeSpies: Array<ReturnType<typeof vi.fn>> = [];
-    makeProxyFetch.mockImplementation(() => vi.fn() as unknown as typeof fetch);
+    makeProxyFetch.mockImplementation(() => vi.fn<typeof fetch>());
     resolveTelegramTransport.mockImplementation(() => {
-      const fetchImpl = vi.fn() as unknown as typeof fetch;
+      const fetchImpl = vi.fn<typeof fetch>();
       const close = vi.fn(async () => undefined);
       closeSpies.push(close);
       return {
@@ -422,9 +440,9 @@ describe("telegram proxy client", () => {
     vi.stubEnv("VITEST", "");
     vi.stubEnv("NODE_ENV", "production");
     const closeSpies: Array<ReturnType<typeof vi.fn>> = [];
-    makeProxyFetch.mockImplementation(() => vi.fn() as unknown as typeof fetch);
+    makeProxyFetch.mockImplementation(() => vi.fn<typeof fetch>());
     resolveTelegramTransport.mockImplementation(() => {
-      const fetchImpl = vi.fn() as unknown as typeof fetch;
+      const fetchImpl = vi.fn<typeof fetch>();
       const close = vi.fn(async () => undefined);
       closeSpies.push(close);
       return {
@@ -488,7 +506,7 @@ describe("telegram proxy client", () => {
       cfg: TELEGRAM_PROXY_CFG,
       token: "tok",
       accountId: "foo",
-      api: botApi as unknown as Parameters<typeof reactMessageTelegram>[3]["api"],
+      api: telegramApiOverride,
     });
 
     expect(makeProxyFetch).not.toHaveBeenCalled();

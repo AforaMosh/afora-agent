@@ -619,7 +619,7 @@ describe("telegram message cache", () => {
     const scopeKey = resolveTelegramMessageCachePersistentScopeKey("default");
     const marker = projection("assistant-embedded-order");
     const bot = botMessage(9130, "Projected answer");
-    const values: Record<string, [string, PersistedValue]> = {
+    const values = {
       projected: [
         `${scopeKey}:default:7:9130`,
         { version: 1, sourceMessage: bot, promptContextProjection: marker },
@@ -634,9 +634,12 @@ describe("telegram message cache", () => {
           }),
         },
       ],
-    };
+    } satisfies Record<string, [string, PersistedValue]>;
     for (const name of order) {
-      const [key, value] = values[name]!;
+      if (name !== "projected" && name !== "parent") {
+        throw new Error(`unexpected persisted row name: ${name}`);
+      }
+      const [key, value] = values[name];
       entries.set(key, value);
     }
 

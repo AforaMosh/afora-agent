@@ -40,11 +40,19 @@ function resolveAccountWithEnv(
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.mocked(createSubsystemLogger).mockImplementation(() => {
-    const logger = {
+    const logger: ReturnType<typeof createSubsystemLogger> = {
+      subsystem: "telegram/accounts-test",
+      trace: vi.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
       warn: warnMock,
+      error: vi.fn(),
+      fatal: vi.fn(),
+      raw: vi.fn(),
+      isEnabled: vi.fn(() => false),
       child: () => logger,
     };
-    return logger as unknown as ReturnType<typeof createSubsystemLogger>;
+    return logger;
   });
 });
 
@@ -141,11 +149,15 @@ describe("resolveTelegramAccount", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    const accounts = listEnabledTelegramAccounts(cfg);
+    const accounts = Reflect.apply(listEnabledTelegramAccounts, undefined, [cfg]);
 
-    expect(accounts.map((account) => account.accountId)).toEqual(["work"]);
+    expect(
+      accounts.map(
+        (account: ReturnType<typeof listEnabledTelegramAccounts>[number]) => account.accountId,
+      ),
+    ).toEqual(["work"]);
     expect(accounts[0]?.token).toBe("tok-work");
   });
 
@@ -164,7 +176,7 @@ describe("resolveTelegramAccount", () => {
         { agentId: "ignored", match: { channel: "telegram", accountId: "*" } },
         { agentId: "ignored", match: { channel: "slack", accountId: "slack-only" } },
       ],
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     expect(listTelegramAccountIds(cfg)).toEqual(["alerts", "default", "ops-team"]);
     expect(resolveDefaultTelegramAccountId(cfg)).toBe("ops-team");
@@ -186,7 +198,7 @@ describe("resolveTelegramAccount", () => {
         },
       },
       bindings: [{ agentId: "fusion", match: { channel: "telegram", accountId: "fusion" } }],
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     expect(listTelegramAccountIds(cfg)).toEqual(["default", "fusion"]);
     expect(resolveDefaultTelegramAccountId(cfg)).toBe("default");

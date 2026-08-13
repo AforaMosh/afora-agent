@@ -94,18 +94,20 @@ function syncMenuCommandsWithMocks(options: SyncMenuOptions): void {
     ...(options.deleteMyCommands ? { deleteMyCommands: options.deleteMyCommands } : {}),
     setMyCommands: options.setMyCommands,
   };
-  syncTelegramMenuCommands({
-    bot: { api } as unknown as Parameters<typeof syncTelegramMenuCommands>[0]["bot"],
-    runtime: {
-      log: options.runtimeLog ?? vi.fn(),
-      error: options.runtimeError ?? vi.fn(),
-      exit: vi.fn(),
-    } as Parameters<typeof syncTelegramMenuCommands>[0]["runtime"],
-    commandsToRegister: options.commandsToRegister,
-    accountId: options.accountId,
-    botId: options.botId,
-    botToken: resolveTestBotToken(options),
-  });
+  Reflect.apply(syncTelegramMenuCommands, undefined, [
+    {
+      bot: { api },
+      runtime: {
+        log: options.runtimeLog ?? vi.fn(),
+        error: options.runtimeError ?? vi.fn(),
+        exit: vi.fn(),
+      } as Parameters<typeof syncTelegramMenuCommands>[0]["runtime"],
+      commandsToRegister: options.commandsToRegister,
+      accountId: options.accountId,
+      botId: options.botId,
+      botToken: resolveTestBotToken(options),
+    },
+  ]);
 }
 
 function setMyCommandsCall(setMyCommands: ReturnType<typeof vi.fn>, index: number): unknown[] {

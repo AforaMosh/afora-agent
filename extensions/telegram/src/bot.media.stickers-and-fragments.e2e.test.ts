@@ -84,6 +84,13 @@ function resolveActiveScheduledTimersForDelay(
   );
 }
 
+function installInertTimerMock() {
+  const nativeSetTimeout = globalThis.setTimeout;
+  return vi
+    .spyOn(globalThis, "setTimeout")
+    .mockImplementation(() => nativeSetTimeout(() => {}, 2_147_483_647));
+}
+
 describe("telegram stickers", () => {
   // Parallel Testbox shards can make these media-path e2e tests slower than standalone local runs.
   const STICKER_TEST_TIMEOUT_MS = process.platform === "win32" ? 120_000 : 90_000;
@@ -99,7 +106,7 @@ describe("telegram stickers", () => {
   it(
     "refreshes cached sticker metadata on cache hit",
     async () => {
-      const proxyFetch = vi.fn().mockResolvedValue(
+      const proxyFetch = vi.fn<typeof fetch>().mockResolvedValue(
         new Response(Buffer.from(new Uint8Array([0x52, 0x49, 0x46, 0x46])), {
           status: 200,
           headers: { "content-type": "image/webp" },
@@ -120,8 +127,8 @@ describe("telegram stickers", () => {
         token: "tok",
         transport: {
           close: async () => {},
-          fetch: proxyFetch as unknown as typeof fetch,
-          sourceFetch: proxyFetch as unknown as typeof fetch,
+          fetch: proxyFetch,
+          sourceFetch: proxyFetch,
         } satisfies TelegramTransport,
         ctx: {
           message: {
@@ -145,15 +152,11 @@ describe("telegram stickers", () => {
         } as TelegramContext,
       });
 
-      const [cachedSticker] =
-        (
-          cacheStickerSpy.mock.calls as unknown as Array<
-            [{ emoji?: string; fileId?: string; setName?: string }]
-          >
-        )[0] ?? [];
-      expect(cachedSticker?.fileId).toBe("new_file_id");
-      expect(cachedSticker?.emoji).toBe("🔥");
-      expect(cachedSticker?.setName).toBe("NewSet");
+      expect(cacheStickerSpy.mock.calls[0]?.[0]).toMatchObject({
+        fileId: "new_file_id",
+        emoji: "🔥",
+        setName: "NewSet",
+      });
       expect(media?.stickerMetadata?.fileId).toBe("new_file_id");
       expect(media?.stickerMetadata?.cachedDescription).toBe("Cached description");
       const [fetchUrl, fetchOptions] = proxyFetch.mock.calls.at(0) ?? [];
@@ -166,7 +169,7 @@ describe("telegram stickers", () => {
   it(
     "rejects animated and video sticker downloads before fetching bytes",
     async () => {
-      const proxyFetch = vi.fn();
+      const proxyFetch = vi.fn<typeof fetch>();
 
       for (const scenario of [
         {
@@ -199,28 +202,32 @@ describe("telegram stickers", () => {
             set_name: "VideoPack",
           },
         },
-      ]) {
+      ] as const) {
         proxyFetch.mockClear();
-        const getFile = vi.fn(async () => ({ file_path: scenario.filePath }));
+        const getFile = vi.fn<TelegramContext["getFile"]>(async () => ({
+          file_id: scenario.sticker.file_id,
+          file_unique_id: scenario.sticker.file_unique_id,
+          file_path: scenario.filePath,
+        }));
 
         const media = await resolveMedia({
           maxBytes: 2 * 1024 * 1024,
           token: "tok",
           transport: {
             close: async () => {},
-            fetch: proxyFetch as unknown as typeof fetch,
-            sourceFetch: proxyFetch as unknown as typeof fetch,
+            fetch: proxyFetch,
+            sourceFetch: proxyFetch,
           } satisfies TelegramTransport,
           ctx: {
             message: {
               message_id: scenario.messageId,
-              chat: { id: 1234, type: "private" },
+              chat: { id: 1234, type: "private", first_name: "Ada" },
               from: { id: 777, is_bot: false, first_name: "Ada" },
               sticker: scenario.sticker,
               date: 1736380800,
             },
             getFile,
-          } as unknown as TelegramContext,
+          } satisfies TelegramContext,
         });
 
         expect(media).toBeNull();
@@ -358,12 +365,7 @@ describe("telegram text fragments", () => {
 
       const runtimeError = vi.fn();
       const { handler, replySpy } = await createBotHandlerWithOptions({ runtimeError });
-      let nextTimerHandle = 1;
-      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
-        const handle = nextTimerHandle;
-        nextTimerHandle += 1;
-        return handle as unknown as ReturnType<typeof setTimeout>;
-      });
+      const setTimeoutSpy = installInertTimerMock();
       const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
       const part1 = "A".repeat(4050);
       const part2 = "B".repeat(50);
@@ -434,12 +436,7 @@ describe("telegram text fragments", () => {
 
       const runtimeError = vi.fn();
       const { handler, replySpy } = await createBotHandlerWithOptions({ runtimeError });
-      let nextTimerHandle = 1;
-      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
-        const handle = nextTimerHandle;
-        nextTimerHandle += 1;
-        return handle as unknown as ReturnType<typeof setTimeout>;
-      });
+      const setTimeoutSpy = installInertTimerMock();
       const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
 
       try {

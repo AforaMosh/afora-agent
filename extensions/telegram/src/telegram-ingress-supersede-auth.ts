@@ -1,5 +1,4 @@
 // Telegram plugin module owns supersede sender authorization policy.
-import type { Message } from "grammy/types";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { resolveTelegramDmAllow } from "./access-groups.js";
 import { mergeTelegramAccountConfig } from "./account-config.js";
@@ -7,6 +6,7 @@ import {
   resolveTelegramCommandAuthorization,
   resolveTelegramGroupAllowFromContext,
   resolveTelegramMessageThreadSpec,
+  type TelegramMessageThreadFacts,
 } from "./bot/helpers.js";
 import { resolveTelegramScopedGroupConfig } from "./group-config-helpers.js";
 import { resolveTelegramCommandIngressAuthorization } from "./ingress.js";
@@ -16,8 +16,54 @@ type UpdateSenderFacts = {
   senderUsername?: string;
   chatId: number;
   isGroup: boolean;
-  message: Message;
+  message: TelegramMessageThreadFacts;
 };
+
+type RawTelegramChat = {
+  id?: unknown;
+  type?: unknown;
+  is_direct_messages?: unknown;
+  is_forum?: unknown;
+};
+
+function extractTelegramChatType(value: unknown): TelegramMessageThreadFacts["chat"]["type"] {
+  switch (value) {
+    case "channel":
+    case "group":
+    case "private":
+    case "supergroup":
+      return value;
+    default:
+      return "private";
+  }
+}
+
+function extractMessageThreadFacts(
+  message: Record<string, unknown>,
+  chat: RawTelegramChat,
+): TelegramMessageThreadFacts {
+  const directTopic = message.direct_messages_topic;
+  const topicId =
+    directTopic && typeof directTopic === "object" && "topic_id" in directTopic
+      ? directTopic.topic_id
+      : undefined;
+  return {
+    chat: {
+      type: extractTelegramChatType(chat.type),
+      ...(typeof chat.is_direct_messages === "boolean"
+        ? { is_direct_messages: chat.is_direct_messages }
+        : {}),
+      ...(typeof chat.is_forum === "boolean" ? { is_forum: chat.is_forum } : {}),
+    },
+    ...(typeof topicId === "number" ? { direct_messages_topic: { topic_id: topicId } } : {}),
+    ...(typeof message.is_topic_message === "boolean"
+      ? { is_topic_message: message.is_topic_message }
+      : {}),
+    ...(typeof message.message_thread_id === "number"
+      ? { message_thread_id: message.message_thread_id }
+      : {}),
+  };
+}
 
 function extractUpdateSenderFacts(update: unknown): UpdateSenderFacts | null {
   if (!update || typeof update !== "object") {
@@ -39,7 +85,8 @@ function extractUpdateSenderFacts(update: unknown): UpdateSenderFacts | null {
       const from = cb.from;
       const msg = cb.message;
       if (from && typeof from === "object" && msg && typeof msg === "object") {
-        const chat = (msg as { chat?: { id?: unknown; type?: unknown; is_forum?: unknown } }).chat;
+        const messageRecord = msg as Record<string, unknown>;
+        const chat = messageRecord.chat as RawTelegramChat | undefined;
         const fromObj = from as { id?: unknown; username?: unknown };
         if (typeof chat?.id === "number" && typeof fromObj.id === "number") {
           const chatType = typeof chat.type === "string" ? chat.type : "private";
@@ -48,14 +95,14 @@ function extractUpdateSenderFacts(update: unknown): UpdateSenderFacts | null {
             ...(typeof fromObj.username === "string" ? { senderUsername: fromObj.username } : {}),
             chatId: chat.id,
             isGroup: chatType !== "private",
-            message: msg as Message,
+            message: extractMessageThreadFacts(messageRecord, chat),
           };
         }
       }
     }
     return null;
   }
-  const chat = message.chat as { id?: unknown; type?: unknown; is_forum?: unknown } | undefined;
+  const chat = message.chat as RawTelegramChat | undefined;
   const from = message.from as { id?: unknown; username?: unknown } | undefined;
   if (typeof chat?.id !== "number" || typeof from?.id !== "number") {
     return null;
@@ -66,7 +113,7 @@ function extractUpdateSenderFacts(update: unknown): UpdateSenderFacts | null {
     ...(typeof from.username === "string" ? { senderUsername: from.username } : {}),
     chatId: chat.id,
     isGroup: chatType !== "private",
-    message: message as unknown as Message,
+    message: extractMessageThreadFacts(message, chat),
   };
 }
 

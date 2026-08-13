@@ -1,5 +1,7 @@
 // Telegram plugin module implements bot native commands.fixture test support behavior.
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import { Bot, Composer, type CommandContext, type Context } from "grammy";
+import type { Message } from "grammy/types";
+import { createNonExitingRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { vi } from "vitest";
 import type { OpenClawConfig, TelegramAccountConfig } from "../runtime-api.js";
 import type { registerTelegramNativeCommands } from "./bot-native-commands.js";
@@ -12,28 +14,30 @@ export type NativeCommandTestParams = RegisterTelegramNativeCommandsParams & {
   replyToMode?: RegisterTelegramNativeCommandsParams["opts"]["replyToMode"];
 };
 
+const nativeCommandSentMessage = {
+  message_id: 999,
+  date: 1_700_000_000,
+  chat: { id: 100, type: "private", first_name: "Test" },
+  text: "sent",
+} satisfies Message;
+
+export function createNativeCommandTestBot(): Bot {
+  const bot = new Bot("test-token");
+  vi.spyOn(bot.api, "setMyCommands").mockResolvedValue(true);
+  vi.spyOn(bot.api, "sendMessage").mockResolvedValue(nativeCommandSentMessage);
+  vi.spyOn(bot.api, "deleteMessage").mockResolvedValue(true);
+  vi.spyOn(bot, "command").mockImplementation(() => new Composer<CommandContext<Context>>());
+  return bot;
+}
+
 export function createNativeCommandTestParams(
   params: Partial<NativeCommandTestParams> = {},
 ): RegisterTelegramNativeCommandsParams {
   const log = vi.fn();
   return {
-    bot:
-      params.bot ??
-      ({
-        api: {
-          setMyCommands: vi.fn().mockResolvedValue(undefined),
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-        },
-        command: vi.fn(),
-      } as unknown as NativeCommandTestParams["bot"]),
+    bot: params.bot ?? createNativeCommandTestBot(),
     cfg: params.cfg ?? ({} as OpenClawConfig),
-    runtime:
-      params.runtime ??
-      ({
-        log,
-        error: vi.fn(),
-        exit: vi.fn(),
-      } as unknown as RuntimeEnv),
+    runtime: params.runtime ?? { ...createNonExitingRuntimeEnv(), log },
     accountId: params.accountId ?? "default",
     telegramCfg: params.telegramCfg ?? ({} as TelegramAccountConfig),
     nativeEnabled: params.nativeEnabled ?? true,

@@ -123,6 +123,13 @@ async function flushActiveScheduledTimersForDelay(params: {
   }
 }
 
+function installInertTimerMock() {
+  const nativeSetTimeout = globalThis.setTimeout;
+  return vi
+    .spyOn(globalThis, "setTimeout")
+    .mockImplementation(() => nativeSetTimeout(() => {}, 2_147_483_647));
+}
+
 describe("telegram inbound media", () => {
   // Parallel vitest shards can make this suite slower than the standalone run.
   const INBOUND_MEDIA_TEST_TIMEOUT_MS = process.platform === "win32" ? 120_000 : 90_000;
@@ -258,16 +265,15 @@ describe("telegram inbound media", () => {
     const globalFetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
       throw new Error("global fetch should not be called");
     });
-    const proxyFetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      headers: { get: () => "image/jpeg" },
-      arrayBuffer: async () => new Uint8Array([0xff, 0xd8, 0xff]).buffer,
-    } as unknown as Response);
+    const proxyFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response(new Uint8Array([0xff, 0xd8, 0xff]), {
+        status: 200,
+        headers: { "content-type": "image/jpeg" },
+      }),
+    );
 
     const { handler } = await createBotHandlerWithOptions({
-      proxyFetch: proxyFetch as unknown as typeof fetch,
+      proxyFetch,
       runtimeLog,
       runtimeError,
     });
@@ -583,12 +589,7 @@ describe("telegram media groups", () => {
       const runtimeError = vi.fn();
       const { handler, replySpy } = await createBotHandlerWithOptions({ runtimeError });
       const fetchSpy = mockTelegramPngDownload();
-      let nextTimerHandle = 1;
-      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
-        const handle = nextTimerHandle;
-        nextTimerHandle += 1;
-        return handle as unknown as ReturnType<typeof setTimeout>;
-      });
+      const setTimeoutSpy = installInertTimerMock();
       const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
 
       try {
@@ -693,12 +694,7 @@ describe("telegram media groups", () => {
       const runtimeError = vi.fn();
       const { handler, replySpy } = await createBotHandlerWithOptions({ runtimeError });
       const fetchSpy = mockTelegramPngDownload();
-      let nextTimerHandle = 1;
-      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
-        const handle = nextTimerHandle;
-        nextTimerHandle += 1;
-        return handle as unknown as ReturnType<typeof setTimeout>;
-      });
+      const setTimeoutSpy = installInertTimerMock();
       const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
       const savedPaths = [
         "/tmp/media/inbound/album-context-1.png",
@@ -792,12 +788,7 @@ describe("telegram media groups", () => {
     async () => {
       const runtimeError = vi.fn();
       const { handler, replySpy } = await createBotHandlerWithOptions({ runtimeError });
-      let nextTimerHandle = 1;
-      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
-        const handle = nextTimerHandle;
-        nextTimerHandle += 1;
-        return handle as unknown as ReturnType<typeof setTimeout>;
-      });
+      const setTimeoutSpy = installInertTimerMock();
       const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
       const savedPaths = [
         "/tmp/media/inbound/album-partial-2.png",
@@ -922,12 +913,7 @@ describe("telegram media groups", () => {
       const runtimeError = vi.fn();
       const { handler, replySpy } = await createBotHandlerWithOptions({ runtimeError });
       const fetchSpy = mockTelegramPngDownload();
-      let nextTimerHandle = 1;
-      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
-        const handle = nextTimerHandle;
-        nextTimerHandle += 1;
-        return handle as unknown as ReturnType<typeof setTimeout>;
-      });
+      const setTimeoutSpy = installInertTimerMock();
       const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
 
       try {

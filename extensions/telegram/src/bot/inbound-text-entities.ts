@@ -10,18 +10,18 @@ type TelegramMarkdownBoundary = {
   index: number;
 };
 
-const TELEGRAM_ENTITY_MARKDOWN_PRIORITY: Partial<Record<MessageEntity["type"], number>> = {
-  blockquote: 0,
-  expandable_blockquote: 0,
-  bold: 10,
-  italic: 20,
-  underline: 30,
-  strikethrough: 40,
-  spoiler: 50,
-  text_link: 60,
-  code: 70,
-  pre: 80,
-};
+const TELEGRAM_ENTITY_MARKDOWN_PRIORITY = new Map<MessageEntity["type"], number>([
+  ["blockquote", 0],
+  ["expandable_blockquote", 0],
+  ["bold", 10],
+  ["italic", 20],
+  ["underline", 30],
+  ["strikethrough", 40],
+  ["spoiler", 50],
+  ["text_link", 60],
+  ["code", 70],
+  ["pre", 80],
+]);
 
 const SPLITTABLE_FORMATTING_ENTITY_TYPES = new Set<MessageEntity["type"]>([
   "bold",
@@ -219,7 +219,7 @@ export function renderTelegramTextEntities(
         start: segment.offset,
         end,
         length: segment.length,
-        priority: TELEGRAM_ENTITY_MARKDOWN_PRIORITY[segment.type] ?? 100,
+        priority: TELEGRAM_ENTITY_MARKDOWN_PRIORITY.get(segment.type) ?? 100,
         index,
       };
       addBoundary(boundary.start, boundary);

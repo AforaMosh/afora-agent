@@ -2,6 +2,10 @@
 import type { Bot } from "grammy";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTelegramDraftStream } from "./draft-stream.js";
+
+function telegramBotApiFixture(value: object): Bot["api"] {
+  return Reflect.apply((api: Bot["api"]) => api, undefined, [value]);
+}
 import {
   markdownToTelegramChunks,
   renderTelegramHtmlText,
@@ -51,7 +55,7 @@ function createDraftStream(
   overrides: Omit<Partial<TelegramDraftStreamParams>, "api" | "chatId"> = {},
 ) {
   return createTelegramDraftStream({
-    api: api as unknown as Bot["api"],
+    api: telegramBotApiFixture(api),
     chatId: 123,
     ...overrides,
   });
@@ -1196,7 +1200,7 @@ describe("createTelegramDraftStream", () => {
   it("supports rendered previews with HTML parse mode", async () => {
     const api = createMockDraftApi();
     const stream = createTelegramDraftStream({
-      api: api as unknown as Bot["api"],
+      api: telegramBotApiFixture(api),
       chatId: 123,
       renderText: (text) => ({ text: `<i>${text}</i>`, parseMode: "HTML" }),
     });
@@ -1450,7 +1454,7 @@ describe("createTelegramDraftStream", () => {
     const api = createMockDraftApi();
     const text = `# Long\n\n${"rich line\n".repeat(600)}`;
     const stream = createTelegramDraftStream({
-      api: api as unknown as Bot["api"],
+      api: telegramBotApiFixture(api),
       chatId: 123,
       renderText: (value) => ({ text: value }),
     });
@@ -2030,7 +2034,7 @@ describe("createTelegramDraftStream", () => {
     const api = createMockDraftApi();
     const warn = vi.fn();
     const stream = createTelegramDraftStream({
-      api: api as unknown as Bot["api"],
+      api: telegramBotApiFixture(api),
       chatId: 123,
       maxChars: 100,
       renderText: () => ({
@@ -2055,7 +2059,7 @@ describe("draft stream initial message debounce", () => {
 
   function createDebouncedStream(api: ReturnType<typeof createMockApi>, minInitialChars = 30) {
     return createTelegramDraftStream({
-      api: api as unknown as Bot["api"],
+      api: telegramBotApiFixture(api),
       chatId: 123,
       minInitialChars,
     });
@@ -2158,7 +2162,7 @@ describe("draft stream initial message debounce", () => {
     it("sends plain preview text immediately without minInitialChars set", async () => {
       const api = createMockApi();
       const stream = createTelegramDraftStream({
-        api: api as unknown as Bot["api"],
+        api: telegramBotApiFixture(api),
         chatId: 123,
       });
 

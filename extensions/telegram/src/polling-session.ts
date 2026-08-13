@@ -55,6 +55,14 @@ function normalizeTelegramAccountId(accountId?: string | null): string {
 
 type TelegramBot = ReturnType<typeof createTelegramBot>;
 
+type TelegramIsolatedPollState = {
+  startedAt: number | null;
+  offset: number | null;
+  outcome: string;
+  error?: string;
+  errorCode: number | null;
+};
+
 const waitForGracefulStop = async (stop: () => Promise<void>) => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -448,13 +456,7 @@ export class TelegramPollingSession {
     // Readiness contract: test/e2e/qa-lab telegram-bot-token-runtime waits for
     // this marker on the injected runtime log; do not demote it to verbose.
     this.opts.log(`[telegram][diag] isolated polling ingress started spool=${spoolDir}`);
-    const pollState: {
-      startedAt: number | null;
-      offset: number | null;
-      outcome: string;
-      error?: string;
-      errorCode: number | null;
-    } = {
+    const pollState: TelegramIsolatedPollState = {
       startedAt: null,
       offset: null,
       outcome: "not-started",

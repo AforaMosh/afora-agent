@@ -168,10 +168,10 @@ export function createDraftState(params: TurnConfig): TelegramDraftStateSlice {
       retainedPromptContextPages: [],
     };
   };
-  const lanes: Record<LaneName, DraftLaneState> = {
+  const lanes = {
     answer: createDraftLane("answer", canStreamAnswerDraft),
     reasoning: createDraftLane("reasoning", canStreamReasoningDraft),
-  };
+  } satisfies Record<LaneName, DraftLaneState>;
   const resolvedBlockStreamingEnabled = resolveChannelStreamingBlockEnabled(params.telegramCfg);
   const disableBlockStreaming = !streamDeliveryEnabled
     ? true

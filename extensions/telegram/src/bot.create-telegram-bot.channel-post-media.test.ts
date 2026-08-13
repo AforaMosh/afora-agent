@@ -4,7 +4,7 @@ import {
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
 } from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import { createNonExitingRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   telegramBotInfoForTest,
@@ -1013,7 +1013,7 @@ describe("createTelegramBot channel_post media", () => {
       createTelegramBot({
         token: "tok",
         testTimings: TELEGRAM_TEST_TIMINGS,
-        runtime: { error: runtimeError } as unknown as RuntimeEnv,
+        runtime: { ...createNonExitingRuntimeEnv(), error: runtimeError },
       });
       const handler = getOnHandler("channel_post") as (
         ctx: Record<string, unknown>,

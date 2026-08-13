@@ -1,6 +1,7 @@
 // Telegram plugin module implements fetch behavior.
 import { randomUUID } from "node:crypto";
 import * as dns from "node:dns";
+import type { LookupFunction } from "node:net";
 import type { TelegramNetworkConfig } from "openclaw/plugin-sdk/config-contracts";
 import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
 import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
@@ -105,20 +106,25 @@ type TelegramTransportAttemptHealth = {
 
 type TelegramDnsResultOrder = "ipv4first" | "verbatim";
 
-type LookupCallback =
-  | ((err: NodeJS.ErrnoException | null, address: string, family: number) => void)
-  | ((err: NodeJS.ErrnoException | null, addresses: dns.LookupAddress[]) => void);
-
-type LookupOptions = (dns.LookupOneOptions | dns.LookupAllOptions) & {
-  order?: TelegramDnsResultOrder;
-  verbatim?: boolean;
+type TelegramConnectOptions = {
+  autoSelectFamily?: boolean;
+  autoSelectFamilyAttemptTimeout?: number;
+  family?: number;
+  keepAlive?: boolean;
+  keepAliveInitialDelay?: number;
+  lookup?: LookupFunction;
 };
 
-type LookupFunction = (
-  hostname: string,
-  options: number | dns.LookupOneOptions | dns.LookupAllOptions | undefined,
-  callback: LookupCallback,
-) => void;
+type TelegramDispatcherPolicyResolution = {
+  policy: PinnedDispatcherPolicy;
+  mode: TelegramDispatcherMode;
+};
+
+type TelegramDispatcherResolution = {
+  dispatcher: TelegramDispatcher;
+  mode: TelegramDispatcherMode;
+  effectivePolicy: PinnedDispatcherPolicy;
+};
 
 const FALLBACK_RETRY_ERROR_CODES = [
   "ETIMEDOUT",
@@ -147,24 +153,13 @@ function createDnsResultOrderLookup(
   if (!order) {
     return undefined;
   }
-  const lookup = dns.lookup as unknown as (
-    hostname: string,
-    options: LookupOptions,
-    callback: LookupCallback,
-  ) => void;
   return (hostname, options, callback) => {
-    const baseOptions: LookupOptions =
-      typeof options === "number"
-        ? { family: options }
-        : options
-          ? { ...(options as LookupOptions) }
-          : {};
-    const lookupOptions: LookupOptions = {
-      ...baseOptions,
+    const lookupOptions: dns.LookupOptions = {
+      ...options,
       order,
       verbatim: order === "verbatim",
     };
-    lookup(hostname, lookupOptions, callback);
+    dns.lookup(hostname, lookupOptions, callback);
   };
 }
 
@@ -174,22 +169,8 @@ function buildTelegramConnectOptions(params: {
   autoSelectFamily: boolean | null;
   dnsResultOrder: TelegramDnsResultOrder | null;
   forceIpv4: boolean;
-}): {
-  autoSelectFamily?: boolean;
-  autoSelectFamilyAttemptTimeout?: number;
-  family?: number;
-  keepAlive?: boolean;
-  keepAliveInitialDelay?: number;
-  lookup?: LookupFunction;
-} {
-  const connect: {
-    autoSelectFamily?: boolean;
-    autoSelectFamilyAttemptTimeout?: number;
-    family?: number;
-    keepAlive?: boolean;
-    keepAliveInitialDelay?: number;
-    lookup?: LookupFunction;
-  } = {
+}): TelegramConnectOptions {
+  const connect: TelegramConnectOptions = {
     keepAlive: true,
     keepAliveInitialDelay: TELEGRAM_KEEPALIVE_INITIAL_DELAY_MS,
   };
@@ -227,7 +208,7 @@ function resolveTelegramDispatcherPolicy(params: {
   useEnvProxy: boolean;
   forceIpv4: boolean;
   proxyUrl?: string;
-}): { policy: PinnedDispatcherPolicy; mode: TelegramDispatcherMode } {
+}): TelegramDispatcherPolicyResolution {
   const connect = buildTelegramConnectOptions({
     autoSelectFamily: params.autoSelectFamily,
     dnsResultOrder: params.dnsResultOrder,
@@ -279,11 +260,7 @@ function withPinnedLookup(
   return options ? { ...options, lookup } : { lookup };
 }
 
-function createTelegramDispatcher(policy: PinnedDispatcherPolicy): {
-  dispatcher: TelegramDispatcher;
-  mode: TelegramDispatcherMode;
-  effectivePolicy: PinnedDispatcherPolicy;
-} {
+function createTelegramDispatcher(policy: PinnedDispatcherPolicy): TelegramDispatcherResolution {
   // Telegram polling uses long-lived connections. Undici 8 enables HTTP/2 ALPN
   // by default, which can stall Telegram long-polling on Windows/IPv6 networks.
   // Force HTTP/1.1 for every dispatcher while keeping bounded pool defaults.
@@ -366,6 +343,11 @@ function withDispatcherIfMissing(
 
 function resolveWrappedFetch(fetchImpl: typeof fetch): typeof fetch {
   return resolveFetch(fetchImpl) ?? fetchImpl;
+}
+
+function asGlobalFetch(fetchImpl: typeof undiciFetch): typeof fetch;
+function asGlobalFetch(fetchImpl: typeof undiciFetch): typeof fetch | typeof undiciFetch {
+  return fetchImpl;
 }
 
 function logResolverNetworkDecisions(params: {
@@ -575,7 +557,7 @@ export function resolveTelegramTransport(
   const managedProxyUrl =
     !effectiveProxyFetch && !hasEnvProxy ? resolveOpenClawProxyUrlForTelegram() : undefined;
   const resolvedExplicitProxyUrl = explicitProxyUrl ?? managedProxyUrl;
-  const undiciSourceFetch = resolveWrappedFetch(undiciFetch as unknown as typeof fetch);
+  const undiciSourceFetch = resolveWrappedFetch(asGlobalFetch(undiciFetch));
   const sourceFetch = resolvedExplicitProxyUrl
     ? undiciSourceFetch
     : effectiveProxyFetch

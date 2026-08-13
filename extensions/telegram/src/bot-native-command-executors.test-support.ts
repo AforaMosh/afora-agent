@@ -140,6 +140,9 @@ export const dispatchChannelInboundTurnMock = vi.fn<DispatchChannelInboundTurnFn
     dispatchResult,
   };
 });
+const dispatchChannelInboundTurnForCommands: NonNullable<
+  TelegramNativeCommandDeps["dispatchChannelInboundTurn"]
+> = async (plan) => await Reflect.apply(dispatchChannelInboundTurnMock, undefined, [plan]);
 const sessionBindingMocks = vi.hoisted(() => ({
   resolveByConversation: vi.fn<
     (ref: unknown) => { bindingId: string; targetSessionKey: string } | null
@@ -256,9 +259,7 @@ vi.mock("./bot-native-commands.runtime.js", () => {
     getSessionEntry: sessionMocks.getSessionEntry,
     resolveChunkMode,
     resolveThreadSessionKeys,
-    dispatchChannelInboundTurn: dispatchChannelInboundTurnMock as unknown as NonNullable<
-      TelegramNativeCommandDeps["dispatchChannelInboundTurn"]
-    >,
+    dispatchChannelInboundTurn: dispatchChannelInboundTurnForCommands,
   };
 });
 vi.mock("./bot/delivery.js", () => ({
@@ -271,6 +272,10 @@ vi.mock("./bot/delivery.replies.js", () => ({
 export let activePluginRegistry: ReturnType<typeof createEmptyPluginRegistry>;
 
 type TelegramCommandHandler = (ctx: unknown) => Promise<void>;
+type RegisteredCommandHandler = {
+  handler: TelegramCommandHandler;
+  sendMessage: ReturnType<typeof vi.fn>;
+};
 type TelegramPluginCommandSpecs = Array<{
   name: string;
   description: string;
@@ -286,10 +291,7 @@ export function registerAndResolveStatusHandler(params: {
   storeAllowFrom?: string[];
   telegramCfg?: NativeCommandTestParams["telegramCfg"];
   resolveTelegramGroupConfig?: RegisterTelegramHandlerParams["resolveTelegramGroupConfig"];
-}): {
-  handler: TelegramCommandHandler;
-  sendMessage: ReturnType<typeof vi.fn>;
-} {
+}): RegisteredCommandHandler {
   const {
     cfg,
     runtimeCfg,
@@ -322,10 +324,7 @@ function registerAndResolveCommandHandlerBase(params: {
   resolveTelegramGroupConfig?: RegisterTelegramHandlerParams["resolveTelegramGroupConfig"];
   pluginCommandSpecs?: TelegramPluginCommandSpecs;
   runModelsAuthLoginFlow?: TelegramLoginFlow;
-}): {
-  handler: TelegramCommandHandler;
-  sendMessage: ReturnType<typeof vi.fn>;
-} {
+}): RegisteredCommandHandler {
   const {
     commandName,
     cfg,
@@ -345,9 +344,7 @@ function registerAndResolveCommandHandlerBase(params: {
   const telegramDeps: TelegramNativeCommandDeps = {
     getRuntimeConfig: vi.fn(() => commandRuntimeCfg),
     readChannelAllowFromStore: vi.fn(async () => storeAllowFrom ?? []),
-    dispatchChannelInboundTurn: dispatchChannelInboundTurnMock as unknown as NonNullable<
-      TelegramNativeCommandDeps["dispatchChannelInboundTurn"]
-    >,
+    dispatchChannelInboundTurn: dispatchChannelInboundTurnForCommands,
     listSkillCommandsForAgents: vi.fn(() => []),
     syncTelegramMenuCommands: vi.fn(),
     sendMessageTelegram: vi.fn(async (_to, text) => {
@@ -366,8 +363,17 @@ function registerAndResolveCommandHandlerBase(params: {
         }),
       ).toEqual({ ok: true });
     }
-    registerTelegramNativeCommands({
-      ...createNativeCommandTestParams({
+    const commandParams = createNativeCommandTestParams({
+      cfg,
+      allowFrom,
+      groupAllowFrom,
+      telegramCfg,
+      resolveTelegramGroupConfig,
+      telegramDeps,
+    });
+    Reflect.apply(registerTelegramNativeCommands, undefined, [
+      {
+        ...commandParams,
         bot: {
           api: {
             setMyCommands: vi.fn().mockResolvedValue(undefined),
@@ -376,15 +382,9 @@ function registerAndResolveCommandHandlerBase(params: {
           command: vi.fn((name: string, cb: TelegramCommandHandler) => {
             commandHandlers.set(name, cb);
           }),
-        } as unknown as NativeCommandTestParams["bot"],
-        cfg,
-        allowFrom,
-        groupAllowFrom,
-        telegramCfg,
-        resolveTelegramGroupConfig,
-        telegramDeps,
-      }),
-    });
+        },
+      },
+    ]);
   });
 
   const handler = commandHandlers.get(commandName);
@@ -404,10 +404,7 @@ export function registerAndResolveCommandHandler(params: {
   resolveTelegramGroupConfig?: RegisterTelegramHandlerParams["resolveTelegramGroupConfig"];
   pluginCommandSpecs?: TelegramPluginCommandSpecs;
   runModelsAuthLoginFlow?: TelegramLoginFlow;
-}): {
-  handler: TelegramCommandHandler;
-  sendMessage: ReturnType<typeof vi.fn>;
-} {
+}): RegisteredCommandHandler {
   const {
     commandName,
     cfg,

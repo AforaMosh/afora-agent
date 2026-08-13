@@ -75,13 +75,13 @@ describe("evaluateTelegramGroupBaseAccess", () => {
 /**
  * Minimal stubs shared across group policy tests.
  */
-const baseCfg = {
+const baseCfg: OpenClawConfig = {
   channels: { telegram: {} },
-} as unknown as OpenClawConfig;
+};
 
 const baseTelegramCfg: TelegramAccountConfig = {
   groupPolicy: "allowlist",
-} as unknown as TelegramAccountConfig;
+};
 
 const emptyAllow = { entries: [], hasWildcard: false, hasEntries: false, invalidEntries: [] };
 const senderAllow = {

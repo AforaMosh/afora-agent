@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expectDefined } from "@openclaw/normalization-core";
+import { BotError, Context } from "grammy";
 import { escapeRegExp, formatEnvelopeTimestamp } from "openclaw/plugin-sdk/channel-test-helpers";
 import type { TelegramGroupConfig } from "openclaw/plugin-sdk/config-contracts";
 import {
@@ -14,10 +15,7 @@ import {
   clearPluginInteractiveHandlers,
   registerPluginInteractiveHandler,
 } from "openclaw/plugin-sdk/plugin-runtime";
-import type {
-  PluginStateKeyedStore,
-  PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
 import type { GetReplyOptions, MsgContext } from "openclaw/plugin-sdk/reply-runtime";
 import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
 import { createRequireRecord, sanitizeTerminalText } from "openclaw/plugin-sdk/test-fixtures";
@@ -50,6 +48,7 @@ let previousStateDir: string | undefined;
 const {
   answerCallbackQuerySpy,
   botCtorSpy,
+  catchSpy,
   commandSpy,
   dispatchReplyWithBufferedBlockDispatcher,
   editMessageReplyMarkupSpy,
@@ -81,9 +80,6 @@ const {
   throttlerSpy,
   useSpy,
 } = harness;
-type BuildModelsProviderDataMock = ReturnType<
-  typeof vi.fn<NonNullable<typeof telegramBotDepsForTest.buildModelsProviderData>>
->;
 const { resolveTelegramFetch } = await import("./fetch.js");
 const { defaultTelegramNativeCommandDeps } = await import("./bot-native-command-deps.runtime.js");
 const messageDispatchDedupe = await import("./message-dispatch-dedupe.js");
@@ -466,26 +462,38 @@ describe("createTelegramBot", () => {
   });
 
   it("logs middleware errors through grammY catch without rethrowing", () => {
-    const runtime = {
+    const runtime: NonNullable<TelegramBotOptions["runtime"]> = {
+      log: vi.fn(),
       error: vi.fn(),
-    } as unknown as NonNullable<TelegramBotOptions["runtime"]>;
-    const bot = createTelegramBot({ token: "tok", runtime });
-    const catchMock = bot["catch"] as unknown as {
-      mock: { calls: Array<[(err: unknown) => void]> };
+      exit: vi.fn(),
     };
-    const errorHandler = catchMock.mock.calls.at(0)?.[0];
+    const bot = createTelegramBot({ token: "tok", runtime });
+    const errorHandler = catchSpy.mock.calls.at(0)?.[0];
+    const errorContext = new Context(
+      {
+        update_id: 1,
+        message: {
+          message_id: 1,
+          date: 1_700_000_000,
+          chat: { id: 100, type: "private", first_name: "Test" },
+          from: { id: 200, is_bot: false, first_name: "Tester" },
+          text: "test",
+        },
+      },
+      bot.api,
+      telegramBotInfoForTest,
+    );
 
     expect(errorHandler).toBeTypeOf("function");
-    errorHandler?.(new Error("handler boom"));
-    const errorCalls = (runtime.error as unknown as { mock: { calls: Array<[unknown]> } }).mock
-      .calls;
+    errorHandler?.(new BotError(new Error("handler boom"), errorContext));
+    const errorCalls = vi.mocked(runtime.error).mock.calls;
     const errorMessage = sanitizeTerminalText(String(errorCalls[0]?.[0]));
     expect(errorMessage.startsWith("telegram bot error: Error: handler boom")).toBe(true);
   });
 
   it("uses wrapped fetch when global fetch is available", () => {
     const originalFetch = globalThis.fetch;
-    const fetchSpy = vi.fn() as unknown as typeof fetch;
+    const fetchSpy = vi.fn<typeof fetch>();
     globalThis.fetch = fetchSpy;
     try {
       createTelegramBot({ token: "tok" });
@@ -723,8 +731,15 @@ describe("createTelegramBot", () => {
     const lookup = vi.fn(async () => {
       throw new Error("registry should not be read");
     });
-    const openKeyedStore: TelegramRuntime["state"]["openKeyedStore"] = <T>() =>
-      ({ lookup }) as unknown as PluginStateKeyedStore<T>;
+    const openKeyedStore: TelegramRuntime["state"]["openKeyedStore"] = () => ({
+      register: async () => undefined,
+      registerIfAbsent: async () => false,
+      lookup,
+      consume: async () => undefined,
+      delete: async () => false,
+      entries: async () => [],
+      clear: async () => undefined,
+    });
     setTelegramRuntime({ state: { openKeyedStore }, channel: {} } as TelegramRuntime);
     createTelegramBot({ token: "tok" });
     const update = { update_id: 42, poll_answer: pollAnswer };
@@ -2251,8 +2266,7 @@ describe("createTelegramBot", () => {
   });
 
   it("reloads callback model routing bindings without recreating the bot", async () => {
-    const buildModelsProviderDataMock =
-      telegramBotDepsForTest.buildModelsProviderData as unknown as BuildModelsProviderDataMock;
+    const buildModelsProviderDataMock = vi.mocked(telegramBotDepsForTest.buildModelsProviderData);
     let boundAgentId = "agent-a";
     loadConfig.mockImplementation(() => ({
       agents: {
@@ -4019,14 +4033,22 @@ describe("createTelegramBot", () => {
     expect(replySpy).toHaveBeenCalledTimes(1);
   });
 
-  it.each([
+  type TelegramScopedGroupConfigCase = {
+    name: string;
+    groupPolicy: "open" | "allowlist";
+    groups: Record<string, TelegramGroupConfig>;
+    topicId: number;
+    expectedGroup: Record<string, unknown> | undefined;
+    expectedTopic: Record<string, unknown>;
+  };
+  const telegramScopedGroupConfigCases: TelegramScopedGroupConfigCase[] = [
     {
       name: "lets topic mention overrides fall back from wildcard group config",
       groupPolicy: "open",
       groups: {
         "*": { requireMention: true },
         "-1001234567890": { requireMention: true, topics: { "99": { requireMention: false } } },
-      } as Record<string, TelegramGroupConfig>,
+      } satisfies Record<string, TelegramGroupConfig>,
       topicId: 99,
       expectedGroup: { requireMention: true },
       expectedTopic: { requireMention: false },
@@ -4040,7 +4062,7 @@ describe("createTelegramBot", () => {
           allowFrom: ["123456789"],
           topics: { "99": {} },
         },
-      } as Record<string, TelegramGroupConfig>,
+      } satisfies Record<string, TelegramGroupConfig>,
       topicId: 99,
       expectedGroup: { requireMention: false, allowFrom: ["123456789"] },
       expectedTopic: {},
@@ -4053,7 +4075,7 @@ describe("createTelegramBot", () => {
           allowFrom: ["999999999"],
           topics: { "*": { allowFrom: ["123456789"], agentId: "zu" } },
         },
-      } as Record<string, TelegramGroupConfig>,
+      } satisfies Record<string, TelegramGroupConfig>,
       topicId: 77,
       expectedGroup: { allowFrom: ["999999999"] },
       expectedTopic: { allowFrom: ["123456789"], agentId: "zu" },
@@ -4068,7 +4090,7 @@ describe("createTelegramBot", () => {
             "77": { allowFrom: ["555555555"], agentId: "main" },
           },
         },
-      } as Record<string, TelegramGroupConfig>,
+      } satisfies Record<string, TelegramGroupConfig>,
       topicId: 77,
       expectedGroup: undefined,
       expectedTopic: { allowFrom: ["555555555"], agentId: "main" },
@@ -4083,28 +4105,27 @@ describe("createTelegramBot", () => {
             "77": { agentId: "main" },
           },
         },
-      } as Record<string, TelegramGroupConfig>,
+      } satisfies Record<string, TelegramGroupConfig>,
       topicId: 77,
       expectedGroup: undefined,
       expectedTopic: { allowFrom: ["123456789"], requireMention: false, agentId: "main" },
     },
-  ] satisfies Array<
-    Record<string, unknown> & {
-      groupPolicy: "open" | "allowlist";
-      groups: Record<string, TelegramGroupConfig>;
-    }
-  >)("$name", ({ groupPolicy, groups, topicId, expectedGroup, expectedTopic }) => {
-    const { groupConfig, topicConfig } = resolveTelegramScopedGroupConfig(
-      { groupPolicy, groups },
-      -1001234567890,
-      topicId,
-    );
+  ];
+  it.each(telegramScopedGroupConfigCases)(
+    "$name",
+    ({ groupPolicy, groups, topicId, expectedGroup, expectedTopic }) => {
+      const { groupConfig, topicConfig } = resolveTelegramScopedGroupConfig(
+        { groupPolicy, groups },
+        -1001234567890,
+        topicId,
+      );
 
-    if (expectedGroup) {
-      expect(groupConfig as TelegramGroupConfig | undefined).toMatchObject(expectedGroup);
-    }
-    expect(topicConfig).toEqual(expectedTopic);
-  });
+      if (expectedGroup) {
+        expect(groupConfig as TelegramGroupConfig | undefined).toMatchObject(expectedGroup);
+      }
+      expect(topicConfig).toEqual(expectedTopic);
+    },
+  );
 
   it.each([
     {
@@ -5299,8 +5320,7 @@ describe("createTelegramBot", () => {
       },
     });
 
-    const buildModelsProviderDataMock =
-      telegramBotDepsForTest.buildModelsProviderData as unknown as BuildModelsProviderDataMock;
+    const buildModelsProviderDataMock = vi.mocked(telegramBotDepsForTest.buildModelsProviderData);
     buildModelsProviderDataMock.mockClear();
     editMessageTextSpy.mockClear();
 
@@ -5435,7 +5455,7 @@ describe("createTelegramBot", () => {
   });
 
   it("retries command pagination callbacks after a bubbled preflight failure", async () => {
-    const listSkillCommandsMock = listSkillCommandsForAgents as unknown as ReturnType<typeof vi.fn>;
+    const listSkillCommandsMock = vi.mocked(listSkillCommandsForAgents);
 
     createTelegramBot({ token: "tok" });
     listSkillCommandsMock.mockClear();

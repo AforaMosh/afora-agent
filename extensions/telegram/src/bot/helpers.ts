@@ -107,6 +107,17 @@ export type TelegramThreadSpec = {
   scope: "direct-messages" | "dm" | "forum" | "none";
 };
 
+export type TelegramMessageThreadFacts = {
+  chat: {
+    type: Message["chat"]["type"];
+    is_direct_messages?: boolean;
+    is_forum?: boolean;
+  };
+  direct_messages_topic?: { topic_id?: number };
+  is_topic_message?: boolean;
+  message_thread_id?: number;
+};
+
 type TelegramThreadParams = {
   direct_messages_topic_id?: number;
   message_thread_id?: number;
@@ -420,7 +431,7 @@ export function resolveTelegramThreadSpec(params: {
 }
 
 export function resolveTelegramMessageThreadSpec(
-  message: Message,
+  message: TelegramMessageThreadFacts,
   isForum?: boolean,
 ): TelegramThreadSpec {
   if (message.chat.is_direct_messages === true) {

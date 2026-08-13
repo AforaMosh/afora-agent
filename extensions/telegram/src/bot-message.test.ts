@@ -1,7 +1,7 @@
 // Telegram tests cover bot message plugin behavior.
 import { expectDefined } from "@openclaw/normalization-core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { TelegramBotDeps } from "./bot-deps.js";
+import { defaultTelegramBotDeps } from "./bot-deps.js";
 import type { TelegramMessageProcessorTurnContext } from "./bot-handlers.types.js";
 import type { TelegramMessageProcessingResult } from "./bot-processing-outcome.js";
 
@@ -64,8 +64,9 @@ describe("telegram bot message processor", () => {
   });
 
   const telegramDepsForTest = {
+    ...defaultTelegramBotDeps,
     upsertChannelPairingRequest,
-  } as unknown as TelegramBotDeps;
+  };
 
   const baseTurnContext = {
     cfg: {},
@@ -100,26 +101,32 @@ describe("telegram bot message processor", () => {
     );
   });
 
-  const baseDeps = {
-    bot: {},
-    account: {},
-    historyLimit: 0,
-    groupHistories: {},
-    dmPolicy: {},
-    allowFrom: [],
-    groupAllowFrom: [],
-    ackReactionScope: "none",
-    logger: {},
-    resolveGroupActivation: () => true,
-    resolveGroupRequireMention: () => false,
-    resolveTelegramGroupConfig: () => ({}),
-    runtime: {},
-    replyToMode: "auto",
-    streamMode: "partial",
-    textLimit: 4096,
-    telegramDeps: telegramDepsForTest,
-    opts: {},
-  } as unknown as Parameters<typeof createTelegramMessageProcessor>[0];
+  const baseDeps = Reflect.apply(
+    (deps: Parameters<typeof createTelegramMessageProcessor>[0]) => deps,
+    undefined,
+    [
+      {
+        bot: {},
+        account: {},
+        historyLimit: 0,
+        groupHistories: {},
+        dmPolicy: {},
+        allowFrom: [],
+        groupAllowFrom: [],
+        ackReactionScope: "none",
+        logger: {},
+        resolveGroupActivation: () => true,
+        resolveGroupRequireMention: () => false,
+        resolveTelegramGroupConfig: () => ({}),
+        runtime: {},
+        replyToMode: "auto",
+        streamMode: "partial",
+        textLimit: 4096,
+        telegramDeps: telegramDepsForTest,
+        opts: {},
+      },
+    ],
+  );
 
   async function processSampleMessage(
     processMessage: ReturnType<typeof createTelegramMessageProcessor>,
@@ -128,14 +135,14 @@ describe("telegram bot message processor", () => {
     options: Parameters<typeof processMessage>[4] = {},
     allMedia: Parameters<typeof processMessage>[1] = [],
   ) {
-    return await processMessage(
+    return await Reflect.apply(processMessage, undefined, [
       {
         message: {
           chat: { id: 123, type: "private", title: "chat" },
           message_id: 456,
         },
         ...primaryCtxOverrides,
-      } as unknown as Parameters<typeof processMessage>[0],
+      },
       allMedia,
       [],
       {
@@ -147,7 +154,7 @@ describe("telegram bot message processor", () => {
       undefined,
       undefined,
       undefined,
-    );
+    ]);
   }
 
   function createDispatchFailureHarness(
@@ -158,11 +165,13 @@ describe("telegram bot message processor", () => {
     const dispatchError = new Error("dispatch exploded");
     buildTelegramMessageContext.mockResolvedValue(createMessageContext(context));
     dispatchTelegramMessage.mockRejectedValue(dispatchError);
-    const processMessage = createTelegramMessageProcessor({
-      ...baseDeps,
-      bot: { api: { sendMessage } },
-      runtime: { error: runtimeError },
-    } as unknown as Parameters<typeof createTelegramMessageProcessor>[0]);
+    const processMessage = Reflect.apply(createTelegramMessageProcessor, undefined, [
+      {
+        ...baseDeps,
+        bot: { api: { sendMessage } },
+        runtime: { error: runtimeError },
+      },
+    ]);
     return { processMessage, runtimeError, dispatchError };
   }
 
@@ -807,11 +816,13 @@ describe("telegram bot message processor", () => {
     const runtimeError = vi.fn();
     buildTelegramMessageContext.mockResolvedValue(createMessageContext({ chatId: 123 }));
     dispatchTelegramMessage.mockResolvedValue({ kind: "failed-retryable", error: dispatchError });
-    const processMessage = createTelegramMessageProcessor({
-      ...baseDeps,
-      bot: { api: { sendMessage } },
-      runtime: { error: runtimeError },
-    } as unknown as Parameters<typeof createTelegramMessageProcessor>[0]);
+    const processMessage = Reflect.apply(createTelegramMessageProcessor, undefined, [
+      {
+        ...baseDeps,
+        bot: { api: { sendMessage } },
+        runtime: { error: runtimeError },
+      },
+    ]);
     const update = { update_id: 123457 };
     const replay = await runWithTelegramSpooledReplayUpdate(update, async () =>
       processSampleMessage(processMessage, undefined, { update }),

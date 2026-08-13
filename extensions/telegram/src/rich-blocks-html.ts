@@ -13,8 +13,7 @@ export type HtmlNode =
 
 export const VOID_TAGS = new Set(["br", "hr", "img", "input", "tg-map"]);
 
-const INLINE_STYLE_TAGS: Record<
-  string,
+type TelegramInlineStyle =
   | "bold"
   | "italic"
   | "underline"
@@ -23,23 +22,24 @@ const INLINE_STYLE_TAGS: Record<
   | "spoiler"
   | "marked"
   | "subscript"
-  | "superscript"
-> = {
-  b: "bold",
-  strong: "bold",
-  i: "italic",
-  em: "italic",
-  u: "underline",
-  ins: "underline",
-  s: "strikethrough",
-  del: "strikethrough",
-  strike: "strikethrough",
-  code: "code",
-  "tg-spoiler": "spoiler",
-  mark: "marked",
-  sub: "subscript",
-  sup: "superscript",
-};
+  | "superscript";
+
+const INLINE_STYLE_TAGS = new Map<string, TelegramInlineStyle>([
+  ["b", "bold"],
+  ["strong", "bold"],
+  ["i", "italic"],
+  ["em", "italic"],
+  ["u", "underline"],
+  ["ins", "underline"],
+  ["s", "strikethrough"],
+  ["del", "strikethrough"],
+  ["strike", "strikethrough"],
+  ["code", "code"],
+  ["tg-spoiler", "spoiler"],
+  ["mark", "marked"],
+  ["sub", "subscript"],
+  ["sup", "superscript"],
+]);
 
 const HTML_ATTR_RE = /([a-zA-Z][a-zA-Z0-9-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 
@@ -155,7 +155,7 @@ export function htmlNodesToRichText(nodes: readonly HtmlNode[]): RichText {
       }
       continue;
     }
-    const style = INLINE_STYLE_TAGS[node.name];
+    const style = INLINE_STYLE_TAGS.get(node.name);
     if (style) {
       parts.push({ type: style, text: htmlNodesToRichText(node.children) });
       continue;

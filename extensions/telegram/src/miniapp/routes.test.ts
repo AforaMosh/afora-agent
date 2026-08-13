@@ -11,6 +11,7 @@ import {
 } from "./launch-ticket.js";
 
 type OpenClawPluginHttpRouteParams = Parameters<OpenClawPluginApi["registerHttpRoute"]>[0];
+type MockResponseHeaders = Record<string, string>;
 
 const issueDeviceBootstrapToken = vi.hoisted(() =>
   vi.fn(async () => ({ token: "issued", expiresAtMs: Date.now() + 600_000 })),
@@ -41,7 +42,7 @@ let launchTickets: TelegramMiniAppLaunchTickets;
 
 class MockResponse {
   statusCode = 200;
-  headers: Record<string, string> = {};
+  headers: MockResponseHeaders = {};
   body = "";
 
   writeHead(statusCode: number, headers: Record<string, string>) {

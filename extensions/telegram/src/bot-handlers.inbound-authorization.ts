@@ -40,6 +40,13 @@ export type TelegramEventAuthorizationMode =
   | "callback-allowlist"
   | "callback-runtime-allowlist";
 
+type TelegramEventAuthorizationRule = {
+  enforceDirectAuthorization: boolean;
+  enforceGroupAllowlistAuthorization: boolean;
+  deniedDmReason: string;
+  deniedGroupReason: string;
+};
+
 export interface TelegramHandlerAuthorization {
   resolveTelegramEventAuthorizationContext: (params: {
     cfg: OpenClawConfig;
@@ -89,15 +96,7 @@ export function createTelegramHandlerAuthorization({
     shouldSkipTelegramGroupMessage(params, { logger, resolveGroupPolicy });
 
   type TelegramEventAuthorizationContextValue = TelegramEventAuthorizationContext;
-  const TELEGRAM_EVENT_AUTH_RULES: Record<
-    TelegramEventAuthorizationMode,
-    {
-      enforceDirectAuthorization: boolean;
-      enforceGroupAllowlistAuthorization: boolean;
-      deniedDmReason: string;
-      deniedGroupReason: string;
-    }
-  > = {
+  const TELEGRAM_EVENT_AUTH_RULES = {
     reaction: {
       enforceDirectAuthorization: true,
       enforceGroupAllowlistAuthorization: false,
@@ -124,7 +123,7 @@ export function createTelegramHandlerAuthorization({
       deniedDmReason: "runtime callback unauthorized by allowlist",
       deniedGroupReason: "runtime callback unauthorized by group allowlist",
     },
-  };
+  } satisfies Record<TelegramEventAuthorizationMode, TelegramEventAuthorizationRule>;
 
   // Authorization owns one ingress snapshot. The agent turn intentionally
   // captures again after batching so reloads during debounce apply to execution.

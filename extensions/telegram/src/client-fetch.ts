@@ -26,12 +26,18 @@ type TelegramAbortSignalLike = {
 
 export function asTelegramClientFetch(
   fetchImpl: TelegramCompatFetch | typeof globalThis.fetch,
-): TelegramClientFetch {
-  return fetchImpl as unknown as TelegramClientFetch;
+): TelegramClientFetch;
+export function asTelegramClientFetch(
+  fetchImpl: TelegramCompatFetch | typeof globalThis.fetch,
+): TelegramClientFetch | TelegramCompatFetch | typeof globalThis.fetch {
+  return fetchImpl;
 }
 
-function asTelegramCompatFetch(fetchImpl: TelegramClientFetch): TelegramCompatFetch {
-  return fetchImpl as unknown as TelegramCompatFetch;
+function asTelegramCompatFetch(fetchImpl: TelegramClientFetch): TelegramCompatFetch;
+function asTelegramCompatFetch(
+  fetchImpl: TelegramClientFetch,
+): TelegramCompatFetch | TelegramClientFetch {
+  return fetchImpl;
 }
 
 function isTelegramAbortSignalLike(value: unknown): value is TelegramAbortSignalLike {

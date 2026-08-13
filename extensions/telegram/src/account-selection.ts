@@ -85,11 +85,15 @@ const { listAccountIds: listTelegramAccountIds } = createAccountListHelpers("tel
 
 export { listTelegramAccountIds };
 
-export function resolveDefaultTelegramAccountSelection(cfg: OpenClawConfig): {
+export type DefaultTelegramAccountSelection = {
   accountId: string;
   accountIds: string[];
   shouldWarnMissingDefault: boolean;
-} {
+};
+
+export function resolveDefaultTelegramAccountSelection(
+  cfg: OpenClawConfig,
+): DefaultTelegramAccountSelection {
   const boundDefault = resolveDefaultAgentBoundAccountId(cfg, "telegram");
   if (boundDefault) {
     return {

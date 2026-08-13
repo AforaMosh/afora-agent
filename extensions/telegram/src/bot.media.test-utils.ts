@@ -24,7 +24,7 @@ let replySpyRef: ReturnType<typeof vi.fn>;
 let onSpyRef: Mock;
 let sendChatActionSpyRef: Mock;
 let readRemoteMediaBufferSpyRef: Mock;
-let undiciFetchSpyRef: Mock;
+let undiciFetchSpyRef: Mock<typeof fetch>;
 let resetReadRemoteMediaBufferMockRef: () => void;
 
 type FetchMockHandle = Mock & { mockRestore: () => void };
@@ -60,7 +60,7 @@ export async function createBotHandlerWithOptions(options: {
 
   const runtimeError = options.runtimeError ?? vi.fn();
   const runtimeLog = options.runtimeLog ?? vi.fn();
-  const effectiveProxyFetch = options.proxyFetch ?? (undiciFetchSpyRef as unknown as typeof fetch);
+  const effectiveProxyFetch = options.proxyFetch ?? undiciFetchSpyRef;
   createTelegramBotRef({
     token: "tok",
     // Production always constructs the bot from getMe(), so inbound handlers may

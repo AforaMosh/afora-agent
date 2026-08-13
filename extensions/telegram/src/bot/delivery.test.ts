@@ -30,6 +30,9 @@ type DeliverWithParams = Omit<
 > &
   Partial<Pick<DeliverRepliesParams, "replyToMode" | "textLimit" | "mediaLoader">>;
 type RuntimeStub = Pick<RuntimeEnv, "error" | "log" | "exit">;
+type RichMessageRawApi = {
+  sendRichMessage: ReturnType<typeof vi.fn>;
+};
 
 vi.mock("openclaw/plugin-sdk/web-media", () => ({
   loadWebMedia: (...args: unknown[]) => loadWebMedia(...args),
@@ -113,7 +116,7 @@ function createBot(api: Record<string, unknown> = {}): Bot {
           throw new Error("sendMessage mock missing");
         }
         const { chat_id, rich_message, ...richParams } = params;
-        const sendParams: Record<string, unknown> = {
+        const sendParams = {
           parse_mode: "HTML",
           ...(rich_message.skip_entity_detection === true ? { skip_entity_detection: true } : {}),
           ...richParams,
@@ -126,23 +129,31 @@ function createBot(api: Record<string, unknown> = {}): Bot {
               })
               .join("\n")
           : (rich_message.markdown ?? rich_message.html ?? "");
-        const replyParameters = sendParams.reply_parameters;
+        const replyParameters = Reflect.get(sendParams, "reply_parameters");
         if (
           replyParameters &&
           typeof replyParameters === "object" &&
           !("quote" in replyParameters) &&
-          typeof (replyParameters as { message_id?: unknown }).message_id === "number"
+          typeof Reflect.get(replyParameters, "message_id") === "number"
         ) {
-          sendParams.reply_to_message_id = (replyParameters as { message_id: number }).message_id;
-          sendParams.allow_sending_without_reply = true;
-          delete sendParams.reply_parameters;
+          Reflect.set(
+            sendParams,
+            "reply_to_message_id",
+            Reflect.get(replyParameters, "message_id"),
+          );
+          Reflect.set(sendParams, "allow_sending_without_reply", true);
+          Reflect.deleteProperty(sendParams, "reply_parameters");
         }
         const options = sendParams;
         return sendMessage(chat_id, text, options);
       },
     ),
   };
-  return { api: { ...api, raw } } as unknown as Bot;
+  return Reflect.apply((bot: Bot) => bot, undefined, [{ api: { ...api, raw } }]);
+}
+
+function richMessageRawApi(bot: Bot): RichMessageRawApi {
+  return Reflect.apply((raw: RichMessageRawApi) => raw, undefined, [bot.api.raw]);
 }
 
 async function deliverWith(params: DeliverWithParams) {
@@ -341,11 +352,13 @@ describe("deliverReplies", () => {
     const sendMessage = vi.fn().mockResolvedValue({ message_id: 1, chat: { id: "123" } });
     const bot = createBot({ sendMessage });
 
-    await deliverWith({
-      replies: [undefined, { text: "hello" }] as unknown as DeliverRepliesParams["replies"],
-      runtime,
-      bot,
-    });
+    await Reflect.apply(deliverWith, undefined, [
+      {
+        replies: [undefined, { text: "hello" }],
+        runtime,
+        bot,
+      },
+    ]);
 
     expect(runtime.error).toHaveBeenCalledTimes(1);
     expect(sendMessage).toHaveBeenCalledTimes(1);
@@ -1724,7 +1737,7 @@ describe("deliverReplies", () => {
   it("skips whitespace-only text replies without calling Telegram", async () => {
     const runtime = createRuntime();
     const sendMessage = vi.fn();
-    const bot = { api: { sendMessage } } as unknown as Bot;
+    const bot = Reflect.apply((value: Bot) => value, undefined, [{ api: { sendMessage } }]);
 
     await expect(
       deliverReplies({
@@ -1897,9 +1910,7 @@ describe("deliverReplies", () => {
       richMessages: true,
     });
 
-    const raw = bot.api.raw as unknown as {
-      sendRichMessage: ReturnType<typeof vi.fn>;
-    };
+    const raw = richMessageRawApi(bot);
     const { sendRichMessage } = raw;
     expect(sendRichMessage).toHaveBeenCalledTimes(2);
     expectRecordFields(firstMockCallArg(sendRichMessage, 0), {
@@ -1949,7 +1960,7 @@ describe("deliverReplies", () => {
       richMessages: true,
     });
 
-    const raw = bot.api.raw as unknown as { sendRichMessage: ReturnType<typeof vi.fn> };
+    const raw = richMessageRawApi(bot);
     expect(raw.sendRichMessage).toHaveBeenCalledTimes(1);
     const richMessage = firstMockCallArg(raw.sendRichMessage, 0).rich_message as {
       blocks: Array<{ type: string; cells?: unknown[][] }>;
@@ -1992,7 +2003,7 @@ describe("deliverReplies", () => {
 
     // HTML deliberately bypasses rich blocks, so a rich account must still ship
     // the authored fallback body rather than a generated legacy table.
-    const raw = bot.api.raw as unknown as { sendRichMessage: ReturnType<typeof vi.fn> };
+    const raw = richMessageRawApi(bot);
     expect(raw.sendRichMessage).not.toHaveBeenCalled();
     expect(sendMessage).toHaveBeenCalledTimes(1);
     expect(String(mockCallArg(sendMessage, 0, 1))).toContain("plain fallback body");
@@ -2049,9 +2060,7 @@ describe("deliverReplies", () => {
       richMessages: true,
     });
 
-    const raw = bot.api.raw as unknown as {
-      sendRichMessage: ReturnType<typeof vi.fn>;
-    };
+    const raw = richMessageRawApi(bot);
     const richMessage = raw.sendRichMessage.mock.calls[0]?.[0]?.rich_message;
     expect(richMessage).toEqual({
       blocks: [{ type: "paragraph", text: oauthProfileText }],
@@ -2066,7 +2075,7 @@ describe("deliverReplies", () => {
       chat: { id: "123" },
     });
     const bot = createBot({ sendMessage });
-    (bot.api.raw as unknown as { sendRichMessage: ReturnType<typeof vi.fn> }).sendRichMessage = vi
+    richMessageRawApi(bot).sendRichMessage = vi
       .fn()
       .mockRejectedValue(createRichEntityInvalidError("EMAIL"));
     const text = "Status includes openai:owner@example.com";
@@ -2117,7 +2126,7 @@ describe("deliverReplies", () => {
       chat: { id: "123" },
     });
     const bot = createBot({ sendMessage });
-    (bot.api.raw as unknown as { sendRichMessage: ReturnType<typeof vi.fn> }).sendRichMessage = vi
+    richMessageRawApi(bot).sendRichMessage = vi
       .fn()
       .mockRejectedValue(createRichContentRequiredError());
     const text = "delivery continues as plain text";
@@ -2165,7 +2174,7 @@ describe("deliverReplies", () => {
       chat: { id: "123" },
     });
     const bot = createBot({ sendMessage });
-    (bot.api.raw as unknown as { sendRichMessage: ReturnType<typeof vi.fn> }).sendRichMessage = vi
+    richMessageRawApi(bot).sendRichMessage = vi
       .fn()
       .mockRejectedValue(createRichEntityInvalidError("URL"));
     const text = "| Rank | Model | Score |\n| --- | --- | --- |\n| 4 | Claude Opus | 78.16% |";
@@ -2191,7 +2200,7 @@ describe("deliverReplies", () => {
       chat: { id: "123" },
     });
     const bot = createBot({ sendMessage });
-    (bot.api.raw as unknown as { sendRichMessage: ReturnType<typeof vi.fn> }).sendRichMessage = vi
+    richMessageRawApi(bot).sendRichMessage = vi
       .fn()
       .mockRejectedValue(createRichEntityInvalidError("URL"));
     const text = "Status with a rejected URL entity";
@@ -2214,9 +2223,7 @@ describe("deliverReplies", () => {
       chat: { id: "123" },
     });
     const bot = createBot({ sendMessage });
-    (bot.api.raw as unknown as { sendRichMessage: ReturnType<typeof vi.fn> }).sendRichMessage = vi
-      .fn()
-      .mockRejectedValue(new Error("network error"));
+    richMessageRawApi(bot).sendRichMessage = vi.fn().mockRejectedValue(new Error("network error"));
     const text = "Status text";
 
     await expect(

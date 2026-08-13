@@ -13,9 +13,15 @@ type BuildTelegramMessageContextForTestParams = Parameters<BuildTelegramMessageC
 type BuildTelegramMessageContextParams =
   import("./bot-message-context.types.js").BuildTelegramMessageContextParams;
 
-const hoisted = vi.hoisted((): { recordInboundSessionMock: AsyncUnknownMock } => ({
-  recordInboundSessionMock: vi.fn().mockResolvedValue(undefined),
-}));
+type TelegramRouteTestHoistedMocks = {
+  recordInboundSessionMock: AsyncUnknownMock;
+};
+
+const hoisted = vi.hoisted(
+  (): TelegramRouteTestHoistedMocks => ({
+    recordInboundSessionMock: vi.fn().mockResolvedValue(undefined),
+  }),
+);
 
 export const recordInboundSessionMock: AsyncUnknownMock = hoisted.recordInboundSessionMock;
 const recordInboundSessionForTest: NonNullable<

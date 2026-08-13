@@ -398,7 +398,7 @@ describe("resolveTelegramFetch", () => {
   });
 
   it("wraps proxy fetches and leaves retry policy to caller-provided fetch", async () => {
-    const proxyFetch = vi.fn(async () => ({ ok: true }) as Response) as unknown as typeof fetch;
+    const proxyFetch = vi.fn<typeof fetch>(async () => new Response());
 
     const resolved = resolveTelegramFetchOrThrow(proxyFetch);
 
@@ -409,7 +409,7 @@ describe("resolveTelegramFetch", () => {
   });
 
   it("does not double-wrap an already wrapped proxy fetch", () => {
-    const proxyFetch = vi.fn(async () => ({ ok: true }) as Response) as unknown as typeof fetch;
+    const proxyFetch = vi.fn<typeof fetch>(async () => new Response());
     const wrapped = resolveFetch(proxyFetch);
 
     const resolved = resolveTelegramFetch(wrapped);
@@ -555,7 +555,7 @@ describe("resolveTelegramFetch", () => {
 
   it("preserves caller-provided custom fetch when OPENCLAW_PROXY_URL is present", async () => {
     vi.stubEnv("OPENCLAW_PROXY_URL", "http://127.0.0.1:7788");
-    const proxyFetch = vi.fn(async () => ({ ok: true }) as Response) as unknown as typeof fetch;
+    const proxyFetch = vi.fn<typeof fetch>(async () => new Response());
 
     const transport = resolveTelegramTransport(proxyFetch, {
       network: {

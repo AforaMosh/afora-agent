@@ -50,19 +50,21 @@ describe("buildTelegramMessageContext media carriers", () => {
   });
 
   it("keeps reply media structured before reply-chain rendering", () => {
-    const target = describeReplyTarget({
+    const message: Message = {
       message_id: 11,
       date: 1_700_000_000,
       chat: { id: 42, type: "private", first_name: "Ada" },
       from: { id: 42, is_bot: false, first_name: "Ada" },
       reply_to_message: {
+        reply_to_message: undefined,
         message_id: 10,
         date: 1_699_999_999,
         chat: { id: 42, type: "private", first_name: "Pat" },
         from: { id: 7, is_bot: false, first_name: "Pat" },
         photo: [{ file_id: "photo-1", file_unique_id: "photo-u1", width: 1, height: 1 }],
       },
-    } as unknown as Message);
+    };
+    const target = describeReplyTarget(message);
 
     expect(target).toMatchObject({ mediaType: "image", sender: "Pat" });
     expect(target?.body).toBeUndefined();

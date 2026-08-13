@@ -56,8 +56,10 @@ describe("telegramPlugin reply threading", () => {
       throw new Error("Telegram reply mode resolver is unavailable");
     }
 
-    const cfg = { channels: { telegram } } as unknown as OpenClawConfig;
-    expect(resolveReplyToMode({ cfg, accountId: "sut" })).toBe(expected);
+    const cfg = { channels: { telegram } };
+    expect(
+      Reflect.apply(resolveReplyToMode, telegramPlugin.threading, [{ cfg, accountId: "sut" }]),
+    ).toBe(expected);
     expect(tryReadSecretFileSyncMock).not.toHaveBeenCalled();
   });
 });

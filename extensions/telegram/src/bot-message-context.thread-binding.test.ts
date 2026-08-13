@@ -79,9 +79,11 @@ async function buildForumTopicMessageContext(accountId?: string) {
 
 function expectRouteArgs(): Record<string, unknown> {
   expect(resolveTelegramConversationRouteMock).toHaveBeenCalledTimes(1);
-  return (
-    resolveTelegramConversationRouteMock.mock.calls.at(0) as unknown as [Record<string, unknown>]
-  )[0];
+  const args = resolveTelegramConversationRouteMock.mock.calls.at(0)?.[0];
+  if (!args) {
+    throw new Error("expected Telegram conversation route args");
+  }
+  return args;
 }
 
 describe("buildTelegramMessageContext thread binding override", () => {

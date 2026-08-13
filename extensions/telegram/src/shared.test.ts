@@ -28,6 +28,22 @@ function resolveAccount(cfg: OpenClawConfig, accountId: string): ResolvedTelegra
   return telegramPluginBase.config.resolveAccount(cfg, accountId);
 }
 
+function resolveAllowFromFromRawConfig(cfg: object) {
+  const resolve = telegramConfigAdapter.resolveAllowFrom;
+  if (!resolve) {
+    throw new Error("expected Telegram allowFrom resolver");
+  }
+  return Reflect.apply(resolve, telegramConfigAdapter, [{ cfg, accountId: "default" }]);
+}
+
+function resolveDefaultToFromRawConfig(cfg: object) {
+  const resolve = telegramConfigAdapter.resolveDefaultTo;
+  if (!resolve) {
+    throw new Error("expected Telegram default target resolver");
+  }
+  return Reflect.apply(resolve, telegramConfigAdapter, [{ cfg, accountId: "default" }]);
+}
+
 describe("createTelegramPluginBase config duplicate token guard", () => {
   it("wires the top-level models menu adapter into the production plugin", () => {
     const channelData = telegramPluginBase.commands?.buildModelsMenuChannelData?.({
@@ -191,13 +207,9 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
           defaultTo: "1498959610751750304",
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(telegramConfigAdapter.resolveAllowFrom?.({ cfg, accountId: "default" })).toEqual([
-      "1128540374256849009",
-    ]);
-    expect(telegramConfigAdapter.resolveDefaultTo?.({ cfg, accountId: "default" })).toBe(
-      "1498959610751750304",
-    );
+    expect(resolveAllowFromFromRawConfig(cfg)).toEqual(["1128540374256849009"]);
+    expect(resolveDefaultToFromRawConfig(cfg)).toBe("1498959610751750304");
   });
 });

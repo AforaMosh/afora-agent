@@ -49,6 +49,34 @@ type TelegramPluginCommandSpec = {
 type TelegramSelectedPluginMenuCommand<TSpec extends TelegramPluginCommandSpec> =
   TelegramMenuCommand & { spec: TSpec };
 
+type TelegramFittedMenuCommands = {
+  commands: TelegramMenuCommand[];
+  descriptionTrimmed: boolean;
+  textBudgetDropCount: number;
+};
+
+type TelegramPluginMenuCommands<TSpec extends TelegramPluginCommandSpec> = {
+  commands: TelegramMenuCommand[];
+  selectedCommands: TelegramSelectedPluginMenuCommand<TSpec>[];
+  issues: string[];
+};
+
+type TelegramCappedMenuCommands = {
+  commandsToRegister: TelegramMenuCommand[];
+  totalCommands: number;
+  maxCommands: number;
+  overflowCount: number;
+  maxTotalChars: number;
+  descriptionTrimmed: boolean;
+  textBudgetDropCount: number;
+  skillCommandsOmitted: boolean;
+};
+
+type TelegramLocalizedCommandVariants = {
+  variants: Array<{ languageCode: LanguageCode; commands: TelegramMenuCommand[] }>;
+  unsupportedLanguageCodes: string[];
+};
+
 const TELEGRAM_COMMAND_MENU_SCOPES: readonly TelegramCommandMenuScope[] = [
   { label: "default" },
   { label: "all_group_chats", options: { scope: { type: "all_group_chats" } } },
@@ -93,11 +121,7 @@ function truncateTelegramCommandText(value: string, maxLength: number): string {
 function fitTelegramCommandsWithinTextBudget(
   commands: TelegramMenuCommand[],
   maxTotalChars: number,
-): {
-  commands: TelegramMenuCommand[];
-  descriptionTrimmed: boolean;
-  textBudgetDropCount: number;
-} {
+): TelegramFittedMenuCommands {
   let candidateCommands = [...commands];
   while (candidateCommands.length > 0) {
     const commandNameChars = candidateCommands.reduce(
@@ -188,11 +212,7 @@ function formatTelegramCommandRetrySuccessLog(params: {
 export function buildPluginTelegramMenuCommands<TSpec extends TelegramPluginCommandSpec>(params: {
   specs: readonly TSpec[];
   existingCommands: Set<string>;
-}): {
-  commands: TelegramMenuCommand[];
-  selectedCommands: TelegramSelectedPluginMenuCommand<TSpec>[];
-  issues: string[];
-} {
+}): TelegramPluginMenuCommands<TSpec> {
   const { specs, existingCommands } = params;
   const commands: TelegramMenuCommand[] = [];
   const selectedCommands: TelegramSelectedPluginMenuCommand<TSpec>[] = [];
@@ -297,16 +317,7 @@ function buildUncachedCappedTelegramMenuCommands(params: {
   allCommands: TelegramMenuCommand[];
   maxCommands: number;
   maxTotalChars: number;
-}): {
-  commandsToRegister: TelegramMenuCommand[];
-  totalCommands: number;
-  maxCommands: number;
-  overflowCount: number;
-  maxTotalChars: number;
-  descriptionTrimmed: boolean;
-  textBudgetDropCount: number;
-  skillCommandsOmitted: boolean;
-} {
+}): TelegramCappedMenuCommands {
   const { allCommands, maxCommands, maxTotalChars } = params;
   const fitCommands = (commands: TelegramMenuCommand[]) => {
     const cappedCommands = commands.slice(0, maxCommands);
@@ -458,10 +469,9 @@ function toTelegramBotCommands(commands: TelegramMenuCommand[]): Array<{
   }));
 }
 
-function buildLocalizedCommandVariants(commands: TelegramMenuCommand[]): {
-  variants: Array<{ languageCode: LanguageCode; commands: TelegramMenuCommand[] }>;
-  unsupportedLanguageCodes: string[];
-} {
+function buildLocalizedCommandVariants(
+  commands: TelegramMenuCommand[],
+): TelegramLocalizedCommandVariants {
   const locales = new Set<LanguageCode>();
   const unsupportedLanguageCodes = new Set<string>();
   const commandsWithLocalizations = commands.map((command) => ({

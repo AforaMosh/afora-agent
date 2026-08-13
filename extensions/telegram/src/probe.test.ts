@@ -3,6 +3,15 @@ import { withFetchPreconnect } from "openclaw/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 import { probeTelegram, resetTelegramProbeFetcherCacheForTests } from "./probe.js";
 
+type FetchMock = Mock<typeof fetch>;
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
 const resolveTelegramTransport = vi.hoisted(() => vi.fn());
 const makeProxyFetch = vi.hoisted(() => vi.fn());
 
@@ -36,8 +45,8 @@ describe("probeTelegram retry logic", () => {
   const originalFetch = global.fetch;
   let forceFallbackMock: Mock;
 
-  const installFetchMock = (): Mock => {
-    const fetchMock = vi.fn();
+  const installFetchMock = (): FetchMock => {
+    const fetchMock = vi.fn<typeof fetch>();
     global.fetch = withFetchPreconnect(fetchMock);
     forceFallbackMock = vi.fn().mockReturnValue(true);
     resolveTelegramTransport.mockImplementation((proxyFetch?: typeof fetch) => ({
@@ -46,14 +55,13 @@ describe("probeTelegram retry logic", () => {
       forceFallback: forceFallbackMock,
       close: async () => {},
     }));
-    makeProxyFetch.mockImplementation(() => fetchMock as unknown as typeof fetch);
+    makeProxyFetch.mockImplementation(() => fetchMock);
     return fetchMock;
   };
 
-  function mockGetMeSuccess(fetchMock: Mock) {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
+  function mockGetMeSuccess(fetchMock: FetchMock) {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
         ok: true,
         result: {
           id: 123,
@@ -70,14 +78,11 @@ describe("probeTelegram retry logic", () => {
           allows_users_to_create_topics: false,
         },
       }),
-    });
+    );
   }
 
-  function mockGetWebhookInfoSuccess(fetchMock: Mock) {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: vi.fn().mockResolvedValue({ ok: true, result: { url: "" } }),
-    });
+  function mockGetWebhookInfoSuccess(fetchMock: FetchMock) {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true, result: { url: "" } }));
   }
 
   async function expectSuccessfulProbe(fetchMock: Mock, expectedCalls: number, retryCount = 0) {
@@ -160,7 +165,7 @@ describe("probeTelegram retry logic", () => {
   });
 
   it("respects timeout budget across retries", async () => {
-    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchMock = vi.fn<typeof fetch>((_input, init) => {
       return new Promise<Response>((_resolve, reject) => {
         const signal = init?.signal;
         if (signal?.aborted) {
@@ -172,14 +177,14 @@ describe("probeTelegram retry logic", () => {
         });
       });
     });
-    global.fetch = withFetchPreconnect(fetchMock as unknown as typeof fetch);
+    global.fetch = withFetchPreconnect(fetchMock);
     resolveTelegramTransport.mockImplementation((proxyFetch?: typeof fetch) => ({
       fetch: proxyFetch ?? fetch,
       sourceFetch: proxyFetch ?? fetch,
       forceFallback: vi.fn().mockReturnValue(true),
       close: async () => {},
     }));
-    makeProxyFetch.mockImplementation(() => fetchMock as unknown as typeof fetch);
+    makeProxyFetch.mockImplementation(() => fetchMock);
     vi.useFakeTimers();
     try {
       const probePromise = probeTelegram(`${token}-budget`, 500);
@@ -195,14 +200,13 @@ describe("probeTelegram retry logic", () => {
 
   it("should NOT retry if getMe returns a 401 Unauthorized", async () => {
     const fetchMock = installFetchMock();
-    const mockResponse = {
-      ok: false,
-      status: 401,
-      json: vi.fn().mockResolvedValue({
+    const mockResponse = jsonResponse(
+      {
         ok: false,
         description: "Unauthorized",
-      }),
-    };
+      },
+      401,
+    );
     fetchMock.mockResolvedValueOnce(mockResponse);
 
     const result = await probeTelegram(token, timeoutMs);

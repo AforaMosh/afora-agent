@@ -117,6 +117,12 @@ type RunnerStub = {
   isRunning: () => boolean;
 };
 
+type StalledPollingRunnerHarness = {
+  stop: ReturnType<typeof vi.fn<() => void | Promise<void>>>;
+  waitForRunStart: () => Promise<void>;
+  waitForTaskStart: () => Promise<void>;
+};
+
 const withLegacyPolling = (opts: MonitorTelegramOpts): MonitorTelegramOpts => ({
   ...opts,
   isolatedIngress: { enabled: false, ...opts.isolatedIngress },
@@ -236,11 +242,7 @@ async function runMonitorAndCaptureStartupOrder(params?: { persistedOffset?: num
   return { order };
 }
 
-function mockRunOnceWithStalledPollingRunner(): {
-  stop: ReturnType<typeof vi.fn<() => void | Promise<void>>>;
-  waitForRunStart: () => Promise<void>;
-  waitForTaskStart: () => Promise<void>;
-} {
+function mockRunOnceWithStalledPollingRunner(): StalledPollingRunnerHarness {
   let running = true;
   let releaseTask: (() => void) | undefined;
   let releaseBeforeTaskStart = false;

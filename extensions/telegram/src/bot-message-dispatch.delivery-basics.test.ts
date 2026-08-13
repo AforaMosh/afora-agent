@@ -24,6 +24,26 @@ import type {
   TelegramMessageContext,
 } from "./bot-message-dispatch.test-harness.js";
 
+function createCtxPayload(
+  overrides: Partial<TelegramMessageContext["ctxPayload"]>,
+): TelegramMessageContext["ctxPayload"] {
+  return { ...createContext().ctxPayload, ...overrides };
+}
+
+function createMessage(
+  overrides: Partial<TelegramMessageContext["msg"]>,
+): TelegramMessageContext["msg"] {
+  return { ...createContext().msg, ...overrides };
+}
+
+type TelegramReplyMessage = NonNullable<TelegramMessageContext["msg"]["reply_to_message"]>;
+
+function createReplyMessage(
+  overrides: Omit<Partial<TelegramReplyMessage>, "reply_to_message">,
+): TelegramReplyMessage {
+  return { ...createContext().msg, ...overrides, reply_to_message: undefined };
+}
+
 describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
   it("forwards cfg to direct reply delivery", async () => {
     dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
@@ -63,13 +83,13 @@ describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: createCtxPayload({
           SessionKey: "s1",
           ChatType: "direct",
           SenderId: "42",
           SenderName: "Alice",
           SenderUsername: "alice",
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
       streamMode: "off",
       telegramDeps: telegramDepsForTest,
@@ -302,16 +322,16 @@ describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
 
     await dispatchWithContext({
       context: createContext({
-        msg: {
+        msg: createMessage({
           message_id: 1001,
-        } as unknown as TelegramMessageContext["msg"],
-        ctxPayload: {
+        }),
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
           ReplyToId: "9001",
           ReplyToBody: "quoted slice",
           ReplyToQuoteText: " quoted slice\n",
           ReplyToIsQuote: true,
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
     });
 
@@ -332,20 +352,20 @@ describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
 
     await dispatchWithContext({
       context: createContext({
-        msg: {
+        msg: createMessage({
           message_id: 1001,
-          reply_to_message: {
+          reply_to_message: createReplyMessage({
             message_id: 9001,
-            from: { is_bot: true },
-          },
-        } as unknown as TelegramMessageContext["msg"],
-        ctxPayload: {
+            from: { id: 999, is_bot: true, first_name: "OpenClaw" },
+          }),
+        }),
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
           ReplyToId: "9001",
           ReplyToBody: "quoted bot reply",
           ReplyToQuoteText: " quoted bot reply\n",
           ReplyToIsQuote: true,
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
     });
 
@@ -367,14 +387,14 @@ describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
 
     await dispatchWithContext({
       context: createContext({
-        msg: {
+        msg: createMessage({
           message_id: 1001,
           text: "Original current message",
           entities: [{ type: "bold", offset: 0, length: 8 }],
-        } as unknown as TelegramMessageContext["msg"],
-        ctxPayload: {
+        }),
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
     });
 
@@ -400,12 +420,12 @@ describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: createCtxPayload({
           ReplyToId: "9001",
           ReplyToBody: "trimmed body",
           ReplyToQuoteSourceText: "  exact reply body",
           ReplyToQuoteSourceEntities: [{ type: "italic", offset: 2, length: 5 }],
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
     });
 
@@ -458,17 +478,17 @@ describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
 
     await dispatchWithContext({
       context: createContext({
-        msg: {
+        msg: createMessage({
           message_id: 1001,
           text: "Current request",
-        } as unknown as TelegramMessageContext["msg"],
-        ctxPayload: {
+        }),
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
           SessionKey: "agent:default:telegram:direct:123",
           ReplyToId: "9001",
           ReplyToBody: "older source",
           ReplyToQuoteSourceText: "Exact older source",
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
     });
 
@@ -554,14 +574,14 @@ describeTelegramDispatch("dispatchTelegramMessage delivery-basics", () => {
 
       await dispatchWithContext({
         context: createContext({
-          msg: {
+          msg: createMessage({
             message_id: 1001,
             text: "Current request",
-          } as unknown as TelegramMessageContext["msg"],
-          ctxPayload: {
+          }),
+          ctxPayload: createCtxPayload({
             MessageSid: "1001",
             SessionKey: "agent:default:telegram:direct:123",
-          } as unknown as TelegramMessageContext["ctxPayload"],
+          }),
         }),
         replyToMode,
       });

@@ -1,10 +1,12 @@
 // Telegram plugin module implements bot native commands.menu test support behavior.
+import { Composer, type CommandContext, type Context } from "grammy";
 import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
 import { expect, vi, type Mock } from "vitest";
 import type { OpenClawConfig } from "../runtime-api.js";
 import type { TelegramNativeCommandDeps } from "./bot-native-command-deps.runtime.js";
 import {
   createNativeCommandTestParams as createBaseNativeCommandTestParams,
+  createNativeCommandTestBot,
   createTelegramPrivateCommandContext,
   type NativeCommandTestParams as RegisterTelegramNativeCommandsParams,
 } from "./bot-native-commands.fixture-test-support.js";
@@ -73,20 +75,20 @@ export function resetNativeCommandMenuMocks() {
 
 export function createCommandBot(params: CreateCommandBotParams = {}): CreateCommandBotResult {
   const commandHandlers = new Map<string, (ctx: unknown) => Promise<void>>();
-  const sendMessage = vi.fn().mockResolvedValue({ message_id: 999 });
-  const deleteMessage = vi.fn().mockResolvedValue(true);
-  const setMyCommands = vi.fn().mockResolvedValue(undefined);
-  const bot = {
-    api: {
-      setMyCommands,
-      sendMessage,
-      deleteMessage,
-      ...params.api,
-    },
-    command: vi.fn((name: string, cb: (ctx: unknown) => Promise<void>) => {
-      commandHandlers.set(name, cb);
-    }),
-  } as unknown as RegisterTelegramNativeCommandsParams["bot"];
+  const bot = createNativeCommandTestBot();
+  Object.assign(bot.api, params.api);
+  const sendMessage = vi.spyOn(bot.api, "sendMessage");
+  const deleteMessage = vi.spyOn(bot.api, "deleteMessage");
+  const setMyCommands = vi.spyOn(bot.api, "setMyCommands");
+  vi.spyOn(bot, "command").mockImplementation((name, handler) => {
+    if (typeof handler !== "function") {
+      throw new TypeError("Expected function command middleware");
+    }
+    commandHandlers.set(String(name), async (ctx) => {
+      await Reflect.apply(handler, undefined, [ctx, async () => {}]);
+    });
+    return new Composer<CommandContext<Context>>();
+  });
   return { bot, commandHandlers, sendMessage, deleteMessage, setMyCommands };
 }
 

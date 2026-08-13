@@ -52,14 +52,14 @@ describe("Telegram native command dispatch routing", () => {
     expect(turnPlan?.replyOptions?.[Symbol.for("openclaw.pluginCommandDispatch") as never]).toEqual(
       { kind: "non-plugin" },
     );
-    const call = (
-      sessionMocks.recordSessionMetaFromInbound.mock.calls as unknown as Array<
-        [{ sessionKey?: string; ctx?: { OriginatingChannel?: string; Provider?: string } }]
-      >
-    )[0]?.[0];
-    expect(call?.ctx?.OriginatingChannel).toBe("telegram");
-    expect(call?.ctx?.Provider).toBe("telegram");
-    expect(call?.sessionKey).toBe(turnPlan?.ctxPayload.CommandTargetSessionKey);
+    const call = requireRecord(
+      firstMockArg(sessionMocks.recordSessionMetaFromInbound, "recordSessionMetaFromInbound"),
+      "session metadata call",
+    );
+    const callCtx = requireRecord(call.ctx, "session metadata context");
+    expect(callCtx.OriginatingChannel).toBe("telegram");
+    expect(callCtx.Provider).toBe("telegram");
+    expect(call.sessionKey).toBe(turnPlan?.ctxPayload.CommandTargetSessionKey);
     expect(turnPlan?.record?.sessionKey).toBe(turnPlan?.ctxPayload.CommandTargetSessionKey);
   });
 
@@ -167,18 +167,18 @@ describe("Telegram native command dispatch routing", () => {
 
     expect(persistentBindingMocks.resolveConfiguredBindingRoute).toHaveBeenCalledTimes(1);
     expect(persistentBindingMocks.ensureConfiguredBindingRouteReady).toHaveBeenCalledTimes(1);
-    const dispatchCall = (
-      replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
-        [{ ctx?: { CommandTargetSessionKey?: string } }]
-      >
-    )[0]?.[0];
-    expect(dispatchCall?.ctx?.CommandTargetSessionKey).toBe(boundSessionKey);
-    const sessionMetaCall = (
-      sessionMocks.recordSessionMetaFromInbound.mock.calls as unknown as Array<
-        [{ sessionKey?: string }]
-      >
-    )[0]?.[0];
-    expect(sessionMetaCall?.sessionKey).toBe(boundSessionKey);
+    const dispatchCall = requireRecord(
+      firstMockArg(replyMocks.dispatchReplyWithBufferedBlockDispatcher, "dispatch reply"),
+      "dispatch call",
+    );
+    expect(requireRecord(dispatchCall.ctx, "dispatch context").CommandTargetSessionKey).toBe(
+      boundSessionKey,
+    );
+    const sessionMetaCall = requireRecord(
+      firstMockArg(sessionMocks.recordSessionMetaFromInbound, "record session metadata"),
+      "session metadata call",
+    );
+    expect(sessionMetaCall.sessionKey).toBe(boundSessionKey);
   });
 
   it("routes Telegram native commands through topic-specific agent sessions", async () => {
@@ -193,22 +193,22 @@ describe("Telegram native command dispatch routing", () => {
     });
     await handler(createTelegramTopicCommandContext());
 
-    const dispatchCall = (
-      replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
-        [{ ctx?: { CommandTargetSessionKey?: string } }]
-      >
-    )[0]?.[0];
-    expect(dispatchCall?.ctx?.CommandTargetSessionKey).toBe(
+    const dispatchCall = requireRecord(
+      firstMockArg(replyMocks.dispatchReplyWithBufferedBlockDispatcher, "dispatch reply"),
+      "dispatch call",
+    );
+    const dispatchCtx = requireRecord(dispatchCall.ctx, "dispatch context");
+    expect(dispatchCtx.CommandTargetSessionKey).toBe(
       "agent:zu:telegram:group:-1001234567890:topic:42",
     );
-    const sessionMetaCall = (
-      sessionMocks.recordSessionMetaFromInbound.mock.calls as unknown as Array<
-        [{ sessionKey?: string; ctx?: { From?: string; ChatType?: string } }]
-      >
-    )[0]?.[0];
-    expect(sessionMetaCall?.sessionKey).toBe("agent:zu:telegram:group:-1001234567890:topic:42");
-    expect(sessionMetaCall?.ctx?.From).toBe("telegram:group:-1001234567890:topic:42");
-    expect(sessionMetaCall?.ctx?.ChatType).toBe("group");
+    const sessionMetaCall = requireRecord(
+      firstMockArg(sessionMocks.recordSessionMetaFromInbound, "record session metadata"),
+      "session metadata call",
+    );
+    const sessionCtx = requireRecord(sessionMetaCall.ctx, "session metadata context");
+    expect(sessionMetaCall.sessionKey).toBe("agent:zu:telegram:group:-1001234567890:topic:42");
+    expect(sessionCtx.From).toBe("telegram:group:-1001234567890:topic:42");
+    expect(sessionCtx.ChatType).toBe("group");
   });
 
   it("does not mark paired Telegram DM allowlist entries as native group command owners", async () => {
@@ -232,19 +232,13 @@ describe("Telegram native command dispatch routing", () => {
     });
     await handler(createTelegramPrivateCommandContext());
 
-    const dispatchCall = (
-      replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
-        [
-          {
-            ctx?: {
-              CommandAuthorized?: boolean;
-            };
-          },
-        ]
-      >
-    )[0]?.[0];
-    expect(dispatchCall?.ctx?.CommandAuthorized).toBe(true);
-    expect(dispatchCall?.ctx).not.toHaveProperty("OwnerAllowFrom");
+    const dispatchCall = requireRecord(
+      firstMockArg(replyMocks.dispatchReplyWithBufferedBlockDispatcher, "dispatch reply"),
+      "dispatch call",
+    );
+    const dispatchCtx = requireRecord(dispatchCall.ctx, "dispatch context");
+    expect(dispatchCtx.CommandAuthorized).toBe(true);
+    expect(dispatchCtx).not.toHaveProperty("OwnerAllowFrom");
   });
 
   it("routes Telegram native commands through bound topic sessions", async () => {
@@ -265,18 +259,17 @@ describe("Telegram native command dispatch routing", () => {
       accountId: "default",
       conversationId: "-1001234567890:topic:42",
     });
-    const dispatchCall = (
-      replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
-        [{ ctx?: { CommandTargetSessionKey?: string } }]
-      >
-    )[0]?.[0];
-    expect(dispatchCall?.ctx?.CommandTargetSessionKey).toBe("agent:codex-acp:session-1");
-    const sessionMetaCall = (
-      sessionMocks.recordSessionMetaFromInbound.mock.calls as unknown as Array<
-        [{ sessionKey?: string }]
-      >
-    )[0]?.[0];
-    expect(sessionMetaCall?.sessionKey).toBe("agent:codex-acp:session-1");
+    const dispatchCall = requireRecord(
+      firstMockArg(replyMocks.dispatchReplyWithBufferedBlockDispatcher, "dispatch reply"),
+      "dispatch call",
+    );
+    const dispatchCtx = requireRecord(dispatchCall.ctx, "dispatch context");
+    expect(dispatchCtx.CommandTargetSessionKey).toBe("agent:codex-acp:session-1");
+    const sessionMetaCall = requireRecord(
+      firstMockArg(sessionMocks.recordSessionMetaFromInbound, "record session metadata"),
+      "session metadata call",
+    );
+    expect(sessionMetaCall.sessionKey).toBe("agent:codex-acp:session-1");
     expect(sessionBindingMocks.touch).toHaveBeenCalledWith(
       "default:-1001234567890:topic:42",
       undefined,
@@ -301,19 +294,18 @@ describe("Telegram native command dispatch routing", () => {
       accountId: "default",
       conversationId: "-1001234567890",
     });
-    const dispatchCall = (
-      replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
-        [{ ctx?: { CommandTargetSessionKey?: string; OriginatingTo?: string } }]
-      >
-    )[0]?.[0];
-    expect(dispatchCall?.ctx?.CommandTargetSessionKey).toBe("agent:codex-acp:session-group");
-    expect(dispatchCall?.ctx?.OriginatingTo).toBe("telegram:-1001234567890");
-    const sessionMetaCall = (
-      sessionMocks.recordSessionMetaFromInbound.mock.calls as unknown as Array<
-        [{ sessionKey?: string }]
-      >
-    )[0]?.[0];
-    expect(sessionMetaCall?.sessionKey).toBe("agent:codex-acp:session-group");
+    const dispatchCall = requireRecord(
+      firstMockArg(replyMocks.dispatchReplyWithBufferedBlockDispatcher, "dispatch reply"),
+      "dispatch call",
+    );
+    const dispatchCtx = requireRecord(dispatchCall.ctx, "dispatch context");
+    expect(dispatchCtx.CommandTargetSessionKey).toBe("agent:codex-acp:session-group");
+    expect(dispatchCtx.OriginatingTo).toBe("telegram:-1001234567890");
+    const sessionMetaCall = requireRecord(
+      firstMockArg(sessionMocks.recordSessionMetaFromInbound, "record session metadata"),
+      "session metadata call",
+    );
+    expect(sessionMetaCall.sessionKey).toBe("agent:codex-acp:session-group");
     expect(sessionBindingMocks.touch).toHaveBeenCalledWith("default:-1001234567890", undefined);
   });
 
@@ -328,21 +320,12 @@ describe("Telegram native command dispatch routing", () => {
       });
       await handler(createTelegramTopicCommandContext());
 
-      const dispatchCall = (
-        replyMocks.dispatchReplyWithBufferedBlockDispatcher.mock.calls as unknown as Array<
-          [
-            {
-              ctx?: {
-                CommandTargetSessionKey?: string;
-                MessageThreadId?: number;
-                OriginatingTo?: string;
-              };
-            },
-          ]
-        >
-      )[0]?.[0];
+      const dispatchCall = requireRecord(
+        firstMockArg(replyMocks.dispatchReplyWithBufferedBlockDispatcher, "dispatch reply"),
+        "dispatch call",
+      );
       expectRecordFields(
-        dispatchCall?.ctx,
+        requireRecord(dispatchCall.ctx, "dispatch context"),
         {
           CommandTargetSessionKey: "agent:main:telegram:group:-1001234567890:topic:42",
           MessageThreadId: 42,

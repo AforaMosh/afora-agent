@@ -27,8 +27,6 @@ import {
   setupDraftStreams,
   telegramProgressPreview,
 } from "./bot-message-dispatch.test-harness.js";
-import type { TelegramMessageContext } from "./bot-message-dispatch.test-harness.js";
-
 describeTelegramDispatch("dispatchTelegramMessage progress-rendering", () => {
   it("renders typed plan updates as a live checklist", async () => {
     const draftStream = createSequencedDraftStream(2001);
@@ -528,7 +526,7 @@ describeTelegramDispatch("dispatchTelegramMessage progress-rendering", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
+        ctxPayload: { ...createContext().ctxPayload, SessionKey: "s1" },
       }),
     });
 

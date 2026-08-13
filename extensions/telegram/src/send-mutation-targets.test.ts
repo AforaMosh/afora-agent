@@ -14,11 +14,32 @@ const { deleteMessageTelegram, pinMessageTelegram, reactMessageTelegram, unpinMe
 const chatId = "-1001234567890";
 const messageId = 321;
 const getChat = vi.fn(async () => ({ id: Number(chatId) }));
+type TelegramApiOverride = NonNullable<Parameters<typeof reactMessageTelegram>[3]["api"]>;
+
+function createMutationApiOverride(value: Record<string, unknown>): TelegramApiOverride {
+  for (const method of [
+    "deleteMessage",
+    "editForumTopic",
+    "editMessageCaption",
+    "editMessageText",
+    "getChat",
+    "pinChatMessage",
+    "setMessageReaction",
+    "unpinChatMessage",
+  ]) {
+    if (typeof value[method] !== "function") {
+      throw new Error(`expected Telegram mutation API method ${method}`);
+    }
+  }
+  return Reflect.apply((api: TelegramApiOverride) => api, undefined, [value]);
+}
+
+const api = createMutationApiOverride({ ...botApi, getChat });
 const opts = {
   cfg: {},
   token: "tok",
   accountId: "default",
-  api: { ...botApi, getChat } as unknown as Parameters<typeof reactMessageTelegram>[3]["api"],
+  api,
   gatewayClientScopes: ["operator.write"],
 };
 

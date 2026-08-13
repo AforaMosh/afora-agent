@@ -1,6 +1,11 @@
 // Telegram tests cover bot message context.typing plugin behavior.
 import { expectDefined } from "@openclaw/normalization-core";
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import {
+  buildChannelInboundEventContext,
+  type BuildChannelInboundEventContextAsyncParams,
+  type BuildChannelInboundEventContextParams,
+  type BuiltChannelInboundEventContext,
+} from "openclaw/plugin-sdk/channel-inbound";
 import { describe, expect, it, vi } from "vitest";
 import { buildTelegramMessageContextForTest } from "./bot-message-context.test-harness.js";
 import type { TelegramSendChatActionHandler } from "./sendchataction-401-backoff.js";
@@ -19,12 +24,28 @@ function createSendChatActionHandler(
   };
 }
 
+function createBuildInboundContextRecorder() {
+  const invocation = vi.fn();
+  function build(
+    params: BuildChannelInboundEventContextAsyncParams,
+  ): Promise<BuiltChannelInboundEventContext>;
+  function build(params: BuildChannelInboundEventContextParams): BuiltChannelInboundEventContext;
+  function build(
+    params: BuildChannelInboundEventContextAsyncParams | BuildChannelInboundEventContextParams,
+  ) {
+    invocation();
+    const builder: unknown = buildChannelInboundEventContext;
+    if (typeof builder !== "function") {
+      throw new TypeError("expected inbound context builder to be callable");
+    }
+    return Reflect.apply(builder, undefined, [params]);
+  }
+  return { build, invocation };
+}
+
 describe("buildTelegramMessageContext typing", () => {
   it("sends direct typing after body resolution and before session context construction", async () => {
-    const buildInboundContext = vi.fn(
-      (params: Parameters<typeof buildChannelInboundEventContext>[0]) =>
-        buildChannelInboundEventContext(params as never),
-    );
+    const buildInboundContext = createBuildInboundContextRecorder();
     const sendChatActionHandler = createSendChatActionHandler();
 
     await expect(
@@ -36,8 +57,7 @@ describe("buildTelegramMessageContext typing", () => {
         },
         sendChatActionHandler,
         sessionRuntime: {
-          buildChannelInboundEventContext:
-            buildInboundContext as unknown as typeof buildChannelInboundEventContext,
+          buildChannelInboundEventContext: buildInboundContext.build,
         },
       }),
     ).resolves.not.toBeNull();
@@ -45,7 +65,9 @@ describe("buildTelegramMessageContext typing", () => {
     expect(sendChatActionHandler.sendChatAction).toHaveBeenCalledWith(42, "typing", undefined);
     expect(
       requireInvocationOrder(sendChatActionHandler.sendChatAction.mock, "send typing invocation"),
-    ).toBeLessThan(requireInvocationOrder(buildInboundContext.mock, "inbound context invocation"));
+    ).toBeLessThan(
+      requireInvocationOrder(buildInboundContext.invocation.mock, "inbound context invocation"),
+    );
   });
 
   it("does not send direct typing when there is no replyable body", async () => {
@@ -89,10 +111,7 @@ describe("buildTelegramMessageContext typing", () => {
   });
 
   it("sends forum topic typing after accepted user-request classification and before context construction", async () => {
-    const buildInboundContext = vi.fn(
-      (params: Parameters<typeof buildChannelInboundEventContext>[0]) =>
-        buildChannelInboundEventContext(params as never),
-    );
+    const buildInboundContext = createBuildInboundContextRecorder();
     const sendChatActionHandler = createSendChatActionHandler();
 
     const ctx = await buildTelegramMessageContextForTest({
@@ -109,8 +128,7 @@ describe("buildTelegramMessageContext typing", () => {
       }),
       sendChatActionHandler,
       sessionRuntime: {
-        buildChannelInboundEventContext:
-          buildInboundContext as unknown as typeof buildChannelInboundEventContext,
+        buildChannelInboundEventContext: buildInboundContext.build,
       },
     });
 
@@ -121,7 +139,9 @@ describe("buildTelegramMessageContext typing", () => {
     });
     expect(
       requireInvocationOrder(sendChatActionHandler.sendChatAction.mock, "send typing invocation"),
-    ).toBeLessThan(requireInvocationOrder(buildInboundContext.mock, "inbound context invocation"));
+    ).toBeLessThan(
+      requireInvocationOrder(buildInboundContext.invocation.mock, "inbound context invocation"),
+    );
   });
 
   it("does not send forum topic typing for room events", async () => {

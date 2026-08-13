@@ -5,6 +5,10 @@ import { resolveTelegramReactionLevel } from "./reaction-level.js";
 
 type ReactionResolution = ReturnType<typeof resolveTelegramReactionLevel>;
 
+function resolveReactionLevelFromRawConfig(cfg: object, accountId?: string) {
+  return Reflect.apply(resolveTelegramReactionLevel, undefined, [{ cfg, accountId }]);
+}
+
 describe("resolveTelegramReactionLevel", () => {
   const prevTelegramToken = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -166,10 +170,10 @@ describe("resolveTelegramReactionLevel", () => {
           reactionLevel: "off",
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(() => resolveTelegramReactionLevel({ cfg })).not.toThrow();
-    const result = resolveTelegramReactionLevel({ cfg });
+    expect(() => resolveReactionLevelFromRawConfig(cfg)).not.toThrow();
+    const result = resolveReactionLevelFromRawConfig(cfg);
     expectReactionFlags(result, {
       level: "off",
       ackEnabled: false,
@@ -190,10 +194,10 @@ describe("resolveTelegramReactionLevel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(() => resolveTelegramReactionLevel({ cfg, accountId: "ops" })).not.toThrow();
-    const result = resolveTelegramReactionLevel({ cfg, accountId: "ops" });
+    expect(() => resolveReactionLevelFromRawConfig(cfg, "ops")).not.toThrow();
+    const result = resolveReactionLevelFromRawConfig(cfg, "ops");
     expectReactionFlags(result, {
       level: "ack",
       ackEnabled: true,

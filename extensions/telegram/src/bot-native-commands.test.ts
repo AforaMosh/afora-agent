@@ -24,7 +24,11 @@ type TelegramInlineKeyboardReplyMarkup = {
   inline_keyboard?: Array<Array<{ text?: string; callback_data?: string }>>;
 };
 
-const pluginCommandHandler = vi.fn(async (_ctx: Record<string, unknown>) => ({ text: "ok" }));
+type PluginCommandHandlerContext = Parameters<
+  NonNullable<Parameters<typeof registerPluginCommand>[1]["handler"]>
+>[0];
+
+const pluginCommandHandler = vi.fn(async (_ctx: PluginCommandHandlerContext) => ({ text: "ok" }));
 
 function registerTestPluginCommand(params: {
   name: string;
@@ -42,7 +46,7 @@ function registerTestPluginCommand(params: {
       requireAuth: false,
       ...params.command,
       handler: async (ctx) => {
-        await pluginCommandHandler(ctx as unknown as Record<string, unknown>);
+        await pluginCommandHandler(ctx);
         return result;
       },
     }),
@@ -220,7 +224,7 @@ describe("registerTelegramNativeCommands", () => {
     registerTelegramNativeCommands(
       createNativeCommandTestParams(cfg, {
         bot,
-        runtime: { log: runtimeLog } as unknown as RuntimeEnv,
+        runtime: { log: runtimeLog, error: vi.fn(), exit: vi.fn() } satisfies RuntimeEnv,
         telegramCfg: {
           customCommands,
         },
@@ -248,16 +252,14 @@ describe("registerTelegramNativeCommands", () => {
   it("normalizes hyphenated native command names for Telegram registration", async () => {
     const setMyCommands = vi.fn().mockResolvedValue(undefined);
     const command = vi.fn();
+    const { bot } = createCommandBot({
+      api: { setMyCommands, sendMessage: vi.fn().mockResolvedValue(undefined) },
+    });
+    bot.command = command;
 
     registerTelegramNativeCommands({
       ...createNativeCommandTestParams({}),
-      bot: {
-        api: {
-          setMyCommands,
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-        },
-        command,
-      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      bot,
     });
 
     const registeredCommands = await waitForRegisteredCommands(setMyCommands);
@@ -288,18 +290,15 @@ describe("registerTelegramNativeCommands", () => {
 
   it("registers only Telegram-safe command names across native, custom, and plugin sources", async () => {
     const setMyCommands = vi.fn().mockResolvedValue(undefined);
+    const { bot } = createCommandBot({
+      api: { setMyCommands, sendMessage: vi.fn().mockResolvedValue(undefined) },
+    });
 
     registerTestPluginCommand({ name: "plugin-status", description: "Plugin status" });
 
     registerTelegramNativeCommands({
       ...createNativeCommandTestParams({}),
-      bot: {
-        api: {
-          setMyCommands,
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-        },
-        command: vi.fn(),
-      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      bot,
       telegramCfg: {
         customCommands: [
           { command: "custom-backup", description: "Custom backup" },

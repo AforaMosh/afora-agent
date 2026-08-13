@@ -93,7 +93,7 @@ const TELEGRAM_SUPPORTED_REACTION_EMOJIS = new Set<TelegramReactionEmoji>(
   TELEGRAM_SUPPORTED_REACTION_EMOJI_LIST,
 );
 
-const TELEGRAM_STATUS_REACTION_VARIANTS: Record<StatusReactionEmojiKey, string[]> = {
+const TELEGRAM_STATUS_REACTION_VARIANTS = {
   queued: ["👀", "👍", "🔥"],
   thinking: ["🤔", "🤓", "👀"],
   tool: ["🔥", "⚡", "👍"],
@@ -107,7 +107,7 @@ const TELEGRAM_STATUS_REACTION_VARIANTS: Record<StatusReactionEmojiKey, string[]
   stallSoft: ["🥱", "😴", "🤔"],
   stallHard: ["😨", "😱", "⚡"],
   compacting: ["✍", "🤔", "🤯"],
-};
+} satisfies Record<StatusReactionEmojiKey, TelegramReactionEmoji[]>;
 
 const STATUS_REACTION_EMOJI_KEYS: StatusReactionEmojiKey[] = [
   "queued",

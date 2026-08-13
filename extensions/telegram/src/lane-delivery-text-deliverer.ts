@@ -138,12 +138,11 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams): 
     if (_buttons === undefined) {
       return channelData;
     }
-    const next: Record<string, unknown> = { ...channelData };
-    if (Object.keys(telegramRest).length > 0) {
-      next.telegram = telegramRest;
-    } else {
-      delete next.telegram;
-    }
+    const { telegram: _telegram, ...channelRest } = channelData;
+    const next =
+      Object.keys(telegramRest).length > 0
+        ? { ...channelRest, telegram: telegramRest }
+        : channelRest;
     return Object.keys(next).length > 0 ? next : undefined;
   };
   const withMediaChannelData = (

@@ -14,6 +14,11 @@ export type TelegramCustomCommandIssue = {
   message: string;
 };
 
+export type TelegramResolvedCustomCommands = {
+  commands: Array<{ command: string; description: string }>;
+  issues: TelegramCustomCommandIssue[];
+};
+
 export function normalizeTelegramCommandName(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -32,10 +37,7 @@ export function resolveTelegramCustomCommands(params: {
   reservedCommands?: Set<string>;
   checkReserved?: boolean;
   checkDuplicates?: boolean;
-}): {
-  commands: Array<{ command: string; description: string }>;
-  issues: TelegramCustomCommandIssue[];
-} {
+}): TelegramResolvedCustomCommands {
   const entries = Array.isArray(params.commands) ? params.commands : [];
   const reserved = params.reservedCommands ?? new Set<string>();
   const checkReserved = params.checkReserved !== false;

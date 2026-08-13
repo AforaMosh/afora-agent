@@ -26,6 +26,18 @@ import {
   registerTelegramOutboundGroupHistoryRecorder,
 } from "./outbound-message-context.js";
 
+function createCtxPayload(
+  overrides: Partial<TelegramMessageContext["ctxPayload"]>,
+): TelegramMessageContext["ctxPayload"] {
+  return { ...createContext().ctxPayload, ...overrides };
+}
+
+function createMessage(
+  overrides: Partial<TelegramMessageContext["msg"]>,
+): TelegramMessageContext["msg"] {
+  return { ...createContext().msg, ...overrides };
+}
+
 describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
   it("does not build native quote candidates when reply mode is off", async () => {
     dispatchReplyWithBufferedBlockDispatcher.mockImplementation(async ({ dispatcherOptions }) => {
@@ -36,13 +48,13 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
 
     await dispatchWithContext({
       context: createContext({
-        msg: {
+        msg: createMessage({
           message_id: 1001,
           text: "Original current message",
-        } as unknown as TelegramMessageContext["msg"],
-        ctxPayload: {
+        }),
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
       replyToMode: "off",
     });
@@ -57,16 +69,16 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
 
     await dispatchWithContext({
       context: createContext({
-        msg: {
+        msg: createMessage({
           message_id: 1001,
-        } as unknown as TelegramMessageContext["msg"],
-        ctxPayload: {
+        }),
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
           ReplyToId: "9001",
           ReplyToBody: "quoted slice",
           ReplyToQuoteText: " quoted slice\n",
           ReplyToIsQuote: true,
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
       replyToMode: "off",
     });
@@ -83,7 +95,7 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
           ReplyToId: "9001",
           ReplyToBody: "quoted slice",
@@ -91,7 +103,7 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
           ReplyToIsQuote: true,
           ReplyToQuotePosition: 12,
           ReplyToQuoteEntities: [{ type: "italic", offset: 0, length: 6 }],
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
       streamMode: "off",
     });
@@ -114,14 +126,14 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: createCtxPayload({
           MessageSid: "1001",
           ReplyToId: "9001",
           ReplyToBody: "external quoted slice",
           ReplyToQuoteText: " external quoted slice\n",
           ReplyToIsQuote: true,
           ReplyToIsExternal: true,
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        }),
       }),
       streamMode: "off",
     });
@@ -431,13 +443,13 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
   it("records native-quote direct fallback sends as one complete projection", async () => {
     const transcriptTimestamp = Date.now() + 1_000;
     const context = createContext({
-      ctxPayload: {
+      ctxPayload: createCtxPayload({
         MessageSid: "1001",
         SessionKey: "agent:default:telegram:direct:123",
         ReplyToId: "9001",
         ReplyToQuoteText: " quoted slice\n",
         ReplyToIsQuote: true,
-      } as unknown as TelegramMessageContext["ctxPayload"],
+      }),
     });
     mockDefaultSessionEntry();
     readLatestAssistantTextByIdentity.mockResolvedValue({
@@ -505,13 +517,13 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
   ])("correlates $name after MEDIA directive normalization", async (testCase) => {
     const storePath = `/tmp/openclaw-telegram-direct-media-${process.pid}-${testCase.name}.json`;
     const context = createContext({
-      ctxPayload: {
+      ctxPayload: createCtxPayload({
         MessageSid: "1001",
         SessionKey: "agent:default:telegram:direct:123",
         ReplyToId: "9001",
         ReplyToQuoteText: " quoted slice\n",
         ReplyToIsQuote: true,
-      } as unknown as TelegramMessageContext["ctxPayload"],
+      }),
     });
     mockDefaultSessionEntry();
     readLatestAssistantTextByIdentity.mockResolvedValue({

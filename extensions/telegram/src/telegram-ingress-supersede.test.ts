@@ -1,3 +1,4 @@
+import type { ChannelIngressQueueRecord } from "openclaw/plugin-sdk/channel-outbound";
 // Telegram supersede policy for durable ingress (authorization-gated).
 import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import {
@@ -76,16 +77,7 @@ function messageUpdate(params: {
 function record(
   id: string,
   update: unknown,
-): {
-  id: string;
-  channelId: string;
-  accountId: string;
-  queueName: string;
-  payload: TelegramSpooledUpdatePayload;
-  receivedAt: number;
-  updatedAt: number;
-  attempts: number;
-} {
+): ChannelIngressQueueRecord<TelegramSpooledUpdatePayload> {
   return {
     id,
     channelId: "telegram",

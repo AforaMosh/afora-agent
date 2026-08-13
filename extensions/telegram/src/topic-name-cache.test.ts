@@ -5,7 +5,6 @@ import {
   clearTelegramRuntimeForTest,
   resetTelegramTopicNameCacheForTest,
 } from "./runtime.test-support.js";
-import type { TelegramRuntime } from "./runtime.types.js";
 import { getTopicName, updateTopicName } from "./topic-name-cache.js";
 
 type TopicEntry = {
@@ -44,29 +43,31 @@ function topicStoreSize(stores: Map<string, Map<string, TopicEntry>>): number {
 
 function installMemoryStores() {
   const stores = new Map<string, Map<string, TopicEntry>>();
-  setTelegramRuntime({
-    state: {
-      openKeyedStore: (({ namespace }: { namespace: string }) => {
-        const entries = stores.get(namespace) ?? new Map<string, TopicEntry>();
-        stores.set(namespace, entries);
-        return {
-          async register(key: string, value: TopicEntry) {
-            entries.set(key, value);
-          },
-          async entries() {
-            return Array.from(entries, ([key, value]) => ({ key, value }));
-          },
-          async delete(key: string) {
-            return entries.delete(key);
-          },
-          async clear() {
-            entries.clear();
-          },
-        };
-      }) as unknown as TelegramRuntime["state"]["openKeyedStore"],
+  Reflect.apply(setTelegramRuntime, undefined, [
+    {
+      state: {
+        openKeyedStore: ({ namespace }: { namespace: string }) => {
+          const entries = stores.get(namespace) ?? new Map<string, TopicEntry>();
+          stores.set(namespace, entries);
+          return {
+            async register(key: string, value: TopicEntry) {
+              entries.set(key, value);
+            },
+            async entries() {
+              return Array.from(entries, ([key, value]) => ({ key, value }));
+            },
+            async delete(key: string) {
+              return entries.delete(key);
+            },
+            async clear() {
+              entries.clear();
+            },
+          };
+        },
+      },
+      channel: {},
     },
-    channel: {},
-  } as TelegramRuntime);
+  ]);
   return stores;
 }
 

@@ -26,6 +26,12 @@ type TelegramThreadReplyParams = {
   allow_sending_without_reply?: true;
 };
 
+type TelegramSendParams = TelegramThreadReplyParams & {
+  disable_notification?: true;
+};
+
+type TelegramSendParamBag = Record<string, unknown>;
+
 export function resolveTelegramSendThreadSpec(params: {
   targetMessageThreadId?: number;
   targetDirectMessagesTopicId?: number;
@@ -103,8 +109,8 @@ export function buildTelegramSendParams(opts?: {
   thread?: TelegramThreadSpec | null;
   silent?: boolean;
   useReplyIdAsQuoteSource?: boolean;
-}): Record<string, unknown> {
-  const params: Record<string, unknown> = { ...buildTelegramThreadReplyParams(opts) };
+}): TelegramSendParams {
+  const params: TelegramSendParams = { ...buildTelegramThreadReplyParams(opts) };
   if (opts?.silent === true) {
     params.disable_notification = true;
   }
@@ -112,7 +118,7 @@ export function buildTelegramSendParams(opts?: {
 }
 
 export function getTelegramNativeQuoteReplyMessageId(
-  params: Record<string, unknown> | undefined,
+  params: TelegramSendParamBag | undefined,
 ): number | undefined {
   const replyParameters = params?.reply_parameters;
   if (!replyParameters || typeof replyParameters !== "object") {
@@ -130,8 +136,8 @@ export function isTelegramQuoteParamError(err: unknown): boolean {
 }
 
 export function removeTelegramNativeQuoteParam(
-  params: Record<string, unknown> | undefined,
-): Record<string, unknown> {
+  params: TelegramSendParamBag | undefined,
+): TelegramSendParamBag {
   if (!params) {
     return {};
   }

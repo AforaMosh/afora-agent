@@ -17,8 +17,10 @@ import {
   clearTelegramRuntimeForTest,
   resetTelegramTopicNameCacheForTest,
 } from "./runtime.test-support.js";
-import type { TelegramRuntime } from "./runtime.types.js";
 import { getTopicName, resolveTopicNameCacheScope } from "./topic-name-cache.js";
+
+type ReactMessageTelegram = typeof import("./send.js").reactMessageTelegram;
+type DeleteMessageTelegram = typeof import("./send.js").deleteMessageTelegram;
 
 const originalTelegramActionRuntime = { ...telegramActionRuntime };
 
@@ -32,7 +34,7 @@ function handleTelegramAction(
     ...options,
   });
 }
-const reactMessageTelegram = vi.fn(async () => ({ ok: true }));
+const reactMessageTelegram = vi.fn<ReactMessageTelegram>(async () => ({ ok: true }));
 const sendMessageTelegram = vi.fn(
   async (_to: string, _text: string, _opts?: Record<string, unknown>) => ({
     messageId: "789",
@@ -182,7 +184,7 @@ const sendStickerTelegram = vi.fn(async () => ({
   messageId: "456",
   chatId: "123",
 }));
-const deleteMessageTelegram = vi.fn(async () => ({ ok: true }));
+const deleteMessageTelegram = vi.fn<DeleteMessageTelegram>(async () => ({ ok: true }));
 const editMessageTelegram = vi.fn(async () => ({
   ok: true,
   messageId: "456",
@@ -226,29 +228,31 @@ const topicNameStoresForTest = new Map<string, Map<string, TopicNameEntryForTest
 
 function installTopicNameStoreForTest() {
   topicNameStoresForTest.clear();
-  setTelegramRuntime({
-    state: {
-      openKeyedStore: (({ namespace }: { namespace: string }) => {
-        const entries = topicNameStoresForTest.get(namespace) ?? new Map();
-        topicNameStoresForTest.set(namespace, entries);
-        return {
-          async register(key: string, value: TopicNameEntryForTest) {
-            entries.set(key, value);
-          },
-          async entries() {
-            return Array.from(entries, ([key, value]) => ({ key, value }));
-          },
-          async delete(key: string) {
-            return entries.delete(key);
-          },
-          async clear() {
-            entries.clear();
-          },
-        };
-      }) as unknown as TelegramRuntime["state"]["openKeyedStore"],
+  Reflect.apply(setTelegramRuntime, undefined, [
+    {
+      state: {
+        openKeyedStore: ({ namespace }: { namespace: string }) => {
+          const entries = topicNameStoresForTest.get(namespace) ?? new Map();
+          topicNameStoresForTest.set(namespace, entries);
+          return {
+            async register(key: string, value: TopicNameEntryForTest) {
+              entries.set(key, value);
+            },
+            async entries() {
+              return Array.from(entries, ([key, value]) => ({ key, value }));
+            },
+            async delete(key: string) {
+              return entries.delete(key);
+            },
+            async clear() {
+              entries.clear();
+            },
+          };
+        },
+      },
+      channel: {},
     },
-    channel: {},
-  } as TelegramRuntime);
+  ]);
 }
 
 type MockCallSource = {
@@ -593,7 +597,7 @@ describe("handleTelegramAction", () => {
     reactMessageTelegram.mockResolvedValueOnce({
       ok: false,
       warning: "Reaction unavailable: ✅",
-    } as unknown as Awaited<ReturnType<typeof reactMessageTelegram>>);
+    });
     const result = await handleTelegramAction(defaultReactionAction, reactionConfig("minimal"));
     const textPayload = result.content.find((item) => item.type === "text");
     expect(textPayload?.type).toBe("text");
@@ -2410,7 +2414,7 @@ describe("handleTelegramAction", () => {
     deleteMessageTelegram.mockResolvedValueOnce({
       ok: false,
       warning: "Message 456 was not deleted: 400: Bad Request: message can't be deleted",
-    } as unknown as Awaited<ReturnType<typeof deleteMessageTelegram>>);
+    });
     const cfg = {
       channels: { telegram: { botToken: "tok" } },
     } as OpenClawConfig;

@@ -139,7 +139,7 @@ describe("fetchTelegramChatId", () => {
   });
 
   it("uses caller-provided fetch impl when present", async () => {
-    const customFetch = vi.fn(async () => getChatOkResponse(12345));
+    const customFetch = vi.fn<typeof fetch>(async () => getChatOkResponse(12345));
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {
@@ -150,7 +150,7 @@ describe("fetchTelegramChatId", () => {
     await fetchTelegramChatId({
       token: "abc",
       chatId: "@user",
-      fetchImpl: customFetch as unknown as typeof fetch,
+      fetchImpl: customFetch,
     });
 
     expect(customFetch).toHaveBeenCalledWith(
@@ -161,7 +161,7 @@ describe("fetchTelegramChatId", () => {
 
   it("returns null for oversized getChat JSON responses and cancels the stream", async () => {
     let cancelCount = 0;
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
       oversizedTelegramGetChatJsonResponse(() => {
         cancelCount += 1;
       }),
@@ -171,7 +171,7 @@ describe("fetchTelegramChatId", () => {
       fetchTelegramChatId({
         token: "abc",
         chatId: "@user",
-        fetchImpl: fetchImpl as unknown as typeof fetch,
+        fetchImpl,
       }),
     ).resolves.toBeNull();
     expect(cancelCount).toBe(1);
@@ -180,7 +180,7 @@ describe("fetchTelegramChatId", () => {
   it("cancels non-success getChat response bodies before returning", async () => {
     const cancel = vi.fn();
     let observedSignal: AbortSignal | undefined;
-    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+    const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
       observedSignal = init?.signal ?? undefined;
       return new Response(
         new ReadableStream<Uint8Array>({
@@ -197,7 +197,7 @@ describe("fetchTelegramChatId", () => {
       fetchTelegramChatId({
         token: "abc",
         chatId: "@user",
-        fetchImpl: fetchImpl as unknown as typeof fetch,
+        fetchImpl,
       }),
       new Promise<"stalled">((resolve) => {
         setTimeout(() => resolve("stalled"), 250);
@@ -212,7 +212,7 @@ describe("fetchTelegramChatId", () => {
   it("does not wait for a cloned capture branch before returning", async () => {
     let observedSignal: AbortSignal | undefined;
     let captureSettled = false;
-    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+    const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
       observedSignal = init?.signal ?? undefined;
       const response = new Response(
         new ReadableStream<Uint8Array>({
@@ -241,7 +241,7 @@ describe("fetchTelegramChatId", () => {
       fetchTelegramChatId({
         token: "abc",
         chatId: "@user",
-        fetchImpl: fetchImpl as unknown as typeof fetch,
+        fetchImpl,
       }),
       new Promise<"stalled">((resolve) => {
         setTimeout(() => resolve("stalled"), 250);
@@ -257,7 +257,7 @@ describe("fetchTelegramChatId", () => {
     vi.useFakeTimers();
     let observedSignal: AbortSignal | undefined;
     let abortReason: unknown;
-    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+    const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
       observedSignal = init?.signal ?? undefined;
       return new Response(
         new ReadableStream<Uint8Array>({
@@ -279,7 +279,7 @@ describe("fetchTelegramChatId", () => {
     const lookup = fetchTelegramChatId({
       token: "abc",
       chatId: "@user",
-      fetchImpl: fetchImpl as unknown as typeof fetch,
+      fetchImpl,
     });
 
     await vi.advanceTimersByTimeAsync(15_000);

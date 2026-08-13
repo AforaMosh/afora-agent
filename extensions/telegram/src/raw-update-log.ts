@@ -75,9 +75,18 @@ function isTelegramUserObject(value: Record<string, unknown>): boolean {
   );
 }
 
+type TelegramRawLogValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | TelegramRawLogValue[]
+  | { [key: string]: TelegramRawLogValue };
+
 export function formatTelegramRawUpdateForLog(update: unknown): string {
   const seen = new WeakSet<object>();
-  const transform = (value: unknown, key = "", parentKey?: string): unknown => {
+  const transform = (value: unknown, key = "", parentKey?: string): TelegramRawLogValue => {
     if (shouldRedactTelegramRawUpdateValue(key, parentKey)) {
       return REDACTED_TELEGRAM_FIELD;
     }
@@ -102,13 +111,22 @@ export function formatTelegramRawUpdateForLog(update: unknown): string {
       if (isTelegramUserObject(record)) {
         return REDACTED_TELEGRAM_FIELD;
       }
-      const redacted: Record<string, unknown> = {};
+      const redacted: { [key: string]: TelegramRawLogValue } = {};
       for (const [entryKey, entryValue] of Object.entries(record)) {
         redacted[entryKey] = transform(entryValue, entryKey, key);
       }
       return redacted;
     }
-    return value;
+    if (value == null || typeof value === "number" || typeof value === "boolean") {
+      return value;
+    }
+    if (typeof value === "bigint") {
+      return value.toString();
+    }
+    if (typeof value === "symbol") {
+      return value.description ? `Symbol(${value.description})` : "Symbol()";
+    }
+    return "[Function]";
   };
   const raw = JSON.stringify(transform(update ?? null));
   return raw.length > MAX_RAW_UPDATE_CHARS

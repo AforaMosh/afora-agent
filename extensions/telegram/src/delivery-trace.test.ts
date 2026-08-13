@@ -8,7 +8,7 @@
 // Bot API calls (sendMessage / editMessageText / sendChatAction /
 // deleteMessage) observed at a recording API mock with scripted message ids.
 // Refresh goldens with OPENCLAW_TRACE_UPDATE=1 (see delivery-trace harness docs).
-import type { Bot } from "grammy";
+import { Bot } from "grammy";
 import {
   deliveryTraceScenarios,
   expectDeliveryTraceMatchesGolden,
@@ -19,9 +19,11 @@ import {
 } from "openclaw/plugin-sdk/channel-contract-testing";
 import * as channelInbound from "openclaw/plugin-sdk/channel-inbound";
 import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
+import {
+  createNonExitingRuntimeEnv,
+  createPluginRuntimeMock,
+} from "openclaw/plugin-sdk/plugin-test-runtime";
 import type { ReplyPayload } from "openclaw/plugin-sdk/reply-payload";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
 import { afterEach, describe, it, vi } from "vitest";
 import type { TelegramBotDeps } from "./bot-deps.js";
 import {
@@ -57,7 +59,7 @@ type TelegramTraceWireState = {
   wireFaults: Array<{ retryAfterMs: number }>;
 };
 
-function compactParams(params: unknown): Record<string, unknown> {
+function compactParams(params: unknown) {
   if (!params || typeof params !== "object") {
     return {};
   }
@@ -72,7 +74,7 @@ function createRecordingTelegramApi(state: TelegramTraceWireState): Bot["api"] {
     messageCount += 1;
     return messageCount;
   };
-  const api = {
+  const api = Object.assign(new Bot("trace-token").api, {
     sendMessage: (chatId: number | string, text: string, params?: Record<string, unknown>) => {
       const message_id = nextMessageId();
       state.recordWireCall({
@@ -139,8 +141,8 @@ function createRecordingTelegramApi(state: TelegramTraceWireState): Bot["api"] {
       return Promise.resolve(true);
     },
     setMessageReaction: () => Promise.resolve(true),
-  };
-  return api as unknown as Bot["api"];
+  });
+  return api;
 }
 
 function createTraceTelegramDeps(captured: CapturedDispatch): TelegramBotDeps {
@@ -161,36 +163,33 @@ function createTraceTelegramDeps(captured: CapturedDispatch): TelegramBotDeps {
     coreRuntime.channel.inbound.run(params),
   );
   return {
-    getRuntimeConfig: (() => ({
-      config: baseTelegramMessageContextConfig,
-    })) as unknown as TelegramBotDeps["getRuntimeConfig"],
+    getRuntimeConfig: () => baseTelegramMessageContextConfig,
     resolveStorePath: (() =>
       "/tmp/openclaw-trace-unused.json") as TelegramBotDeps["resolveStorePath"],
     // No session entry: keeps the transcript mirror and final-text recovery
     // inert so the trace stays a pure wire recording.
     getSessionEntry: (() => undefined) as TelegramBotDeps["getSessionEntry"],
     readChannelAllowFromStore: (async () => []) as TelegramBotDeps["readChannelAllowFromStore"],
-    upsertChannelPairingRequest: (async () => ({
+    upsertChannelPairingRequest: async () => ({
       code: "TRACE",
       created: false,
-    })) as unknown as TelegramBotDeps["upsertChannelPairingRequest"],
-    enqueueSystemEvent: (async () => {}) as unknown as TelegramBotDeps["enqueueSystemEvent"],
+    }),
+    enqueueSystemEvent: () => true,
     dispatchReplyWithBufferedBlockDispatcher: (() => {
       throw new Error("trace dispatch bypassed the core runtime mock");
     }) as TelegramBotDeps["dispatchReplyWithBufferedBlockDispatcher"],
-    buildModelsProviderData: (async () => ({
+    buildModelsProviderData: async () => ({
       byProvider: new Map<string, Set<string>>(),
       providers: [],
       resolvedDefault: { provider: "openai", model: "gpt-test" },
       modelNames: new Map<string, string>(),
-    })) as unknown as TelegramBotDeps["buildModelsProviderData"],
-    listSkillCommandsForAgents:
-      (() => []) as unknown as TelegramBotDeps["listSkillCommandsForAgents"],
+    }),
+    listSkillCommandsForAgents: () => [],
     wasSentByBot: (() => false) as TelegramBotDeps["wasSentByBot"],
-    deliverInboundReplyWithMessageSendContext: (async () => ({
+    deliverInboundReplyWithMessageSendContext: async () => ({
       status: "unsupported",
       reason: "missing_outbound_handler",
-    })) as unknown as TelegramBotDeps["deliverInboundReplyWithMessageSendContext"],
+    }),
     emitTelegramMessageSentHooks: (() => {}) as TelegramBotDeps["emitTelegramMessageSentHooks"],
     recordOutboundMessageForPromptContext: (async () =>
       true) as TelegramBotDeps["recordOutboundMessageForPromptContext"],
@@ -222,18 +221,19 @@ async function setupTelegramTrace(recorder: WireRecorder) {
       from: { id: 42, first_name: "Alice" },
       chat: { id: TRACE_CHAT_ID, type: "private" },
     },
-    botApi: api as unknown as Record<string, unknown>,
     sendChatActionHandler,
   });
   if (!context) {
     throw new Error("trace context was not built");
   }
   const captured: CapturedDispatch = {};
+  const bot = new Bot("trace-token");
+  Object.assign(bot.api, api);
   const dispatchDone = dispatchTelegramMessage({
     context,
-    bot: { api } as unknown as Bot,
+    bot,
     cfg: baseTelegramMessageContextConfig,
-    runtime: { log: () => {}, error: () => {} } as unknown as RuntimeEnv,
+    runtime: createNonExitingRuntimeEnv(),
     // "first" is the single-use reply mode: the first visible message consumes
     // the reply target (prod default is "off", which would hide that contract).
     replyToMode: "first",

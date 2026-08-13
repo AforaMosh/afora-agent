@@ -1,5 +1,12 @@
 import { expect, it, vi } from "vitest";
 import {
+  telegramContextPayloadFixture,
+  telegramMessageFixture,
+  telegramPrimaryContextFixture,
+  telegramRouteFixture,
+  telegramTurnFixture,
+} from "./bot-message-dispatch.test-fixtures.js";
+import {
   describeTelegramDispatch,
   createChannelMessageReplyPipeline,
   createContext,
@@ -136,9 +143,9 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
     deliverReplies.mockResolvedValue({ delivered: true });
 
     const context = createContext({
-      route: {
+      route: telegramRouteFixture({
         agentId: "work",
-      } as unknown as TelegramMessageContext["route"],
+      }),
     });
     await dispatchWithContext({ context });
 
@@ -256,7 +263,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: telegramContextPayloadFixture({
           Body: currentBody,
           BodyForAgent: currentBody,
           ChatType: "group",
@@ -291,15 +298,15 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
               },
             },
           ],
-        } as unknown as TelegramMessageContext["ctxPayload"],
-        msg: {
+        }),
+        msg: telegramMessageFixture({
           chat: { id: -1003774691294, type: "supergroup" },
           message_id: 27787,
           message_thread_id: undefined,
-        } as unknown as TelegramMessageContext["msg"],
-        primaryCtx: {
+        }),
+        primaryCtx: telegramPrimaryContextFixture({
           message: { chat: { id: -1003774691294, type: "supergroup" } },
-        } as unknown as TelegramMessageContext["primaryCtx"],
+        }),
         chatId: -1003774691294,
         isGroup: true,
         replyThreadId: undefined,
@@ -309,7 +316,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
         historyLimit: 10,
         groupHistories,
         sendChatActionHandler,
-        turn: {
+        turn: telegramTurnFixture({
           storePath: "/tmp/openclaw/telegram-sessions.json",
           recordInboundSession,
           record: {
@@ -322,7 +329,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
             },
             onRecordError: vi.fn(),
           },
-        } as unknown as TelegramMessageContext["turn"],
+        }),
       }),
       replyToMode: "off",
       streamMode: "off",
@@ -410,7 +417,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: telegramContextPayloadFixture({
           Body: "current topic question",
           ChatType: "group",
           From: "telegram:group:-1003774691294:topic:1",
@@ -433,12 +440,12 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
               payload: { name: "report.pdf" },
             },
           ],
-        } as unknown as TelegramMessageContext["ctxPayload"],
-        msg: {
+        }),
+        msg: telegramMessageFixture({
           chat: { id: -1003774691294, type: "supergroup" },
           message_id: 27787,
           message_thread_id: undefined,
-        } as unknown as TelegramMessageContext["msg"],
+        }),
         chatId: -1003774691294,
         isGroup: true,
         threadSpec: { id: 1, scope: "forum" },
@@ -487,7 +494,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: telegramContextPayloadFixture({
           Body:
             "[Chat messages since your last reply - for context]\n" +
             "general topic context\n" +
@@ -501,15 +508,15 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
           SessionKey: "agent:main:telegram:group:-1003774691294:topic:1",
           To: "telegram:-1003774691294",
           TransportThreadId: "0xE93",
-        } as unknown as TelegramMessageContext["ctxPayload"],
-        msg: {
+        }),
+        msg: telegramMessageFixture({
           chat: { id: -1003774691294, type: "supergroup" },
           message_id: 27788,
           message_thread_id: undefined,
-        } as unknown as TelegramMessageContext["msg"],
-        primaryCtx: {
+        }),
+        primaryCtx: telegramPrimaryContextFixture({
           message: { chat: { id: -1003774691294, type: "supergroup" } },
-        } as unknown as TelegramMessageContext["primaryCtx"],
+        }),
         chatId: -1003774691294,
         isGroup: true,
         replyThreadId: undefined,
@@ -553,7 +560,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: telegramContextPayloadFixture({
           Body: "current group question",
           ChatType: "group",
           From: "telegram:group:-100555:topic:1",
@@ -562,15 +569,15 @@ describeTelegramDispatch("dispatchTelegramMessage context-recovery", () => {
           SessionKey: "agent:main:telegram:group:-1003774691294:topic:3731",
           To: "telegram:-100555",
           TransportThreadId: 1,
-        } as unknown as TelegramMessageContext["ctxPayload"],
-        msg: {
+        }),
+        msg: telegramMessageFixture({
           chat: { id: -100555, type: "supergroup" },
           message_id: 27788,
           message_thread_id: undefined,
-        } as unknown as TelegramMessageContext["msg"],
-        primaryCtx: {
+        }),
+        primaryCtx: telegramPrimaryContextFixture({
           message: { chat: { id: -100555, type: "supergroup" } },
-        } as unknown as TelegramMessageContext["primaryCtx"],
+        }),
         chatId: -100555,
         isGroup: true,
         replyThreadId: undefined,

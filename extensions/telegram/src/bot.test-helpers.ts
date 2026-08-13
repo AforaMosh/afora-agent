@@ -25,11 +25,21 @@ export async function runTelegramChannelInboundEventWithHarness(
       ...params.adapter,
       resolveTurn: async (input, eventClass, preflight) => {
         const resolved = await resolveTurn(input, eventClass, preflight);
-        if (!("route" in resolved) || "runDispatch" in resolved) {
+        if (
+          !("route" in resolved) ||
+          "runDispatch" in resolved ||
+          !("deliverWithProviderMessageSending" in resolved.delivery)
+        ) {
           return resolved;
         }
-        const plan =
-          resolved as unknown as import("openclaw/plugin-sdk/channel-inbound").ChannelInboundTurnPlan<"provider_message_sending">;
+        const plan = resolved;
+        const deliverWithProviderMessageSending = Reflect.get(
+          plan.delivery,
+          "deliverWithProviderMessageSending",
+        );
+        if (typeof deliverWithProviderMessageSending !== "function") {
+          return resolved;
+        }
         return {
           ...plan,
           runDispatch: async () =>
@@ -39,10 +49,14 @@ export async function runTelegramChannelInboundEventWithHarness(
               dispatcherOptions: {
                 ...plan.dispatcherOptions,
                 deliver: (payload, info) =>
-                  plan.delivery.deliverWithProviderMessageSending(payload, {
-                    ...info,
-                    onPlatformSendDispatch: info.onPlatformSendDispatch ?? (async () => undefined),
-                  }),
+                  Reflect.apply(deliverWithProviderMessageSending, plan.delivery, [
+                    payload,
+                    {
+                      ...info,
+                      onPlatformSendDispatch:
+                        info.onPlatformSendDispatch ?? (async () => undefined),
+                    },
+                  ]),
                 onError: plan.delivery.onError,
               },
               toolsAllow: plan.toolsAllow,

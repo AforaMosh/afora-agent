@@ -128,7 +128,7 @@ const telegramNativeApprovalCapability = createApproverRestrictedNativeApprovalC
       }),
     load: async () =>
       (await import("./approval-handler.runtime.js"))
-        .telegramApprovalNativeRuntime as unknown as ChannelApprovalNativeRuntimeAdapter,
+        .telegramApprovalNativeRuntime as ChannelApprovalNativeRuntimeAdapter,
   }),
 });
 

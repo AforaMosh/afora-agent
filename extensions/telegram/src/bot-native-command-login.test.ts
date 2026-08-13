@@ -61,6 +61,9 @@ vi.mock("openclaw/plugin-sdk/session-store-runtime", async () => {
 
 type LoginFlowMock = ReturnType<typeof vi.fn>;
 type TelegramLoginFlow = NonNullable<TelegramNativeCommandDeps["runModelsAuthLoginFlow"]>;
+interface TelegramLoginSessionStore {
+  [sessionKey: string]: SessionEntry;
+}
 
 let loginAccountIndex = 0;
 
@@ -646,7 +649,7 @@ describe("registerTelegramNativeCommands /login", () => {
 
   it("moves a session created while Telegram login is pending to the returned profile", async () => {
     const finishLogin = createDeferred<void>();
-    let sessionStore: Record<string, SessionEntry> = {};
+    let sessionStore: TelegramLoginSessionStore = {};
     loginSessionMocks.loadSessionStore.mockImplementation(() => sessionStore);
     const runModelsAuthLoginFlow = vi.fn<TelegramLoginFlow>(async (opts) => {
       await opts.prompter.deviceCode?.({
@@ -709,7 +712,7 @@ describe("registerTelegramNativeCommands /login", () => {
 
   it("preserves a later user-selected profile on a session created during Telegram login", async () => {
     const finishLogin = createDeferred<void>();
-    let sessionStore: Record<string, SessionEntry> = {};
+    let sessionStore: TelegramLoginSessionStore = {};
     loginSessionMocks.loadSessionStore.mockImplementation(() => sessionStore);
     const runModelsAuthLoginFlow = vi.fn<TelegramLoginFlow>(async (opts) => {
       await opts.prompter.deviceCode?.({

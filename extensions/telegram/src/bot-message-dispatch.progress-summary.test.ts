@@ -4,6 +4,7 @@ import {
   allDeliveredReplyTexts,
   appendAssistantMirrorMessageByIdentity,
   createContext,
+  createDirectSessionPayload,
   createReasoningStreamContext,
   createTelegramDraftStream,
   deliverReplies,
@@ -20,7 +21,6 @@ import {
   telegramProgressPreview,
   trailingFinalStatusText,
 } from "./bot-message-dispatch.test-harness.js";
-import type { TelegramMessageContext } from "./bot-message-dispatch.test-harness.js";
 import { createTestDraftStream } from "./draft-stream.test-helpers.js";
 
 describeTelegramDispatch("dispatchTelegramMessage progress-summary", () => {
@@ -171,7 +171,7 @@ describeTelegramDispatch("dispatchTelegramMessage progress-summary", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
+        ctxPayload: { ...createDirectSessionPayload(), SessionKey: "s1" },
       }),
       streamMode: "progress",
       telegramCfg: { streaming: { mode: "progress", progress: { commentary: true } } },
@@ -210,7 +210,7 @@ describeTelegramDispatch("dispatchTelegramMessage progress-summary", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
+        ctxPayload: { ...createDirectSessionPayload(), SessionKey: "s1" },
       }),
       streamMode: "progress",
       telegramCfg: { streaming: { mode: "progress" } },
@@ -249,7 +249,7 @@ describeTelegramDispatch("dispatchTelegramMessage progress-summary", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
+        ctxPayload: { ...createDirectSessionPayload(), SessionKey: "s1" },
       }),
       streamMode: "progress",
       telegramCfg: { streaming: { mode: "progress" } },

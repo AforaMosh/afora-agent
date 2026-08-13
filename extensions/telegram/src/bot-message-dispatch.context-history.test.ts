@@ -18,6 +18,24 @@ import type {
   TelegramMessageContext,
 } from "./bot-message-dispatch.test-harness.js";
 
+function createCtxPayload(
+  overrides: Partial<TelegramMessageContext["ctxPayload"]>,
+): TelegramMessageContext["ctxPayload"] {
+  return { ...createContext().ctxPayload, ...overrides };
+}
+
+function createMessage(
+  overrides: Partial<TelegramMessageContext["msg"]>,
+): TelegramMessageContext["msg"] {
+  return { ...createContext().msg, ...overrides };
+}
+
+function createPrimaryContext(
+  overrides: Partial<TelegramMessageContext["primaryCtx"]>,
+): TelegramMessageContext["primaryCtx"] {
+  return { ...createContext().primaryCtx, ...overrides };
+}
+
 describeTelegramDispatch("dispatchTelegramMessage context-history", () => {
   it("moves recovered room-event history out of the original topic", async () => {
     const oldHistoryKey = "-1003774691294:topic:1";
@@ -40,7 +58,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-history", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: createCtxPayload({
           InboundEventKind: "room_event",
           ChatType: "group",
           From: "telegram:group:-1003774691294:topic:1",
@@ -49,11 +67,11 @@ describeTelegramDispatch("dispatchTelegramMessage context-history", () => {
           RawBody: "ambient leak",
           SessionKey: "agent:main:telegram:group:-1003774691294:topic:3731",
           TransportThreadId: 1,
-        } as unknown as TelegramMessageContext["ctxPayload"],
-        msg: {
-          chat: { id: -1003774691294, type: "supergroup" },
+        }),
+        msg: createMessage({
+          chat: { id: -1003774691294, type: "supergroup", title: "Ops" },
           message_id: 27787,
-        } as unknown as TelegramMessageContext["msg"],
+        }),
         chatId: -1003774691294,
         isGroup: true,
         threadSpec: { id: 1, scope: "forum" },
@@ -108,7 +126,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-history", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: createCtxPayload({
           InboundEventKind: "room_event",
           BodyForAgent: "ambient current",
           ChatType: "group",
@@ -121,11 +139,11 @@ describeTelegramDispatch("dispatchTelegramMessage context-history", () => {
           TransportThreadId: 1,
           AmbientTranscriptPreviousMessageId: "200",
           AmbientTranscriptPreviousTimestampMs: 2,
-        } as TelegramMessageContext["ctxPayload"],
-        msg: {
-          chat: { id: -1003774691294, type: "supergroup" },
+        }),
+        msg: createMessage({
+          chat: { id: -1003774691294, type: "supergroup", title: "Ops" },
           message_id: 27787,
-        } as TelegramMessageContext["msg"],
+        }),
         chatId: -1003774691294,
         isGroup: true,
         threadSpec: { id: 1, scope: "forum" },
@@ -185,7 +203,7 @@ describeTelegramDispatch("dispatchTelegramMessage context-history", () => {
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: {
+        ctxPayload: createCtxPayload({
           InboundEventKind: "user_request",
           Body: currentBody,
           BodyForAgent: currentBody,
@@ -197,14 +215,16 @@ describeTelegramDispatch("dispatchTelegramMessage context-history", () => {
           RawBody: currentBody,
           SessionKey: "agent:main:telegram:group:-1003774691294:topic:3731",
           TransportThreadId: 1,
-        } as unknown as TelegramMessageContext["ctxPayload"],
-        msg: {
-          chat: { id: -1003774691294, type: "supergroup" },
+        }),
+        msg: createMessage({
+          chat: { id: -1003774691294, type: "supergroup", title: "Ops" },
           message_id: 27789,
-        } as unknown as TelegramMessageContext["msg"],
-        primaryCtx: {
-          message: { chat: { id: -1003774691294, type: "supergroup" } },
-        } as unknown as TelegramMessageContext["primaryCtx"],
+        }),
+        primaryCtx: createPrimaryContext({
+          message: createMessage({
+            chat: { id: -1003774691294, type: "supergroup", title: "Ops" },
+          }),
+        }),
         chatId: -1003774691294,
         isGroup: true,
         threadSpec: { id: 1, scope: "forum" },

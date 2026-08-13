@@ -4,6 +4,7 @@ import { sleepWithAbort } from "openclaw/plugin-sdk/runtime-env";
 // Telegram tests cover delivery.resolve media retry plugin behavior.
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { telegramBotInfoForTest } from "../bot.create-telegram-bot.test-support.js";
 import { resolveMedia } from "./delivery.resolve-media.js";
 import type { TelegramContext } from "./types.js";
 
@@ -85,10 +86,10 @@ function makeCtx(
   getFile: TelegramContext["getFile"],
   opts?: { file_name?: string; mime_type?: string },
 ): TelegramContext {
-  const msg: Record<string, unknown> = {
+  const msg: Message = {
     message_id: 1,
     date: 0,
-    chat: { id: 1, type: "private" },
+    chat: { id: 1, type: "private", first_name: "Test" },
   };
   if (mediaField === "voice") {
     msg.voice = {
@@ -108,13 +109,15 @@ function makeCtx(
     };
   }
   if (mediaField === "photo") {
-    msg.photo = [{ file_id: "p1", width: 100, height: 100 }];
+    msg.photo = [{ file_id: "p1", file_unique_id: "up1", width: 100, height: 100 }];
   }
   if (mediaField === "video") {
     msg.video = {
       file_id: "vid1",
       duration: 10,
       file_unique_id: "u3",
+      width: 100,
+      height: 100,
       ...(opts?.file_name && { file_name: opts.file_name }),
     };
   }
@@ -148,13 +151,8 @@ function makeCtx(
     };
   }
   return {
-    message: msg as unknown as Message,
-    me: {
-      id: 1,
-      is_bot: true,
-      first_name: "bot",
-      username: "bot",
-    } as unknown as TelegramContext["me"],
+    message: msg,
+    me: telegramBotInfoForTest,
     getFile,
   };
 }

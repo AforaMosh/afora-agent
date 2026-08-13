@@ -28,6 +28,16 @@ const RETIRED_TUNING_KEYS = new Set([
   "errorCooldownMs",
 ]);
 
+type TelegramCompatibilityEntryMutation = {
+  entry: Record<string, unknown>;
+  changed: boolean;
+};
+
+type TelegramCompatibleDefaultGroupEntry = {
+  groups: Record<string, unknown>;
+  entry: Record<string, unknown>;
+};
+
 function hasRetiredTelegramDmConfig(value: unknown): boolean {
   const entry = asObjectRecord(value);
   if (!entry) {
@@ -58,7 +68,7 @@ function removeRetiredTelegramDmConfig(params: {
   entry: Record<string, unknown>;
   pathPrefix: string;
   changes: string[];
-}): { entry: Record<string, unknown>; changed: boolean } {
+}): TelegramCompatibilityEntryMutation {
   let updated = params.entry;
   let changed = false;
   const dm = asObjectRecord(updated.dm);
@@ -103,7 +113,7 @@ function removeRetiredTelegramNativeDraftConfig(params: {
   entry: Record<string, unknown>;
   pathPrefix: string;
   changes: string[];
-}): { entry: Record<string, unknown>; changed: boolean } {
+}): TelegramCompatibilityEntryMutation {
   const streaming = asObjectRecord(params.entry.streaming);
   const preview = asObjectRecord(streaming?.preview);
   if (
@@ -139,7 +149,7 @@ function removeRetiredTelegramGroupHistoryContextConfig(params: {
   pathPrefix: string;
   changes: string[];
   preserveRecentHistoryLimit?: number;
-}): { entry: Record<string, unknown>; changed: boolean } {
+}): TelegramCompatibilityEntryMutation {
   if (params.entry.includeGroupHistoryContext === undefined) {
     return { entry: params.entry, changed: false };
   }
@@ -166,10 +176,9 @@ function removeRetiredTelegramGroupHistoryContextConfig(params: {
   return { entry: updated, changed: true };
 }
 
-function resolveCompatibleDefaultGroupEntry(section: Record<string, unknown>): {
-  groups: Record<string, unknown>;
-  entry: Record<string, unknown>;
-} | null {
+function resolveCompatibleDefaultGroupEntry(
+  section: Record<string, unknown>,
+): TelegramCompatibleDefaultGroupEntry | null {
   const existingGroups = section.groups;
   if (existingGroups !== undefined && !asObjectRecord(existingGroups)) {
     return null;
@@ -351,8 +360,8 @@ export function normalizeCompatibilityConfig({
       ...tuningKnobs.config,
       channels: {
         ...tuningKnobs.config.channels,
-        telegram: updated as unknown as NonNullable<OpenClawConfig["channels"]>["telegram"],
-      } as OpenClawConfig["channels"],
+        telegram: updated,
+      },
     },
     changes,
   };

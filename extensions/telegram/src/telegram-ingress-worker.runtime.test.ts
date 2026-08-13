@@ -9,6 +9,13 @@ import { runTelegramIngressWorkerRuntime } from "./telegram-ingress-worker.runti
 
 type RuntimePort = Parameters<typeof runTelegramIngressWorkerRuntime>[0]["port"];
 
+type TelegramIngressWorkerTestRuntime = {
+  calls: number[];
+  pollBodies: Array<Record<string, unknown>>;
+  messages: TelegramIngressWorkerMessage[];
+  done: Promise<void>;
+};
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -26,12 +33,7 @@ function htmlResponse(status: number, body: string): Response {
 function createRuntime(
   responses: Response[],
   options: { stopAfterPollSuccesses?: number; timeoutSeconds?: number } = {},
-): {
-  calls: number[];
-  pollBodies: Array<Record<string, unknown>>;
-  messages: TelegramIngressWorkerMessage[];
-  done: Promise<void>;
-} {
+): TelegramIngressWorkerTestRuntime {
   const calls: number[] = [];
   const pollBodies: Array<Record<string, unknown>> = [];
   const messages: TelegramIngressWorkerMessage[] = [];

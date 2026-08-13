@@ -25,6 +25,16 @@ async function repairConfig(cfg: OpenClawConfig) {
   return await repair({ cfg, doctorFixCommand: DOCTOR_FIX_COMMAND });
 }
 
+async function repairRawConfig(cfg: object) {
+  const repair = telegramDoctor.repairConfig;
+  if (!repair) {
+    throw new Error("expected Telegram config repair adapter");
+  }
+  return await Reflect.apply(repair, telegramDoctor, [
+    { cfg, doctorFixCommand: DOCTOR_FIX_COMMAND },
+  ]);
+}
+
 function collectEmptyAllowlistWarnings(
   params: Parameters<NonNullable<typeof telegramDoctor.collectEmptyAllowlistExtraWarnings>>[0],
 ) {
@@ -406,7 +416,7 @@ describe("telegram doctor", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig);
+    } satisfies OpenClawConfig);
 
     expect(warnings).toContain(
       "- Telegram allowFrom contains 4 invalid sender entries (e.g. @top); Telegram authorization requires positive numeric sender user IDs.",
@@ -429,18 +439,17 @@ describe("telegram doctor", () => {
   });
 
   it("warns when Telegram groups use a non-object shape", async () => {
-    const cfg = {
+    const cfg: OpenClawConfig = {
       channels: {
         telegram: {
-          groups: ["-1001234567890"],
           accounts: {
-            work: {
-              groups: null,
-            },
+            work: {},
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
+    Reflect.set(cfg.channels?.telegram ?? {}, "groups", ["-1001234567890"]);
+    Reflect.set(cfg.channels?.telegram?.accounts?.work ?? {}, "groups", null);
 
     const warnings = await collectPreviewWarnings(cfg);
     expect(warnings[0]).toContain("object map keyed by Telegram group/chat id");
@@ -458,7 +467,7 @@ describe("telegram doctor", () => {
           allowFrom: ["@testuser"],
         },
       },
-    } as unknown as OpenClawConfig);
+    } satisfies OpenClawConfig);
 
     expect(result.config.channels?.telegram?.allowFrom).toEqual(["111"]);
     expect(result.changes[0]).toContain("@testuser");
@@ -471,7 +480,7 @@ describe("telegram doctor", () => {
           allowFrom: [-1001234567890],
         },
       },
-    } as unknown as OpenClawConfig);
+    } satisfies OpenClawConfig);
 
     expect(result.config.channels?.telegram?.allowFrom).toEqual([-1001234567890]);
     expect(result.changes).toEqual([
@@ -505,7 +514,7 @@ describe("telegram doctor", () => {
       config: {},
     });
 
-    const result = await repairConfig({
+    const result = await repairRawConfig({
       channels: {
         telegram: {
           accounts: {
@@ -516,7 +525,7 @@ describe("telegram doctor", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig);
+    });
 
     expect(result.config.channels?.telegram?.accounts?.inactive?.allowFrom).toEqual(["@testuser"]);
     expect(result.changes).toEqual([
@@ -528,7 +537,7 @@ describe("telegram doctor", () => {
   it("formats invalid allowFrom warnings", async () => {
     const warnings = await collectPreviewWarnings({
       channels: { telegram: { allowFrom: ["@top"] } },
-    } as unknown as OpenClawConfig);
+    } satisfies OpenClawConfig);
 
     expect(warnings[0]).toContain("invalid sender entries");
     expect(warnings[1]).toContain(DOCTOR_FIX_COMMAND);
@@ -546,7 +555,7 @@ describe("telegram doctor", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     expect(await collectPreviewWarnings(cfg)).toContain(
       "- channels.telegram.apiRoot points at a full Telegram bot endpoint; apiRoot must be the Bot API root only. This can make startup calls like deleteWebhook, deleteMyCommands, and setMyCommands fail with 404 even when direct curl commands work.",
@@ -570,7 +579,7 @@ describe("telegram doctor", () => {
           replyToMode: "first",
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     const warnings = await collectPreviewWarnings(cfg);
     expect(warnings[0]).toContain("selected quote replies");
@@ -587,7 +596,7 @@ describe("telegram doctor", () => {
           accounts: {},
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     expect((await collectPreviewWarnings(cfg)).join("\n")).toContain(
       'channels.telegram has replyToMode: "all"',
@@ -608,7 +617,7 @@ describe("telegram doctor", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     const warnings = (await collectPreviewWarnings(cfg)).join("\n");
     expect(warnings).toContain('channels.telegram.accounts.work has replyToMode: "batched"');
@@ -627,7 +636,7 @@ describe("telegram doctor", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     expect((await collectPreviewWarnings(cfg)).join("\n")).not.toContain("selected quote replies");
   });
@@ -642,7 +651,7 @@ describe("telegram doctor", () => {
               streaming: { mode: "off" },
             },
           },
-        } as unknown as OpenClawConfig)
+        } satisfies OpenClawConfig)
       ).join("\n"),
     ).not.toContain("selected quote replies");
 
@@ -659,7 +668,7 @@ describe("telegram doctor", () => {
               blockStreamingDefault: "on",
             },
           },
-        } as unknown as OpenClawConfig)
+        } satisfies OpenClawConfig)
       ).join("\n"),
     ).not.toContain("selected quote replies");
   });
@@ -677,7 +686,7 @@ describe("telegram doctor", () => {
           blockStreamingDefault: "on",
         },
       },
-    } as unknown as OpenClawConfig);
+    } satisfies OpenClawConfig);
 
     expect(warnings.join("\n")).toContain("selected quote replies");
   });
@@ -689,7 +698,7 @@ describe("telegram doctor", () => {
           apiRoot: "https://api.telegram.org/bot123456:ABC",
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     expect(
       await telegramDoctor.collectPreviewWarnings?.({
@@ -717,7 +726,7 @@ describe("telegram doctor", () => {
           allowFrom: ["123"],
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     inspectTelegramAccountMock.mockReturnValueOnce({
       enabled: true,
@@ -755,7 +764,7 @@ describe("telegram doctor", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } satisfies OpenClawConfig;
 
     expect((await collectPreviewWarnings(cfg, {})).join("\n")).not.toContain(
       "TELEGRAM_BOT_TOKEN is absent",

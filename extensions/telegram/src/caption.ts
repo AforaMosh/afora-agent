@@ -3,13 +3,12 @@ import { countTelegramHtmlVisibleCharacters, resolveTelegramHtmlVisibleText } fr
 
 const TELEGRAM_MAX_CAPTION_LENGTH = 1024;
 
-export function splitTelegramCaption(
-  text?: string,
-  renderedHtml?: string,
-): {
+type TelegramCaptionSplit = {
   caption?: string;
   followUpText?: string;
-} {
+};
+
+export function splitTelegramCaption(text?: string, renderedHtml?: string): TelegramCaptionSplit {
   const trimmed = text?.trim() ?? "";
   if (!trimmed) {
     return { caption: undefined, followUpText: undefined };

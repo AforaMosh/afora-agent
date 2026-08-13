@@ -131,14 +131,16 @@ function canEncodeTelegramPresentationControl(
   return Boolean(buildTelegramPresentationButtons({ blocks: [block] }, options)?.length);
 }
 
+type TelegramPresentationBlockPartition = {
+  fallbackBlocks: MessagePresentation["blocks"];
+  nativeControlBlocks: MessagePresentationInteractiveBlock[];
+};
+
 function partitionTelegramPresentationBlocks(params: {
   presentation: MessagePresentation;
   presentationControlsSelected: boolean;
   buttonOptions: TelegramButtonBuildOptions;
-}): {
-  fallbackBlocks: MessagePresentation["blocks"];
-  nativeControlBlocks: MessagePresentationInteractiveBlock[];
-} {
+}): TelegramPresentationBlockPartition {
   const fallbackBlocks: MessagePresentation["blocks"] = [];
   const nativeControlBlocks: MessagePresentationInteractiveBlock[] = [];
   for (const block of params.presentation.blocks) {

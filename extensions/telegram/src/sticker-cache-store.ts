@@ -14,6 +14,12 @@ export type { CachedSticker };
 
 type TelegramStickerCacheStore = PluginStateSyncKeyedStore<CachedSticker>;
 
+type TelegramStickerCacheStats = {
+  count: number;
+  oldestAt?: string;
+  newestAt?: string;
+};
+
 function openStickerCacheStore(): TelegramStickerCacheStore {
   return getTelegramRuntime().state.openSyncKeyedStore<CachedSticker>({
     namespace: TELEGRAM_STICKER_CACHE_NAMESPACE,
@@ -118,7 +124,7 @@ export function getAllCachedStickers(): CachedSticker[] {
 /**
  * Get cache statistics.
  */
-export function getCacheStats(): { count: number; oldestAt?: string; newestAt?: string } {
+export function getCacheStats(): TelegramStickerCacheStats {
   const stickers = getAllCachedStickers();
   if (stickers.length === 0) {
     return { count: 0 };

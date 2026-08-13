@@ -144,7 +144,7 @@ function installTelegramRuntime() {
         sendMessageTelegram,
       },
     },
-  } as unknown as TelegramRuntime;
+  } satisfies TelegramRuntime;
   setTelegramRuntime(telegramRuntime);
   return telegramRuntime;
 }

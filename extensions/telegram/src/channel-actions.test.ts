@@ -5,6 +5,14 @@ import { telegramMessageActions } from "./channel-actions.js";
 
 const handleTelegramActionMock = vi.hoisted(() => vi.fn());
 
+function describeMessageToolFromRawConfig(cfg: object, accountId?: string) {
+  const describeMessageTool = telegramMessageActions.describeMessageTool;
+  if (!describeMessageTool) {
+    throw new Error("expected Telegram message tool discovery");
+  }
+  return Reflect.apply(describeMessageTool, telegramMessageActions, [{ cfg, accountId }]);
+}
+
 vi.mock("./action-runtime.js", async () => {
   const actual = await vi.importActual<typeof import("./action-runtime.js")>("./action-runtime.js");
   return { ...actual, handleTelegramAction: handleTelegramActionMock };
@@ -427,9 +435,9 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    const discovery = telegramMessageActions.describeMessageTool?.({ cfg });
+    const discovery = describeMessageToolFromRawConfig(cfg);
 
     expect(discovery?.actions).toContain("send");
     expect(discovery?.actions).toContain("react");
@@ -451,12 +459,9 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    const discovery = telegramMessageActions.describeMessageTool?.({
-      cfg,
-      accountId: "ops",
-    });
+    const discovery = describeMessageToolFromRawConfig(cfg, "ops");
 
     expect(discovery?.actions).toContain("send");
     expect(discovery?.actions).toContain("poll");
@@ -505,12 +510,9 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    const discovery = telegramMessageActions.describeMessageTool?.({
-      cfg,
-      accountId: "carey-notifications",
-    });
+    const discovery = describeMessageToolFromRawConfig(cfg, "carey-notifications");
 
     expect(discovery?.actions).toContain("send");
     expect(discovery?.actions).toContain("poll");
@@ -559,9 +561,9 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    const discovery = telegramMessageActions.describeMessageTool?.({ cfg });
+    const discovery = describeMessageToolFromRawConfig(cfg);
 
     expect(discovery?.actions).toContain("send");
     expect(discovery?.actions).toContain("react");

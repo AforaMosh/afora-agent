@@ -159,7 +159,7 @@ export async function probeTelegram(
         error: null,
       };
       let meRes: Response | null = null;
-      let fetchError: unknown = null;
+      let fetchError: Error | null = null;
 
       // Retry loop for initial connection (handles network/DNS startup races)
       for (let i = 0; i < 3; i++) {
@@ -176,7 +176,7 @@ export async function probeTelegram(
           );
           break;
         } catch (err) {
-          fetchError = err;
+          fetchError = toErrorObject(err, "Non-Error thrown");
           if (abortSignal?.aborted) {
             throw err;
           }

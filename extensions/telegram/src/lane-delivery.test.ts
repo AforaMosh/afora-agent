@@ -19,6 +19,10 @@ const HELLO_FINAL = "Hello final";
 type PromptContextRecord = Parameters<
   typeof createTelegramPromptContextProjectionSequence
 >[0]["record"];
+type TestDraftLanes = {
+  answer: DraftLaneState;
+  reasoning: DraftLaneState;
+};
 
 function createHarness(params?: {
   answerMessageId?: number;
@@ -33,7 +37,7 @@ function createHarness(params?: {
       ? undefined
       : (params?.answerStream ?? createTestDraftStream({ messageId: params?.answerMessageId }));
   const reasoning = createTestDraftStream();
-  const lanes: Record<LaneName, DraftLaneState> = {
+  const lanes: TestDraftLanes = {
     answer: {
       stream: answer,
       lastPartialText: "",
@@ -368,7 +372,8 @@ describe("createLaneTextDeliverer", () => {
   });
 
   it("resets the stream after discarding an unmaterialized block preview", async () => {
-    const answerRef: { current?: ReturnType<typeof createTestDraftStream> } = {};
+    type AnswerDraftRef = { current?: ReturnType<typeof createTestDraftStream> };
+    const answerRef: AnswerDraftRef = {};
     const answer = createTestDraftStream({
       stopUpdatesOnDiscard: true,
       onUpdate: (text) => {

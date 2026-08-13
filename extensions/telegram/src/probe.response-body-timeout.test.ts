@@ -1,5 +1,5 @@
 // Telegram tests cover stalled diagnostic response body handling.
-import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
+import { afterEach, describe, expect, it, vi, type MockedFunction } from "vitest";
 import { probeTelegram, resetTelegramProbeFetcherCacheForTests } from "./probe.js";
 
 const resolveTelegramTransport = vi.hoisted(() => vi.fn());
@@ -15,15 +15,15 @@ vi.mock("./proxy.js", () => ({
   makeProxyFetch,
 }));
 
-function installFetchMock(): Mock {
-  const fetchMock = vi.fn();
+function installFetchMock(): MockedFunction<typeof fetch> {
+  const fetchMock = vi.fn<typeof fetch>();
   resolveTelegramTransport.mockImplementation((proxyFetch?: typeof fetch) => ({
-    fetch: proxyFetch ?? (fetchMock as unknown as typeof fetch),
-    sourceFetch: proxyFetch ?? (fetchMock as unknown as typeof fetch),
+    fetch: proxyFetch ?? fetchMock,
+    sourceFetch: proxyFetch ?? fetchMock,
     forceFallback: vi.fn().mockReturnValue(true),
     close: async () => {},
   }));
-  makeProxyFetch.mockImplementation(() => fetchMock as unknown as typeof fetch);
+  makeProxyFetch.mockImplementation(() => fetchMock);
   return fetchMock;
 }
 

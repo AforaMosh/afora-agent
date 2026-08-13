@@ -233,6 +233,10 @@ type TelegramPollingTestDatabase = Pick<
 type IsolatedIngressOptions = NonNullable<
   ConstructorParameters<typeof TelegramPollingSession>[0]["isolatedIngress"]
 >;
+type SpooledClaimRefreshHarness = {
+  restore: () => void;
+  triggerRefresh: () => void;
+};
 
 const POLLING_TEST_WATCHDOG_INTERVAL_MS = 30_000;
 
@@ -346,6 +350,10 @@ function installPollingStallWatchdogHarness(dateNowSequence: readonly number[] =
   });
   const realSetTimeout = globalThis.setTimeout;
   const realClearTimeout = globalThis.clearTimeout;
+  const realSetInterval = globalThis.setInterval;
+  const realClearInterval = globalThis.clearInterval;
+  const watchdogInterval = realSetInterval(() => undefined, 2_147_483_647);
+  watchdogInterval.unref?.();
   const watchdogs: Array<() => void> = [];
   const watchdogWaiters: Array<{
     count: number;
@@ -370,7 +378,7 @@ function installPollingStallWatchdogHarness(dateNowSequence: readonly number[] =
         );
       }
     }
-    return 1 as unknown as ReturnType<typeof setInterval>;
+    return watchdogInterval;
   });
   const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval").mockImplementation(() => {});
   const setTimeoutSpy = vi
@@ -425,6 +433,7 @@ function installPollingStallWatchdogHarness(dateNowSequence: readonly number[] =
       dateNowSpy.mockImplementation(() => now);
     },
     restore() {
+      realClearInterval(watchdogInterval);
       setIntervalSpy.mockRestore();
       clearIntervalSpy.mockRestore();
       setTimeoutSpy.mockRestore();
@@ -653,12 +662,11 @@ async function claimedAtForUpdate(spoolDir: string, updateId: number): Promise<n
   return claim.claim.claimedAt;
 }
 
-function installSpooledClaimRefreshHarness(): {
-  restore: () => void;
-  triggerRefresh: () => void;
-} {
+function installSpooledClaimRefreshHarness(): SpooledClaimRefreshHarness {
   let refresh: (() => void) | undefined;
   const realSetInterval = globalThis.setInterval.bind(globalThis);
+  const realClearInterval = globalThis.clearInterval.bind(globalThis);
+  const refreshTimers: Array<ReturnType<typeof setInterval>> = [];
   const setIntervalSpy = vi.spyOn(globalThis, "setInterval").mockImplementation(((
     handler: Parameters<typeof setInterval>[0],
     timeout?: number,
@@ -671,12 +679,18 @@ function installSpooledClaimRefreshHarness(): {
       };
       const timer = realSetInterval(() => undefined, 2_147_483_647);
       timer.unref?.();
+      refreshTimers.push(timer);
       return timer;
     }
     return realSetInterval(handler, timeout);
   }) as typeof setInterval);
   return {
-    restore: () => setIntervalSpy.mockRestore(),
+    restore: () => {
+      for (const timer of refreshTimers) {
+        realClearInterval(timer);
+      }
+      setIntervalSpy.mockRestore();
+    },
     triggerRefresh: () => {
       if (!refresh) {
         throw new Error("Expected spooled claim refresh interval to be registered");

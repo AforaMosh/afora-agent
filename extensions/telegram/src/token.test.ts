@@ -11,6 +11,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveTelegramBotUserIdFromToken } from "./token-fingerprint.js";
 import { resolveTelegramToken } from "./token.js";
 
+function resolveTelegramTokenFromRawConfig(cfg: object) {
+  return Reflect.apply(resolveTelegramToken, undefined, [cfg]);
+}
+
 describe("resolveTelegramBotUserIdFromToken", () => {
   it.each([
     ["123456:secret", 123456],
@@ -395,9 +399,9 @@ describe("resolveTelegramToken", () => {
           botToken: { source: "env", provider: "default", id: "TELEGRAM_BOT_TOKEN" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramToken(cfg)).toEqual({
+    expect(resolveTelegramTokenFromRawConfig(cfg)).toEqual({
       token: "secretref-env-token",
       source: "config",
     });
@@ -412,9 +416,9 @@ describe("resolveTelegramToken", () => {
           botToken: { source: "env", provider: "default", id: "TELEGRAM_REF_TOKEN" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramToken(cfg)).toEqual({
+    expect(resolveTelegramTokenFromRawConfig(cfg)).toEqual({
       token: "",
       source: "none",
     });
@@ -438,9 +442,9 @@ describe("resolveTelegramToken", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramToken(cfg)).toEqual({
+    expect(resolveTelegramTokenFromRawConfig(cfg)).toEqual({
       token: "",
       source: "none",
     });
@@ -462,9 +466,9 @@ describe("resolveTelegramToken", () => {
           botToken: { source: "env", provider: "telegram-env", id: "TELEGRAM_BOT_TOKEN" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(() => resolveTelegramToken(cfg)).toThrow(
+    expect(() => resolveTelegramTokenFromRawConfig(cfg)).toThrow(
       /not allowlisted in secrets\.providers\.telegram-env\.allowlist/i,
     );
   });
@@ -484,9 +488,9 @@ describe("resolveTelegramToken", () => {
           botToken: { source: "env", provider: "telegram-env", id: "TELEGRAM_BOT_TOKEN" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(() => resolveTelegramToken(cfg)).toThrow(
+    expect(() => resolveTelegramTokenFromRawConfig(cfg)).toThrow(
       /Secret provider "telegram-env" has source "file" but ref requests "env"/i,
     );
   });
@@ -498,9 +502,9 @@ describe("resolveTelegramToken", () => {
           botToken: { source: "env", provider: "ops-env", id: "TELEGRAM_BOT_TOKEN" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(() => resolveTelegramToken(cfg)).toThrow(
+    expect(() => resolveTelegramTokenFromRawConfig(cfg)).toThrow(
       /Secret provider "ops-env" is not configured \(ref: env:ops-env:TELEGRAM_BOT_TOKEN\)/i,
     );
   });
@@ -522,9 +526,9 @@ describe("resolveTelegramToken", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramToken(cfg)).toEqual({
+    expect(resolveTelegramTokenFromRawConfig(cfg)).toEqual({
       token: "secretref-env-token",
       source: "config",
     });
@@ -537,9 +541,9 @@ describe("resolveTelegramToken", () => {
           botToken: { source: "file", provider: "vault", id: "/telegram/bot-token" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(() => resolveTelegramToken(cfg)).toThrow(
+    expect(() => resolveTelegramTokenFromRawConfig(cfg)).toThrow(
       /channels\.telegram\.botToken: unresolved SecretRef/i,
     );
   });

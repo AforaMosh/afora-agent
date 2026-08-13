@@ -367,6 +367,10 @@ describe("deleteTelegramUpdateOffset", () => {
 
   it("ignores invalid persisted update IDs from plugin-state", async () => {
     await withStateDirEnv("openclaw-tg-offset-", async () => {
+      const rawOffsetStore = createPluginStateKeyedStoreForTests<unknown>("telegram", {
+        namespace: TELEGRAM_UPDATE_OFFSET_NAMESPACE,
+        maxEntries: TELEGRAM_UPDATE_OFFSET_MAX_ENTRIES,
+      });
       await updateOffsetStore.register("default", {
         version: 2,
         lastUpdateId: -1,
@@ -374,11 +378,11 @@ describe("deleteTelegramUpdateOffset", () => {
       } as TelegramUpdateOffsetState);
       expect(await readTelegramUpdateOffset({ accountId: "default" })).toBeNull();
 
-      await updateOffsetStore.register("default", {
+      await rawOffsetStore.register("default", {
         version: 2,
         lastUpdateId: "not-a-number",
         botId: "111111",
-      } as unknown as TelegramUpdateOffsetState);
+      });
       expect(await readTelegramUpdateOffset({ accountId: "default" })).toBeNull();
     });
   });

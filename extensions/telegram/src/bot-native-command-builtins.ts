@@ -47,6 +47,8 @@ type TelegramCommandMenuModelContext = {
   fastMode?: SessionEntry["fastMode"];
 };
 
+type TelegramFastCommandModelContext = Pick<TelegramCommandMenuModelContext, "provider" | "model">;
+
 function buildTelegramCommandMenuModelContext(params: {
   provider: string;
   model: string;
@@ -131,7 +133,7 @@ function resolveTelegramFastCommandModelContext(params: {
   cfg: OpenClawConfig;
   agentId: string;
   sessionKey: string;
-}): { provider?: string; model?: string } {
+}): TelegramFastCommandModelContext {
   const defaultModel = resolveDefaultModelForAgent({ cfg: params.cfg, agentId: params.agentId });
   const fallback = () => ({ provider: defaultModel.provider, model: defaultModel.model });
   if (!params.sessionKey.trim()) {

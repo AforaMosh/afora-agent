@@ -251,22 +251,29 @@ export function installTelegramSendTestHooks() {
         [key: string]: unknown;
       }) => {
         const { chat_id, rich_message, ...richParams } = params;
-        const sendParams: Record<string, unknown> = {
+        const initialSendParams = {
           parse_mode: "HTML",
           ...(rich_message.skip_entity_detection === true ? { skip_entity_detection: true } : {}),
           ...richParams,
         };
-        const replyParameters = sendParams.reply_parameters;
-        if (
+        const replyParameters = Reflect.get(initialSendParams, "reply_parameters");
+        const replyMessageId =
           replyParameters &&
           typeof replyParameters === "object" &&
           !("quote" in replyParameters) &&
-          typeof (replyParameters as { message_id?: unknown }).message_id === "number"
-        ) {
-          sendParams.reply_to_message_id = (replyParameters as { message_id: number }).message_id;
-          sendParams.allow_sending_without_reply = true;
-          delete sendParams.reply_parameters;
-        }
+          typeof Reflect.get(replyParameters, "message_id") === "number"
+            ? Reflect.get(replyParameters, "message_id")
+            : undefined;
+        const paramsWithoutReply = { ...initialSendParams };
+        Reflect.deleteProperty(paramsWithoutReply, "reply_parameters");
+        const sendParams =
+          replyMessageId === undefined
+            ? initialSendParams
+            : {
+                ...paramsWithoutReply,
+                reply_to_message_id: replyMessageId,
+                allow_sending_without_reply: true,
+              };
         const text = richMessagePlainTextForTest(rich_message);
         const options = Object.keys(sendParams).length > 0 ? sendParams : undefined;
         return await botApi.sendMessage(chat_id, text, options);

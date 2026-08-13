@@ -18,6 +18,10 @@ import {
 } from "./telegram-ingress-spool.payload.js";
 import { telegramSpooledUpdateLaneKey } from "./telegram-ingress-spool.test-support.js";
 
+interface DeferredParticipantSlot {
+  current?: TelegramSpooledReplayDeferredParticipant;
+}
+
 async function withTempState<T>(fn: (stateDir: string) => Promise<T>): Promise<T> {
   const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-ingress-drain-"));
   try {
@@ -177,7 +181,7 @@ describe("createTelegramIngressMonitor", () => {
       const payload = updatePayload(4);
       const laneKey = telegramSpooledUpdateLaneKey(payload.update);
       await queue.enqueue(eventId, payload, { laneKey });
-      const participant: { current?: TelegramSpooledReplayDeferredParticipant } = {};
+      const participant: DeferredParticipantSlot = {};
       const monitor = createTelegramIngressMonitor({
         queue,
         cfg,
@@ -216,7 +220,7 @@ describe("createTelegramIngressMonitor", () => {
       const payload = updatePayload(5);
       const laneKey = telegramSpooledUpdateLaneKey(payload.update);
       await queue.enqueue(eventId, payload, { laneKey });
-      const participant: { current?: TelegramSpooledReplayDeferredParticipant } = {};
+      const participant: DeferredParticipantSlot = {};
       const monitor = createTelegramIngressMonitor({
         queue,
         cfg,
@@ -257,7 +261,7 @@ describe("createTelegramIngressMonitor", () => {
         const payload = updatePayload(updateId);
         const laneKey = telegramSpooledUpdateLaneKey(payload.update);
         await queue.enqueue(eventId, payload, { laneKey });
-        const participant: { current?: TelegramSpooledReplayDeferredParticipant } = {};
+        const participant: DeferredParticipantSlot = {};
         const monitor = createTelegramIngressMonitor({
           queue,
           cfg,

@@ -435,10 +435,15 @@ function detectTelegramThreadBindingLegacyStateMigration(params: {
   });
 }
 
+type TelegramTopicNameCacheImportSource = {
+  sourcePath: string;
+  namespace: string;
+};
+
 function topicNameCacheImportSource(params: {
   sourceStorePath: string;
   targetStorePath?: string;
-}): { sourcePath: string; namespace: string } {
+}): TelegramTopicNameCacheImportSource {
   const targetStorePath = params.targetStorePath ?? params.sourceStorePath;
   const scope = resolveTopicNameCacheScope(targetStorePath);
   return {

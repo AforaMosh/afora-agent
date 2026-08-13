@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 import {
   describeTelegramDispatch,
   createContext,
+  createDirectSessionPayload,
   createReasoningStreamContext,
   createStatusReactionController,
   createTelegramDraftStream,
@@ -56,6 +57,7 @@ function createGroupFixture(
   const entries = params.entries ?? [{ sender: "Alice", body: "lunch at two", timestamp: 1 }];
   const historyKey = `telegram:group:${GROUP_CHAT_ID}${topicId ? `:topic:${topicId}` : ""}`;
   const groupHistories = new Map([[historyKey, entries]]);
+  const baseContext = createContext();
   const context = (
     messageId: number,
     body: string,
@@ -65,6 +67,7 @@ function createGroupFixture(
     createContext({
       ...overrides,
       ctxPayload: {
+        ...baseContext.ctxPayload,
         InboundEventKind: kind,
         SessionKey: GROUP_SESSION_KEY,
         ChatType: "group",
@@ -73,12 +76,18 @@ function createGroupFixture(
         BodyForAgent: body,
         CommandBody: body,
         ...(commandAuthorized ? { CommandAuthorized: true } : {}),
-      } as unknown as TelegramMessageContext["ctxPayload"],
+      },
       msg: {
-        chat: { id: GROUP_CHAT_ID, type: "supergroup", ...(topicId ? { is_forum: true } : {}) },
+        ...baseContext.msg,
+        chat: {
+          id: GROUP_CHAT_ID,
+          type: "supergroup",
+          title: "Ops",
+          ...(topicId ? { is_forum: true } : {}),
+        },
         message_id: messageId,
         ...(topicId ? { message_thread_id: topicId } : {}),
-      } as unknown as TelegramMessageContext["msg"],
+      },
       chatId: GROUP_CHAT_ID,
       isGroup: true,
       historyKey,
@@ -201,7 +210,7 @@ describeTelegramDispatch("dispatchTelegramMessage reasoning-room-events", () => 
 
     await dispatchWithContext({
       context: createContext({
-        ctxPayload: { SessionKey: "s1" } as unknown as TelegramMessageContext["ctxPayload"],
+        ctxPayload: { ...createDirectSessionPayload(), SessionKey: "s1" },
       }),
     });
 
@@ -255,8 +264,9 @@ describeTelegramDispatch("dispatchTelegramMessage reasoning-room-events", () => 
     await dispatchWithContext({
       context: createContext({
         ctxPayload: {
+          ...createDirectSessionPayload(),
           SessionKey: "agent:main:telegram:direct:123",
-        } as unknown as TelegramMessageContext["ctxPayload"],
+        },
       }),
       cfg: {
         agents: {

@@ -18,6 +18,10 @@ export type PreparedTelegramPollAnswer = {
   registrationPending?: true;
 };
 
+export type TelegramPollRegistration = {
+  complete: (entry: TelegramPollRegistryEntry | null) => void;
+};
+
 const preparedPollAnswers = new WeakMap<object, PreparedTelegramPollAnswer>();
 const pendingPollRegistrations = new Map<
   string,
@@ -30,9 +34,7 @@ const pendingPollRegistrations = new Map<
 export function beginTelegramPollRegistration(params: {
   accountId?: string;
   entry: TelegramPollRegistryEntry;
-}): {
-  complete: (entry: TelegramPollRegistryEntry | null) => void;
-} {
+}): TelegramPollRegistration {
   const key = telegramPollRegistryKey(params.accountId, params.entry.pollId);
   let completeRegistration: (entry: TelegramPollRegistryEntry | null) => void = () => {};
   const completion = new Promise<TelegramPollRegistryEntry | null>((resolve) => {

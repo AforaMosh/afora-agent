@@ -307,7 +307,7 @@ async function deliverMediaReply(params: {
     await params.progress.promptContext?.accept(promptContextMessage);
   };
   const deliverAcceptedMedia = async (options: {
-    sender: TelegramOutboundMediaSender<Message>;
+    sender: TelegramOutboundMediaSender;
     requestParams: Record<string, unknown>;
     plainCaption?: string;
     shouldLog?: (err: unknown) => boolean;
@@ -381,7 +381,7 @@ async function deliverMediaReply(params: {
       tableMode: params.tableMode,
       preparedHtml: true,
     });
-    const { sender: mediaSender, documentSender } = resolveTelegramOutboundMediaSenders<Message>({
+    const { sender: mediaSender, documentSender } = resolveTelegramOutboundMediaSenders({
       api: params.bot.api,
       chatId: params.chatId,
       media,
@@ -401,7 +401,7 @@ async function deliverMediaReply(params: {
     const shouldAttachButtonsToMedia = isFirstMedia && params.replyMarkup && !followUpText;
     const videoDimensions =
       mediaPlan.kind === "video" ? await probeVideoDimensions(media.buffer) : undefined;
-    const mediaParams: Record<string, unknown> = {
+    const mediaParams = {
       caption: htmlCaption,
       ...(htmlCaption ? { parse_mode: "HTML" } : {}),
       ...(shouldAttachButtonsToMedia ? { reply_markup: params.replyMarkup } : {}),
@@ -415,10 +415,10 @@ async function deliverMediaReply(params: {
         thread: params.thread,
         silent: params.silent,
       }),
-    };
+    } satisfies Record<string, unknown>;
     if (mediaSender.label === "voice") {
       const sendVoiceMedia = async (
-        requestParams: typeof mediaParams,
+        requestParams: Record<string, unknown>,
         shouldLog?: (err: unknown) => boolean,
       ) => {
         const hasCaption = typeof requestParams.caption === "string";
@@ -495,9 +495,7 @@ async function deliverMediaReply(params: {
           logVerbose(
             "telegram sendVoice caption too long; resending voice without caption + text separately",
           );
-          const noCaptionParams = { ...mediaParams };
-          delete noCaptionParams.caption;
-          delete noCaptionParams.parse_mode;
+          const { caption: _caption, parse_mode: _parseMode, ...noCaptionParams } = mediaParams;
           await sendVoiceMedia(noCaptionParams);
           const fallbackText = resolveVoiceFallbackText(params.reply);
           if (fallbackText?.trim()) {

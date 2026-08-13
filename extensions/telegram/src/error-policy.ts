@@ -13,6 +13,11 @@ import {
 
 type TelegramErrorPolicy = "always" | "once" | "silent";
 
+type TelegramErrorPolicyResolution = {
+  policy: TelegramErrorPolicy;
+  cooldownMs: number;
+};
+
 type TelegramErrorConfig =
   | TelegramAccountConfig
   | TelegramDirectConfig
@@ -34,10 +39,7 @@ export function resolveTelegramErrorPolicy(params: {
   accountConfig?: TelegramAccountConfig;
   groupConfig?: TelegramDirectConfig | TelegramGroupConfig;
   topicConfig?: TelegramTopicConfig;
-}): {
-  policy: TelegramErrorPolicy;
-  cooldownMs: number;
-} {
+}): TelegramErrorPolicyResolution {
   const configs: Array<TelegramErrorConfig | undefined> = [
     params.accountConfig,
     params.groupConfig,

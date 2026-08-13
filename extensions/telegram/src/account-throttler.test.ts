@@ -28,6 +28,13 @@ function deferred<T>() {
   return { promise, resolve: resolve! };
 }
 
+function invokeTestApiCall(call: unknown) {
+  if (typeof call !== "function") {
+    throw new TypeError("expected test API callback to be callable");
+  }
+  return Reflect.apply(call, undefined, []);
+}
+
 describe("getOrCreateAccountThrottler", () => {
   beforeEach(() => {
     resetTelegramAccountThrottlersForTest();
@@ -49,14 +56,15 @@ describe("getOrCreateAccountThrottler", () => {
       "round-robin",
       () => async (prev, method, payload, signal) => prev(method, payload, signal),
     );
-    const prev = vi.fn(async (_method: string, payload: unknown) => {
-      const request = payload as { message_thread_id?: number; text?: string };
-      entered.push(`${request.message_thread_id}:${request.text}`);
-      if (entered.length === 1) {
-        await firstGate.promise;
-      }
-      return { ok: true, result: request.text ?? "" };
-    }) as unknown as TelegramPreviousCall;
+    const prev: TelegramPreviousCall = (_method, payload) =>
+      invokeTestApiCall(async () => {
+        const request = payload as { message_thread_id?: number; text?: string };
+        entered.push(`${request.message_thread_id}:${request.text}`);
+        if (entered.length === 1) {
+          await firstGate.promise;
+        }
+        return { ok: true, result: request.text ?? "" };
+      });
 
     const first = throttler(
       prev,
@@ -96,14 +104,15 @@ describe("getOrCreateAccountThrottler", () => {
       "edited-message",
       () => async (prev, method, payload, signal) => prev(method, payload, signal),
     );
-    const prev = vi.fn(async (_method: string, payload: unknown) => {
-      const request = payload as { message_id?: number; text?: string };
-      entered.push(`${request.message_id}:${request.text}`);
-      if (entered.length === 1) {
-        await firstGate.promise;
-      }
-      return { ok: true, result: request.text ?? "" };
-    }) as unknown as TelegramPreviousCall;
+    const prev: TelegramPreviousCall = (_method, payload) =>
+      invokeTestApiCall(async () => {
+        const request = payload as { message_id?: number; text?: string };
+        entered.push(`${request.message_id}:${request.text}`);
+        if (entered.length === 1) {
+          await firstGate.promise;
+        }
+        return { ok: true, result: request.text ?? "" };
+      });
 
     const first = throttler(
       prev,
@@ -141,14 +150,15 @@ describe("getOrCreateAccountThrottler", () => {
       "direct-topic",
       () => async (prev, method, payload, signal) => prev(method, payload, signal),
     );
-    const prev = vi.fn(async (_method: string, payload: unknown) => {
-      const request = payload as { text?: string };
-      entered.push(request.text ?? "");
-      if (entered.length === 1) {
-        await firstGate.promise;
-      }
-      return { ok: true, result: request.text ?? "" };
-    }) as unknown as TelegramPreviousCall;
+    const prev: TelegramPreviousCall = (_method, payload) =>
+      invokeTestApiCall(async () => {
+        const request = payload as { text?: string };
+        entered.push(request.text ?? "");
+        if (entered.length === 1) {
+          await firstGate.promise;
+        }
+        return { ok: true, result: request.text ?? "" };
+      });
 
     const first = throttler(
       prev,
@@ -177,14 +187,15 @@ describe("getOrCreateAccountThrottler", () => {
       "private-chat",
       () => async (prev, method, payload, signal) => prev(method, payload, signal),
     );
-    const prev = vi.fn(async (_method: string, payload: unknown) => {
-      const request = payload as { message_thread_id?: string; text?: string };
-      entered.push(`${request.message_thread_id}:${request.text}`);
-      if (entered.length === 1) {
-        await firstGate.promise;
-      }
-      return { ok: true, result: request.text ?? "" };
-    }) as unknown as TelegramPreviousCall;
+    const prev: TelegramPreviousCall = (_method, payload) =>
+      invokeTestApiCall(async () => {
+        const request = payload as { message_thread_id?: string; text?: string };
+        entered.push(`${request.message_thread_id}:${request.text}`);
+        if (entered.length === 1) {
+          await firstGate.promise;
+        }
+        return { ok: true, result: request.text ?? "" };
+      });
 
     const first = callLooseSendMessage(throttler, prev, {
       chat_id: "-100123",

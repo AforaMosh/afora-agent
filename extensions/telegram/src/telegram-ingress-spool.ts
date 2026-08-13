@@ -8,6 +8,11 @@ import { getTelegramRuntime } from "./runtime.js";
 import { normalizeTelegramStateAccountId } from "./state-account-id.js";
 import type { TelegramSpooledUpdatePayload } from "./telegram-ingress-spool.payload.js";
 const TELEGRAM_INGRESS_SPOOL_PREFIX = "ingress-spool-";
+
+type TelegramIngressQueueParts = {
+  accountId: string;
+  stateDir: string;
+};
 const TELEGRAM_SPOOLED_COMPLETION_RETRY_POLICY: BackoffPolicy = {
   initialMs: 250,
   maxMs: 5_000,
@@ -43,10 +48,7 @@ export function telegramQueueEventId(updateId: number): string {
   return String(updateId).padStart(16, "0");
 }
 
-function resolveQueueParts(spoolDir: string): {
-  accountId: string;
-  stateDir: string;
-} {
+function resolveQueueParts(spoolDir: string): TelegramIngressQueueParts {
   const basename = path.basename(spoolDir);
   const accountId = normalizeTelegramStateAccountId(
     basename.startsWith(TELEGRAM_INGRESS_SPOOL_PREFIX)

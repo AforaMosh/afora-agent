@@ -1,15 +1,17 @@
 // Telegram tests cover message-session routing and persisted model inheritance.
 import type { SessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
 import { describe, expect, it, vi } from "vitest";
-import type { TelegramBotDeps } from "./bot-deps.js";
+import { defaultTelegramBotDeps } from "./bot-deps.js";
 import { createTelegramMessageSessionRuntime } from "./bot-handlers.message-context.js";
+
+type TelegramSessionEntries = Record<string, SessionEntry>;
 
 describe("createTelegramMessageSessionRuntime", () => {
   it("inherits a DM topic model override through keyed session loads", () => {
     const storePath = "/tmp/telegram-sessions.sqlite";
     const childSessionKey = "agent:main:main:thread:12345:99";
     const parentSessionKey = "agent:main:main";
-    const entries: Record<string, SessionEntry> = {
+    const entries: TelegramSessionEntries = {
       [childSessionKey]: { sessionId: "child", updatedAt: 2 },
       [parentSessionKey]: {
         sessionId: "parent",
@@ -19,13 +21,14 @@ describe("createTelegramMessageSessionRuntime", () => {
         modelOverrideSource: "user",
       },
     };
-    const getSessionEntry = vi.fn<NonNullable<TelegramBotDeps["getSessionEntry"]>>(
+    const getSessionEntry = vi.fn<NonNullable<typeof defaultTelegramBotDeps.getSessionEntry>>(
       ({ sessionKey }) => entries[sessionKey],
     );
     const telegramDeps = {
+      ...defaultTelegramBotDeps,
       resolveStorePath: vi.fn(() => storePath),
       getSessionEntry,
-    } as Pick<TelegramBotDeps, "resolveStorePath" | "getSessionEntry"> as TelegramBotDeps;
+    };
     const { resolveTelegramSessionState } = createTelegramMessageSessionRuntime({
       accountId: "default",
       resolveTelegramGroupConfig: () => ({}),

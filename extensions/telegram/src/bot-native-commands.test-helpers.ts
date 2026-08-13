@@ -36,11 +36,13 @@ type ResolveThreadSessionKeysFn =
   typeof import("./bot-native-commands.runtime.js").resolveThreadSessionKeys;
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
 type AnyAsyncMock = MockFn<(...args: unknown[]) => Promise<unknown>>;
+type SendMessageMock = MockFn<Bot["api"]["sendMessage"]>;
+type SetMyCommandsMock = MockFn<Bot["api"]["setMyCommands"]>;
 type NativeCommandHarness = {
   handlers: Record<string, (ctx: unknown) => Promise<void>>;
-  sendMessage: AnyAsyncMock;
+  sendMessage: SendMessageMock;
   dispatchReplyWithBufferedBlockDispatcher: typeof replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher;
-  setMyCommands: AnyAsyncMock;
+  setMyCommands: SetMyCommandsMock;
   log: AnyMock;
   bot: RegisterTelegramNativeCommandsParams["bot"];
   readChannelAllowFromStore: AnyAsyncMock;
@@ -53,13 +55,13 @@ const replyPipelineMocks = vi.hoisted(() => {
   };
   return {
     finalizeInboundContext: vi.fn((ctx: unknown) => ctx),
-    dispatchReplyWithBufferedBlockDispatcher: vi.fn(
-      (async () => dispatchReplyResult) as DispatchReplyWithBufferedBlockDispatcherFn,
+    dispatchReplyWithBufferedBlockDispatcher: vi.fn<DispatchReplyWithBufferedBlockDispatcherFn>(
+      async () => dispatchReplyResult,
     ),
-    resolveChunkMode: vi.fn((() => "length") as unknown as ResolveChunkModeFn),
-    ensureConfiguredBindingRouteReady: vi.fn((async () => ({
+    resolveChunkMode: vi.fn<ResolveChunkModeFn>(() => "length"),
+    ensureConfiguredBindingRouteReady: vi.fn<EnsureConfiguredBindingRouteReadyFn>(async () => ({
       ok: true,
-    })) as unknown as EnsureConfiguredBindingRouteReadyFn),
+    })),
     getAgentScopedMediaLocalRoots: vi.fn<GetAgentScopedMediaLocalRootsFn>(() => []),
     resolveThreadSessionKeys: vi.fn<ResolveThreadSessionKeysFn>(
       ({ baseSessionKey, threadId, parentSessionKey, useSuffix = true, normalizeThreadId }) => {
@@ -79,6 +81,13 @@ const replyPipelineMocks = vi.hoisted(() => {
 const deliveryMocks = vi.hoisted(() => ({
   deliverReplies: vi.fn(async () => ({ delivered: true })),
 }));
+
+const sentMessage = {
+  message_id: 1,
+  date: 1_700_000_000,
+  chat: { id: 100, type: "private", first_name: "Test" },
+  text: "sent",
+} satisfies Message;
 
 const dispatchChannelInboundTurnForTest: TelegramNativeCommandDeps["dispatchChannelInboundTurn"] =
   async (plan) => {
@@ -162,8 +171,9 @@ export function createNativeCommandsHarness(params?: {
 }): NativeCommandHarness {
   replyPipelineMocks.dispatchReplyWithBufferedBlockDispatcher.mockClear();
   const handlers: Record<string, (ctx: unknown) => Promise<void>> = {};
-  const sendMessage: AnyAsyncMock = vi.fn(async () => undefined);
-  const setMyCommands: AnyAsyncMock = vi.fn(async () => undefined);
+  const bot = new Bot("test-token");
+  const sendMessage = vi.spyOn(bot.api, "sendMessage").mockResolvedValue(sentMessage);
+  const setMyCommands = vi.spyOn(bot.api, "setMyCommands").mockResolvedValue(true);
   const log: AnyMock = vi.fn();
   const baseCfg = params?.cfg ?? ({} as OpenClawConfig);
   const cfg =
@@ -187,20 +197,26 @@ export function createNativeCommandsHarness(params?: {
       return { messageId: "999", chatId: "100" };
     }),
   };
-  const bot = {
-    api: {
-      setMyCommands,
-      sendMessage,
-    },
-    command: (name: string, handler: (ctx: unknown) => Promise<void>) => {
-      handlers[name] = handler;
-    },
-  } as unknown as RegisterTelegramNativeCommandsParams["bot"];
+  vi.spyOn(bot, "command").mockImplementation((name, handler) => {
+    if (typeof handler !== "function") {
+      throw new TypeError("Expected function command middleware");
+    }
+    handlers[String(name)] = async (ctx) => {
+      await Reflect.apply(handler, undefined, [ctx, async () => {}]);
+    };
+    return new Composer<CommandContext<Context>>();
+  });
+
+  const runtime: RuntimeEnv = params?.runtime ?? {
+    log,
+    error: vi.fn(),
+    exit: vi.fn(),
+  };
 
   registerTelegramNativeCommands({
     bot,
     cfg,
-    runtime: params?.runtime ?? ({ log } as unknown as RuntimeEnv),
+    runtime,
     accountId: "default",
     telegramCfg: params?.telegramCfg ?? ({} as TelegramAccountConfig),
     nativeEnabled: params?.nativeEnabled ?? true,
@@ -274,8 +290,10 @@ export function createTelegramGroupCommandContext(params?: {
   };
 }
 
-export function findNotAuthorizedCalls(sendMessage: AnyAsyncMock) {
+export function findNotAuthorizedCalls(sendMessage: SendMessageMock) {
   return sendMessage.mock.calls.filter(
     (call) => typeof call[1] === "string" && call[1].includes("not authorized"),
   );
 }
+import { Bot, Composer, type CommandContext, type Context } from "grammy";
+import type { Message } from "grammy/types";

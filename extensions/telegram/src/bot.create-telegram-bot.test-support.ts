@@ -6,6 +6,10 @@ type DispatchReplyWithBufferedBlockDispatcher =
 type DispatchChannelInboundTurn =
   typeof import("openclaw/plugin-sdk/channel-inbound").dispatchChannelInboundTurn;
 
+type TelegramNativeCommandTestDeps = {
+  dispatchChannelInboundTurn: DispatchChannelInboundTurn;
+};
+
 export const telegramBotInfoForTest = {
   id: 9_876_543_210,
   is_bot: true,
@@ -68,7 +72,7 @@ export async function waitForTelegramMockCalls(
 
 export function createTelegramNativeCommandTestDeps(
   dispatchReply: DispatchReplyWithBufferedBlockDispatcher,
-): { dispatchChannelInboundTurn: DispatchChannelInboundTurn } {
+): TelegramNativeCommandTestDeps {
   return {
     dispatchChannelInboundTurn: async (plan) => {
       const delivery = plan.delivery;

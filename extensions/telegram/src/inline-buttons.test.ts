@@ -1,5 +1,4 @@
 // Telegram tests cover inline buttons plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { resolveTelegramInlineButtons } from "./button-types.js";
 import { describeTelegramInteractiveButtonBehavior } from "./button-types.test-helpers.js";
@@ -45,6 +44,14 @@ describe("resolveTelegramTargetChatType", () => {
 });
 
 describeTelegramInteractiveButtonBehavior();
+
+function resolveInlineButtonsScopeFromRawConfig(cfg: object, accountId?: string) {
+  return Reflect.apply(resolveTelegramInlineButtonsScope, undefined, [{ cfg, accountId }]);
+}
+
+function isInlineButtonsEnabledFromRawConfig(cfg: object, accountId?: string) {
+  return Reflect.apply(isTelegramInlineButtonsEnabled, undefined, [{ cfg, accountId }]);
+}
 
 describe("buildTelegramInteractiveButtons callback rewrites", () => {
   it("drops shared buttons whose callback data exceeds Telegram's limit", () => {
@@ -107,10 +114,10 @@ describe("resolveTelegramInlineButtonsScope (#75433 SecretRef tolerance)", () =>
           botToken: { source: "exec", provider: "default", id: "telegram-token" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramInlineButtonsScope({ cfg })).toBe("allowlist");
-    expect(isTelegramInlineButtonsEnabled({ cfg })).toBe(true);
+    expect(resolveInlineButtonsScopeFromRawConfig(cfg)).toBe("allowlist");
+    expect(isInlineButtonsEnabledFromRawConfig(cfg)).toBe(true);
   });
 
   it("preserves the default inline-buttons scope when legacy capabilities are empty", () => {
@@ -121,10 +128,10 @@ describe("resolveTelegramInlineButtonsScope (#75433 SecretRef tolerance)", () =>
           capabilities: [],
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramInlineButtonsScope({ cfg })).toBe("allowlist");
-    expect(isTelegramInlineButtonsEnabled({ cfg })).toBe(true);
+    expect(resolveInlineButtonsScopeFromRawConfig(cfg)).toBe("allowlist");
+    expect(isInlineButtonsEnabledFromRawConfig(cfg)).toBe(true);
   });
 
   it("inherits the channel scope when an account legacy capabilities array is empty", () => {
@@ -140,10 +147,10 @@ describe("resolveTelegramInlineButtonsScope (#75433 SecretRef tolerance)", () =>
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramInlineButtonsScope({ cfg, accountId: "ops" })).toBe("off");
-    expect(isTelegramInlineButtonsEnabled({ cfg, accountId: "ops" })).toBe(false);
+    expect(resolveInlineButtonsScopeFromRawConfig(cfg, "ops")).toBe("off");
+    expect(isInlineButtonsEnabledFromRawConfig(cfg, "ops")).toBe(false);
   });
 
   it('preserves configured "off" when botToken is an unresolved SecretRef', () => {
@@ -154,10 +161,10 @@ describe("resolveTelegramInlineButtonsScope (#75433 SecretRef tolerance)", () =>
           capabilities: { inlineButtons: "off" },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramInlineButtonsScope({ cfg })).toBe("off");
-    expect(isTelegramInlineButtonsEnabled({ cfg })).toBe(false);
+    expect(resolveInlineButtonsScopeFromRawConfig(cfg)).toBe("off");
+    expect(isInlineButtonsEnabledFromRawConfig(cfg)).toBe(false);
   });
 
   it("preserves scoped account inline-buttons config when the token is an unresolved SecretRef", () => {
@@ -172,9 +179,9 @@ describe("resolveTelegramInlineButtonsScope (#75433 SecretRef tolerance)", () =>
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    };
 
-    expect(resolveTelegramInlineButtonsScope({ cfg, accountId: "ops" })).toBe("all");
-    expect(isTelegramInlineButtonsEnabled({ cfg, accountId: "ops" })).toBe(true);
+    expect(resolveInlineButtonsScopeFromRawConfig(cfg, "ops")).toBe("all");
+    expect(isInlineButtonsEnabledFromRawConfig(cfg, "ops")).toBe(true);
   });
 });

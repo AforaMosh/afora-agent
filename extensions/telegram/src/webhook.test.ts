@@ -483,7 +483,9 @@ async function postWebhookPayloadWithChunkPlan(params: {
   });
 }
 
-function createNearLimitTelegramPayload(): { payload: string; sizeBytes: number } {
+type NearLimitTelegramPayload = { payload: string; sizeBytes: number };
+
+function createNearLimitTelegramPayload(): NearLimitTelegramPayload {
   const maxBytes = 1_024 * 1_024;
   const targetBytes = maxBytes - 4_096;
   const shell = { update_id: 77_777, message: { text: "" } };
@@ -1169,24 +1171,26 @@ describe("startTelegramWebhook", () => {
     const enqueueStarted = new Promise<void>((resolve) => {
       markEnqueueStarted = resolve;
     });
-    setTelegramRuntime({
-      state: {
-        resolveStateDir: () => webhookStateDir ?? os.tmpdir(),
-        openChannelIngressQueue: (
-          options?: Omit<Parameters<typeof createChannelIngressQueue>[0], "channelId">,
-        ) => {
-          const queue = createChannelIngressQueue({ ...options, channelId: "telegram" });
-          return {
-            ...queue,
-            enqueue: async (...args: Parameters<typeof queue.enqueue>) => {
-              markEnqueueStarted?.();
-              await enqueueGate;
-              return await queue.enqueue(...args);
-            },
-          };
+    Reflect.apply(setTelegramRuntime, undefined, [
+      {
+        state: {
+          resolveStateDir: () => webhookStateDir ?? os.tmpdir(),
+          openChannelIngressQueue: (
+            options?: Omit<Parameters<typeof createChannelIngressQueue>[0], "channelId">,
+          ) => {
+            const queue = createChannelIngressQueue({ ...options, channelId: "telegram" });
+            return {
+              ...queue,
+              enqueue: async (...args: Parameters<typeof queue.enqueue>) => {
+                markEnqueueStarted?.();
+                await enqueueGate;
+                return await queue.enqueue(...args);
+              },
+            };
+          },
         },
       },
-    } as TelegramRuntime);
+    ]);
 
     await withStartedWebhook(
       {
@@ -1291,10 +1295,11 @@ describe("startTelegramWebhook", () => {
     vi.stubEnv("OPENCLAW_TELEGRAM_SPOOLED_HANDLER_TIMEOUT_MS", envValue);
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
     let finishUpdate: (() => void) | undefined;
-    const active: {
+    type ActiveSpooledReplay = {
       dispatchStartedAt?: number;
       lifecycle?: NonNullable<ReturnType<typeof getTelegramSpooledReplayLifecycle>>;
-    } = {};
+    };
+    const active: ActiveSpooledReplay = {};
     await writeTelegramSpooledUpdate({
       spoolDir: requireWebhookSpoolDir(),
       update: { update_id: 39, message: { chat: { id: 123 }, text: "stalled" } },
@@ -2247,23 +2252,25 @@ describe("startTelegramWebhook", () => {
   it("stops claimed completion retries when the webhook stops", async () => {
     vi.useFakeTimers();
     let completeAttempts = 0;
-    setTelegramRuntime({
-      state: {
-        resolveStateDir: () => webhookStateDir ?? os.tmpdir(),
-        openChannelIngressQueue: (
-          options?: Omit<Parameters<typeof createChannelIngressQueue>[0], "channelId">,
-        ) => {
-          const queue = createChannelIngressQueue({ ...options, channelId: "telegram" });
-          return {
-            ...queue,
-            complete: async () => {
-              completeAttempts += 1;
-              throw new Error("persistent completion write failure");
-            },
-          };
+    Reflect.apply(setTelegramRuntime, undefined, [
+      {
+        state: {
+          resolveStateDir: () => webhookStateDir ?? os.tmpdir(),
+          openChannelIngressQueue: (
+            options?: Omit<Parameters<typeof createChannelIngressQueue>[0], "channelId">,
+          ) => {
+            const queue = createChannelIngressQueue({ ...options, channelId: "telegram" });
+            return {
+              ...queue,
+              complete: async () => {
+                completeAttempts += 1;
+                throw new Error("persistent completion write failure");
+              },
+            };
+          },
         },
       },
-    } as unknown as TelegramRuntime);
+    ]);
     await writeTelegramSpooledUpdate({
       spoolDir: requireWebhookSpoolDir(),
       update: { update_id: 52, message: { chat: { id: 123 }, text: "stop retry" } },

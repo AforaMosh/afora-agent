@@ -154,7 +154,7 @@ function forwardedTextUpdate(params: { updateId: number; messageId: number; text
 
 function createBotApiTransport(params: { onGetFile?: (call: number) => Response } = {}) {
   let getFileCall = 0;
-  const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+  const fetchImpl = vi.fn<typeof fetch>(async (input: RequestInfo | URL) => {
     const url = input instanceof Request ? input.url : input instanceof URL ? input.href : input;
     if (url.includes("/getFile")) {
       getFileCall += 1;
@@ -178,7 +178,7 @@ function createBotApiTransport(params: { onGetFile?: (call: number) => Response 
       status: 200,
       headers: { "content-type": "application/json" },
     });
-  }) as unknown as typeof fetch;
+  });
   return { fetch: fetchImpl, sourceFetch: fetchImpl, close: async () => {} };
 }
 

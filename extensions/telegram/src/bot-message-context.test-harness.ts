@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
 import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createPluginStateKeyedStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
 import type { BuildTelegramMessageContextParams, TelegramMediaRef } from "./bot-message-context.js";
 import { setTelegramRuntime } from "./runtime.js";
 import type { TelegramRuntime } from "./runtime.types.js";
@@ -13,14 +14,6 @@ export const baseTelegramMessageContextConfig = {
 } as never;
 
 type TelegramTestSessionRuntime = NonNullable<BuildTelegramMessageContextParams["sessionRuntime"]>;
-type TopicNameEntryForTest = {
-  name: string;
-  iconColor?: number;
-  iconCustomEmojiId?: string;
-  closed?: boolean;
-  updatedAt: number;
-};
-
 type BuildTelegramMessageContextForTestParams = {
   message: Record<string, unknown>;
   me?: Record<string, unknown>;
@@ -43,8 +36,6 @@ type BuildTelegramMessageContextForTestParams = {
   resolveGroupRequireMention?: BuildTelegramMessageContextParams["resolveGroupRequireMention"];
   resolveTelegramGroupConfig?: BuildTelegramMessageContextParams["resolveTelegramGroupConfig"];
 };
-
-const telegramTopicNameStoresForTest = new Map<string, Map<string, TopicNameEntryForTest>>();
 
 function resolveSessionStorePathForTest(testName: string | undefined): string {
   const hash = createHash("sha256")
@@ -79,24 +70,7 @@ function createTelegramMessageContextSessionRuntimeForTest(
 function installTelegramTopicNameStoreForTest() {
   setTelegramRuntime({
     state: {
-      openKeyedStore: (({ namespace }: { namespace: string }) => {
-        const entries = telegramTopicNameStoresForTest.get(namespace) ?? new Map();
-        telegramTopicNameStoresForTest.set(namespace, entries);
-        return {
-          async register(key: string, value: TopicNameEntryForTest) {
-            entries.set(key, value);
-          },
-          async entries() {
-            return Array.from(entries, ([key, value]) => ({ key, value }));
-          },
-          async delete(key: string) {
-            return entries.delete(key);
-          },
-          async clear() {
-            entries.clear();
-          },
-        };
-      }) as unknown as TelegramRuntime["state"]["openKeyedStore"],
+      openKeyedStore: (options) => createPluginStateKeyedStoreForTests("telegram", options),
     },
     channel: {},
   } as TelegramRuntime);

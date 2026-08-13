@@ -37,17 +37,17 @@ const TELEGRAM_RICH_FORMAT_PROFILE = FormatCapabilityProfile.define({
   chunk: { limit: 32_768, unit: "chars" },
 });
 
-const INLINE_STYLE_RANK: Record<string, number> = {
+type InlineStyleKind = "bold" | "italic" | "strikethrough" | "code" | "spoiler";
+
+const INLINE_STYLE_RANK = {
   spoiler: 0,
   bold: 1,
   italic: 2,
   strikethrough: 3,
   code: 4,
-};
+} satisfies Record<InlineStyleKind, number>;
 
 const TELEGRAM_RICH_LINK_HREF_RE = /^(?:https?:\/\/|tg:\/\/|mailto:|tel:)/i;
-
-type InlineStyleKind = "bold" | "italic" | "strikethrough" | "code" | "spoiler";
 
 type StructuralSegment =
   | { kind: "heading"; start: number; end: number; size: 1 | 2 | 3 | 4 | 5 | 6 }
@@ -440,10 +440,12 @@ function cellToRichText(cell: MarkdownTableCell | undefined): RichText | undefin
   return rich === "" ? undefined : rich;
 }
 
-function renderTableBlock(table: MarkdownTableMeta): {
+type TelegramTableBlockResult = {
   block: InputRichBlock;
   degradation?: TelegramRichBlocksDegradationReason;
-} {
+};
+
+function renderTableBlock(table: MarkdownTableMeta): TelegramTableBlockResult {
   const columnCount = Math.max(table.headers.length, ...table.rows.map((row) => row.length), 0);
   if (columnCount > TELEGRAM_RICH_TEXT_TABLE_COLUMN_LIMIT) {
     return {
@@ -620,14 +622,16 @@ function emitSegments(
   return blocks;
 }
 
-export function markdownToTelegramRichBlocks(
-  markdown: string,
-  options: { tableMode?: MarkdownTableMode; skipEntityDetection?: boolean } = {},
-): {
+export type TelegramRichBlocksResult = {
   blocks: InputRichBlock[];
   plainText: string;
   degradationReasons: readonly TelegramRichBlocksDegradationReason[];
-} {
+};
+
+export function markdownToTelegramRichBlocks(
+  markdown: string,
+  options: { tableMode?: MarkdownTableMode; skipEntityDetection?: boolean } = {},
+): TelegramRichBlocksResult {
   const tableMode = options.tableMode ?? "block";
   // The shared parse carries list markers into native blocks; `---` keeps the
   // IR's ─── text, while media/details/math stay HTML-island contracts.

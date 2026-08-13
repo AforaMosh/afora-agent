@@ -5,14 +5,14 @@ import {
   formatTelegramAmbientTranscriptBody,
 } from "./bot-handlers.message-context.js";
 
-function message(fields: Record<string, unknown>): Message {
+function message(fields: Partial<Message>): Message {
   return {
     message_id: 1,
     date: 1_700_000_000,
     chat: { id: 42, type: "private", first_name: "Ada" },
     from: { id: 42, is_bot: false, first_name: "Ada" },
     ...fields,
-  } as unknown as Message;
+  };
 }
 
 describe("Telegram ambient transcript media text", () => {
@@ -29,7 +29,11 @@ describe("Telegram ambient transcript media text", () => {
 
   it("preserves captions instead of appending media text", () => {
     const body = formatTelegramAmbientTranscriptBody([
-      message({ message_id: 8, caption: "diagram", document: { file_id: "doc-1" } }),
+      message({
+        message_id: 8,
+        caption: "diagram",
+        document: { file_id: "doc-1", file_unique_id: "doc-u1" },
+      }),
     ]);
 
     expect(body).toBe("#8 Ada: diagram");

@@ -365,7 +365,11 @@ describe("buildTelegramMessageContext requireMention precedence", () => {
   });
 
   it("lets explicit topic requireMention=false override mention activation", async () => {
-    const resolveGroupActivation = vi.fn(() => true);
+    const resolveGroupActivation = vi.fn<
+      NonNullable<
+        Parameters<typeof buildTelegramMessageContextForTest>[0]["resolveGroupActivation"]
+      >
+    >(() => true);
 
     const ctx = await buildTelegramMessageContextForTest({
       message: buildForumMessage(),
@@ -380,10 +384,7 @@ describe("buildTelegramMessageContext requireMention precedence", () => {
     if (!ctx?.ctxPayload) {
       throw new Error("expected Telegram context payload when topic disables requireMention");
     }
-    const activationCalls = resolveGroupActivation.mock.calls as unknown as Array<
-      [{ chatId: number; messageThreadId?: number; sessionKey: string }]
-    >;
-    const [activationOptions] = activationCalls[0] ?? [];
+    const [activationOptions] = resolveGroupActivation.mock.calls[0] ?? [];
     expect(activationOptions?.chatId).toBe(-1001234567890);
     expect(activationOptions?.messageThreadId).toBe(99);
     expect(activationOptions?.sessionKey).toBe("agent:main:telegram:group:-1001234567890:topic:99");

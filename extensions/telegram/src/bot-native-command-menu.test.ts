@@ -29,19 +29,21 @@ type SyncMenuOptions = {
 };
 
 function syncMenuCommandsWithMocks(options: SyncMenuOptions): void {
-  syncTelegramMenuCommands({
-    bot: {
-      api: { deleteMyCommands: options.deleteMyCommands, setMyCommands: options.setMyCommands },
-    } as unknown as Parameters<typeof syncTelegramMenuCommands>[0]["bot"],
-    runtime: {
-      log: options.runtimeLog ?? vi.fn(),
-      error: options.runtimeError ?? vi.fn(),
-      exit: vi.fn(),
-    } as Parameters<typeof syncTelegramMenuCommands>[0]["runtime"],
-    commandsToRegister: options.commandsToRegister,
-    accountId: options.accountId,
-    botToken: options.botToken,
-  });
+  Reflect.apply(syncTelegramMenuCommands, undefined, [
+    {
+      bot: {
+        api: { deleteMyCommands: options.deleteMyCommands, setMyCommands: options.setMyCommands },
+      },
+      runtime: {
+        log: options.runtimeLog ?? vi.fn(),
+        error: options.runtimeError ?? vi.fn(),
+        exit: vi.fn(),
+      } as Parameters<typeof syncTelegramMenuCommands>[0]["runtime"],
+      commandsToRegister: options.commandsToRegister,
+      accountId: options.accountId,
+      botToken: options.botToken,
+    },
+  ]);
 }
 
 function setMyCommandsCall(setMyCommands: ReturnType<typeof vi.fn>, index: number): unknown[] {
@@ -473,12 +475,14 @@ describe("bot-native-command-menu", () => {
       { name: "valid", description: " Works " },
       { name: "missing-description", description: undefined },
       { name: undefined, description: "Missing name" },
-    ] as unknown as Parameters<typeof buildPluginTelegramMenuCommands>[0]["specs"];
+    ];
 
-    const result = buildPluginTelegramMenuCommands({
-      specs: malformedSpecs,
-      existingCommands: new Set<string>(),
-    });
+    const result = Reflect.apply(buildPluginTelegramMenuCommands, undefined, [
+      {
+        specs: malformedSpecs,
+        existingCommands: new Set<string>(),
+      },
+    ]);
 
     expect(result.commands).toEqual([{ command: "valid", description: "Works" }]);
     expect(result.issues).toContain(

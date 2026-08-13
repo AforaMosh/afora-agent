@@ -26,6 +26,8 @@ const RATE_LIMIT_MAX = 10;
 const replayCache = new Map<string, number>();
 const rateLimit = new Map<string, { count: number; resetAtMs: number }>();
 
+type TelegramMiniAppHeaders = Record<string, string>;
+
 export function registerTelegramMiniAppRoutes(
   api: OpenClawPluginApi,
   launchTickets: TelegramMiniAppLaunchTickets,
@@ -221,7 +223,7 @@ function pruneReplayCache(): void {
   }
 }
 
-function securityHeaders(extra?: Record<string, string>): Record<string, string> {
+function securityHeaders(extra?: TelegramMiniAppHeaders): TelegramMiniAppHeaders {
   return {
     "Cache-Control": "no-store",
     "Referrer-Policy": "no-referrer",

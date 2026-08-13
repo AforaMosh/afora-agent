@@ -46,7 +46,10 @@ type PlugCommandHarnessParams = {
   registerOverrides?: Partial<Parameters<typeof registerTelegramNativeCommands>[0]>;
 };
 
-const pluginCommandHandler = vi.fn(async (_ctx: Record<string, unknown>) => ({ text: "ok" }));
+type PluginCommandContext = Parameters<
+  NonNullable<Parameters<typeof registerPluginCommand>[1]["handler"]>
+>[0];
+const pluginCommandHandler = vi.fn(async (_ctx: PluginCommandContext) => ({ text: "ok" }));
 
 function registerTestPluginCommand(params: {
   name: string;
@@ -63,7 +66,7 @@ function registerTestPluginCommand(params: {
       requireAuth: false,
       ...params.command,
       handler: async (ctx) => {
-        const handlerResult = await pluginCommandHandler(ctx as unknown as Record<string, unknown>);
+        const handlerResult = await pluginCommandHandler(ctx);
         return params.result ?? handlerResult;
       },
     }),
@@ -116,15 +119,11 @@ function firstCallArg(mock: { mock: { calls: Array<Array<unknown>> } }, argIndex
 }
 
 function firstDeliverRepliesParams() {
-  return firstCallArg(deliverReplies as unknown as { mock: { calls: Array<Array<unknown>> } });
+  return firstCallArg(deliverReplies);
 }
 
 function firstExecutePluginCommandParams() {
-  return firstCallArg(
-    pluginCommandHandler as unknown as {
-      mock: { calls: Array<Array<unknown>> };
-    },
-  );
+  return firstCallArg(pluginCommandHandler);
 }
 
 function replyAt(params: Record<string, unknown>, index = 0) {
@@ -295,18 +294,14 @@ describe("registerTelegramNativeCommands", () => {
     expect(sendMessageCall[0]).toBe(100);
     expect(String(sendMessageCall[1])).toContain("Running this command now");
     expect(sendMessageCall[2]).toBeUndefined();
-    const editCall = firstCall(
-      editMessageTelegram as unknown as { mock: { calls: Array<Array<unknown>> } },
-    );
+    const editCall = firstCall(editMessageTelegram);
     expect(editCall[0]).toBe(100);
     expect(editCall[1]).toBe(999);
     expect(String(editCall[2])).toContain("Command completed successfully");
     expect((editCall[3] as { accountId?: string } | undefined)?.accountId).toBe("default");
     expect(deleteMessage).not.toHaveBeenCalled();
     expect(deliverReplies).not.toHaveBeenCalled();
-    const hookParams = firstCallArg(
-      emitTelegramMessageSentHooks as unknown as { mock: { calls: Array<Array<unknown>> } },
-    );
+    const hookParams = firstCallArg(emitTelegramMessageSentHooks);
     expect(hookParams.chatId).toBe("100");
     expect(hookParams.content).toBe("Command completed successfully");
     expect(hookParams.messageId).toBe(999);
@@ -332,9 +327,7 @@ describe("registerTelegramNativeCommands", () => {
     await handler(createPrivateCommandContext({ match: "now" }));
 
     expect(sendMessage).toHaveBeenCalledWith(100, "Working on it...", undefined);
-    const editCall = firstCall(
-      editMessageTelegram as unknown as { mock: { calls: Array<Array<unknown>> } },
-    );
+    const editCall = firstCall(editMessageTelegram);
     expect(editCall[0]).toBe(100);
     expect(editCall[1]).toBe(999);
     expect(editCall[2]).toBe("Choose an option");

@@ -1,5 +1,4 @@
 // Telegram tests cover poll registry plugin behavior.
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
@@ -167,19 +166,21 @@ describe("telegram poll registry", () => {
       threadSpec: { scope: "forum", id: 77 },
     },
   ])("rejects malformed stored origin data: $name", async (invalid) => {
-    installTelegramStateRuntime((() => ({
-      lookup: async () => ({
-        pollId: "poll-invalid-chat",
-        chat: invalid.chat,
-        messageId: 44,
-        ...(invalid.threadSpec === undefined ? {} : { threadSpec: invalid.threadSpec }),
-        ...(invalid.messageThreadId === undefined
-          ? {}
-          : { messageThreadId: invalid.messageThreadId }),
-        question: "Ready?",
-        options: ["Yes", "No"],
+    Reflect.apply(installTelegramStateRuntime, undefined, [
+      () => ({
+        lookup: async () => ({
+          pollId: "poll-invalid-chat",
+          chat: invalid.chat,
+          messageId: 44,
+          ...(invalid.threadSpec === undefined ? {} : { threadSpec: invalid.threadSpec }),
+          ...(invalid.messageThreadId === undefined
+            ? {}
+            : { messageThreadId: invalid.messageThreadId }),
+          question: "Ready?",
+          options: ["Yes", "No"],
+        }),
       }),
-    })) as unknown as TelegramRuntime["state"]["openKeyedStore"]);
+    ]);
 
     await expect(
       findTelegramPollRegistryEntry({ pollId: "poll-invalid-chat" }),
@@ -192,8 +193,8 @@ describe("telegram poll registry", () => {
       lookup: async () => {
         throw readError;
       },
-    } as unknown as PluginStateKeyedStore<TelegramPollRegistryEntry>;
-    installTelegramStateRuntime((() => failingStore) as TelegramRuntime["state"]["openKeyedStore"]);
+    };
+    Reflect.apply(installTelegramStateRuntime, undefined, [() => failingStore]);
 
     await expect(findTelegramPollRegistryEntry({ pollId: "poll-read-error" })).rejects.toBe(
       readError,

@@ -1,8 +1,11 @@
+import { createPluginStateKeyedStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
 // Telegram tests cover bot info cache plugin behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   deleteCachedTelegramBotInfo,
   readCachedTelegramBotInfo,
+  TELEGRAM_BOT_INFO_CACHE_MAX_ENTRIES,
+  TELEGRAM_BOT_INFO_CACHE_NAMESPACE,
   writeCachedTelegramBotInfo,
 } from "./bot-info-cache.js";
 import type { TelegramBotInfo } from "./bot-info.js";
@@ -28,32 +31,18 @@ const botInfo: TelegramBotInfo = {
   allows_users_to_create_topics: false,
 };
 
-type BotInfoCacheValue = {
-  tokenFingerprint: string;
-  fetchedAt: string;
-  botInfo: TelegramBotInfo;
-};
-
 function useMemoryStore() {
-  const entries = new Map<string, BotInfoCacheValue>();
-  const store = {
-    async register(key: string, value: BotInfoCacheValue) {
-      entries.set(key, value);
-    },
-    async lookup(key: string) {
-      return entries.get(key);
-    },
-    async delete(key: string) {
-      return entries.delete(key);
-    },
-  };
   setTelegramRuntime({
     state: {
-      openKeyedStore: (() => store) as unknown as TelegramRuntime["state"]["openKeyedStore"],
+      openKeyedStore: (options) => createPluginStateKeyedStoreForTests("telegram", options),
     },
     channel: {},
   } as TelegramRuntime);
-  return entries;
+  return createPluginStateKeyedStoreForTests("telegram", {
+    namespace: TELEGRAM_BOT_INFO_CACHE_NAMESPACE,
+    maxEntries: TELEGRAM_BOT_INFO_CACHE_MAX_ENTRIES,
+    defaultTtlMs: BOT_INFO_CACHE_MAX_AGE_MS,
+  });
 }
 
 afterEach(() => {
@@ -132,6 +121,6 @@ describe("Telegram bot info cache", () => {
       botInfo,
     });
 
-    expect(entries.has("ops_team")).toBe(true);
+    await expect(entries.lookup("ops_team")).resolves.toBeDefined();
   });
 });

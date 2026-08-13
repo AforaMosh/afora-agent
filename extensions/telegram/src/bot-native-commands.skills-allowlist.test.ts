@@ -12,6 +12,7 @@ import { writeSkill } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 import {
+  createCommandBot,
   createNativeCommandTestParams,
   listSkillCommandsForAgents,
   resetNativeCommandMenuMocks,
@@ -65,20 +66,14 @@ describe("registerTelegramNativeCommands skill allowlist integration", () => {
       ({ cfg: cfgLocal, agentIds }: { cfg: OpenClawConfig; agentIds?: string[] }) =>
         listActualSkillCommandsForAgents({ cfg: cfgLocal, agentIds }),
     );
+    const { bot } = createCommandBot({
+      api: { setMyCommands, sendMessage: vi.fn().mockResolvedValue(undefined) },
+    });
 
     withPluginRuntimeRegistryScope(createEmptyPluginRegistry(), () =>
       registerTelegramNativeCommands({
         ...createNativeCommandTestParams(cfg, {
-          bot: {
-            api: {
-              setMyCommands,
-              sendMessage: vi.fn().mockResolvedValue(undefined),
-            },
-            command: vi.fn(),
-          } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
-          runtime: { log: vi.fn() } as unknown as Parameters<
-            typeof registerTelegramNativeCommands
-          >[0]["runtime"],
+          bot,
           accountId: "bot-a",
         }),
       }),

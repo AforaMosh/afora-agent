@@ -27,10 +27,12 @@ type FakeWorker = EventEmitter & {
   terminate: ReturnType<typeof vi.fn<() => Promise<number>>>;
 };
 
-function createWorker(): {
+type TelegramIngressWorkerHarness = {
   handle: ReturnType<typeof createTelegramIngressWorker>;
   worker: FakeWorker;
-} {
+};
+
+function createWorker(): TelegramIngressWorkerHarness {
   const handle = createTelegramIngressWorker({
     token: "123456:test",
     accountId: "default",
