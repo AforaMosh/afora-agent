@@ -85,7 +85,7 @@ const { listAccountIds: listTelegramAccountIds } = createAccountListHelpers("tel
 
 export { listTelegramAccountIds };
 
-export type DefaultTelegramAccountSelection = {
+type DefaultTelegramAccountSelection = {
   accountId: string;
   accountIds: string[];
   shouldWarnMissingDefault: boolean;

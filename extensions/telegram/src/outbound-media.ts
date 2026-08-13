@@ -43,7 +43,7 @@ export type TelegramOutboundMediaSender = {
   send: (effectiveParams: Record<string, unknown>) => Promise<Message>;
 };
 
-export type TelegramOutboundMediaSenders = {
+type TelegramOutboundMediaSenders = {
   sender: TelegramOutboundMediaSender;
   documentSender: TelegramOutboundMediaSender;
 };

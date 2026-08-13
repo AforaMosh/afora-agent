@@ -622,7 +622,7 @@ function emitSegments(
   return blocks;
 }
 
-export type TelegramRichBlocksResult = {
+type TelegramRichBlocksResult = {
   blocks: InputRichBlock[];
   plainText: string;
   degradationReasons: readonly TelegramRichBlocksDegradationReason[];

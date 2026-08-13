@@ -14,7 +14,7 @@ export type TelegramCustomCommandIssue = {
   message: string;
 };
 
-export type TelegramResolvedCustomCommands = {
+type TelegramResolvedCustomCommands = {
   commands: Array<{ command: string; description: string }>;
   issues: TelegramCustomCommandIssue[];
 };

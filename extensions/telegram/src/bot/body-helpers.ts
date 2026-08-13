@@ -95,7 +95,7 @@ export function buildSenderLabel(msg: Message, senderId?: number | string) {
 
 export type TelegramTextEntity = NonNullable<Message["entities"]>[number];
 
-export type TelegramTextParts = {
+type TelegramTextParts = {
   text: string;
   entities: TelegramTextEntity[];
 };

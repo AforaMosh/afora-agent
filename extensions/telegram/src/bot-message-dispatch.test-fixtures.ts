@@ -14,16 +14,16 @@ type TelegramMessageChatInput = {
   is_forum?: true;
   is_direct_messages?: true;
 };
-export type TelegramMessageFixtureInput = Omit<Partial<Message>, "chat"> & {
+type TelegramMessageFixtureInput = Omit<Partial<Message>, "chat"> & {
   chat?: TelegramMessageChatInput;
 };
-export type TelegramPrimaryContextFixtureInput = Omit<
+type TelegramPrimaryContextFixtureInput = Omit<
   Partial<TelegramMessageContext["primaryCtx"]>,
   "message"
 > & {
   message?: TelegramMessageFixtureInput;
 };
-export type TelegramTurnFixtureInput = Omit<Partial<TelegramMessageContext["turn"]>, "record"> & {
+type TelegramTurnFixtureInput = Omit<Partial<TelegramMessageContext["turn"]>, "record"> & {
   record?: Partial<TelegramMessageContext["turn"]["record"]>;
 };
 export type TelegramMessageContextOverrides = Omit<

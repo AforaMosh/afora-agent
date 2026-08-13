@@ -18,7 +18,7 @@ export type PreparedTelegramPollAnswer = {
   registrationPending?: true;
 };
 
-export type TelegramPollRegistration = {
+type TelegramPollRegistration = {
   complete: (entry: TelegramPollRegistryEntry | null) => void;
 };
 
