@@ -5,7 +5,6 @@ import { icons } from "./icons.ts";
 import {
   renderSessionAttentionIcon,
   renderSessionState,
-  renderSessionUnreadState,
 } from "./session-attention-presentation.ts";
 import {
   renderSessionGlyph,
@@ -68,16 +67,10 @@ function renderSessionTrailingState(
   pullRequestState: SessionPullRequestIndicatorState,
 ) {
   const sessionState = renderSessionState(session, false);
-  const concurrentUnreadState = session.hasActiveRun ? renderSessionUnreadState(session) : nothing;
-  if (
-    pullRequestState === "none" &&
-    sessionState === nothing &&
-    concurrentUnreadState === nothing
-  ) {
+  if (pullRequestState === "none" && sessionState === nothing) {
     return nothing;
   }
-  return html`${renderPullRequestIndicator(pullRequestState, false)} ${sessionState}
-  ${concurrentUnreadState}`;
+  return html`${renderPullRequestIndicator(pullRequestState, false)} ${sessionState}`;
 }
 
 function renderPersistentSessionIcon(icon: string) {
@@ -95,7 +88,8 @@ export function describeSessionTrailingState(
     session.forkSource ? t("sessionsView.forkedSession") : "",
     pullRequestState === "none" ? "" : pullRequestStateLabel(pullRequestState),
     session.hasActiveRun ? t("sessionsView.activeRun") : "",
-    session.unread ? t("sessionsView.unread") : "",
+    // Unread stays stored during a run and surfaces after the active state clears.
+    session.unread && !session.hasActiveRun ? t("sessionsView.unread") : "",
   ]
     .filter(Boolean)
     .join(" · ");

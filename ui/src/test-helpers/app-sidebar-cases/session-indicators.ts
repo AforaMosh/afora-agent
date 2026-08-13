@@ -191,7 +191,7 @@ describe("AppSidebar session indicators", () => {
     expect(pinnedRow?.querySelector(".session-row-state")).toBeNull();
   });
 
-  it("trails transient activity while keeping persistent status leading", async () => {
+  it("prioritizes an active run over unread activity", async () => {
     const keys = {
       plain: "agent:main:plain",
       forked: "agent:main:forked",
@@ -294,7 +294,7 @@ describe("AppSidebar session indicators", () => {
     ).not.toBeNull();
     expect(
       runningUnread?.querySelector(".session-row-aside > .session-row-state .session-unread-dot"),
-    ).not.toBeNull();
+    ).toBeNull();
 
     for (const key of [keys.unread, keys.runningUnread]) {
       const link = sidebar.querySelector(`[data-session-key="${key}"] a`);
@@ -305,9 +305,9 @@ describe("AppSidebar session indicators", () => {
     expect(forked?.querySelector("a")?.getAttribute("title")).toContain("Forked session");
     expect(unread?.querySelector("a")?.getAttribute("title")).toContain("Unread");
     expect(runningUnread?.querySelector("a")?.getAttribute("title")).toContain("Active run");
-    expect(runningUnread?.querySelector("a")?.getAttribute("title")).toContain("Unread");
+    expect(runningUnread?.querySelector("a")?.getAttribute("title")).not.toContain("Unread");
     expect(runningUnread?.querySelector(".session-row-state")?.getAttribute("aria-label")).toBe(
-      "Active run · Unread",
+      "Active run",
     );
 
     const openPullRequestIcon = sidebar.querySelector(
