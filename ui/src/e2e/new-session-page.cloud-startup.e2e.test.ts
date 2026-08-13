@@ -43,7 +43,6 @@ suite.define(() => {
       defaultAgentId: "cloud",
       deferredMethods: ["sessions.dispatch"],
       featureMethods: [
-        "chat.metadata",
         "chat.startup",
         "models.list",
         "sessions.create",
