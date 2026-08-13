@@ -259,6 +259,7 @@ export function aggregateRefreshableAuthStatus(
 
 function mapProvider(
   prov: AuthProviderHealth,
+  cfg: OpenClawConfig,
   usageByProvider: Map<string, ProviderUsageStatus>,
   expectsOAuthSet: Set<string>,
   apiKeys: ReadonlyMap<string, ModelAuthStatusProvider["apiKey"]>,
@@ -282,7 +283,7 @@ function mapProvider(
   const hasRefreshableProfile = prov.profiles.some(
     (profile) => profile.type === "oauth" || profile.type === "token",
   );
-  const authProvider = resolveProviderIdForAuth(prov.provider);
+  const authProvider = resolveProviderIdForAuth(prov.provider, { config: cfg });
   const profileOrder = findNormalizedProviderValue(store.order, authProvider);
   return {
     provider: prov.provider,
@@ -513,7 +514,7 @@ export const modelsAuthStatusHandlers: GatewayRequestHandlers = {
       const cfg = context.getRuntimeConfig();
       const scope = resolveModelAuthAgentScope(cfg, params.agentId);
       if (!scope.ok) {
-        respond(false, undefined, unknownModelAuthAgentIdError(scope.agentId));
+        respond(false, undefined, modelAuthAgentScopeError(scope));
         return;
       }
       const store = ensureAuthProfileStore(scope.agentDir, {
@@ -569,7 +570,7 @@ export const modelsAuthStatusHandlers: GatewayRequestHandlers = {
       const cfg = context.getRuntimeConfig();
       const scope = resolveModelAuthAgentScope(cfg, params.agentId);
       if (!scope.ok) {
-        respond(false, undefined, unknownModelAuthAgentIdError(scope.agentId));
+        respond(false, undefined, modelAuthAgentScopeError(scope));
         return;
       }
       const store = ensureAuthProfileStoreWithoutExternalProfiles(scope.agentDir);
@@ -586,7 +587,11 @@ export const modelsAuthStatusHandlers: GatewayRequestHandlers = {
         );
         return;
       }
-      await clearAuthProfileCooldown({ store, profileId, agentDir: scope.agentDir });
+      const ownerAgentDir = resolvePersistedAuthProfileOwnerAgentDir({
+        agentDir: scope.agentDir,
+        profileId,
+      });
+      await clearAuthProfileCooldown({ store, profileId, agentDir: ownerAgentDir });
       invalidateModelAuthStatusCache();
       respond(true, { provider, profileId }, undefined);
     } catch (err) {
@@ -785,6 +790,7 @@ export const modelsAuthStatusHandlers: GatewayRequestHandlers = {
       const providers = authHealth.providers.map((prov) =>
         mapProvider(
           prov,
+          cfg,
           usageByProvider,
           configured.expectsOAuth,
           apiKeys,

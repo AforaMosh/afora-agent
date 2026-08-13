@@ -8,7 +8,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthHealthSummary } from "../../agents/auth-health.js";
 import type { AuthProfileStore } from "../../agents/auth-profiles.js";
 import { NON_ENV_SECRETREF_MARKER } from "../../agents/model-auth-markers.js";
+import {
+  createPluginMetadataSnapshot,
+  makeRegistry,
+} from "../../config/plugin-auto-enable.test-helpers.js";
 import type { UsageSummary } from "../../infra/provider-usage.types.js";
+import { setCurrentPluginMetadataSnapshot } from "../../plugins/current-plugin-metadata-snapshot.js";
+import { clearCurrentPluginMetadataSnapshot } from "../../plugins/current-plugin-metadata-state.js";
 import { resolveProviderAuthLookupMaps } from "../../secrets/provider-env-vars.js";
 import { withEnvAsync } from "../../test-utils/env.js";
 import { createChatRunState } from "../server-chat-state.js";
@@ -285,6 +291,7 @@ function resetAuthStatusMocks(): void {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  clearCurrentPluginMetadataSnapshot();
 });
 
 function firstExternalCliAuthOption() {
@@ -565,6 +572,43 @@ describe("models.authStatus", () => {
     expect(JSON.stringify(provider)).not.toContain("secret-refresh");
   });
 
+  it("projects saved profile order for a config-scoped provider alias", async () => {
+    const cfg = { plugins: { load: { paths: ["/plugins/fixture"] } } };
+    const manifestRegistry = makeRegistry([{ id: "fixture", channels: [], origin: "config" }]);
+    const plugin = expectDefined(manifestRegistry.plugins[0], "fixture plugin");
+    plugin.providerAuthAliases = { "fixture-alias": "openai" };
+    setCurrentPluginMetadataSnapshot(
+      createPluginMetadataSnapshot({ config: cfg, manifestRegistry }),
+      { config: cfg },
+    );
+    mocks.getRuntimeConfig.mockReturnValue(cfg);
+    mocks.ensureAuthProfileStore.mockReturnValue({
+      version: 1,
+      profiles: {
+        "openai:primary": { type: "token", provider: "openai", token: "secret-token" },
+      },
+      order: { openai: ["openai:primary"] },
+    });
+    const profile = {
+      profileId: "openai:primary",
+      provider: "fixture-alias",
+      type: "token",
+      status: "static",
+      source: "store",
+      label: "openai:primary",
+    } satisfies AuthHealthSummary["profiles"][number];
+    mocks.buildAuthHealthSummary.mockReturnValue({
+      now: 0,
+      warnAfterMs: 0,
+      profiles: [profile],
+      providers: [{ provider: "fixture-alias", status: "static", profiles: [profile] }],
+    });
+
+    const provider = await firstAuthStatusProvider();
+
+    expect(provider?.profileOrder).toEqual(["openai:primary"]);
+  });
+
   it("sets an agent-scoped provider profile order", async () => {
     mocks.ensureAuthProfileStore.mockReturnValue({
       version: 1,
@@ -607,6 +651,79 @@ describe("models.authStatus", () => {
       agentDir: "/tmp/agent",
     });
     expect(firstRespondCall(opts)?.[0]).toBe(true);
+  });
+
+  it("clears inherited profile cooldown state at the persisted owner", async () => {
+    const cfg = { agents: { list: [{ id: "main", default: true }, { id: "writer" }] } };
+    const store: AuthProfileStore = {
+      version: 1,
+      profiles: {
+        "openai:primary": { type: "token", provider: "openai", token: "one" },
+      },
+    };
+    mocks.getRuntimeConfig.mockReturnValue(cfg);
+    mocks.listAgentIds.mockReturnValue(["main", "writer"]);
+    mocks.ensureAuthProfileStoreWithoutExternalProfiles.mockReturnValue(store);
+    mocks.resolvePersistedAuthProfileOwnerAgentDir.mockReturnValue(undefined);
+    const opts = createOptions({
+      provider: "openai",
+      profileId: "openai:primary",
+      agentId: "writer",
+    });
+
+    await cooldownClearHandler(opts);
+
+    expect(mocks.resolvePersistedAuthProfileOwnerAgentDir).toHaveBeenCalledWith({
+      agentDir: "/tmp/agent-writer",
+      profileId: "openai:primary",
+    });
+    expect(mocks.clearAuthProfileCooldown).toHaveBeenCalledWith({
+      store,
+      profileId: "openai:primary",
+      agentDir: undefined,
+    });
+    expect(firstRespondCall(opts)?.[0]).toBe(true);
+  });
+
+  it.each([
+    {
+      name: "profile ordering",
+      handler: orderSetHandler,
+      params: {
+        provider: "openai",
+        profileIds: ["openai:primary"],
+        agentId: "retired",
+      },
+    },
+    {
+      name: "cooldown clearing",
+      handler: cooldownClearHandler,
+      params: {
+        provider: "openai",
+        profileId: "openai:primary",
+        agentId: "retired",
+      },
+    },
+  ])("rejects an unknown agent before $name touches auth state", async ({ handler, params }) => {
+    const cfg = { agents: { list: [{ id: "main", default: true }, { id: "writer" }] } };
+    mocks.getRuntimeConfig.mockReturnValue(cfg);
+    mocks.listAgentIds.mockReturnValue(["main", "writer"]);
+    const opts = createOptions(params);
+
+    await handler(opts);
+
+    expect(mocks.resolveAgentDir).not.toHaveBeenCalled();
+    expect(mocks.ensureAuthProfileStore).not.toHaveBeenCalled();
+    expect(mocks.ensureAuthProfileStoreWithoutExternalProfiles).not.toHaveBeenCalled();
+    expect(firstRespondCall(opts)).toEqual([
+      false,
+      undefined,
+      {
+        code: "INVALID_REQUEST",
+        message: 'unknown agent id "retired"',
+        details: { code: "UNKNOWN_AGENT_ID", agentId: "retired" },
+      },
+    ]);
   });
 
   it("does not offer logout for runtime external CLI profiles", async () => {
