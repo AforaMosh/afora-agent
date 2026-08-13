@@ -196,9 +196,10 @@ describe.runIf(process.platform !== "win32")("extension install ownership policy
       });
 
       expect(status.installedCopy).toMatchObject({ present: true, owned: true });
-      expect(status.registrations.find((entry) => entry.product === "chromium")?.state).toBe(
-        "owned",
-      );
+      expect(
+        status.registrations.find((entry) => entry.product === "chromium")?.state,
+        status.issues.join("\n"),
+      ).toBe("owned");
     } finally {
       lstatSpy.mockRestore();
       getuidSpy.mockRestore();
