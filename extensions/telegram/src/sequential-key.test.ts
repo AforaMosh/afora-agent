@@ -16,6 +16,14 @@ const mockMessage = (message: Pick<Message, "chat"> & Partial<Message>): Message
   }) as Message;
 
 describe("getTelegramSequentialKey", () => {
+  it("uses the unknown lane for malformed messages without chat facts", () => {
+    expect(
+      Reflect.apply(getTelegramSequentialKey, undefined, [
+        { update: { message: { text: "hello" } } },
+      ]),
+    ).toBe("telegram:unknown");
+  });
+
   it.each([
     [{ message: mockMessage({ chat: mockChat({ id: 123 }) }) }, "telegram:123"],
     [
