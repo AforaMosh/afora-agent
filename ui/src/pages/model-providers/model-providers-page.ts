@@ -1,17 +1,13 @@
 import { consume } from "@lit/context";
 import { initialState, Task, TaskStatus } from "@lit/task";
 import { asNullableRecord as asConfigRecord } from "@openclaw/normalization-core/record-coerce";
-import { html, type PropertyValues } from "lit";
+import type { PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { FastMode, ModelsProbeResult } from "../../api/types.ts";
-import { titleForRoute } from "../../app-navigation.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { hasOperatorAdminAccess } from "../../app/operator-access.ts";
-import { renderAgentScopeControl } from "../../components/agent-scope-control.ts";
 import { showConfirmDialog } from "../../components/confirm-dialog.ts";
-import { renderDocsLink } from "../../components/settings-ui.ts";
-import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { t } from "../../i18n/index.ts";
 import { normalizeAgentLabel } from "../../lib/agents/display.ts";
 import { isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
@@ -36,6 +32,7 @@ import {
   loadModelProvidersData,
   MODEL_PROVIDERS_COST_DAYS,
   type ModelProvidersData,
+  type ModelProvidersRouteData,
 } from "./load.ts";
 import { readModelBehaviorConfig } from "./model-behavior.ts";
 import {
@@ -43,56 +40,12 @@ import {
   buildProviderApiKeyPatch,
   DEFAULT_MODELS_REPLACE_PATHS,
 } from "./mutations.ts";
+import {
+  isMissingMethodError,
+  mergeProbeResults,
+  renderModelProvidersPageChrome,
+} from "./page-helpers.ts";
 import { renderModelProviders, type ModelProviderRowMessage } from "./view.ts";
-
-const MODEL_PROVIDERS_DOCS_URL = "https://docs.openclaw.ai/concepts/model-providers";
-
-export type ModelProvidersRouteData = {
-  data: ModelProvidersData;
-  /** Client the loader fetched from; null when it ran disconnected. */
-  client: GatewayBrowserClient | null;
-  /** Concrete agent whose credential store populated the auth snapshot. */
-  agentId: string;
-};
-
-function isMissingMethodError(error: unknown): boolean {
-  return /method (?:not found|not supported)|unknown method/iu.test(
-    modelProviderErrorMessage(error),
-  );
-}
-
-const PROBE_FAILURE_PRIORITY: readonly ModelsProbeResult["status"][] = [
-  "auth",
-  "billing",
-  "rate_limit",
-  "timeout",
-  "format",
-  "no_model",
-  "unknown",
-];
-
-function mergeProbeResults(cardId: string, results: ModelsProbeResult[]): ModelsProbeResult {
-  if (results.length === 1) {
-    return results[0]!;
-  }
-  const status = results.some((result) => result.status === "ok")
-    ? "ok"
-    : (PROBE_FAILURE_PRIORITY.find((candidate) =>
-        results.some((result) => result.status === candidate),
-      ) ?? "unknown");
-  const error = results.find((result) => result.status === status)?.error;
-  return {
-    provider: cardId,
-    status,
-    ...(error ? { error } : {}),
-    results: results.flatMap((result) =>
-      result.results.map((target) => ({
-        ...target,
-        label: `${result.provider}: ${target.label}`,
-      })),
-    ),
-  };
-}
 
 export class ModelProvidersPage extends OpenClawLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
@@ -773,29 +726,13 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
         runtimeConfig.removeFormValue(["agents", "defaults", "fastModeDefault"]),
       onOpenModelSetup: () => this.context.navigate("model-setup"),
     });
-    return html`
-      <section class="content-header">
-        <div>
-          <div class="page-title">${titleForRoute("model-providers")}</div>
-          <div class="page-subtitle">
-            ${t("modelProviders.subtitle")}
-            ${renderDocsLink(MODEL_PROVIDERS_DOCS_URL, t("common.learnMore"))}
-          </div>
-        </div>
-        <div class="page-header-actions">
-          ${renderAgentScopeControl({
-            agents,
-            selection: this.context.agentSelection,
-            allowAll: false,
-            selectedId: this.selectedAgentId,
-          })}
-          <button class="btn" @click=${() => this.context.navigate("model-setup")}>
-            ${t("tabs.modelSetup")}
-          </button>
-        </div>
-      </section>
-      ${renderSettingsWorkspace(body)}
-    `;
+    return renderModelProvidersPageChrome({
+      body,
+      agents,
+      selection: this.context.agentSelection,
+      selectedId: this.selectedAgentId,
+      onOpenModelSetup: () => this.context.navigate("model-setup"),
+    });
   }
 }
 

@@ -34,6 +34,14 @@ export type ModelProvidersData = {
   error: string | null;
 };
 
+export type ModelProvidersRouteData = {
+  data: ModelProvidersData;
+  /** Client the loader fetched from; null when it ran disconnected. */
+  client: GatewayBrowserClient | null;
+  /** Concrete agent whose credential store populated the auth snapshot. */
+  agentId: string;
+};
+
 type ModelProvidersCatalogResult = {
   models: ModelCatalogEntry[];
   providerOutcomes?: ModelCatalogProviderOutcome[];

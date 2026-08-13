@@ -7,7 +7,7 @@ import type { ApplicationContext, ApplicationGatewaySnapshot } from "../../app/c
 import { showConfirmDialog } from "../../components/confirm-dialog.ts";
 import type { DefaultModelSelection } from "./data.ts";
 import { EMPTY_MODEL_PROVIDERS_DATA, type ModelProvidersData } from "./load.ts";
-import type { ModelProvidersRouteData } from "./model-providers-page.ts";
+import type { ModelProvidersRouteData } from "./load.ts";
 import "./model-providers-page.ts";
 
 vi.mock("../../components/confirm-dialog.ts", () => ({ showConfirmDialog: vi.fn() }));

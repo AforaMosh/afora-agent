@@ -6,7 +6,7 @@ import type { ApplicationContext, ApplicationGatewaySnapshot } from "../app/cont
 import { page as agentsPage, type AgentsRouteData } from "./agents/route.ts";
 import type { DevicesRouteData } from "./devices/devices-page.ts";
 import { page as devicesPage } from "./devices/route.ts";
-import type { ModelProvidersRouteData } from "./model-providers/model-providers-page.ts";
+import type { ModelProvidersRouteData } from "./model-providers/load.ts";
 import { page as modelProvidersPage } from "./model-providers/route.ts";
 import type { PluginsRouteData } from "./plugins/plugins-page.ts";
 import { page as pluginsPage } from "./plugins/route.ts";

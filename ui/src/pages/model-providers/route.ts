@@ -3,7 +3,7 @@ import { html } from "lit";
 import { routePageSpec } from "../../app-route-paths.ts";
 import type { ApplicationContext } from "../../app/context.ts";
 import { normalizeAgentId } from "../../lib/sessions/session-key.ts";
-import type { ModelProvidersRouteData } from "./model-providers-page.ts";
+import type { ModelProvidersRouteData } from "./load.ts";
 
 async function loadModelProvidersRouteData(
   context: ApplicationContext,
