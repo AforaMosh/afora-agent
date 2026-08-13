@@ -704,27 +704,30 @@ describe("models.authStatus", () => {
         agentId: "retired",
       },
     },
-  ])("rejects an unknown agent before $name touches auth state", async ({ handler, params }) => {
-    const cfg = { agents: { list: [{ id: "main", default: true }, { id: "writer" }] } };
-    mocks.getRuntimeConfig.mockReturnValue(cfg);
-    mocks.listAgentIds.mockReturnValue(["main", "writer"]);
-    const opts = createOptions(params);
+  ])(
+    "rejects an unknown agent before $name touches auth state",
+    async ({ handler: invoke, params }) => {
+      const cfg = { agents: { list: [{ id: "main", default: true }, { id: "writer" }] } };
+      mocks.getRuntimeConfig.mockReturnValue(cfg);
+      mocks.listAgentIds.mockReturnValue(["main", "writer"]);
+      const opts = createOptions(params);
 
-    await handler(opts);
+      await invoke(opts);
 
-    expect(mocks.resolveAgentDir).not.toHaveBeenCalled();
-    expect(mocks.ensureAuthProfileStore).not.toHaveBeenCalled();
-    expect(mocks.ensureAuthProfileStoreWithoutExternalProfiles).not.toHaveBeenCalled();
-    expect(firstRespondCall(opts)).toEqual([
-      false,
-      undefined,
-      {
-        code: "INVALID_REQUEST",
-        message: 'unknown agent id "retired"',
-        details: { code: "UNKNOWN_AGENT_ID", agentId: "retired" },
-      },
-    ]);
-  });
+      expect(mocks.resolveAgentDir).not.toHaveBeenCalled();
+      expect(mocks.ensureAuthProfileStore).not.toHaveBeenCalled();
+      expect(mocks.ensureAuthProfileStoreWithoutExternalProfiles).not.toHaveBeenCalled();
+      expect(firstRespondCall(opts)).toEqual([
+        false,
+        undefined,
+        {
+          code: "INVALID_REQUEST",
+          message: 'unknown agent id "retired"',
+          details: { code: "UNKNOWN_AGENT_ID", agentId: "retired" },
+        },
+      ]);
+    },
+  );
 
   it("does not offer logout for runtime external CLI profiles", async () => {
     const health = createOpenAiCodexOauthHealthSummary();
