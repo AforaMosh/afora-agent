@@ -52,7 +52,11 @@ import type { InlineDirectives } from "./directive-handling.parse.js";
 import { extractExplicitGroupId } from "./group-id.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
 import type { createModelSelectionState } from "./model-selection.js";
-import { extractInlineSimpleCommand } from "./reply-inline.js";
+import {
+  extractInlineSimpleCommand,
+  getStandaloneSlashCommandName,
+  listColonMarkedInlineSkillNames,
+} from "./reply-inline.js";
 import type { TypingController } from "./typing.js";
 
 type SkillCommandsRuntime = typeof import("../../skills/discovery/chat-commands.runtime.js");
@@ -361,18 +365,19 @@ export async function handleInlineActions(params: {
     return { kind: "reply", reply: undefined };
   }
 
-  const slashCommandNames = listSlashCommandNames(command.commandBodyNormalized);
-  const hasSkillReferences =
-    command.isAuthorizedSender && hasSkillReferenceCandidate(initialCleanedBody);
+  const standaloneSlashName = getStandaloneSlashCommandName(command.commandBodyNormalized);
+  const inlineSkillMarkerNames = listColonMarkedInlineSkillNames(command.commandBodyNormalized);
+  const canUseInlineSkills = command.isAuthorizedSender && ctx.Surface === INTERNAL_MESSAGE_CHANNEL;
+  const hasSkillReferences = canUseInlineSkills && hasSkillReferenceCandidate(initialCleanedBody);
   const shouldLoadSkillCommands =
     allowTextCommands &&
     (hasSkillReferences ||
-      slashCommandNames.some(
-        (name) =>
-          // `/skill …` needs the full skill command list. Unknown slash names may
-          // also be inline skill invocations embedded in an otherwise normal message.
-          name === "skill" || !getBuiltinSlashCommands().has(name),
-      ));
+      (standaloneSlashName !== null &&
+        (standaloneSlashName === "skill" || !getBuiltinSlashCommands().has(standaloneSlashName))) ||
+      (canUseInlineSkills &&
+        inlineSkillMarkerNames.some(
+          (name) => name === "skill" || !getBuiltinSlashCommands().has(name),
+        )));
   const canReusePreloadedSkillCommands = execOverrides === undefined;
   const skillCommands =
     shouldLoadSkillCommands &&
@@ -399,13 +404,7 @@ export async function handleInlineActions(params: {
           skillCommands,
         })
       : null;
-  if (
-    !skillInvocation &&
-    allowTextCommands &&
-    skillCommands.length > 0 &&
-    command.isAuthorizedSender &&
-    ctx.Surface === INTERNAL_MESSAGE_CHANNEL
-  ) {
+  if (!skillInvocation && allowTextCommands && skillCommands.length > 0 && canUseInlineSkills) {
     skillInvocation = resolveInlineSkillCommandInvocation({
       commandBodyNormalized: command.commandBodyNormalized,
       skillCommands,
