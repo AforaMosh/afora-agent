@@ -339,10 +339,13 @@ describe("custodian structured wizard", () => {
       expect(page.querySelector(".chat-group.user")?.textContent).toContain("18789"),
     );
 
-    const firstReplacementRequest = vi.fn().mockResolvedValue({
-      turns: [{ role: "assistant", text: "Enter a port.", at: 1 }],
-      activeWizard: { sessionId: "rotation-session", step },
-    });
+    const firstReplacementRequest = vi
+      .fn()
+      .mockResolvedValueOnce({
+        turns: [{ role: "assistant", text: "Enter a port.", at: 1 }],
+        activeWizard: { sessionId: "rotation-session", step },
+      })
+      .mockRejectedValueOnce(new Error("connection closed before response"));
     harness.setGatewaySnapshot({
       client: {
         request: firstReplacementRequest,
@@ -355,19 +358,24 @@ describe("custodian structured wizard", () => {
       expect(page.querySelector(".chat-group.user")?.textContent).toContain("18789"),
     );
     expect(page.querySelectorAll(".chat-group.user")).toHaveLength(1);
+    await waitForFast(() =>
+      expect(
+        page.querySelector<HTMLButtonElement>(".custodian__wizard-step .btn.primary")?.disabled,
+      ).toBe(false),
+    );
+
+    const retryInput = page.querySelector<HTMLInputElement>(
+      '.custodian__wizard-step input[name="wizard-text"]',
+    )!;
+    retryInput.value = "18888";
+    retryInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await page.updateComplete;
+    page.querySelector<HTMLButtonElement>(".custodian__wizard-step .btn.primary")!.click();
+    await waitForFast(() => expect(page.textContent).toContain("18888"));
 
     const secondReplacementRequest = vi.fn().mockResolvedValue({
-      turns: [
-        { role: "assistant", text: "Enter a port.", at: 1 },
-        {
-          role: "user",
-          text: "18789",
-          at: 2,
-          wizardAction: { kind: "answer", prompt: "Gateway port" },
-        },
-        { role: "assistant", text: "Enter a host.", at: 3 },
-      ],
-      activeWizard: { sessionId: "rotation-session", step: nextStep },
+      turns: [{ role: "assistant", text: "Enter a port.", at: 1 }],
+      activeWizard: { sessionId: "rotation-session", step },
     });
     harness.setGatewaySnapshot({
       client: {
@@ -376,12 +384,43 @@ describe("custodian structured wizard", () => {
         recoveryScopeReady: true,
       } as unknown as GatewayBrowserClient,
     });
-
     await waitForFast(() => expect(secondReplacementRequest).toHaveBeenCalledOnce());
+    await waitForFast(() => {
+      const userText = [...page.querySelectorAll(".chat-group.user")]
+        .map((group) => group.textContent)
+        .join("\n");
+      expect(userText.match(/18789/g)).toHaveLength(1);
+      expect(userText.match(/18888/g)).toHaveLength(1);
+    });
+
+    const thirdReplacementRequest = vi.fn().mockResolvedValue({
+      turns: [
+        { role: "assistant", text: "Enter a port.", at: 1 },
+        {
+          role: "user",
+          text: "18789",
+          at: 2,
+          wizardAction: { kind: "answer", prompt: "Gateway port" },
+        },
+        { role: "user", text: "18888", at: 3 },
+        { role: "assistant", text: "Enter a host.", at: 3 },
+      ],
+      activeWizard: { sessionId: "rotation-session", step: nextStep },
+    });
+    harness.setGatewaySnapshot({
+      client: {
+        request: thirdReplacementRequest,
+        recoveryScope: "principal-a",
+        recoveryScopeReady: true,
+      } as unknown as GatewayBrowserClient,
+    });
+
+    await waitForFast(() => expect(thirdReplacementRequest).toHaveBeenCalledOnce());
     await waitForFast(() =>
       expect(page.querySelectorAll(".custodian__structured-response")).toHaveLength(1),
     );
-    expect(page.querySelectorAll(".chat-group.user")).toHaveLength(0);
+    expect(page.querySelectorAll(".chat-group.user")).toHaveLength(1);
+    expect(page.querySelector(".chat-group.user")?.textContent).toContain("18888");
     expect(page.querySelector(".custodian__wizard-step")?.textContent).toContain("Gateway host");
   });
 

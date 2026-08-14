@@ -46,8 +46,8 @@ export abstract class CustodianTranscriptState {
   protected sessionClient: GatewayBrowserClient | null = null;
   protected transcriptSessionId: string | null = null;
   // Recovery may replace the transcript before or after an in-flight action settles.
-  // Retain its fallback until authoritative history accepts it or the owner/session changes.
-  private pendingTranscriptFallback: CustodianPendingTranscriptFallback | null = null;
+  // Retain fallbacks until authoritative history accepts them or the owner/session changes.
+  private pendingTranscriptFallbacks: CustodianPendingTranscriptFallback[] = [];
   // Reconnect mutates the client's scope; cleanup must keep targeting the identity that wrote the handle.
   private sessionRecoveryScope: CustodianRecoveryScope | null = null;
   private lastHelloDeviceToken = "";
@@ -68,45 +68,56 @@ export abstract class CustodianTranscriptState {
       this.earlierBoundaryAfterId === null
         ? -1
         : this.messages.findIndex((candidate) => candidate.id === this.earlierBoundaryAfterId);
-    this.pendingTranscriptFallback = {
+    this.pendingTranscriptFallbacks.push({
       message,
       globalIndex,
       sessionId,
       sessionIndex:
         this.transcriptSessionId === sessionId ? globalIndex : globalIndex - (boundaryIndex + 1),
-    };
+    });
   }
 
   protected settleTranscriptFallback(message: CustodianMessage, accepted: boolean): void {
-    const fallback = this.pendingTranscriptFallback;
-    if (fallback?.message !== message) {
+    const fallback = this.pendingTranscriptFallbacks.find(
+      (candidate) => candidate.message === message,
+    );
+    if (!fallback) {
       return;
     }
     if (accepted) {
-      this.pendingTranscriptFallback = null;
+      this.removeTranscriptFallback(fallback);
       return;
     }
     this.restoreTranscriptFallback(fallback);
   }
 
   protected retireTranscriptFallback(sessionId?: string): void {
-    const fallback = this.pendingTranscriptFallback;
-    if (sessionId !== undefined && fallback?.sessionId === sessionId) {
-      this.restoreTranscriptFallback(fallback);
+    if (sessionId !== undefined) {
+      for (const fallback of this.pendingTranscriptFallbacks) {
+        if (fallback.sessionId === sessionId) {
+          this.restoreTranscriptFallback(fallback);
+        }
+      }
     }
-    this.pendingTranscriptFallback = null;
+    this.pendingTranscriptFallbacks = [];
   }
 
   protected adoptTranscriptSession(sessionId: string): void {
     if (sessionId !== this.sessionId) {
-      this.pendingTranscriptFallback = null;
+      this.pendingTranscriptFallbacks = [];
     }
     this.sessionId = sessionId;
   }
 
+  private removeTranscriptFallback(fallback: CustodianPendingTranscriptFallback): void {
+    this.pendingTranscriptFallbacks = this.pendingTranscriptFallbacks.filter(
+      (candidate) => candidate !== fallback,
+    );
+  }
+
   private restoreTranscriptFallback(fallback: CustodianPendingTranscriptFallback): void {
     if (this.sessionId !== fallback.sessionId) {
-      this.pendingTranscriptFallback = null;
+      this.removeTranscriptFallback(fallback);
       return;
     }
     const index =
@@ -117,8 +128,10 @@ export abstract class CustodianTranscriptState {
     if (existing === fallback.message || this.messages.includes(fallback.message)) {
       return;
     }
-    if (existing && (existing.role === "user" || existing.structuredResponse !== null)) {
-      this.pendingTranscriptFallback = null;
+    const recoveredDisplay =
+      existing?.structuredResponse?.display ?? (existing?.role === "user" ? existing.text : null);
+    if (recoveredDisplay === fallback.message.text) {
+      this.removeTranscriptFallback(fallback);
       return;
     }
     this.messages = this.messages.toSpliced(
@@ -219,11 +232,8 @@ export abstract class CustodianTranscriptState {
     const step = transcript.recoveredStep;
     if (recoveredSessionId) {
       this.adoptTranscriptSession(recoveredSessionId);
-      const fallback = this.pendingTranscriptFallback;
-      if (fallback?.sessionId === recoveredSessionId) {
+      for (const fallback of this.pendingTranscriptFallbacks) {
         this.restoreTranscriptFallback(fallback);
-      } else {
-        this.pendingTranscriptFallback = null;
       }
       this.sensitive = step?.sensitive === true;
       this.wizardInputPending = step !== undefined;
@@ -231,7 +241,7 @@ export abstract class CustodianTranscriptState {
       this.wizardSecretVisible = false;
       this.questionReplyUncertain = false;
     } else {
-      this.pendingTranscriptFallback = null;
+      this.pendingTranscriptFallbacks = [];
     }
     return step !== undefined;
   }
