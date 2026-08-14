@@ -53,9 +53,13 @@ suite.define(() => {
 
       const claimIn = (page: typeof first | typeof second) =>
         page.evaluate(async (module) => {
-          const { claimCommunityInviteShowing } = (await import(
-            /* @vite-ignore */ module
-          )) as typeof import("../app/community-invite.runtime.ts");
+          // Built with the Function constructor so the surrounding test transform
+          // leaves it alone; a literal import() here is rewritten for the module
+          // runner and never reaches the browser.
+          const load = new Function("specifier", "return import(specifier);") as (
+            specifier: string,
+          ) => Promise<typeof import("../app/community-invite.runtime.ts")>;
+          const { claimCommunityInviteShowing } = await load(module);
           return claimCommunityInviteShowing();
         }, RUNTIME_MODULE);
 
@@ -122,9 +126,10 @@ suite.define(() => {
               localStorage.clear();
             }
             try {
-              const { claimCommunityInviteShowing } = (await import(
-                /* @vite-ignore */ module
-              )) as typeof import("../app/community-invite.runtime.ts");
+              const load = new Function("specifier", "return import(specifier);") as (
+                specifier: string,
+              ) => Promise<typeof import("../app/community-invite.runtime.ts")>;
+              const { claimCommunityInviteShowing } = await load(module);
               const claimed = await claimCommunityInviteShowing();
               Storage.prototype.setItem = original;
               const raw = localStorage.getItem(key);
