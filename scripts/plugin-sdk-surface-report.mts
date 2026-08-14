@@ -272,7 +272,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +3: add canonical coercion exports while retaining the shipped asString compatibility name.
       // +57: versioned serializable memory-authorization contract and reusable backend-conformance
       //      types, capability declarations, and helpers.
-      4923,
+      // +7: reconcile the existing public memory-authorization contract surface with this ratchet.
+      4930,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
