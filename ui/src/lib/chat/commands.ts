@@ -529,7 +529,11 @@ function getSlashCommandRelevance(command: SlashCommandDef, filter: string): num
 
 export function getSlashCommandCompletions(
   filter: string,
-  options?: { showAll?: boolean; inlineOnly?: boolean },
+  options?: {
+    showAll?: boolean;
+    inlineOnly?: boolean;
+    allowImmediateInlineCommands?: boolean;
+  },
 ): SlashCommandDef[] {
   const lower = normalizeLowercaseStringOrEmpty(filter);
   const showAll = options?.showAll ?? false;
@@ -537,7 +541,9 @@ export function getSlashCommandCompletions(
     ? SLASH_COMMANDS.filter(
         (command) =>
           (command.source === "skill" && command.skillModelVisible === true) ||
-          INLINE_SAFE_COMMAND_KEYS.has(command.key),
+          (INLINE_SAFE_COMMAND_KEYS.has(command.key) &&
+            (options.allowImmediateInlineCommands !== false ||
+              !executesInlineImmediately(command))),
       )
     : SLASH_COMMANDS;
   commands = lower

@@ -124,7 +124,7 @@ function cleanInlineSkillInvocation(body: string, start: number, end: number): s
   return `${body.slice(0, start)} ${body.slice(end)}`.replace(/[^\S\r\n]+/gu, " ").trim();
 }
 
-function resolveInlineSkillCommandInvocation(params: {
+export function resolveInlineSkillCommandInvocation(params: {
   commandBodyNormalized: string;
   skillCommands: SkillCommandSpec[];
 }): { command: SkillCommandSpec; args?: string; inline: true } | null {
@@ -136,7 +136,7 @@ function resolveInlineSkillCommandInvocation(params: {
       continue;
     }
     const command = findSkillCommand(params.skillCommands, rawName);
-    if (!command || match.index === undefined) {
+    if (!command || command.modelVisible === false || match.index === undefined) {
       continue;
     }
     const leadingWhitespace = match[0].length - match[0].trimStart().length;
@@ -149,7 +149,7 @@ function resolveInlineSkillCommandInvocation(params: {
   const skillPattern = /(?:^|\s)\/skill\s*:\s*([^\s:]+)/giu;
   for (const match of body.matchAll(skillPattern)) {
     const command = findSkillCommand(params.skillCommands, match[1] ?? "");
-    if (!command || match.index === undefined) {
+    if (!command || command.modelVisible === false || match.index === undefined) {
       continue;
     }
     const leadingWhitespace = match[0].length - match[0].trimStart().length;

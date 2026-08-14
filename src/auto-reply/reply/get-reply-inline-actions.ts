@@ -334,7 +334,8 @@ export async function handleInlineActions(params: {
   const standaloneSlashName = getStandaloneSlashCommandName(command.commandBodyNormalized);
   const inlineSkillMarkerNames = listColonMarkedInlineSkillNames(command.commandBodyNormalized);
   const canUseInlineSkills = command.isAuthorizedSender && ctx.Surface === INTERNAL_MESSAGE_CHANNEL;
-  const hasSkillReferences = canUseInlineSkills && hasSkillReferenceCandidate(initialCleanedBody);
+  const hasSkillReferences =
+    command.isAuthorizedSender && hasSkillReferenceCandidate(initialCleanedBody);
   const shouldLoadSkillCommands =
     allowTextCommands &&
     (hasSkillReferences ||
@@ -521,7 +522,12 @@ export async function handleInlineActions(params: {
     sessionCtx.BodyStripped = cleanedBody;
   }
 
-  if (hasSkillReferences && !skillInvocation && skillCommands.length > 0) {
+  if (
+    hasSkillReferences &&
+    !skillInvocation &&
+    getStandaloneSlashCommandName(cleanedBody) === null &&
+    skillCommands.length > 0
+  ) {
     const referenced = applyExplicitSkillReferences(cleanedBody, skillCommands);
     if (referenced.overflow) {
       typing.cleanup();

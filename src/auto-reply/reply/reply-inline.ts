@@ -51,7 +51,7 @@ export function listColonMarkedInlineSkillNames(body: string): string[] {
 }
 
 export function getStandaloneSlashCommandName(body: string): string | null {
-  const match = body.trim().match(/^\/([^\s/:]+)(?:\s|$)/u);
+  const match = body.trim().match(/^\/([^\s/:]+)(?::|\s|$)/u);
   return normalizeOptionalLowercaseString(match?.[1]) ?? null;
 }
 
