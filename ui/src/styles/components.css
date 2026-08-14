@@ -5707,7 +5707,7 @@ td.data-table-key-col {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
+  width: var(--sidebar-trailing-slot, 20px);
   height: 24px;
   padding: 0;
   border: none;
@@ -5732,9 +5732,15 @@ td.data-table-key-col {
   stroke-linejoin: round;
 }
 
-.session-action:hover:not(:disabled) {
+.session-action:hover:not(:disabled),
+.session-action:focus-visible:not(:disabled) {
   background: color-mix(in srgb, var(--bg-hover) 92%, transparent);
   color: var(--text);
+}
+
+.session-action:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--sidebar-focus-visible);
 }
 
 .session-action:disabled {
@@ -5789,7 +5795,7 @@ td.data-table-key-col {
 }
 
 .session-row-host--pinned .session-action--pin {
-  color: var(--accent);
+  color: var(--text);
 }
 
 .session-run-spinner {
