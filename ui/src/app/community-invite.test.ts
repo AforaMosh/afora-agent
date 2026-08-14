@@ -127,12 +127,12 @@ describe("parseCommunityInviteRecord", () => {
       settledAtMs: NOW + 1000,
       outcome: "joined",
     });
-    expect(parseCommunityInviteRecord(JSON.parse(JSON.stringify(stored)))).toEqual(stored);
+    expect(parseCommunityInviteRecord(structuredClone(stored))).toEqual(stored);
   });
 
   it("accepts a null build identity, which is what an unstamped artifact writes", () => {
     const stored = record({ shownAtMs: NOW, shownVersion: null });
-    expect(parseCommunityInviteRecord(JSON.parse(JSON.stringify(stored)))).toEqual(stored);
+    expect(parseCommunityInviteRecord(structuredClone(stored))).toEqual(stored);
   });
 
   const rejected: ReadonlyArray<{ name: string; value: unknown }> = [

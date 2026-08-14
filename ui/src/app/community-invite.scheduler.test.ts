@@ -280,7 +280,7 @@ describe("community invite showing protocol", () => {
 
   it("shows nothing when storage refuses the write", async () => {
     seedRecord();
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    vi.spyOn(localStorage, "setItem").mockImplementation(() => {
       throw new DOMException("quota", "QuotaExceededError");
     });
     await runToPresentation();
@@ -292,7 +292,7 @@ describe("community invite showing protocol", () => {
     seedRecord();
     // A storage that silently drops writes is the shape that survives a naive
     // "did setItem throw?" check.
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => undefined);
+    vi.spyOn(localStorage, "setItem").mockImplementation(() => undefined);
     await runToPresentation();
     expect(mountedCards()).toBe(0);
   });
