@@ -89,6 +89,8 @@ struct SystemAgentChatQuestionTests {
 
     @Test
     func `valid QR wizard step decodes and round trips`() throws {
+        let qrDataUrl =
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
         let json =
             """
             {
@@ -100,7 +102,7 @@ struct SystemAgentChatQuestionTests {
                 "type": "qr",
                 "title": "Scan QR code",
                 "message": "Scan, then continue.",
-                "qrDataUrl": "data:image/png;base64,AAAA",
+                "qrDataUrl": "\(qrDataUrl)",
                 "expiresInMs": 1,
                 "executor": "client"
               }
@@ -110,7 +112,7 @@ struct SystemAgentChatQuestionTests {
         let step = try #require(decoded.step)
 
         #expect(step.id == "setup-qr")
-        #expect(step.qrdataurl == "data:image/png;base64,AAAA")
+        #expect(step.qrdataurl == qrDataUrl)
         #expect(step.expiresinms == 1)
 
         let roundTripped = try JSONDecoder().decode(

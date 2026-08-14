@@ -53,6 +53,32 @@ function decodeQrPngDataUrl(value: string): Uint8Array | undefined {
   }
 }
 
+function isValidPngIhdr(bytes: Uint8Array, dataOffset: number, length: number): boolean {
+  if (length !== 13) {
+    return false;
+  }
+  const width = readUint32Be(bytes, dataOffset);
+  const height = readUint32Be(bytes, dataOffset + 4);
+  const bitDepth = bytes[dataOffset + 8];
+  const colorType = bytes[dataOffset + 9];
+  const validColorFormat =
+    (colorType === 0 && [1, 2, 4, 8, 16].includes(bitDepth ?? -1)) ||
+    ((colorType === 2 || colorType === 4 || colorType === 6) &&
+      (bitDepth === 8 || bitDepth === 16)) ||
+    (colorType === 3 && [1, 2, 4, 8].includes(bitDepth ?? -1));
+  return (
+    width > 0 &&
+    height > 0 &&
+    width <= QR_PNG_MAX_DIMENSION &&
+    height <= QR_PNG_MAX_DIMENSION &&
+    width * height <= QR_PNG_MAX_PIXELS &&
+    validColorFormat &&
+    bytes[dataOffset + 10] === 0 &&
+    bytes[dataOffset + 11] === 0 &&
+    (bytes[dataOffset + 12] === 0 || bytes[dataOffset + 12] === 1)
+  );
+}
+
 /** Validates the bounded PNG structure that QR-capable protocol clients consume. */
 function isValidQrPngDataUrl(value: string): boolean {
   const bytes = decodeQrPngDataUrl(value);
@@ -73,19 +99,10 @@ function isValidQrPngDataUrl(value: string): boolean {
     }
 
     const type = readUint32Be(bytes, typeOffset);
-    const width = offset === PNG_SIGNATURE.length ? readUint32Be(bytes, dataOffset) : undefined;
-    const height =
-      offset === PNG_SIGNATURE.length ? readUint32Be(bytes, dataOffset + 4) : undefined;
     if (
       pngCrc32(bytes, typeOffset, crcOffset) !== readUint32Be(bytes, crcOffset) ||
       (offset === PNG_SIGNATURE.length &&
-        (type !== PNG_IHDR ||
-          length !== 13 ||
-          !width ||
-          !height ||
-          width > QR_PNG_MAX_DIMENSION ||
-          height > QR_PNG_MAX_DIMENSION ||
-          width * height > QR_PNG_MAX_PIXELS))
+        (type !== PNG_IHDR || !isValidPngIhdr(bytes, dataOffset, length)))
     ) {
       return false;
     }

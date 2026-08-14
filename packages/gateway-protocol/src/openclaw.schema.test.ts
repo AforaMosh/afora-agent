@@ -168,6 +168,14 @@ describe("SystemAgentChatResultSchema", () => {
       // The valid sample with its IDAT removed, and with a corrupted IHDR CRC.
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAAElFTkSuQmCC",
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwDAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      // Valid-CRC IHDRs with illegal bit depth, color type, or depth/type pairing.
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAwQAAADCzD0TAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAEAAACCwvwwAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABBAIAAABVh77fAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      // Valid-CRC IHDRs with unknown compression, filter, or interlace methods.
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQBAAC03mY1AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAQCsBz1DAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAJbEm0uAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
     ];
     expect(
       validate.Check({
