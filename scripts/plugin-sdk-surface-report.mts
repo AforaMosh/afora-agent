@@ -276,7 +276,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +11: Computer Use schemas/types plus parsers, compiler, and provider registration.
       // +6: Computer Use v2 action, result, and capability contracts.
       // +1: opaque channel participant evidence preservation without mint authority.
-      4324,
+      // +1: identifier authentication input type for external channel plugins.
+      4325,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(

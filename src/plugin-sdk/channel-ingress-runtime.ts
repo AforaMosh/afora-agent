@@ -38,6 +38,7 @@ export type {
   ChannelIngressState,
   ChannelMessageIngressCommandInput,
   CreateChannelIngressResolverParams,
+  IdentifierAuthentication,
   IngressReasonCode,
   ResolvedChannelMessageIngress,
   ResolveChannelMessageIngressParams,
