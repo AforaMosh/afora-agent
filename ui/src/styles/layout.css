@@ -953,7 +953,6 @@ openclaw-settings-save-indicator {
   --sidebar-focus-visible: color-mix(in srgb, var(--text) 34%, transparent);
   --sidebar-divider-active: color-mix(in srgb, var(--text) 42%, transparent);
   --focus-ring: 0 0 0 2px var(--sidebar-focus-visible);
-  --scrollbar-size: 10px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -2078,7 +2077,7 @@ body.update-dialog-open .sidebar-update-card__status {
 
 .sidebar-session-empty-hint {
   display: block;
-  padding: 4px 10px 10px var(--sidebar-text-offset);
+  padding: 4px 10px 10px var(--sidebar-text-start);
   color: var(--muted);
   font-size: var(--control-ui-text-xs);
 }
