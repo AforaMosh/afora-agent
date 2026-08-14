@@ -75,6 +75,9 @@ export type SidebarLifecycleState = HTMLElement & {
     home: string;
     entries: Array<{ name: string; path: string; type: "directory" | "file" }>;
   }>;
+  selectedSessionKeys: ReadonlySet<string>;
+  selectedVisibleSessions: () => readonly { key: string }[];
+  toggleSection: (sectionId: string) => void;
   requestUpdate: () => void;
   updateComplete: Promise<boolean>;
   updateAvailable: { currentVersion: string; latestVersion: string; channel: string } | null;
