@@ -77,6 +77,20 @@ describe("private Windows SQLite directory diagnostics", () => {
     expect((cause as Error & { cmd?: unknown }).cmd).toBeUndefined();
   });
 
+  it("allows cold PowerShell startup for async and sync directory creation", async () => {
+    vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+    childProcess.execFile.mockImplementation((_file, _args, _options, callback) => {
+      callback(null, Buffer.alloc(0), Buffer.alloc(0));
+    });
+    childProcess.execFileSync.mockReturnValue(Buffer.alloc(0));
+
+    await createPrivateSqliteDirectory("C:\\private");
+    createPrivateSqliteTempDirectorySync("C:\\root", "stage-");
+
+    expect(childProcess.execFile.mock.calls[0]?.[2]).toMatchObject({ timeout: 30_000 });
+    expect(childProcess.execFileSync.mock.calls[0]?.[2]).toMatchObject({ timeout: 30_000 });
+  });
+
   it("reports sync status and string codes from sanitized stderr", () => {
     vi.spyOn(process, "platform", "get").mockReturnValue("win32");
     childProcess.execFileSync.mockImplementation(() => {

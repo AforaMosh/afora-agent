@@ -30,6 +30,7 @@ import { assertSqliteIntegrity } from "../infra/sqlite-integrity.js";
 import {
   createPrivateSqliteDirectory,
   createPrivateSqliteTempDirectory,
+  WINDOWS_SQLITE_POWERSHELL_TIMEOUT_MS,
 } from "../infra/sqlite-private-directory.js";
 import { publishVerifiedSqliteFile } from "../infra/sqlite-snapshot.js";
 import { readSqliteUserVersion } from "../infra/sqlite-user-version.js";
@@ -1536,7 +1537,7 @@ async function runEncodedWindowsPowerShell(command: string, maxBuffer: number): 
     powershell,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand],
     {
-      timeoutMs: 10_000,
+      timeoutMs: WINDOWS_SQLITE_POWERSHELL_TIMEOUT_MS,
       maxBuffer,
     },
   );

@@ -10,6 +10,10 @@ import { decodeWindowsOutputBuffer } from "./windows-encoding.js";
 
 const SQLITE_DIRECTORY_MODE = 0o700;
 const WINDOWS_DIRECTORY_EXISTS_MARKER = "OPENCLAW_SQLITE_DIRECTORY_EXISTS";
+// Cold hosted runners have timed out with only PowerShell's CLIXML preamble emitted,
+// before the encoded SQLite ACL command started. Allow startup module loading and AV
+// scanning to finish without retrying a command that may already have run.
+export const WINDOWS_SQLITE_POWERSHELL_TIMEOUT_MS = 30_000;
 
 // Managed directory creation accepts existing paths. CreateDirectoryW applies the
 // protected DACL atomically while preserving fail-if-exists semantics.
@@ -138,7 +142,7 @@ function runPrivateDirectoryPowerShell(
       {
         encoding: "buffer",
         maxBuffer: 64 * 1024,
-        timeout: 10_000,
+        timeout: WINDOWS_SQLITE_POWERSHELL_TIMEOUT_MS,
         windowsHide: true,
       },
       (error, stdout, stderr) => {
@@ -211,7 +215,7 @@ function createPrivateSqliteDirectorySync(directoryPath: string): void {
       ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand],
       {
         maxBuffer: 64 * 1024,
-        timeout: 10_000,
+        timeout: WINDOWS_SQLITE_POWERSHELL_TIMEOUT_MS,
         windowsHide: true,
       },
     );
