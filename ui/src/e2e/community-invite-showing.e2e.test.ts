@@ -8,8 +8,8 @@ import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts"
 
 const suite = createControlUiE2eSuite({
   name: "Control UI community invite showing E2E",
-  // The private source server, because this proof imports the invite module the
-  // app loads lazily rather than driving it through the shipped bundle.
+  // The private source server, because this proof drives the invite module the app
+  // loads lazily rather than reaching it through the shipped bundle.
   startServer: () => startControlUiE2eServer(undefined, { source: true }),
   startServerBeforeBrowser: true,
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
@@ -18,13 +18,42 @@ const suite = createControlUiE2eSuite({
 const STORAGE_KEY = "openclaw:control-ui:community-invite:v1";
 const RUNTIME_MODULE = "/src/app/community-invite.runtime.ts";
 
-/** An armed record: qualified once already, upgraded cohort, never shown. */
+/** Evaluated as source text so the browser itself imports the module. A literal
+ * import() in this file would be rewritten for the test module runner and never
+ * reach the page. */
+const CLAIM_EXPRESSION = `import(${JSON.stringify(RUNTIME_MODULE)}).then((module) => module.claimCommunityInviteShowing())`;
+
+type InviteContext = Awaited<ReturnType<typeof suite.browser.newContext>>;
+type InvitePage = Awaited<ReturnType<InviteContext["newPage"]>>;
+type StorageFault = "none" | "no-locks" | "throwing-write" | "dropped-write";
+
+/** An armed record: qualified often enough already, upgraded cohort, never shown. */
 function armedRecord(): string {
   return JSON.stringify({
     firstQualifiedAtMs: Date.now() - 60 * 60 * 1000,
     qualifiedLoads: 2,
     established: true,
   });
+}
+
+function claimIn(page: InvitePage): Promise<boolean> {
+  return page.evaluate(CLAIM_EXPRESSION);
+}
+
+function seedArmedRecord(page: InvitePage): Promise<void> {
+  return page.evaluate(
+    ([key, record]) => {
+      localStorage.setItem(key, record);
+    },
+    [STORAGE_KEY, armedRecord()] as const,
+  );
+}
+
+function readTombstone(page: InvitePage): Promise<number | null> {
+  return page.evaluate((key) => {
+    const raw = localStorage.getItem(key);
+    return raw ? ((JSON.parse(raw) as { shownAtMs?: number }).shownAtMs ?? null) : null;
+  }, STORAGE_KEY);
 }
 
 suite.define(() => {
@@ -35,10 +64,10 @@ suite.define(() => {
       viewport: { height: 900, width: 1280 },
     });
 
-    async function openPage() {
+    async function openPage(): Promise<InvitePage> {
       const page = await context.newPage();
       await installMockGateway(page);
-      await page.goto(`${suite.server.baseUrl}`);
+      await page.goto(suite.server.baseUrl);
       return page;
     }
 
@@ -48,38 +77,19 @@ suite.define(() => {
 
       // Same origin and same browser profile, so both pages share one localStorage
       // and one Web Locks namespace — exactly the situation two tabs are in.
-      await first.evaluate(([key, record]) => localStorage.setItem(key, record), [
-        STORAGE_KEY,
-        armedRecord(),
-      ] as const);
-      expect(await second.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).not.toBeNull();
-
-      const claimIn = (page: typeof first | typeof second) =>
-        page.evaluate(async (module) => {
-          // Built with the Function constructor so the surrounding test transform
-          // leaves it alone; a literal import() here is rewritten for the module
-          // runner and never reaches the browser.
-          const load = new Function("specifier", "return import(specifier);") as (
-            specifier: string,
-          ) => Promise<typeof import("../app/community-invite.runtime.ts")>;
-          const { claimCommunityInviteShowing } = await load(module);
-          return claimCommunityInviteShowing();
-        }, RUNTIME_MODULE);
+      await seedArmedRecord(first);
+      expect(await readTombstone(second)).toBeNull();
 
       // Both pages race for the same showing.
       const claims = await Promise.all([claimIn(first), claimIn(second)]);
       expect(claims.filter(Boolean)).toHaveLength(1);
 
       // The winner left a durable tombstone, visible from the other page.
-      const stored = await second.evaluate((key) => {
-        const raw = localStorage.getItem(key);
-        return raw ? (JSON.parse(raw) as { shownAtMs?: number }) : null;
-      }, STORAGE_KEY);
-      expect(stored?.shownAtMs).toBeGreaterThan(0);
+      expect(await readTombstone(second)).toBeGreaterThan(0);
 
       // The lock is released once the claim is decided, so a later attempt is
-      // turned away by the tombstone rather than blocked by a held lock. If the
-      // lock were still held this would hang instead of resolving false.
+      // turned away by the tombstone rather than blocked by a held lock. Were the
+      // lock still held, this would hang instead of resolving false.
       expect(await claimIn(first)).toBe(false);
       expect(await claimIn(second)).toBe(false);
 
@@ -102,64 +112,75 @@ suite.define(() => {
     try {
       const page = await context.newPage();
       await installMockGateway(page);
-      await page.goto(`${suite.server.baseUrl}`);
+      await page.goto(suite.server.baseUrl);
 
-      const claimWith = (
-        fault: "none" | "no-locks" | "throwing-write" | "dropped-write" | "cleared",
-      ) =>
-        page.evaluate(
-          async ([module, key, record, mode]) => {
-            localStorage.setItem(key, record);
-            const original = Storage.prototype.setItem;
-            // `locks` lives on the prototype, so removing it there is what makes
-            // `"locks" in navigator` false the way an unsupporting browser does.
-            const locksDescriptor = Object.getOwnPropertyDescriptor(Navigator.prototype, "locks");
-            if (mode === "no-locks") {
-              Reflect.deleteProperty(Navigator.prototype, "locks");
-            }
-            if (mode === "throwing-write") {
-              Storage.prototype.setItem = () => {
-                throw new DOMException("quota", "QuotaExceededError");
-              };
-            }
-            if (mode === "dropped-write") {
-              Storage.prototype.setItem = () => undefined;
-            }
-            if (mode === "cleared") {
-              localStorage.clear();
-            }
-            try {
-              const load = new Function("specifier", "return import(specifier);") as (
-                specifier: string,
-              ) => Promise<typeof import("../app/community-invite.runtime.ts")>;
-              const { claimCommunityInviteShowing } = await load(module);
-              const claimed = await claimCommunityInviteShowing();
-              Storage.prototype.setItem = original;
-              const raw = localStorage.getItem(key);
-              return {
-                claimed,
-                shown: raw ? Boolean((JSON.parse(raw) as { shownAtMs?: number }).shownAtMs) : false,
-              };
-            } finally {
+      const applyFault = (fault: StorageFault) =>
+        page.evaluate((mode) => {
+          const original = Storage.prototype.setItem;
+          // `locks` lives on the prototype, so removing it there is what makes
+          // `"locks" in navigator` false the way an unsupporting browser does.
+          const locksDescriptor = Object.getOwnPropertyDescriptor(Navigator.prototype, "locks");
+          Object.assign(globalThis, {
+            openclawInviteRestore: () => {
               Storage.prototype.setItem = original;
               if (locksDescriptor) {
                 Object.defineProperty(Navigator.prototype, "locks", locksDescriptor);
               }
-              localStorage.clear();
-            }
-          },
-          [RUNTIME_MODULE, STORAGE_KEY, armedRecord(), fault] as const,
-        );
+            },
+          });
+          if (mode === "no-locks") {
+            Reflect.deleteProperty(Navigator.prototype, "locks");
+          }
+          if (mode === "throwing-write") {
+            Storage.prototype.setItem = () => {
+              throw new DOMException("quota", "QuotaExceededError");
+            };
+          }
+          if (mode === "dropped-write") {
+            Storage.prototype.setItem = () => undefined;
+          }
+        }, fault);
+
+      const undoFault = () =>
+        page.evaluate(() => {
+          (globalThis as { openclawInviteRestore?: () => void }).openclawInviteRestore?.();
+        });
+
+      async function claimUnder(
+        fault: StorageFault,
+      ): Promise<{ claimed: boolean; tombstone: number | null }> {
+        await seedArmedRecord(page);
+        await applyFault(fault);
+        try {
+          const claimed = await claimIn(page);
+          await undoFault();
+          return { claimed, tombstone: await readTombstone(page) };
+        } finally {
+          await undoFault();
+          await page.evaluate(() => {
+            localStorage.clear();
+          });
+        }
+      }
 
       // The control: with everything working, this page does claim the showing.
-      expect(await claimWith("none")).toEqual({ claimed: true, shown: true });
+      const granted = await claimUnder("none");
+      expect(granted.claimed).toBe(true);
+      expect(granted.tombstone).toBeGreaterThan(0);
 
       // Every fault answers the same way, because a card with no durable tombstone
       // would come back on the next load — and might already be up in another tab.
-      expect(await claimWith("no-locks")).toEqual({ claimed: false, shown: false });
-      expect(await claimWith("throwing-write")).toEqual({ claimed: false, shown: false });
-      expect(await claimWith("dropped-write")).toEqual({ claimed: false, shown: false });
-      expect(await claimWith("cleared")).toEqual({ claimed: false, shown: false });
+      expect(await claimUnder("no-locks")).toEqual({ claimed: false, tombstone: null });
+      expect(await claimUnder("throwing-write")).toEqual({ claimed: false, tombstone: null });
+      expect(await claimUnder("dropped-write")).toEqual({ claimed: false, tombstone: null });
+
+      // Storage emptied between arming and the claim: nothing to stamp, so nothing
+      // is shown.
+      await seedArmedRecord(page);
+      await page.evaluate(() => {
+        localStorage.clear();
+      });
+      expect(await claimIn(page)).toBe(false);
     } finally {
       await context.close();
     }
