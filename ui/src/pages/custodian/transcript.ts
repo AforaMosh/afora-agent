@@ -279,17 +279,16 @@ export function renderCustodianTranscriptEntry(params: {
           assistantAvatar: params.assistantAvatar,
         })
       : nothing}
+    ${hasStructuredResponse ? renderStructuredResponse(params.message) : nothing}
     ${renderCustodianEarlierDivider(params.message, params.boundaryAfterId)}
-    ${hasStructuredResponse
-      ? renderStructuredResponse(params.message)
-      : params.showQuestion && question
-        ? renderCustodianQuestionCard({
-            question,
-            disabled: params.questionDisabled,
-            onSelect: params.onSelect,
-            onSkip: params.onSkip,
-          })
-        : nothing}
+    ${!hasStructuredResponse && params.showQuestion && question
+      ? renderCustodianQuestionCard({
+          question,
+          disabled: params.questionDisabled,
+          onSelect: params.onSelect,
+          onSkip: params.onSkip,
+        })
+      : nothing}
     ${hasActiveWizardStep && !hasStructuredResponse && step
       ? html`<section
           class="custodian__wizard-step"

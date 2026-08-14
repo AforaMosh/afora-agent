@@ -367,6 +367,12 @@ describe("custodian page", () => {
           turns: [
             { role: "user", text: "Earlier question", at: 1 },
             { role: "assistant", text: "Earlier answer", at: 2 },
+            {
+              role: "user",
+              text: "Twitch",
+              at: 3,
+              wizardAction: { kind: "answer" },
+            },
           ],
         };
       }
@@ -390,12 +396,13 @@ describe("custodian page", () => {
       "openclaw.chat",
     ]);
     expect(request.mock.calls[0]?.[1]).toEqual({});
-    const rows = Array.from(page.querySelectorAll(".chat-group, .chat-divider")).map((row) =>
-      row.textContent?.trim(),
-    );
+    const rows = Array.from(
+      page.querySelectorAll(".chat-group, .custodian__structured-response, .chat-divider"),
+    ).map((row) => row.textContent?.trim());
     expect(rows).toEqual([
       expect.stringContaining("Earlier question"),
       expect.stringContaining("Earlier answer"),
+      expect.stringContaining("Twitch"),
       expect.stringContaining("Earlier"),
       expect.stringContaining("Live welcome"),
     ]);
