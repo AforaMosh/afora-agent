@@ -960,7 +960,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
           // the item edge stays optically parallel to the menu edge.
           borderRadius: `${menuRadius - 4}px`,
           fontSize: "13px",
-          minHeight: "28px",
+          minHeight: "36px",
           padding: "0px 8px",
         },
       });
