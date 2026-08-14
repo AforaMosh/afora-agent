@@ -52,7 +52,9 @@ describe("Skill Workshop proposal draft preparation", () => {
     expect(oversized).toMatchObject({
       ok: false,
       error: {
-        message: "Skill proposal content is too large (5 bytes, max 4).",
+        message: expect.stringMatching(
+          /^Skill proposal content is too large \(\d+ bytes, max 4\)\.$/,
+        ),
       },
     });
 
@@ -73,6 +75,26 @@ describe("Skill Workshop proposal draft preparation", () => {
       ok: false,
       error: {
         message: expect.stringContaining("recognized literal credential in skill-name"),
+      },
+    });
+  });
+
+  it("includes retained frontmatter in the persisted skill size limit", () => {
+    const maxSkillBytes = 1024;
+    const prepared = prepareSkillProposalDraft({
+      name: "boundary-skill",
+      description: "Boundary skill",
+      content: "x".repeat(maxSkillBytes),
+      date: "2026-08-14T00:00:00.000Z",
+      maxSkillBytes,
+    });
+
+    expect(prepared).toMatchObject({
+      ok: false,
+      error: {
+        message: expect.stringMatching(
+          /^Skill proposal content is too large \(1\d{3} bytes, max 1024\)\.$/,
+        ),
       },
     });
   });

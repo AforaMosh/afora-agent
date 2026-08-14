@@ -4,6 +4,10 @@ import { writeFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  renderProposalMarkdown,
+  stripProposalFrontmatterForSkill,
+} from "../../skills/workshop/frontmatter.js";
 import type { SkillWorkshopProposalMutationBudget } from "../../skills/workshop/types.js";
 import {
   createOpenClawTestState,
@@ -333,6 +337,65 @@ describe("skill_workshop review mode", () => {
       new_string: "# Bigger Skill",
     });
     expect(patch.details).toMatchObject({ status: "pending", kind: "update" });
+  });
+
+  it("reads and patches a skill at the canonical persisted-size boundary", async () => {
+    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-boundary-");
+    const name = "boundary-skill";
+    const description = "Boundary skill";
+    const maxSkillBytes = 1024;
+    const baseContent = "# Boundary";
+    const canonicalBase = stripProposalFrontmatterForSkill(
+      renderProposalMarkdown({
+        name,
+        description,
+        content: baseContent,
+        date: "2026-08-14T00:00:00.000Z",
+      }),
+    );
+    const proposalContent = `${baseContent}${"x".repeat(
+      maxSkillBytes - Buffer.byteLength(canonicalBase, "utf8"),
+    )}`;
+    const config = {
+      skills: { workshop: { approvalPolicy: "auto" as const, maxSkillBytes } },
+    };
+    const fullTool = createSkillWorkshopTool({ workspaceDir, config });
+    const created = await fullTool.execute("boundary-create", {
+      action: "create",
+      name,
+      description,
+      proposal_content: proposalContent,
+    });
+    await fullTool.execute("boundary-apply", {
+      action: "apply",
+      proposal_id: (created.details as { id: string }).id,
+    });
+
+    const liveSkillFile = path.join(workspaceDir, "skills", name, "SKILL.md");
+    const liveContent = await fs.readFile(liveSkillFile, "utf8");
+    expect(Buffer.byteLength(liveContent, "utf8")).toBe(maxSkillBytes);
+
+    const reviewTool = createSkillWorkshopTool({
+      workspaceDir,
+      config,
+      proposalOnly: true,
+      updateProposals: true,
+      proposalMutationBudget: { remaining: 1 },
+    });
+    const read = await reviewTool.execute("boundary-read", {
+      action: "read",
+      skill_name: name,
+    });
+    expect(read.details).toMatchObject({ skillKey: name, truncated: false });
+    expect((read.content[0] as { text: string }).text).toBe(liveContent);
+
+    const update = await reviewTool.execute("boundary-patch", {
+      action: "patch",
+      skill_name: name,
+      old_string: "# Boundary",
+      new_string: "# Limit OK",
+    });
+    expect(update.details).toMatchObject({ status: "pending", kind: "update" });
   });
 
   it("measures the configured reviewer read limit in UTF-8 bytes", async () => {
