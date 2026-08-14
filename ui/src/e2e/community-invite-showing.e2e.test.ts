@@ -116,13 +116,17 @@ suite.define(() => {
 
       const applyFault = (fault: StorageFault) =>
         page.evaluate((mode) => {
-          const original = Storage.prototype.setItem;
+          // Both faults are installed and undone through property descriptors, so
+          // the originals are restored exactly as the platform defined them.
+          const writeDescriptor = Object.getOwnPropertyDescriptor(Storage.prototype, "setItem");
           // `locks` lives on the prototype, so removing it there is what makes
           // `"locks" in navigator` false the way an unsupporting browser does.
           const locksDescriptor = Object.getOwnPropertyDescriptor(Navigator.prototype, "locks");
           Object.assign(globalThis, {
             openclawInviteRestore: () => {
-              Storage.prototype.setItem = original;
+              if (writeDescriptor) {
+                Object.defineProperty(Storage.prototype, "setItem", writeDescriptor);
+              }
               if (locksDescriptor) {
                 Object.defineProperty(Navigator.prototype, "locks", locksDescriptor);
               }
