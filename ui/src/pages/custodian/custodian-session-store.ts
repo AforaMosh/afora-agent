@@ -237,7 +237,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     }
     this.abandonedTurnOutcomeUnknown = false;
     this.answeredQuestions = retireCustodianQuestions(this.messages, this.answeredQuestions);
-    const userMessageIndex = this.messages.length;
+    const turnPosition = this.captureTranscriptTurnPosition(params.sessionId);
     const userMessage: CustodianMessage = {
       id: this.nextMessageId++,
       role: "user",
@@ -257,20 +257,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     const result = await reply;
     const outcome = result.outcome;
     if (userTurnProjection === "unless-accepted" && outcome !== "accepted") {
-      // Recovery may replace every message object while this request is pending. Preserve
-      // the attempt's transcript position, unless recovered history already contains its turn
-      // as either a plain answer or the Gateway-authored accepted receipt.
-      const recoveredTurn = this.messages[userMessageIndex];
-      const recoveredAttempt =
-        recoveredTurn !== undefined &&
-        (recoveredTurn.role === "user" || recoveredTurn.structuredResponse !== null);
-      if (!recoveredAttempt) {
-        this.messages = this.messages.toSpliced(
-          Math.min(userMessageIndex, this.messages.length),
-          0,
-          userMessage,
-        );
-      }
+      this.restoreUnacceptedTranscriptTurn(turnPosition, userMessage);
     }
     if (questionReply && this.requestEpoch === replyEpoch) {
       this.questionReplyUncertain = eventNudgeState.questionUncertainty(questionState[1], outcome);
@@ -391,6 +378,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     const gatewayUrl = this.context?.gateway.connection.gatewayUrl ?? "";
     const recovery = loadTranscript ? readCustodianRecoveryForClient(client, gatewayUrl) : null;
     this.sessionId = recovery ?? createCustodianSessionId();
+    this.transcriptSessionId = null;
     this.sessionVariant = variant;
     this.bindSessionRecovery(client, gatewayUrl);
     this.sessionOwnershipKey = this.currentSessionOwnershipKey(this.context);
@@ -627,6 +615,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     this.wizardSecretVisible = false;
     this.sensitive = this.wizardInputPending = this.questionReplyUncertain = false;
     this.earlierBoundaryAfterId = null;
+    this.transcriptSessionId = null;
   }
 
   private async requestReply(

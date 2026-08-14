@@ -19,6 +19,12 @@ import {
 
 export type CustodianTranscriptHistoryOutcome = "recovered" | "inactive" | "unavailable";
 
+type CustodianTranscriptTurnPosition = {
+  globalIndex: number;
+  sessionId?: string;
+  sessionIndex: number;
+};
+
 /** Transcript-owned state shared by live turns and reload recovery. */
 export abstract class CustodianTranscriptState {
   messages: CustodianMessage[] = [];
@@ -34,6 +40,7 @@ export abstract class CustodianTranscriptState {
   protected nextMessageId = 1;
   protected requestEpoch = 0;
   protected sessionClient: GatewayBrowserClient | null = null;
+  protected transcriptSessionId: string | null = null;
   // Reconnect mutates the client's scope; cleanup must keep targeting the identity that wrote the handle.
   private sessionRecoveryScope: CustodianRecoveryScope | null = null;
   private lastHelloDeviceToken = "";
@@ -43,6 +50,38 @@ export abstract class CustodianTranscriptState {
   protected bindSessionRecovery(client: GatewayBrowserClient, gatewayUrl: string): void {
     this.sessionClient = client;
     this.sessionRecoveryScope = captureCustodianRecoveryScope(client, gatewayUrl);
+  }
+
+  protected captureTranscriptTurnPosition(sessionId?: string): CustodianTranscriptTurnPosition {
+    // Recovery replaces global history with session-scoped rows. Retain both offsets so a
+    // pending action reconciles with whichever authoritative transcript remains current.
+    const globalIndex = this.messages.length;
+    if (this.transcriptSessionId === sessionId) {
+      return { globalIndex, sessionId, sessionIndex: globalIndex };
+    }
+    const boundaryIndex =
+      this.earlierBoundaryAfterId === null
+        ? -1
+        : this.messages.findIndex((message) => message.id === this.earlierBoundaryAfterId);
+    return { globalIndex, sessionId, sessionIndex: globalIndex - (boundaryIndex + 1) };
+  }
+
+  protected restoreUnacceptedTranscriptTurn(
+    position: CustodianTranscriptTurnPosition,
+    message: CustodianMessage,
+  ): void {
+    if (this.sessionId !== position.sessionId) {
+      return;
+    }
+    const index =
+      this.transcriptSessionId === position.sessionId
+        ? position.sessionIndex
+        : position.globalIndex;
+    const existing = this.messages[index];
+    if (existing && (existing.role === "user" || existing.structuredResponse !== null)) {
+      return;
+    }
+    this.messages = this.messages.toSpliced(Math.min(index, this.messages.length), 0, message);
   }
 
   protected currentSessionOwnershipKey(context: ApplicationContext | null): string {
@@ -130,6 +169,7 @@ export abstract class CustodianTranscriptState {
     recoveredSessionId?: string,
   ): boolean {
     this.messages = transcript.messages;
+    this.transcriptSessionId = recoveredSessionId ?? null;
     this.nextMessageId = transcript.nextMessageId;
     this.earlierBoundaryAfterId = transcript.earlierBoundaryAfterId;
     const step = transcript.recoveredStep;

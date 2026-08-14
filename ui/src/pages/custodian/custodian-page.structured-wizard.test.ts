@@ -217,7 +217,9 @@ describe("custodian structured wizard", () => {
     };
     const request = vi
       .fn()
-      .mockResolvedValueOnce({ turns: [] })
+      .mockResolvedValueOnce({
+        turns: [{ role: "assistant", text: "Earlier setup history.", at: 0 }],
+      })
       .mockResolvedValueOnce({
         sessionId: "rotation-session",
         reply: "Enter a port.",
@@ -282,6 +284,7 @@ describe("custodian structured wizard", () => {
       expect(page.querySelectorAll(".custodian__structured-response")).toHaveLength(1),
     );
     expect(page.querySelectorAll(".chat-group.user")).toHaveLength(0);
+    expect(page.textContent).not.toContain("Earlier setup history.");
     expect(page.querySelector(".custodian__wizard-step")?.textContent).toContain("Gateway host");
   });
 
