@@ -4030,12 +4030,14 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   stroke-linejoin: round;
 }
 
-.sidebar-recent-session.sidebar-recent-session--attention-amber .sidebar-recent-session__name,
+/* Attention tints the subtitle and the icons, never the title: the title is the
+   session's identity, and recolouring it makes the same session read as a
+   different one each time its state changes. The subtitle is what reports
+   state, so it carries the tone alone. */
 .sidebar-recent-session.sidebar-recent-session--attention-amber .sidebar-recent-session__subtitle {
   color: color-mix(in srgb, var(--warn) 82%, var(--text));
 }
 
-.sidebar-recent-session.sidebar-recent-session--attention-danger .sidebar-recent-session__name,
 .sidebar-recent-session.sidebar-recent-session--attention-danger .sidebar-recent-session__subtitle {
   color: color-mix(in srgb, var(--danger) 86%, var(--text));
 }
