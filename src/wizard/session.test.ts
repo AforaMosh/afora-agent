@@ -11,6 +11,17 @@ function noteRunner() {
   });
 }
 
+function qrStep(): WizardStep {
+  return {
+    id: "qr-step",
+    type: "qr",
+    executor: "client",
+    qrDataUrl:
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    expiresInMs: 60_000,
+  };
+}
+
 describe("WizardSession", () => {
   test.each([
     ["select", undefined, true],
@@ -28,16 +39,11 @@ describe("WizardSession", () => {
     expect(wizardStepAwaitsInput({ id: "step", type, executor })).toBe(expected);
   });
 
-  test("rejects answers for passive QR steps", async () => {
+  test("settles passive QR steps only through their producer owner", async () => {
+    let producer!: WizardSession;
     const session = new WizardSession(async (_prompter, _signal, owner) => {
-      await owner.awaitAnswer({
-        id: "qr-step",
-        type: "qr",
-        executor: "client",
-        qrDataUrl:
-          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-        expiresInMs: 60_000,
-      });
+      producer = owner;
+      await owner.awaitAnswer(qrStep());
     });
 
     const next = await session.next();
@@ -47,8 +53,9 @@ describe("WizardSession", () => {
     );
     expect(session.getStatus()).toBe("running");
     expect((await session.next()).step?.id).toBe("qr-step");
-    session.cancel();
-    await session.whenSettled();
+    expect(producer.settleQrStep("qr-step")).toBe(true);
+    expect(next.step?.qrDataUrl).toBeUndefined();
+    await expect(session.next()).resolves.toMatchObject({ done: true, status: "done" });
   });
 
   test("steps progress in order", async () => {
@@ -227,15 +234,16 @@ describe("WizardSession", () => {
   });
 
   test("cancel marks session and unblocks", async () => {
-    const session = new WizardSession(async (prompter) => {
-      await prompter.text({ message: "Name" });
+    const session = new WizardSession(async (_prompter, _signal, owner) => {
+      await owner.awaitAnswer(qrStep());
     });
 
     const step = await session.next();
-    expect(step.step?.type).toBe("text");
+    expect(step.step?.type).toBe("qr");
 
     session.cancel();
 
+    expect(step.step?.qrDataUrl).toBeUndefined();
     const done = await session.next();
     expect(done.done).toBe(true);
     expect(done.status).toBe("cancelled");
@@ -264,15 +272,17 @@ describe("WizardSession", () => {
     vi.useFakeTimers();
     try {
       const session = new WizardSession(
-        async (prompter) => {
-          await prompter.text({ message: "Name" });
+        async (_prompter, _signal, owner) => {
+          await owner.awaitAnswer(qrStep());
         },
         { timeoutMs: 1_000 },
       );
 
-      expect((await session.next()).step?.type).toBe("text");
+      const step = await session.next();
+      expect(step.step?.type).toBe("qr");
       await vi.advanceTimersByTimeAsync(1_000);
 
+      expect(step.step?.qrDataUrl).toBeUndefined();
       const done = await session.next();
       expect(done.status).toBe("cancelled");
       expect(session.signal.aborted).toBe(true);

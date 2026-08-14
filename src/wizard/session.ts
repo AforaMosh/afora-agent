@@ -374,9 +374,21 @@ export class WizardSession {
       return validationError;
     }
     this.answerDeferred.delete(stepId);
-    this.currentStep = null;
+    this.clearCurrentStep();
     pending.deferred.resolve(normalizedValue);
     return undefined;
+  }
+
+  /** Settle a passive QR step from its producer without accepting client input. */
+  settleQrStep(stepId: string): boolean {
+    const pending = this.answerDeferred.get(stepId);
+    if (!pending || this.currentStep?.id !== stepId || this.currentStep.type !== "qr") {
+      return false;
+    }
+    this.answerDeferred.delete(stepId);
+    this.clearCurrentStep();
+    pending.deferred.resolve(undefined);
+    return true;
   }
 
   cancel(): boolean {
@@ -386,7 +398,7 @@ export class WizardSession {
     this.status = "cancelled";
     this.error = "cancelled";
     this.abortController.abort(new WizardCancelledError());
-    this.currentStep = null;
+    this.clearCurrentStep();
     for (const [, pending] of this.answerDeferred) {
       // Reject all pending prompt promises so the runner can unwind through its
       // normal cancellation path.
@@ -397,6 +409,16 @@ export class WizardSession {
     this.deliveredProgressStepIds.clear();
     this.resolveStep(null);
     return true;
+  }
+
+  private clearCurrentStep() {
+    if (this.currentStep?.type === "qr") {
+      // Delivered results and the host can retain this object after the session drops it.
+      // Scrub the credential bytes before releasing the producer or any session owner.
+      const qrStep: { qrDataUrl?: string } = this.currentStep;
+      delete qrStep.qrDataUrl;
+    }
+    this.currentStep = null;
   }
 
   /** The underlying mutation crossed its durable commit point and must finish. */
