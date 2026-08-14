@@ -461,18 +461,28 @@ const TIER_ORDER: Record<SlashCommandTier, number> = {
 
 const NON_MATCHING_COMMAND_RANK = 4;
 
-function getSlashCommandRelevance(command: SlashCommandDef, filter: string): number {
-  const names = [command.name, ...(command.aliases ?? [])].map(normalizeLowercaseStringOrEmpty);
-  if (names.some((name) => name === filter)) {
+function normalizeSkillCommandName(value: string): string {
+  return normalizeLowercaseStringOrEmpty(value).replace(/-/gu, "_");
+}
+
+function getCommandRelevance(
+  command: SlashCommandDef,
+  filter: string,
+  normalizeName: (value: string) => string = normalizeLowercaseStringOrEmpty,
+): number {
+  const normalizedFilter = normalizeName(filter);
+  const names = [command.name, ...(command.aliases ?? [])].map(normalizeName);
+  if (names.some((name) => name === normalizedFilter)) {
     return 0;
   }
-  if (names.some((name) => name.startsWith(filter))) {
+  if (names.some((name) => name.startsWith(normalizedFilter))) {
     return 1;
   }
-  if (names.some((name) => name.includes(filter))) {
+  if (names.some((name) => name.includes(normalizedFilter))) {
     return 2;
   }
-  return normalizeLowercaseStringOrEmpty(getSlashCommandDescription(command)).includes(filter)
+  const description = normalizeLowercaseStringOrEmpty(getSlashCommandDescription(command));
+  return description.includes(normalizeLowercaseStringOrEmpty(filter))
     ? 3
     : NON_MATCHING_COMMAND_RANK;
 }
@@ -485,7 +495,7 @@ export function getSlashCommandCompletions(
   const showAll = options?.showAll ?? false;
   let commands = lower
     ? SLASH_COMMANDS.filter(
-        (command) => getSlashCommandRelevance(command, lower) < NON_MATCHING_COMMAND_RANK,
+        (command) => getCommandRelevance(command, lower) < NON_MATCHING_COMMAND_RANK,
       )
     : SLASH_COMMANDS;
 
@@ -496,7 +506,7 @@ export function getSlashCommandCompletions(
 
   return commands.toSorted((a, b) => {
     if (lower) {
-      const relevance = getSlashCommandRelevance(a, lower) - getSlashCommandRelevance(b, lower);
+      const relevance = getCommandRelevance(a, lower) - getCommandRelevance(b, lower);
       if (relevance !== 0) {
         return relevance;
       }
@@ -515,34 +525,20 @@ export function getSlashCommandCompletions(
   });
 }
 
-function getSkillCommandRelevance(command: SlashCommandDef, filter: string): number {
-  const normalizedFilter = filter.replace(/-/gu, "_");
-  const normalizedName = command.name.replace(/-/gu, "_");
-  if (normalizedName === normalizedFilter) {
-    return 0;
-  }
-  if (normalizedName.startsWith(normalizedFilter)) {
-    return 1;
-  }
-  if (normalizedName.includes(normalizedFilter)) {
-    return 2;
-  }
-  return normalizeLowercaseStringOrEmpty(getSlashCommandDescription(command)).includes(filter)
-    ? 3
-    : NON_MATCHING_COMMAND_RANK;
-}
-
 export function getSkillCommandCompletions(filter: string): SlashCommandDef[] {
   const lower = normalizeLowercaseStringOrEmpty(filter);
   return SLASH_COMMANDS.filter(
     (command) => command.source === "skill" && command.skillModelVisible === true,
   )
     .filter(
-      (command) => !lower || getSkillCommandRelevance(command, lower) < NON_MATCHING_COMMAND_RANK,
+      (command) =>
+        !lower ||
+        getCommandRelevance(command, lower, normalizeSkillCommandName) < NON_MATCHING_COMMAND_RANK,
     )
     .toSorted((left, right) => {
       const relevance =
-        getSkillCommandRelevance(left, lower) - getSkillCommandRelevance(right, lower);
+        getCommandRelevance(left, lower, normalizeSkillCommandName) -
+        getCommandRelevance(right, lower, normalizeSkillCommandName);
       return relevance || left.name.localeCompare(right.name);
     });
 }
