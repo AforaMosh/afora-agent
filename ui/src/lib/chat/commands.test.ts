@@ -429,7 +429,7 @@ describe("parseSlashCommand", () => {
   it("keeps equal-rank skill names ordered independently of the browser locale", () => {
     const localeCompare = vi
       .spyOn(String.prototype, "localeCompare")
-      .mockImplementation(function (compareString, locales, options) {
+      .mockImplementation(function (this: string, compareString, locales, options) {
         if (locales === undefined) {
           return new Intl.Collator("da").compare(this, compareString);
         }
