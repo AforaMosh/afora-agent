@@ -7,10 +7,12 @@ import {
   createSandboxedEditTool,
   createSandboxedReadTool,
   createSandboxedWriteTool,
+  wrapReadToolWithAuthorizedMemoryView,
   wrapReadToolWithSkillContent,
   wrapToolWorkspaceRootGuard,
   wrapToolWorkspaceRootGuardWithOptions,
 } from "./agent-tools.read.js";
+import type { AuthorizedMemoryVirtualRead } from "./agent-tools.read.js";
 import type { AnyAgentTool } from "./agent-tools.types.js";
 import { createApplyPatchTool } from "./apply-patch.js";
 import type { ExecToolDefaults } from "./bash-tools.exec-types.js";
@@ -32,6 +34,7 @@ import type {
   createWriteTool,
 } from "./sessions/tools/index.js";
 import { createReadTool } from "./sessions/tools/read.js";
+import type { ToolFsPolicy } from "./tool-fs-policy.types.js";
 
 function readOnlySandboxReadMounts(
   sandbox: SandboxContext,
@@ -73,7 +76,8 @@ type CoreCodingToolsOptions = {
   codingRoot: string;
   includeBaseCodingTools: boolean;
   includeShellTools: boolean;
-  workspaceOnly: boolean;
+  fsPolicy: ToolFsPolicy;
+  authorizedMemoryVirtualRead?: AuthorizedMemoryVirtualRead;
   sandbox?: SandboxContext;
   skillsSnapshot?: SkillSnapshot;
   modelContextWindowTokens?: number;
@@ -99,13 +103,21 @@ export function createCoreCodingTools(options: CoreCodingToolsOptions): AnyAgent
   const sandboxRoot = sandbox?.workspaceDir;
   const sandboxFsBridge = sandbox?.fsBridge;
   const allowWorkspaceWrites = sandbox?.workspaceAccess !== "ro";
+  const workspaceOnly = options.fsPolicy.workspaceOnly;
+  if (options.fsPolicy.kind === "authorized-memory-view" && !options.authorizedMemoryVirtualRead) {
+    throw new Error("authorized memory view broker is unavailable");
+  }
+  const authorizedMemoryView =
+    options.fsPolicy.kind === "authorized-memory-view" && options.authorizedMemoryVirtualRead
+      ? options.authorizedMemoryVirtualRead
+      : undefined;
   if (sandboxRoot && !sandboxFsBridge) {
     throw new Error("Sandbox filesystem bridge is unavailable.");
   }
 
   const skillReadRoots = sandboxRoot ? undefined : resolveSkillReadRoots(options.skillsSnapshot);
   const needsReadOnlyWorkspaceSkillMounts =
-    options.includeShellTools || (options.includeBaseCodingTools && options.workspaceOnly);
+    options.includeShellTools || (options.includeBaseCodingTools && workspaceOnly);
   const readOnlyWorkspaceSkillMounts =
     sandbox && needsReadOnlyWorkspaceSkillMounts
       ? resolveReadOnlyWorkspaceSkillMounts({
@@ -137,7 +149,7 @@ export function createCoreCodingTools(options: CoreCodingToolsOptions): AnyAgent
               imageSanitization: options.imageSanitization,
             },
           );
-      const guarded = options.workspaceOnly
+      const guarded = workspaceOnly
         ? wrapToolWorkspaceRootGuardWithOptions(
             wrapped,
             sandboxRoot ?? options.codingRoot,
@@ -152,38 +164,47 @@ export function createCoreCodingTools(options: CoreCodingToolsOptions): AnyAgent
               : { additionalRoots: skillReadRoots },
           )
         : wrapped;
+      const memoryBound = authorizedMemoryView
+        ? wrapReadToolWithAuthorizedMemoryView(guarded, authorizedMemoryView, {
+            modelContextWindowTokens: options.modelContextWindowTokens,
+            imageSanitization: options.imageSanitization,
+          })
+        : guarded;
       base.push(
-        wrapReadToolWithSkillContent(guarded, options.skillsSnapshot?.resolvedSkills, {
+        wrapReadToolWithSkillContent(memoryBound, options.skillsSnapshot?.resolvedSkills, {
           modelContextWindowTokens: options.modelContextWindowTokens,
           imageSanitization: options.imageSanitization,
         }),
       );
     }
-    if (!sandboxRoot && baseToolNames.has("edit")) {
+    if (!authorizedMemoryView && !sandboxRoot && baseToolNames.has("edit")) {
       const edit = createHostWorkspaceEditTool(options.codingRoot, {
-        workspaceOnly: options.workspaceOnly,
+        workspaceOnly,
         memoryFileMutationGuard: options.memoryFileMutationGuard,
         memoryWriteProvenance: options.memoryWriteProvenance,
         createTool: options.baseToolFactories?.createEditTool,
       });
-      base.push(
-        options.workspaceOnly ? wrapToolWorkspaceRootGuard(edit, options.codingRoot) : edit,
-      );
+      const guarded = workspaceOnly ? wrapToolWorkspaceRootGuard(edit, options.codingRoot) : edit;
+      base.push(guarded);
     }
-    if (!sandboxRoot && baseToolNames.has("write")) {
+    if (!authorizedMemoryView && !sandboxRoot && baseToolNames.has("write")) {
       const write = createHostWorkspaceWriteTool(options.codingRoot, {
-        workspaceOnly: options.workspaceOnly,
+        workspaceOnly,
         memoryFileMutationGuard: options.memoryFileMutationGuard,
         memoryWriteProvenance: options.memoryWriteProvenance,
         createTool: options.baseToolFactories?.createWriteTool,
       });
-      base.push(
-        options.workspaceOnly ? wrapToolWorkspaceRootGuard(write, options.codingRoot) : write,
-      );
+      const guarded = workspaceOnly ? wrapToolWorkspaceRootGuard(write, options.codingRoot) : write;
+      base.push(guarded);
     }
   }
 
-  if (options.includeBaseCodingTools && sandboxRoot && allowWorkspaceWrites) {
+  if (
+    options.includeBaseCodingTools &&
+    !authorizedMemoryView &&
+    sandboxRoot &&
+    allowWorkspaceWrites
+  ) {
     const toolOptions = {
       root: sandboxRoot,
       bridge: sandboxFsBridge!,
@@ -198,24 +219,27 @@ export function createCoreCodingTools(options: CoreCodingToolsOptions): AnyAgent
       ...toolOptions,
       createTool: options.baseToolFactories?.createWriteTool,
     });
-    base.push(
-      options.workspaceOnly
-        ? wrapToolWorkspaceRootGuardWithOptions(edit, sandboxRoot, {
-            containerWorkdir: sandbox.containerWorkdir,
-          })
-        : edit,
-      options.workspaceOnly
-        ? wrapToolWorkspaceRootGuardWithOptions(write, sandboxRoot, {
-            containerWorkdir: sandbox.containerWorkdir,
-          })
-        : write,
-    );
+    const guardedEdit = workspaceOnly
+      ? wrapToolWorkspaceRootGuardWithOptions(edit, sandboxRoot, {
+          containerWorkdir: sandbox.containerWorkdir,
+        })
+      : edit;
+    const guardedWrite = workspaceOnly
+      ? wrapToolWorkspaceRootGuardWithOptions(write, sandboxRoot, {
+          containerWorkdir: sandbox.containerWorkdir,
+        })
+      : write;
+    base.push(guardedEdit, guardedWrite);
   }
   options.recordToolPrepStage?.("base-coding-tools");
 
   const shell: AnyAgentTool[] = [];
   if (options.includeShellTools) {
-    if (options.applyPatchEnabled && (!sandboxRoot || allowWorkspaceWrites)) {
+    if (
+      !authorizedMemoryView &&
+      options.applyPatchEnabled &&
+      (!sandboxRoot || allowWorkspaceWrites)
+    ) {
       shell.push(
         createApplyPatchTool({
           cwd: options.codingRoot,
@@ -229,30 +253,32 @@ export function createCoreCodingTools(options: CoreCodingToolsOptions): AnyAgent
         }) as unknown as AnyAgentTool,
       );
     }
-    shell.push(
-      createLazyExecTool({
-        ...options.execDefaults,
-        cwd: options.codingRoot,
-        sandbox: sandbox
-          ? {
-              containerName: sandbox.containerName,
-              workspaceDir: sandbox.workspaceDir,
-              containerWorkdir: sandbox.containerWorkdir,
-              workdirValidation: sandbox.backend?.workdirValidation,
-              validateWorkdir: sandbox.backend?.validateWorkdir?.bind(sandbox.backend),
-              discardPreparedWorkdir: sandbox.backend?.discardPreparedWorkdir?.bind(
-                sandbox.backend,
-              ),
-              workdirRoots: sandbox.backend?.workdirRoots,
-              readOnlyWorkspaceSkillMounts,
-              env: sandbox.backend?.env ?? sandbox.docker.env,
-              buildExecSpec: sandbox.backend?.buildExecSpec.bind(sandbox.backend),
-              finalizeExec: sandbox.backend?.finalizeExec?.bind(sandbox.backend),
-            }
-          : undefined,
-      }) as unknown as AnyAgentTool,
-      createLazyProcessTool(options.processDefaults),
-    );
+    if (!authorizedMemoryView) {
+      shell.push(
+        createLazyExecTool({
+          ...options.execDefaults,
+          cwd: options.codingRoot,
+          sandbox: sandbox
+            ? {
+                containerName: sandbox.containerName,
+                workspaceDir: sandbox.workspaceDir,
+                containerWorkdir: sandbox.containerWorkdir,
+                workdirValidation: sandbox.backend?.workdirValidation,
+                validateWorkdir: sandbox.backend?.validateWorkdir?.bind(sandbox.backend),
+                discardPreparedWorkdir: sandbox.backend?.discardPreparedWorkdir?.bind(
+                  sandbox.backend,
+                ),
+                workdirRoots: sandbox.backend?.workdirRoots,
+                readOnlyWorkspaceSkillMounts,
+                env: sandbox.backend?.env ?? sandbox.docker.env,
+                buildExecSpec: sandbox.backend?.buildExecSpec.bind(sandbox.backend),
+                finalizeExec: sandbox.backend?.finalizeExec?.bind(sandbox.backend),
+              }
+            : undefined,
+        }) as unknown as AnyAgentTool,
+        createLazyProcessTool(options.processDefaults),
+      );
+    }
   }
   options.recordToolPrepStage?.("shell-tools");
 

@@ -13,9 +13,10 @@ import { mergeAlsoAllowPolicy, resolveToolProfilePolicy } from "./tool-policy.js
 export type { ToolFsPolicy } from "./tool-fs-policy.types.js";
 
 export function createToolFsPolicy(params: { workspaceOnly?: boolean }): ToolFsPolicy {
-  return {
+  return Object.freeze({
+    kind: "workspace" as const,
     workspaceOnly: params.workspaceOnly === true,
-  };
+  });
 }
 
 export function resolveToolFsConfig(params: { cfg?: OpenClawConfig; agentId?: string }): {

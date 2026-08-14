@@ -21,6 +21,7 @@ import { DefaultResourceLoader } from "../agents/sessions/resource-loader.js";
 import { createAgentSession } from "../agents/sessions/sdk.js";
 import { SessionManager } from "../agents/sessions/session-manager.js";
 import { SettingsManager } from "../agents/sessions/settings-manager.js";
+import { createToolFsPolicy } from "../agents/tool-fs-policy.js";
 import { resolveToolLoopDetectionConfig } from "../agents/tool-loop-detection-config.js";
 import { wrapToolWithGatewayCallerIdentity } from "../agents/tools/gateway-caller-context.js";
 import { DEFAULT_AGENTS_FILENAME, loadWorkspaceBootstrapFiles } from "../agents/workspace.js";
@@ -152,7 +153,7 @@ export async function runWorkerEmbeddedTurn(params: RunWorkerEmbeddedTurnParams)
     codingRoot: params.cwd,
     includeBaseCodingTools: true,
     includeShellTools: !params.memoryIsolationCutover,
-    workspaceOnly: false,
+    fsPolicy: createToolFsPolicy({ workspaceOnly: false }),
     modelContextWindowTokens: model.contextWindow,
     imageSanitization: {},
     applyPatchEnabled:

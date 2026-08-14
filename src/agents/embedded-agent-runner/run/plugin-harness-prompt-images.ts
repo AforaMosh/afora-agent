@@ -32,6 +32,8 @@ export async function preparePluginHarnessPromptImages(params: {
     model: EmbeddedRunAttemptParams["model"];
   };
   pluginHarnessOwnsTransport: boolean;
+  /** Dispatch-owned sandbox lifecycle, shared with the actual harness execution. */
+  workspace?: Awaited<ReturnType<typeof resolveAttemptWorkspaceSandbox>>;
 }): Promise<{
   images: RunEmbeddedAgentParams["images"];
   imageOrder: RunEmbeddedAgentParams["imageOrder"];
@@ -58,50 +60,59 @@ export async function preparePluginHarnessPromptImages(params: {
     };
   }
 
-  const workspace = await resolveAttemptWorkspaceSandbox({
-    ...runParams,
-    cwd: undefined,
-    sessionId: runtime.sessionId,
-    sessionKey: runtime.sessionKey,
-    workspaceDir: runtime.workspaceDir,
-  });
-  const result = await detectAndLoadPromptImages({
-    prompt: "",
-    media: hydrationMedia,
-    mediaImageLayout: persistedMessage
-      ? readPersistedMediaImageLayout(persistedMessage)
-      : undefined,
-    workspaceDir: workspace.effectiveWorkspace,
-    model: runtime.model,
-    existingImages: runParams.images,
-    imageOrder: runParams.imageOrder,
-    maxBytes: MAX_IMAGE_BYTES,
-    maxDimensionPx: resolveImageSanitizationLimits(runParams.config).maxDimensionPx,
-    localRoots: workspace.effectiveFsWorkspaceOnly
-      ? [workspace.effectiveWorkspace, workspace.resolvedWorkspace]
-      : undefined,
-    workspaceOnly: workspace.effectiveFsWorkspaceOnly,
-    sandbox:
-      workspace.sandbox?.enabled && workspace.sandbox.fsBridge
-        ? { root: workspace.sandbox.workspaceDir, bridge: workspace.sandbox.fsBridge }
+  const ownsWorkspace = !params.workspace;
+  const workspace =
+    params.workspace ??
+    (await resolveAttemptWorkspaceSandbox({
+      ...runParams,
+      cwd: undefined,
+      sessionId: runtime.sessionId,
+      sessionKey: runtime.sessionKey,
+      workspaceDir: runtime.workspaceDir,
+    }));
+  try {
+    const result = await detectAndLoadPromptImages({
+      prompt: "",
+      media: hydrationMedia,
+      mediaImageLayout: persistedMessage
+        ? readPersistedMediaImageLayout(persistedMessage)
         : undefined,
-  });
-  if (result.failedMediaCount > 0) {
-    throw new Error(
-      `failed to hydrate ${result.failedMediaCount} structured image attachment(s) for plugin harness input`,
+      workspaceDir: workspace.effectiveWorkspace,
+      model: runtime.model,
+      existingImages: runParams.images,
+      imageOrder: runParams.imageOrder,
+      maxBytes: MAX_IMAGE_BYTES,
+      maxDimensionPx: resolveImageSanitizationLimits(runParams.config).maxDimensionPx,
+      localRoots: workspace.effectiveFsWorkspaceOnly
+        ? [workspace.effectiveWorkspace, workspace.resolvedWorkspace]
+        : undefined,
+      workspaceOnly: workspace.effectiveFsWorkspaceOnly,
+      sandbox:
+        workspace.sandbox?.enabled && workspace.sandbox.fsBridge
+          ? { root: workspace.sandbox.workspaceDir, bridge: workspace.sandbox.fsBridge }
+          : undefined,
+    });
+    if (result.failedMediaCount > 0) {
+      throw new Error(
+        `failed to hydrate ${result.failedMediaCount} structured image attachment(s) for plugin harness input`,
+      );
+    }
+    const materializedFactIndexes = new Set(
+      result.imageFactIndexes.filter((index): index is number => index !== null),
     );
+    const retainedMedia = hydrationMedia?.map((fact, factIndex) =>
+      isImageMediaFact(fact)
+        ? toTypeOnlyImageFact(fact, !materializedFactIndexes.has(factIndex))
+        : fact,
+    );
+    return {
+      images: result.images,
+      imageOrder: result.images.length > 0 ? result.images.map(() => "inline" as const) : undefined,
+      media: retainedMedia?.length ? retainedMedia : undefined,
+    };
+  } finally {
+    if (ownsWorkspace) {
+      await workspace.sandbox?.disposeAuthorizedVirtualProjectionMountPlan?.();
+    }
   }
-  const materializedFactIndexes = new Set(
-    result.imageFactIndexes.filter((index): index is number => index !== null),
-  );
-  const retainedMedia = hydrationMedia?.map((fact, factIndex) =>
-    isImageMediaFact(fact)
-      ? toTypeOnlyImageFact(fact, !materializedFactIndexes.has(factIndex))
-      : fact,
-  );
-  return {
-    images: result.images,
-    imageOrder: result.images.length > 0 ? result.images.map(() => "inline" as const) : undefined,
-    media: retainedMedia?.length ? retainedMedia : undefined,
-  };
 }

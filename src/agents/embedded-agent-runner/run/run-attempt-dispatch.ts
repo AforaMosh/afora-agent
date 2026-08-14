@@ -7,7 +7,6 @@ import { appendIncognitoSystemPrompt } from "../../incognito-system-prompt.js";
 import { applyAuthHeaderOverride, applyLocalNoAuthHeaderOverride } from "../../model-auth.js";
 import type { AgentRunSessionTarget } from "../../run-session-target.js";
 import type { AgentRuntimePlan } from "../../runtime-plan/types.js";
-import { resolveSandboxContext } from "../../sandbox/context.js";
 import { createToolTerminalObserver } from "../../tool-terminal-outcome.js";
 import {
   createAdmittedGatewayToolCallerIdentity,
@@ -16,6 +15,7 @@ import {
 import type { SystemAgentToolOptions } from "../../tools/system-agent-tool.js";
 import { prepareExecApprovalContinuationForAttempt } from "./attempt-exec-approval-continuation.js";
 import { applyResolvedToolPromptFinalizer } from "./attempt-prompt-support.js";
+import { resolveAttemptWorkspaceSandbox } from "./attempt-setup.js";
 import { runEmbeddedAttemptWithBackend } from "./backend.js";
 import {
   EMBEDDED_RUN_LANE_HEARTBEAT_MS,
@@ -190,11 +190,28 @@ export async function dispatchEmbeddedRunAttempt(input: {
     modelMaxTokens: runtime.model.maxTokens,
     userTurnTranscriptRecorder: params.userTurnTranscriptRecorder,
   });
-  const promptMedia = await preparePluginHarnessPromptImages({
-    runParams: params,
-    runtime,
-    pluginHarnessOwnsTransport: control.pluginHarnessOwnsTransport,
-  });
+  let pluginWorkspace: Awaited<ReturnType<typeof resolveAttemptWorkspaceSandbox>> | undefined;
+  let promptMedia: Awaited<ReturnType<typeof preparePluginHarnessPromptImages>>;
+  try {
+    pluginWorkspace = control.pluginHarnessOwnsTransport
+      ? await resolveAttemptWorkspaceSandbox({
+          ...params,
+          cwd: undefined,
+          sessionId: runtime.sessionId,
+          sessionKey: runtime.sessionKey,
+          workspaceDir: runtime.workspaceDir,
+        })
+      : undefined;
+    promptMedia = await preparePluginHarnessPromptImages({
+      runParams: params,
+      runtime,
+      pluginHarnessOwnsTransport: control.pluginHarnessOwnsTransport,
+      ...(pluginWorkspace ? { workspace: pluginWorkspace } : {}),
+    });
+  } catch (error) {
+    await pluginWorkspace?.sandbox?.disposeAuthorizedVirtualProjectionMountPlan?.();
+    throw error;
+  }
   // Plugin harnesses own their tool materialization, so the host cannot attest
   // a message tool. Finalize conservatively instead of leaking phantom guidance.
   const pluginHarnessPrompt =
@@ -205,13 +222,7 @@ export async function dispatchEmbeddedRunAttempt(input: {
           finalize: params.finalizePromptForResolvedTools,
         })
       : undefined;
-  const pluginSandbox = control.pluginHarnessOwnsTransport
-    ? await resolveSandboxContext({
-        config: params.config,
-        sessionKey: params.sandboxSessionKey ?? runtime.sessionKey ?? runtime.sessionId,
-        workspaceDir: runtime.workspaceDir,
-      })
-    : undefined;
+  const pluginSandbox = pluginWorkspace?.sandbox;
   if (!params.admittedRunContext) {
     throw new Error("embedded attempt reached dispatch without an admitted run context");
   }
@@ -462,11 +473,12 @@ export async function dispatchEmbeddedRunAttempt(input: {
     .catch((err: unknown): never => {
       throw control.getPostCompactionAbortError() ?? err;
     })
-    .finally(() => {
+    .finally(async () => {
       clearAttemptTimeoutRelease();
       stopLaneProgressHeartbeat();
       parentAbortSignal?.removeEventListener?.("abort", relayParentAbort);
       control.clearPostCompactionAbortController(attemptAbortController);
+      await pluginSandbox?.disposeAuthorizedVirtualProjectionMountPlan?.();
     });
 
   const postCompactionAbortError = control.getPostCompactionAbortError();

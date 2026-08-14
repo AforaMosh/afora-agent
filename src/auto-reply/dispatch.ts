@@ -1,3 +1,9 @@
+import {
+  admitMemoryEgressAtDelivery,
+  memoryEgressPayloadAuthorization,
+  prepareMemoryEgressAuthorization,
+  MEMORY_EGRESS_CAPABILITY_REPLY_FINAL,
+} from "../agents/memory-egress-admission.js";
 /** Auto-reply dispatch orchestration, hook composition, and foreground delivery fencing. */
 import { normalizeChatType } from "../channels/chat-type.js";
 import { isChannelPartialDeliveryError } from "../channels/turn/delivery-result.js";
@@ -16,6 +22,7 @@ import {
 import { isOutboundDeliveryError } from "../infra/outbound/deliver-types.js";
 import { logMessageReceived } from "../logging/diagnostic.js";
 import { hasOutboundReplyContent } from "../plugin-sdk/reply-payload.js";
+import { isMemoryIsolationCutoverAgent } from "../plugins/memory-cutover.js";
 import type { SilentReplyConversationType } from "../shared/silent-reply-policy.js";
 import {
   resolveCommandTurnContext,
@@ -27,7 +34,7 @@ import {
   type ForegroundReplyFenceState,
   notifyForegroundReplyFenceWaiters,
 } from "./foreground-reply-fence-state.js";
-import { setReplyPayloadMetadata } from "./reply-payload.js";
+import { getReplyPayloadMetadata, setReplyPayloadMetadata } from "./reply-payload.js";
 import type { CommandSessionMetadataChange } from "./reply/command-session-metadata.js";
 import { dispatchReplyFromConfig } from "./reply/dispatch-from-config.js";
 import type { DispatchFromConfigResult } from "./reply/dispatch-from-config.types.js";
@@ -38,6 +45,7 @@ import type {
 import { finalizeInboundContext } from "./reply/inbound-context.js";
 import {
   composeReplyDispatchBeforeDeliver,
+  appendReplyDispatcherPayloadPrepare,
   createReplyDispatcher,
   createReplyDispatcherWithTyping,
   markReplyDispatchBeforeDeliverDeadlineOwned,
@@ -62,6 +70,7 @@ type ReplyPayloadRunState = {
 };
 
 const replyPayloadSendingDispatchers = new WeakSet<ReplyDispatcher>();
+const memoryEgressDispatchers = new WeakSet<ReplyDispatcher>();
 
 function applyRuntimeToolsAllow(
   replyOptions: InternalDispatchReplyOptions | undefined,
@@ -359,6 +368,100 @@ function installReplyPayloadSendingBeforeDeliver(
   replyPayloadSendingDispatchers.add(dispatcher);
 }
 
+function resolveMemoryEgressDeliveryContext(finalized: FinalizedMsgContext) {
+  return {
+    channel: finalized.OriginatingChannel ?? finalized.Surface ?? finalized.Provider,
+    to: finalized.OriginatingTo ?? finalized.To ?? finalized.NativeChannelId ?? finalized.ChatId,
+    accountId: finalized.AccountId,
+    threadId: finalized.MessageThreadId ?? finalized.TransportThreadId,
+  };
+}
+
+function resolveCurrentMemoryEgressDeliveryFacts(finalized: FinalizedMsgContext) {
+  const deliveryContext = resolveMemoryEgressDeliveryContext(finalized);
+  return {
+    deliveryContext,
+    messageChannel: deliveryContext.channel,
+    agentAccountId: deliveryContext.accountId,
+  };
+}
+
+/** Installs the constrained Phase 1D egress gate after all ordinary outbound stages. */
+function installMemoryEgressAdmission(
+  dispatcher: ReplyDispatcher,
+  finalized: FinalizedMsgContext,
+  runState: ReplyPayloadRunState,
+): void {
+  if (memoryEgressDispatchers.has(dispatcher) || !dispatcher.appendBeforeDeliver) {
+    return;
+  }
+  // Read this source separately at queue time and immediately before the
+  // dispatcher enters its platform deliverer. A queued final cannot reuse a
+  // stale route snapshot after routing or recipient ownership changes.
+  const resolveDeliveryFacts = () => resolveCurrentMemoryEgressDeliveryFacts(finalized);
+  const memoryRunIdentity = {
+    agentId: finalized.AgentId,
+    sessionId: finalized.SessionId,
+    sessionKey: finalized.SessionKey,
+  };
+  if (
+    !appendReplyDispatcherPayloadPrepare(dispatcher, (payload, info) => {
+      if (info.kind !== "final") {
+        return;
+      }
+      setReplyPayloadMetadata(payload, {
+        memoryEgressAuthorization: memoryEgressPayloadAuthorization(
+          prepareMemoryEgressAuthorization({
+            capabilityId: MEMORY_EGRESS_CAPABILITY_REPLY_FINAL,
+            runId: runState.runId,
+            ...memoryRunIdentity,
+            resolveDeliveryFacts,
+          }),
+        ),
+      });
+    })
+  ) {
+    return;
+  }
+  dispatcher.appendBeforeDeliver((payload, info) => {
+    if (info.kind !== "final") {
+      // The pilot has no block/tool delivery capability. Keep this final
+      // platform boundary as a backstop for direct and streamed callbacks
+      // that would otherwise bypass the agent-runner's earlier deny.
+      const admission = prepareMemoryEgressAuthorization({
+        capabilityId: `reply.${info.kind}`,
+        runId: runState.runId,
+        ...memoryRunIdentity,
+        resolveDeliveryFacts,
+      });
+      return admission.allowed && !isMemoryIsolationCutoverAgent(admission.authorization.agentId)
+        ? payload
+        : null;
+    }
+    const authorization = getReplyPayloadMetadata(payload)?.memoryEgressAuthorization;
+    if (!authorization || authorization.kind === "denied") {
+      // A final for a known cutover run must have been admitted while queued. Missing metadata is
+      // therefore a deny, not an opportunity to mint a newer authority at the platform boundary.
+      const prepared = prepareMemoryEgressAuthorization({
+        capabilityId: MEMORY_EGRESS_CAPABILITY_REPLY_FINAL,
+        runId: runState.runId,
+        ...memoryRunIdentity,
+        resolveDeliveryFacts,
+      });
+      return prepared.allowed && !isMemoryIsolationCutoverAgent(prepared.authorization.agentId)
+        ? payload
+        : null;
+    }
+    return admitMemoryEgressAtDelivery({
+      authorization: authorization.authorization,
+      resolveDeliveryFacts,
+    }).allowed
+      ? payload
+      : null;
+  });
+  memoryEgressDispatchers.add(dispatcher);
+}
+
 function markReplyPayloadSendingBeforeDeliverInstalled(
   dispatcher: ReplyDispatcher,
   beforeDeliver: ReplyDispatchBeforeDeliver | undefined,
@@ -443,7 +546,6 @@ export async function dispatchInboundMessage(params: {
   const replyPayloadRunState = params.replyPayloadRunState ?? {
     runId: replyOptions?.runId,
   };
-  const replyOptionsWithRunState = bindReplyPayloadRunState(replyOptions, replyPayloadRunState);
   const finalized = measureDiagnosticsTimelineSpanSync(
     "auto_reply.finalize_context",
     () => finalizeInboundContext(params.ctx),
@@ -453,6 +555,7 @@ export async function dispatchInboundMessage(params: {
       attributes: buildDispatchTimelineAttributes(params.ctx),
     },
   );
+  const replyOptionsWithRunState = bindReplyPayloadRunState(replyOptions, replyPayloadRunState);
   if (isDiagnosticsEnabled(params.cfg)) {
     logMessageReceived({
       sessionKey: finalized.SessionKey,
@@ -465,6 +568,7 @@ export async function dispatchInboundMessage(params: {
   if (params.outboundHooks !== "disabled") {
     installReplyPayloadSendingBeforeDeliver(params.dispatcher, finalized, replyPayloadRunState);
   }
+  installMemoryEgressAdmission(params.dispatcher, finalized, replyPayloadRunState);
   const result = await withReplyDispatcher({
     dispatcher: params.dispatcher,
     onSettled: params.onSettled,

@@ -17,6 +17,7 @@ import {
   getPreparedPluginRuntimeLoadContext,
   prepareOwnedPluginLoadContext,
 } from "./prepared-model-runtime.plugin-context.js";
+import type { ToolFsPolicy } from "./tool-fs-policy.types.js";
 
 const hoisted = vi.hoisted(() => ({
   resolvePluginTools: vi.fn(),
@@ -100,9 +101,9 @@ describe("createOpenClawTools browser plugin integration", () => {
   });
 
   it("forwards fsPolicy into plugin tool context", async () => {
-    let capturedContext: { fsPolicy?: { workspaceOnly: boolean } } | undefined;
+    let capturedContext: { fsPolicy?: ToolFsPolicy } | undefined;
     hoisted.resolvePluginTools.mockImplementation((params: unknown) => {
-      const resolvedParams = params as { context?: { fsPolicy?: { workspaceOnly: boolean } } };
+      const resolvedParams = params as { context?: { fsPolicy?: ToolFsPolicy } };
       capturedContext = resolvedParams.context;
       return [
         {
@@ -129,7 +130,7 @@ describe("createOpenClawTools browser plugin integration", () => {
             allow: ["browser"],
           },
         } as OpenClawConfig,
-        fsPolicy: { workspaceOnly: true },
+        fsPolicy: { kind: "workspace", workspaceOnly: true },
       },
       resolvedConfig: {
         plugins: {
