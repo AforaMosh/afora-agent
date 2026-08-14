@@ -1,7 +1,7 @@
 import { expectDefined } from "@openclaw/normalization-core";
 // @vitest-environment node
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildFallbackSlashCommands,
   buildSlashCommandsFromEntries,
@@ -424,6 +424,46 @@ describe("parseSlashCommand", () => {
       "alpha_description",
       "beta_description",
     ]);
+  });
+
+  it("keeps equal-rank skill names ordered independently of the browser locale", () => {
+    const localeCompare = vi
+      .spyOn(String.prototype, "localeCompare")
+      .mockImplementation(function (compareString, locales, options) {
+        if (locales === undefined) {
+          return new Intl.Collator("da").compare(this, compareString);
+        }
+        return Intl.Collator(locales, options).compare(this, compareString);
+      });
+    try {
+      applyRemoteEntries([
+        {
+          name: "skill_z",
+          textAliases: ["/skill_z"],
+          description: "Search z skills.",
+          source: "skill",
+          skillModelVisible: true,
+          scope: "both",
+          acceptsArgs: true,
+        },
+        {
+          name: "skill_aa",
+          textAliases: ["/skill_aa"],
+          description: "Search aa skills.",
+          source: "skill",
+          skillModelVisible: true,
+          scope: "both",
+          acceptsArgs: true,
+        },
+      ]);
+
+      expect(getSkillCommandCompletions("skill").map((command) => command.name)).toEqual([
+        "skill_aa",
+        "skill_z",
+      ]);
+    } finally {
+      localeCompare.mockRestore();
+    }
   });
 
   it("keeps model-hidden skills in slash commands but out of $ completions", () => {

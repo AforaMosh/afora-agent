@@ -539,7 +539,7 @@ export function getSkillCommandCompletions(filter: string): SlashCommandDef[] {
       const relevance =
         getCommandRelevance(left, lower, normalizeSkillCommandName) -
         getCommandRelevance(right, lower, normalizeSkillCommandName);
-      return relevance || left.name.localeCompare(right.name);
+      return relevance || left.name.localeCompare(right.name, "en");
     });
 }
 
