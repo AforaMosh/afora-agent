@@ -920,7 +920,7 @@ openclaw-chat-page {
   color: var(--muted);
   background: none;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
 }
 
 .agent-chat__goal-action:hover {
@@ -1048,7 +1048,7 @@ openclaw-chat-page {
   height: 30px;
   padding: 0;
   border: 1px solid rgb(255 255 255 / 22%);
-  border-radius: 8px;
+  border-radius: var(--btn-radius);
   color: var(--media-foreground);
   background: rgb(12 16 24 / 78%);
   backdrop-filter: blur(8px);
@@ -2728,7 +2728,7 @@ button.chat-reply-preview--message:disabled {
   gap: 6px;
   min-width: 36px;
   height: 36px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--btn-radius);
   border: none;
   background: transparent;
   color: var(--muted);
@@ -5202,7 +5202,6 @@ button.chat-reply-preview--message:disabled {
   min-width: 36px;
   height: 36px;
   padding: 0;
-  border-radius: var(--radius-lg);
 }
 
 :root[data-theme-mode="light"] .chat-controls__separator {
