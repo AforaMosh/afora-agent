@@ -29,6 +29,7 @@ type CustodianTranscriptTurnPosition = {
 };
 
 type CustodianPendingTranscriptFallback = CustodianTranscriptTurnPosition & {
+  accepted: boolean;
   kind: SystemAgentWizardActionReceipt["kind"];
   message: CustodianMessage;
 };
@@ -74,6 +75,7 @@ export abstract class CustodianTranscriptState {
         ? -1
         : this.messages.findIndex((candidate) => candidate.id === this.earlierBoundaryAfterId);
     this.pendingTranscriptFallbacks.push({
+      accepted: false,
       kind,
       message,
       globalIndex,
@@ -91,7 +93,8 @@ export abstract class CustodianTranscriptState {
       return;
     }
     if (accepted) {
-      this.removeTranscriptFallback(fallback);
+      this.messages = this.messages.filter((candidate) => candidate !== fallback.message);
+      fallback.accepted = true;
       return;
     }
     this.restoreTranscriptFallback(fallback);
@@ -134,12 +137,18 @@ export abstract class CustodianTranscriptState {
     if (existing === fallback.message || this.messages.includes(fallback.message)) {
       return;
     }
-    // Recovery owns turn order and action kind; display text is localized and cannot identify the
-    // same submission. A plain user turn at this slot is the authoritative fallback projection.
     const recoveredActionKind = existing?.structuredResponse?.kind;
+    if (fallback.accepted) {
+      if (recoveredActionKind === fallback.kind) {
+        this.removeTranscriptFallback(fallback);
+      }
+      return;
+    }
+    // A receipt has no correlation id, so it cannot prove which same-kind retry it represents.
+    // A lone pending action is unambiguous; otherwise only a recovered user turn replaces it.
     if (
       existing?.role === "user" ||
-      (recoveredActionKind !== undefined && recoveredActionKind === fallback.kind)
+      (recoveredActionKind === fallback.kind && this.pendingTranscriptFallbacks.length === 1)
     ) {
       this.removeTranscriptFallback(fallback);
       return;
