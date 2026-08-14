@@ -165,21 +165,7 @@ class OpenClawShell
   agentRosterRefreshTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
   outboxStoreRuntime: OutboxStoreRuntime | null = null;
   private outboxStoreUnsubscribe: (() => void) | null = null;
-  private stopCommunityInvite: (() => void) | null = null;
-  private communityInviteDisconnected = false;
-  private readonly shellUpdateListeners = new Set<() => void>();
-  // Idle-imported rather than statically imported: the invite is an unsolicited
-  // nudge, so none of it — not even its terminal check — belongs in the bytes the
-  // operator waits for before first paint.
-  readonly communityInviteImport = createIdleImport(
-    () => import("./community-invite.ts"),
-    ({ startCommunityInvite }) => {
-      // The chunk can land after the shell disconnected.
-      if (!this.communityInviteDisconnected) {
-        this.stopCommunityInvite = startCommunityInvite(this);
-      }
-    },
-  );
+  private communityInviteCohort: { readonly hasSessions: boolean } | null = null;
   readonly outboxStoreImport = createIdleImport(
     () => import("../lib/chat/outbox-store.ts").then((module): OutboxStoreRuntime => module),
     (runtime) => this.installOutboxStoreRuntime(runtime),
@@ -235,14 +221,24 @@ class OpenClawShell
     return routeSearch === undefined ? this.onboarding : resolveOnboardingMode(routeSearch);
   }
 
-  /** Route-derived shell state, `context` among it, changes without any capability
-   * emitting: leaving onboarding is only a new route. Owners that read those
-   * getters subscribe here rather than polling the shell for them. */
-  subscribeShellUpdate(listener: () => void): () => void {
-    this.shellUpdateListeners.add(listener);
-    return () => {
-      this.shellUpdateListeners.delete(listener);
-    };
+  /** One-shot qualification for the community invite: a connected gateway with a
+   * published sessions list, outside onboarding. Latched, because the cohort is
+   * decided by the first load that qualifies and must not be re-decided when the
+   * sessions list or the route moves afterwards. */
+  private qualifiedCommunityInviteCohort(): { readonly hasSessions: boolean } | null {
+    if (this.communityInviteCohort) {
+      return this.communityInviteCohort;
+    }
+    const context = this.context;
+    const sessions = context?.sessions.state.result;
+    if (!context || !sessions || this.onboardingMode) {
+      return null;
+    }
+    if (context.gateway.snapshot.phase !== "connected") {
+      return null;
+    }
+    this.communityInviteCohort = { hasSessions: sessions.sessions.length > 0 };
+    return this.communityInviteCohort;
   }
 
   storedOutboxScopeHost(context: ApplicationContext<RouteId>): StoredOutboxScopeHost {
@@ -305,6 +301,25 @@ class OpenClawShell
       .effect(
         () => this.context?.gateway,
         (gateway) => gateway.subscribeEvents(this.handleGatewayEvent),
+      )
+      .effect(
+        () => this.qualifiedCommunityInviteCohort(),
+        ({ hasSessions }) => {
+          // Loaded only once a load has qualified, so an unsolicited nudge costs
+          // nothing before first paint.
+          let stop: (() => void) | null = null;
+          let cancelled = false;
+          void import("./community-invite.runtime.ts").then(({ runCommunityInvite }) => {
+            if (!cancelled) {
+              stop = runCommunityInvite(hasSessions);
+            }
+          });
+          return () => {
+            cancelled = true;
+            stop?.();
+            stop = null;
+          };
+        },
       )
       .watch(
         () => this.context?.config,
@@ -386,8 +401,6 @@ class OpenClawShell
       this.installOutboxStoreRuntime(this.outboxStoreRuntime);
     }
     this.outboxStoreImport.schedule();
-    this.communityInviteDisconnected = false;
-    this.communityInviteImport.schedule();
     this.shellChrome.connect();
     // Write-through of synced display prefs to config ui.prefs. Server-applied
     // deltas are suppressed so a reconcile never echoes back to the gateway.
@@ -408,10 +421,6 @@ class OpenClawShell
 
   override disconnectedCallback() {
     this.shellChrome.disconnect();
-    this.communityInviteDisconnected = true;
-    this.communityInviteImport.dispose();
-    this.stopCommunityInvite?.();
-    this.stopCommunityInvite = null;
     this.outboxStoreImport.dispose();
     this.outboxStoreUnsubscribe?.();
     this.outboxStoreUnsubscribe = null;
@@ -573,9 +582,6 @@ class OpenClawShell
 
   override updated() {
     this.syncDocumentTitle();
-    for (const listener of this.shellUpdateListeners) {
-      listener();
-    }
     const chatPage = this.querySelector<ChatPage>("openclaw-chat-page");
     if (chatPage) {
       chatPage.navDrawerOpen = this.navDrawerOpen && !this.onboardingMode;

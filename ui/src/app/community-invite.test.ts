@@ -2,16 +2,13 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  COMMUNITY_INVITE_KEY,
   communityInviteReadiness,
-  isCommunityInviteSettled,
+  parseCommunityInviteRecord,
   readCommunityInviteRecord,
   recordQualifiedLoad,
-} from "./community-invite.runtime.ts";
-import {
-  COMMUNITY_INVITE_KEY,
-  communityInviteWasAnswered,
   type CommunityInviteRecord,
-} from "./community-invite.ts";
+} from "./community-invite.runtime.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = 1_760_000_000_000;
@@ -53,12 +50,9 @@ describe("recordQualifiedLoad", () => {
     });
   });
 
-  it("preserves a settled outcome so a stray load cannot revive the card", () => {
-    const settled = record({ settledAtMs: NOW - DAY_MS, outcome: "dismissed" });
-    expect(recordQualifiedLoad(settled, true, NOW)).toMatchObject({
-      settledAtMs: settled.settledAtMs,
-      outcome: "dismissed",
-    });
+  it("carries an existing tombstone forward instead of dropping it", () => {
+    const shown = record({ shownAtMs: NOW - DAY_MS });
+    expect(recordQualifiedLoad(shown, true, NOW).shownAtMs).toBe(shown.shownAtMs);
   });
 });
 
@@ -105,11 +99,6 @@ describe("communityInviteReadiness", () => {
       }),
       expected: "ready",
     },
-    {
-      name: "a settled record never arms again, however it was answered",
-      record: record({ qualifiedLoads: 9, settledAtMs: NOW - DAY_MS, outcome: "joined" }),
-      expected: "waiting",
-    },
   ];
 
   for (const testCase of cases) {
@@ -129,130 +118,87 @@ describe("communityInviteReadiness", () => {
   });
 });
 
+describe("parseCommunityInviteRecord", () => {
+  it("round-trips a record the invite wrote, tombstone and metadata included", () => {
+    const stored = record({
+      qualifiedLoads: 4,
+      shownAtMs: NOW,
+      shownVersion: "2026.8.1",
+      settledAtMs: NOW + 1000,
+      outcome: "joined",
+    });
+    expect(parseCommunityInviteRecord(JSON.parse(JSON.stringify(stored)))).toEqual(stored);
+  });
+
+  it("accepts a null build identity, which is what an unstamped artifact writes", () => {
+    const stored = record({ shownAtMs: NOW, shownVersion: null });
+    expect(parseCommunityInviteRecord(JSON.parse(JSON.stringify(stored)))).toEqual(stored);
+  });
+
+  const rejected: ReadonlyArray<{ name: string; value: unknown }> = [
+    { name: "a non-object payload", value: "shown" },
+    { name: "an array, which spreads into nonsense", value: [] },
+    // `{}` used to spread into the next write as `undefined + 1` qualified loads.
+    { name: "an empty object with no counters at all", value: {} },
+    {
+      name: "a partial record carrying only an outcome",
+      // The exact shape that used to pass the old startup check and suppress the
+      // invite on that browser permanently.
+      value: { settledAtMs: 1, outcome: "dismissed" },
+    },
+    {
+      name: "a non-finite first sighting",
+      value: { firstQualifiedAtMs: null, qualifiedLoads: 2, established: true },
+    },
+    {
+      name: "a fractional load count",
+      value: { firstQualifiedAtMs: NOW, qualifiedLoads: 1.5, established: true },
+    },
+    {
+      name: "a negative load count",
+      value: { firstQualifiedAtMs: NOW, qualifiedLoads: -1, established: true },
+    },
+    {
+      name: "a missing cohort flag",
+      value: { firstQualifiedAtMs: NOW, qualifiedLoads: 2 },
+    },
+    {
+      name: "a non-finite tombstone",
+      value: { firstQualifiedAtMs: NOW, qualifiedLoads: 2, established: true, shownAtMs: null },
+    },
+    {
+      name: "an outcome outside the union",
+      value: {
+        firstQualifiedAtMs: NOW,
+        qualifiedLoads: 2,
+        established: true,
+        outcome: "ignored",
+      },
+    },
+  ];
+
+  for (const testCase of rejected) {
+    it(`drops ${testCase.name}`, () => {
+      expect(parseCommunityInviteRecord(testCase.value)).toBeNull();
+    });
+  }
+});
+
 describe("readCommunityInviteRecord", () => {
   afterEach(() => {
     localStorage.clear();
   });
 
-  function storeRaw(raw: string): void {
-    localStorage.setItem(COMMUNITY_INVITE_KEY, raw);
-  }
-
-  it("reads back a record it wrote", () => {
-    const stored = record({ qualifiedLoads: 4 });
-    storeRaw(JSON.stringify(stored));
-    expect(readCommunityInviteRecord()).toEqual(stored);
+  it("drops text that is not JSON at all", () => {
+    localStorage.setItem(COMMUNITY_INVITE_KEY, "{not json");
+    expect(readCommunityInviteRecord()).toBeNull();
   });
 
-  const rejected: ReadonlyArray<{ name: string; raw: string }> = [
-    { name: "a non-object payload", raw: '"settled"' },
-    { name: "an array, which spreads into nonsense", raw: "[]" },
-    // `{}` used to spread into the next write as `undefined + 1` qualified loads.
-    { name: "an empty object with no counters at all", raw: "{}" },
-    {
-      name: "a non-finite first sighting, which would freeze the arming window",
-      raw: JSON.stringify({ firstQualifiedAtMs: null, qualifiedLoads: 2, established: true }),
-    },
-    {
-      name: "a fractional load count",
-      raw: JSON.stringify({ firstQualifiedAtMs: NOW, qualifiedLoads: 1.5, established: true }),
-    },
-    {
-      name: "a negative load count",
-      raw: JSON.stringify({ firstQualifiedAtMs: NOW, qualifiedLoads: -1, established: true }),
-    },
-    {
-      name: "a missing cohort flag",
-      raw: JSON.stringify({ firstQualifiedAtMs: NOW, qualifiedLoads: 2 }),
-    },
-    {
-      name: "a settlement carrying no outcome",
-      raw: JSON.stringify({
-        firstQualifiedAtMs: NOW,
-        qualifiedLoads: 2,
-        established: true,
-        settledAtMs: NOW,
-      }),
-    },
-    {
-      name: "a settlement with an outcome outside the union",
-      raw: JSON.stringify({
-        firstQualifiedAtMs: NOW,
-        qualifiedLoads: 2,
-        established: true,
-        settledAtMs: NOW,
-        outcome: "ignored",
-      }),
-    },
-    { name: "text that is not JSON at all", raw: "{not json" },
-  ];
-
-  for (const testCase of rejected) {
-    it(`drops ${testCase.name}`, () => {
-      storeRaw(testCase.raw);
-      expect(readCommunityInviteRecord()).toBeNull();
-    });
-  }
-
-  it("does not read a null settlement as settled, which would silence the card forever", () => {
-    // `settledAtMs !== undefined` is what isCommunityInviteSettled asks, so a null
-    // here used to be terminal for that browser with no way back.
-    storeRaw(
-      JSON.stringify({
-        firstQualifiedAtMs: NOW,
-        qualifiedLoads: 2,
-        established: true,
-        settledAtMs: null,
-      }),
-    );
-    expect(isCommunityInviteSettled(readCommunityInviteRecord())).toBe(false);
+  it("reads back a tombstone written under the shipped key", () => {
+    // The key is a stability contract: bumping it re-arms every browser that has
+    // already seen the card, so the tombstone must keep being found under v1.
+    expect(COMMUNITY_INVITE_KEY).toBe("openclaw:control-ui:community-invite:v1");
+    localStorage.setItem(COMMUNITY_INVITE_KEY, JSON.stringify(record({ shownAtMs: NOW })));
+    expect(readCommunityInviteRecord()?.shownAtMs).toBe(NOW);
   });
-});
-
-describe("communityInviteWasAnswered", () => {
-  afterEach(() => {
-    localStorage.clear();
-  });
-
-  // This probe is the startup-graph gate: answering true means the scheduler chunk
-  // is never fetched again on this browser, so a wrong true is unrecoverable.
-  const cases: ReadonlyArray<{ name: string; raw: string | null; expected: boolean }> = [
-    { name: "no record at all", raw: null, expected: false },
-    {
-      name: "a whole settlement",
-      raw: JSON.stringify({
-        firstQualifiedAtMs: NOW,
-        qualifiedLoads: 2,
-        established: true,
-        settledAtMs: NOW,
-        outcome: "dismissed",
-      }),
-      expected: true,
-    },
-    {
-      name: "a qualified but unanswered record",
-      raw: JSON.stringify({ firstQualifiedAtMs: NOW, qualifiedLoads: 2, established: true }),
-      expected: false,
-    },
-    {
-      name: "a null settlement",
-      raw: JSON.stringify({ settledAtMs: null, outcome: "joined" }),
-      expected: false,
-    },
-    {
-      name: "a settlement with no outcome",
-      raw: JSON.stringify({ settledAtMs: NOW }),
-      expected: false,
-    },
-    { name: "text that is not JSON at all", raw: "{not json", expected: false },
-  ];
-
-  for (const testCase of cases) {
-    it(`${testCase.expected ? "short-circuits on" : "keeps going for"} ${testCase.name}`, () => {
-      if (testCase.raw !== null) {
-        localStorage.setItem(COMMUNITY_INVITE_KEY, testCase.raw);
-      }
-      expect(communityInviteWasAnswered()).toBe(testCase.expected);
-    });
-  }
 });

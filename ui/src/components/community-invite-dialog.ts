@@ -10,7 +10,8 @@ import { OpenClawLitElement } from "../lit/openclaw-element.ts";
 import { strokeIcon } from "./icons-tools.ts";
 import { icons } from "./icons.ts";
 
-export const COMMUNITY_INVITE_URL = "https://discord.gg/clawd";
+const COMMUNITY_INVITE_URL = "https://discord.gg/clawd";
+/** Read by the scheduler chunk, which owns settling the record on this event. */
 export const COMMUNITY_INVITE_SETTLED_EVENT = "community-invite-settled";
 
 // Solid brand mark: the shared lucide set is stroked, so this one carries its own fill.
@@ -25,7 +26,7 @@ const discordMark = html`
 const arrowUpRight = strokeIcon(svg` <path d="M7 17 17 7" />
   <path d="M7 7h10v10" />`);
 
-export class OpenClawCommunityInviteDialog extends OpenClawLitElement {
+class OpenClawCommunityInviteDialog extends OpenClawLitElement {
   static override styles = css`
     /* Trailing bottom corner: the opposite end from .app-toast, which pins to the
        viewport top (styles/components.css), so the two floaters never contend for

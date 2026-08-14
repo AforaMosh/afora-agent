@@ -2,29 +2,32 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// The card is a separate lazy chunk; stubbing it keeps this test on the scheduler's
-// event handling instead of the dialog's shadow-DOM dependencies.
+// The card is a separate lazy chunk; stubbing it keeps this suite on the showing
+// protocol instead of the dialog's shadow-DOM dependencies.
 vi.mock("../components/community-invite-dialog.ts", () => ({
   COMMUNITY_INVITE_SETTLED_EVENT: "community-invite-settled",
 }));
 
-import { runCommunityInvite } from "./community-invite.runtime.ts";
-import type { CommunityInviteHost, CommunityInviteRecord } from "./community-invite.ts";
+import {
+  COMMUNITY_INVITE_KEY,
+  runCommunityInvite,
+  type CommunityInviteRecord,
+} from "./community-invite.runtime.ts";
 
-const STORAGE_KEY = "openclaw:control-ui:community-invite:v1";
 const DWELL_MS = 5 * 60 * 1000;
 const CARD_TAG = "openclaw-community-invite-dialog";
 
 const stops: Array<() => void> = [];
 let visibility: DocumentVisibilityState = "visible";
 let focused = true;
+let lockHolders: Set<string>;
 
 function seedRecord(record: Partial<CommunityInviteRecord> = {}): void {
   localStorage.setItem(
-    STORAGE_KEY,
+    COMMUNITY_INVITE_KEY,
     JSON.stringify({
-      // An upgraded operator on their second qualified load: the next qualified
-      // load makes this record "ready", so only dwell and presence remain.
+      // An upgraded operator on their second qualified load: this load makes the
+      // record "ready", so only dwell and presence remain.
       firstQualifiedAtMs: Date.now() - 60 * 60 * 1000,
       qualifiedLoads: 1,
       established: true,
@@ -33,84 +36,33 @@ function seedRecord(record: Partial<CommunityInviteRecord> = {}): void {
   );
 }
 
-function readStored(): CommunityInviteRecord {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as CommunityInviteRecord;
+function storedRecord(): CommunityInviteRecord | null {
+  const raw = localStorage.getItem(COMMUNITY_INVITE_KEY);
+  return raw ? (JSON.parse(raw) as CommunityInviteRecord) : null;
 }
 
-/** A shell stub that can hand over a new route the way the real one does: by
- * re-rendering. Gateway and sessions stay silent, which is the point. */
-function createHost(options: { sessionCount?: number; onboarding?: boolean } = {}) {
-  const listeners = new Set<() => void>();
-  const raw = {
-    context: {
-      gateway: { snapshot: { phase: "connected" }, subscribe: () => () => undefined },
-      sessions: {
-        state: {
-          result: { sessions: Array.from({ length: options.sessionCount ?? 2 }, () => ({})) },
-        },
-        subscribe: () => () => undefined,
-      },
-    },
-    onboardingMode: options.onboarding ?? false,
-    subscribeShellUpdate(listener: () => void) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-  };
-  return {
-    host: raw as unknown as CommunityInviteHost,
-    leaveOnboarding() {
-      raw.onboardingMode = false;
-      for (const listener of listeners) {
-        listener();
-      }
-    },
-  };
-}
-
-function start(host: CommunityInviteHost): () => void {
-  const dispose = runCommunityInvite(host);
-  stops.push(dispose);
-  return dispose;
-}
-
-/** jsdom ships no Web Locks. This is the slice of the contract the scheduler
- * depends on: with `ifAvailable`, a second request while a holder is active is
- * handed null instead of queueing. */
+/** jsdom ships no Web Locks. This models the slice the protocol depends on: with
+ * `ifAvailable`, a request while a holder is active is handed null rather than
+ * queued, and the holder is released as soon as its callback settles. */
 function installWebLocks(): void {
-  const held = new Set<string>();
   Object.defineProperty(navigator, "locks", {
     configurable: true,
     value: {
       request(name: string, _options: unknown, callback: (lock: unknown) => unknown) {
-        if (held.has(name)) {
+        if (lockHolders.has(name)) {
           return Promise.resolve(callback(null));
         }
-        held.add(name);
-        return Promise.resolve(callback({ name })).finally(() => held.delete(name));
+        lockHolders.add(name);
+        return Promise.resolve(callback({ name })).finally(() => lockHolders.delete(name));
       },
     },
   });
 }
 
-/** Pretends the browser retargets `activeElement` to a shadow host, which is what
- * hides a focused field from a document-level check. jsdom's own focus handling
- * does not model the retarget, so the state is declared rather than performed. */
-function focusInsideShadowRoot(): void {
-  const panel = document.createElement("div");
-  const shadow = panel.attachShadow({ mode: "open" });
-  const field = document.createElement("textarea");
-  shadow.append(field);
-  document.body.append(panel);
-  Object.defineProperty(shadow, "activeElement", { configurable: true, get: () => field });
-  Object.defineProperty(document, "activeElement", { configurable: true, get: () => panel });
-}
-
-function blurEverything(): void {
-  Reflect.deleteProperty(document, "activeElement");
-  document.dispatchEvent(new Event("focusout"));
+function start(hasSessions = true): () => void {
+  const dispose = runCommunityInvite(hasSessions);
+  stops.push(dispose);
+  return dispose;
 }
 
 function setPresence(next: { visible?: boolean; focused?: boolean }): void {
@@ -128,16 +80,19 @@ function mountedCards(): number {
   return document.querySelectorAll(CARD_TAG).length;
 }
 
-function cardMounted(): boolean {
-  return mountedCards() > 0;
-}
-
-/** Presentation crosses the cross-tab claim and then the chunk import, so it
- * settles a few promise hops after the dwell timer fires. */
-async function flushImport(): Promise<void> {
-  for (let hop = 0; hop < 3; hop += 1) {
+/** Presentation crosses the card import and then the claim, so it settles a few
+ * promise hops after the dwell timer fires. */
+async function flushPresentation(): Promise<void> {
+  for (let hop = 0; hop < 4; hop += 1) {
     await vi.advanceTimersByTimeAsync(0);
   }
+}
+
+/** Runs a full armed load to the point of presentation. */
+async function runToPresentation(): Promise<void> {
+  start();
+  await vi.advanceTimersByTimeAsync(DWELL_MS);
+  await flushPresentation();
 }
 
 beforeEach(() => {
@@ -145,12 +100,14 @@ beforeEach(() => {
   document.body.innerHTML = "";
   visibility = "visible";
   focused = true;
+  lockHolders = new Set();
   Object.defineProperty(document, "visibilityState", {
     configurable: true,
     get: () => visibility,
   });
   vi.spyOn(document, "hasFocus").mockImplementation(() => focused);
   vi.useFakeTimers();
+  installWebLocks();
 });
 
 afterEach(() => {
@@ -166,49 +123,49 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("community invite scheduler", () => {
+describe("community invite dwell", () => {
   it("presents once the dwell elapses with the operator present", async () => {
     seedRecord();
-    start(createHost().host);
-    expect(cardMounted()).toBe(false);
+    start();
+    expect(mountedCards()).toBe(0);
 
     await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
-    expect(cardMounted()).toBe(true);
+    await flushPresentation();
+    expect(mountedCards()).toBe(1);
   });
 
   it("does not accrue dwell while the tab is hidden, and keeps no timer alive", async () => {
     seedRecord();
-    start(createHost().host);
+    start();
     setPresence({ visible: false });
 
     await vi.advanceTimersByTimeAsync(DWELL_MS * 3);
-    await flushImport();
-    expect(cardMounted()).toBe(false);
-    // The invariant behind the event-driven rewrite: an idle, hidden tab runs no
+    await flushPresentation();
+    expect(mountedCards()).toBe(0);
+    // The invariant behind the event-driven design: an idle, hidden tab runs no
     // periodic work at all.
     expect(vi.getTimerCount()).toBe(0);
 
     setPresence({ visible: true });
     await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
-    expect(cardMounted()).toBe(true);
+    await flushPresentation();
+    expect(mountedCards()).toBe(1);
   });
 
   it("accumulates dwell across absences instead of demanding continuous presence", async () => {
     seedRecord();
-    start(createHost().host);
+    start();
 
     await vi.advanceTimersByTimeAsync(3 * 60 * 1000);
     setPresence({ visible: false });
     await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
-    expect(cardMounted()).toBe(false);
+    expect(mountedCards()).toBe(0);
 
     setPresence({ visible: true });
     // Only the remaining two minutes are owed, not a fresh five.
     await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
-    await flushImport();
-    expect(cardMounted()).toBe(true);
+    await flushPresentation();
+    expect(mountedCards()).toBe(1);
   });
 
   it("waits for focus to leave an editable field before presenting", async () => {
@@ -216,76 +173,97 @@ describe("community invite scheduler", () => {
     const composer = document.createElement("textarea");
     document.body.append(composer);
     composer.focus();
-    start(createHost().host);
+    start();
 
     await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
-    expect(cardMounted()).toBe(false);
+    await flushPresentation();
+    expect(mountedCards()).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
 
     composer.blur();
     document.dispatchEvent(new Event("focusout"));
-    await flushImport();
-    expect(cardMounted()).toBe(true);
+    await flushPresentation();
+    expect(mountedCards()).toBe(1);
   });
 
   it("waits for a field inside a shadow root too, where activeElement is the host", async () => {
     seedRecord();
-    focusInsideShadowRoot();
-    start(createHost().host);
+    const panel = document.createElement("div");
+    const shadow = panel.attachShadow({ mode: "open" });
+    const field = document.createElement("textarea");
+    shadow.append(field);
+    document.body.append(panel);
+    // A browser retargets activeElement to the shadow host, which is what hides the
+    // real field from a document-level check. jsdom does not model the retarget, so
+    // the state is declared rather than performed.
+    Object.defineProperty(shadow, "activeElement", { configurable: true, get: () => field });
+    Object.defineProperty(document, "activeElement", { configurable: true, get: () => panel });
+    start();
 
     await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
+    await flushPresentation();
     // The terminal panel keeps its textarea this way, so a document-level check
     // would drop the card over live typing.
-    expect(cardMounted()).toBe(false);
+    expect(mountedCards()).toBe(0);
 
-    blurEverything();
-    await flushImport();
-    expect(cardMounted()).toBe(true);
+    Reflect.deleteProperty(document, "activeElement");
+    document.dispatchEvent(new Event("focusout"));
+    await flushPresentation();
+    expect(mountedCards()).toBe(1);
   });
 
-  it("stays away during onboarding", async () => {
-    seedRecord();
-    start(createHost({ onboarding: true }).host);
+  it("stays away for a load the record already counted as shown", async () => {
+    seedRecord({ shownAtMs: Date.now() - 1000 });
+    start();
 
     await vi.advanceTimersByTimeAsync(DWELL_MS * 2);
-    await flushImport();
-    expect(cardMounted()).toBe(false);
+    await flushPresentation();
+    expect(mountedCards()).toBe(0);
   });
+});
 
-  it("counts the load once the operator leaves onboarding", async () => {
+describe("community invite showing protocol", () => {
+  it("records the tombstone before the card reaches the DOM", async () => {
     seedRecord();
-    const shell = createHost({ onboarding: true });
-    start(shell.host);
+    await runToPresentation();
 
-    await vi.advanceTimersByTimeAsync(DWELL_MS);
-    expect(readStored().qualifiedLoads).toBe(1);
-
-    // The gateway is already connected and the sessions list already published, so
-    // leaving onboarding emits on neither: the shell only re-renders a new route.
-    shell.leaveOnboarding();
-    expect(readStored().qualifiedLoads).toBe(2);
-
-    await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
-    expect(cardMounted()).toBe(true);
+    expect(mountedCards()).toBe(1);
+    // Written and verified inside the claim, so it is already durable by the time
+    // anything is on screen — no outcome required.
+    expect(storedRecord()?.shownAtMs).toBeGreaterThan(0);
+    expect(storedRecord()?.outcome).toBeUndefined();
   });
 
-  it("stays away for a settled operator", async () => {
-    seedRecord({ settledAtMs: Date.now() - 1000, outcome: "dismissed" });
-    start(createHost().host);
-
-    await vi.advanceTimersByTimeAsync(DWELL_MS * 2);
-    await flushImport();
-    expect(cardMounted()).toBe(false);
-  });
-
-  it("settles the stored record when the card reports an outcome", async () => {
+  it("never shows again after a load that only displayed the card", async () => {
     seedRecord();
-    start(createHost().host);
+    await runToPresentation();
+    expect(mountedCards()).toBe(1);
+
+    // The tab dies without the operator answering: no dismiss, no join, no settle.
+    document.body.innerHTML = "";
+    await runToPresentation();
+    expect(mountedCards()).toBe(0);
+  });
+
+  it("never shows again after the shell disconnects with the card up", async () => {
+    seedRecord();
+    const dispose = start();
     await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
+    await flushPresentation();
+    expect(mountedCards()).toBe(1);
+
+    dispose();
+    // A card outliving its owner would keep a detached shell's closures alive.
+    expect(mountedCards()).toBe(0);
+
+    await runToPresentation();
+    expect(mountedCards()).toBe(0);
+  });
+
+  it("records the outcome as metadata, without it owning suppression", async () => {
+    seedRecord();
+    await runToPresentation();
+    const shownAtMs = storedRecord()?.shownAtMs;
 
     document.querySelector(CARD_TAG)?.dispatchEvent(
       new CustomEvent("community-invite-settled", {
@@ -294,54 +272,73 @@ describe("community invite scheduler", () => {
       }),
     );
 
-    const stored = readStored();
-    expect(stored.outcome).toBe("joined");
-    expect(stored.settledAtMs).toBeGreaterThan(0);
-    expect(cardMounted()).toBe(false);
+    expect(storedRecord()?.outcome).toBe("joined");
+    // The tombstone is untouched by answering: it was already the terminal fact.
+    expect(storedRecord()?.shownAtMs).toBe(shownAtMs);
+    expect(mountedCards()).toBe(0);
+  });
+
+  it("shows nothing when storage refuses the write", async () => {
+    seedRecord();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("quota", "QuotaExceededError");
+    });
+    await runToPresentation();
+    // Fail-closed: a card with no durable tombstone would come back on every load.
+    expect(mountedCards()).toBe(0);
+  });
+
+  it("shows nothing when the write does not read back", async () => {
+    seedRecord();
+    // A storage that silently drops writes is the shape that survives a naive
+    // "did setItem throw?" check.
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => undefined);
+    await runToPresentation();
+    expect(mountedCards()).toBe(0);
+  });
+
+  it("shows nothing when the record vanishes mid-flight", async () => {
+    seedRecord();
+    start();
+    await vi.advanceTimersByTimeAsync(DWELL_MS - 1);
+    localStorage.clear();
+    await vi.advanceTimersByTimeAsync(1);
+    await flushPresentation();
+    // Nothing to stamp means nothing to suppress with, so the card stays away.
+    expect(mountedCards()).toBe(0);
+  });
+
+  it("shows nothing in a browser with no lock manager", async () => {
+    seedRecord();
+    Reflect.deleteProperty(navigator, "locks");
+    await runToPresentation();
+    // Without mutual exclusion two tabs could both mount, so this degrades to not
+    // showing rather than to showing twice.
+    expect(mountedCards()).toBe(0);
+    expect(storedRecord()?.shownAtMs).toBeUndefined();
   });
 
   it("mounts one card when two tabs reach presentation together", async () => {
-    installWebLocks();
     seedRecord();
-    start(createHost().host);
-    start(createHost().host);
+    start();
+    start();
 
     await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
-    // Both schedulers are presentation-ready against the same record; the claim is
-    // what stops the operator seeing the invite twice.
+    await flushPresentation();
+    // Both loads are presentation-ready against one record; the claim is what stops
+    // the operator seeing the invite twice.
     expect(mountedCards()).toBe(1);
   });
 
-  it("takes down a mounted card when another tab answers the invite", async () => {
+  it("releases the lock as soon as the claim is decided", async () => {
     seedRecord();
-    start(createHost().host);
-    await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
-    expect(cardMounted()).toBe(true);
+    await runToPresentation();
+    expect(mountedCards()).toBe(1);
 
-    // A foreign write arrives as a storage event, never as a local call.
-    const settled = JSON.stringify({
-      ...readStored(),
-      settledAtMs: Date.now(),
-      outcome: "joined",
-    } satisfies CommunityInviteRecord);
-    localStorage.setItem(STORAGE_KEY, settled);
-    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: settled }));
-
-    expect(cardMounted()).toBe(false);
-  });
-
-  it("takes the card down when the shell disposes the scheduler", async () => {
-    seedRecord();
-    const dispose = start(createHost().host);
-    await vi.advanceTimersByTimeAsync(DWELL_MS);
-    await flushImport();
-    expect(cardMounted()).toBe(true);
-
-    dispose();
-    // A card outliving its owner keeps a detached shell's closures alive and lets a
-    // reconnecting shell mount a second one beside it.
-    expect(cardMounted()).toBe(false);
+    // No lock is held while the card is on screen, so a later tab is free to take
+    // it — and is turned away by the tombstone rather than by a stuck lock.
+    expect(lockHolders.size).toBe(0);
+    await runToPresentation();
+    expect(mountedCards()).toBe(1);
   });
 });

@@ -1,13 +1,14 @@
 /* @vitest-environment jsdom */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  COMMUNITY_INVITE_SETTLED_EVENT,
-  COMMUNITY_INVITE_URL,
-  type OpenClawCommunityInviteDialog,
-} from "./community-invite-dialog.ts";
+import { COMMUNITY_INVITE_SETTLED_EVENT } from "./community-invite-dialog.ts";
 
-let card: OpenClawCommunityInviteDialog;
+/** The invite link is the product contract this card exists to deliver, so the
+ * test states it independently instead of reading back the value under test. */
+const COMMUNITY_INVITE_URL = "https://discord.gg/clawd";
+
+// The tag map carries the element type, so no exported class is needed here.
+let card: HTMLElementTagNameMap["openclaw-community-invite-dialog"];
 let outcomes: string[];
 
 beforeEach(async () => {
