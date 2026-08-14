@@ -124,7 +124,6 @@ describe("parseCommunityInviteRecord", () => {
       qualifiedLoads: 4,
       shownAtMs: NOW,
       shownVersion: "2026.8.1",
-      settledAtMs: NOW + 1000,
       outcome: "joined",
     });
     expect(parseCommunityInviteRecord(structuredClone(stored))).toEqual(stored);

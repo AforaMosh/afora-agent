@@ -43,21 +43,13 @@ export type CommunityInviteRecord = {
   shownAtMs?: number;
   /** Build the card appeared in; null when the artifact ships without identity. */
   shownVersion?: string | null;
-  /** How the operator answered, recorded after the fact. Metadata only. */
+  /** How the operator answered, recorded after the fact. Metadata only, and
+   * bounded in time by `shownAtMs` above. */
   outcome?: CommunityInviteOutcome;
-  settledAtMs?: number;
 };
 
 function readNonNegativeNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
-}
-
-function readOptionalTimestamp(value: unknown): { ok: boolean; value?: number } {
-  if (value === undefined) {
-    return { ok: true };
-  }
-  const timestamp = readNonNegativeNumber(value);
-  return timestamp === null ? { ok: false } : { ok: true, value: timestamp };
 }
 
 /** The one validator, used by every read. localStorage is shared, hand-editable
@@ -82,9 +74,10 @@ export function parseCommunityInviteRecord(value: unknown): CommunityInviteRecor
   ) {
     return null;
   }
-  const shown = readOptionalTimestamp(value.shownAtMs);
-  const settled = readOptionalTimestamp(value.settledAtMs);
-  if (!shown.ok || !settled.ok) {
+  // Absent is fine; present but not a real timestamp is foreign damage.
+  const shownAtMs =
+    value.shownAtMs === undefined ? undefined : readNonNegativeNumber(value.shownAtMs);
+  if (shownAtMs === null) {
     return null;
   }
   if (shownVersion !== undefined && shownVersion !== null && typeof shownVersion !== "string") {
@@ -97,9 +90,8 @@ export function parseCommunityInviteRecord(value: unknown): CommunityInviteRecor
     firstQualifiedAtMs,
     qualifiedLoads,
     established,
-    ...(shown.value === undefined ? {} : { shownAtMs: shown.value }),
+    ...(shownAtMs === undefined ? {} : { shownAtMs }),
     ...(shownVersion === undefined ? {} : { shownVersion }),
-    ...(settled.value === undefined ? {} : { settledAtMs: settled.value }),
     ...(outcome === undefined ? {} : { outcome }),
   };
 }
@@ -266,7 +258,7 @@ export function runCommunityInvite(hasSessions: boolean): () => void {
       const answered = readCommunityInviteRecord();
       if (answered) {
         const { outcome } = (event as CustomEvent<{ outcome: CommunityInviteOutcome }>).detail;
-        writeCommunityInviteRecord({ ...answered, settledAtMs: Date.now(), outcome });
+        writeCommunityInviteRecord({ ...answered, outcome });
       }
       mounted.remove();
       card = null;
