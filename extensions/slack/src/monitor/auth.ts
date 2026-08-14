@@ -148,7 +148,7 @@ const slackIngressIdentity = defineStableChannelIngressIdentity({
       kind: SLACK_USER_NAME_KIND,
       normalizeEntry,
       normalizeSubject: normalizeSlackNameSubject,
-      authentication: "mutable",
+      authentication: "mutable" as const,
       sensitivity: "pii" as const,
     })),
   ],

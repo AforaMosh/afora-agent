@@ -648,6 +648,7 @@ export async function preflightDiscordMessage(
           id: sender.id,
           name: sender.name,
           tag: sender.tag,
+          isPluralKit: sender.isPluralKit,
         },
         memberAccessConfigured: hasAccessRestrictions,
         memberAllowed,

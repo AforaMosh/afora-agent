@@ -247,6 +247,7 @@ export async function resolveDiscordTextCommandAccess(params: {
   conversationParentId?: string;
   conversationThreadId?: string;
   contextBinding?: ChannelIngressContextBinding;
+  minIdentifierAuthentication?: IdentifierAuthentication;
 }) {
   const ownerAllowFrom = (params.ownerAllowFrom ?? []).filter((entry) => entry.trim() !== "*");
   const memberAccessGroup = "discord-member-access";
@@ -273,6 +274,9 @@ export async function resolveDiscordTextCommandAccess(params: {
     groupPolicy: "allowlist",
     policy: {
       mutableIdentifierMatching: params.allowNameMatching ? "enabled" : "disabled",
+      ...(params.minIdentifierAuthentication
+        ? { minIdentifierAuthentication: params.minIdentifierAuthentication }
+        : {}),
     },
     allowFrom: ownerAllowFrom,
     groupAllowFrom: commandGroup,
