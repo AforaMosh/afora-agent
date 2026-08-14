@@ -25,6 +25,10 @@ type CustodianTranscriptTurnPosition = {
   sessionIndex: number;
 };
 
+type CustodianPendingTranscriptFallback = CustodianTranscriptTurnPosition & {
+  message: CustodianMessage;
+};
+
 /** Transcript-owned state shared by live turns and reload recovery. */
 export abstract class CustodianTranscriptState {
   messages: CustodianMessage[] = [];
@@ -41,6 +45,9 @@ export abstract class CustodianTranscriptState {
   protected requestEpoch = 0;
   protected sessionClient: GatewayBrowserClient | null = null;
   protected transcriptSessionId: string | null = null;
+  // Recovery may replace the transcript before or after an in-flight action settles.
+  // Retain its fallback until authoritative history accepts it or the owner/session changes.
+  private pendingTranscriptFallback: CustodianPendingTranscriptFallback | null = null;
   // Reconnect mutates the client's scope; cleanup must keep targeting the identity that wrote the handle.
   private sessionRecoveryScope: CustodianRecoveryScope | null = null;
   private lastHelloDeviceToken = "";
@@ -52,36 +59,73 @@ export abstract class CustodianTranscriptState {
     this.sessionRecoveryScope = captureCustodianRecoveryScope(client, gatewayUrl);
   }
 
-  protected captureTranscriptTurnPosition(sessionId?: string): CustodianTranscriptTurnPosition {
-    // Recovery replaces global history with session-scoped rows. Retain both offsets so a
-    // pending action reconciles with whichever authoritative transcript remains current.
+  protected stageTranscriptFallback(
+    sessionId: string | undefined,
+    message: CustodianMessage,
+  ): void {
     const globalIndex = this.messages.length;
-    if (this.transcriptSessionId === sessionId) {
-      return { globalIndex, sessionId, sessionIndex: globalIndex };
-    }
     const boundaryIndex =
       this.earlierBoundaryAfterId === null
         ? -1
-        : this.messages.findIndex((message) => message.id === this.earlierBoundaryAfterId);
-    return { globalIndex, sessionId, sessionIndex: globalIndex - (boundaryIndex + 1) };
+        : this.messages.findIndex((candidate) => candidate.id === this.earlierBoundaryAfterId);
+    this.pendingTranscriptFallback = {
+      message,
+      globalIndex,
+      sessionId,
+      sessionIndex:
+        this.transcriptSessionId === sessionId ? globalIndex : globalIndex - (boundaryIndex + 1),
+    };
   }
 
-  protected restoreUnacceptedTranscriptTurn(
-    position: CustodianTranscriptTurnPosition,
-    message: CustodianMessage,
-  ): void {
-    if (this.sessionId !== position.sessionId) {
+  protected settleTranscriptFallback(message: CustodianMessage, accepted: boolean): void {
+    const fallback = this.pendingTranscriptFallback;
+    if (fallback?.message !== message) {
+      return;
+    }
+    if (accepted) {
+      this.pendingTranscriptFallback = null;
+      return;
+    }
+    this.restoreTranscriptFallback(fallback);
+  }
+
+  protected retireTranscriptFallback(sessionId?: string): void {
+    const fallback = this.pendingTranscriptFallback;
+    if (sessionId !== undefined && fallback?.sessionId === sessionId) {
+      this.restoreTranscriptFallback(fallback);
+    }
+    this.pendingTranscriptFallback = null;
+  }
+
+  protected adoptTranscriptSession(sessionId: string): void {
+    if (sessionId !== this.sessionId) {
+      this.pendingTranscriptFallback = null;
+    }
+    this.sessionId = sessionId;
+  }
+
+  private restoreTranscriptFallback(fallback: CustodianPendingTranscriptFallback): void {
+    if (this.sessionId !== fallback.sessionId) {
+      this.pendingTranscriptFallback = null;
       return;
     }
     const index =
-      this.transcriptSessionId === position.sessionId
-        ? position.sessionIndex
-        : position.globalIndex;
+      this.transcriptSessionId === fallback.sessionId
+        ? fallback.sessionIndex
+        : fallback.globalIndex;
     const existing = this.messages[index];
-    if (existing && (existing.role === "user" || existing.structuredResponse !== null)) {
+    if (existing === fallback.message || this.messages.includes(fallback.message)) {
       return;
     }
-    this.messages = this.messages.toSpliced(Math.min(index, this.messages.length), 0, message);
+    if (existing && (existing.role === "user" || existing.structuredResponse !== null)) {
+      this.pendingTranscriptFallback = null;
+      return;
+    }
+    this.messages = this.messages.toSpliced(
+      Math.min(index, this.messages.length),
+      0,
+      fallback.message,
+    );
   }
 
   protected currentSessionOwnershipKey(context: ApplicationContext | null): string {
@@ -174,12 +218,20 @@ export abstract class CustodianTranscriptState {
     this.earlierBoundaryAfterId = transcript.earlierBoundaryAfterId;
     const step = transcript.recoveredStep;
     if (recoveredSessionId) {
-      this.sessionId = recoveredSessionId;
+      this.adoptTranscriptSession(recoveredSessionId);
+      const fallback = this.pendingTranscriptFallback;
+      if (fallback?.sessionId === recoveredSessionId) {
+        this.restoreTranscriptFallback(fallback);
+      } else {
+        this.pendingTranscriptFallback = null;
+      }
       this.sensitive = step?.sensitive === true;
       this.wizardInputPending = step !== undefined;
       this.wizardValue = step ? initialCustodianWizardValue(step) : undefined;
       this.wizardSecretVisible = false;
       this.questionReplyUncertain = false;
+    } else {
+      this.pendingTranscriptFallback = null;
     }
     return step !== undefined;
   }

@@ -237,7 +237,6 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     }
     this.abandonedTurnOutcomeUnknown = false;
     this.answeredQuestions = retireCustodianQuestions(this.messages, this.answeredQuestions);
-    const turnPosition = this.captureTranscriptTurnPosition(params.sessionId);
     const userMessage: CustodianMessage = {
       id: this.nextMessageId++,
       role: "user",
@@ -247,6 +246,9 @@ export class CustodianSessionStore extends CustodianTranscriptState {
       step: null,
       structuredResponse: null,
     };
+    if (userTurnProjection === "unless-accepted") {
+      this.stageTranscriptFallback(params.sessionId, userMessage);
+    }
     if (userTurnProjection === "always") {
       this.messages = [...this.messages, userMessage];
     }
@@ -256,8 +258,8 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     const replyEpoch = this.requestEpoch;
     const result = await reply;
     const outcome = result.outcome;
-    if (userTurnProjection === "unless-accepted" && outcome !== "accepted") {
-      this.restoreUnacceptedTranscriptTurn(turnPosition, userMessage);
+    if (userTurnProjection === "unless-accepted") {
+      this.settleTranscriptFallback(userMessage, outcome === "accepted");
     }
     if (questionReply && this.requestEpoch === replyEpoch) {
       this.questionReplyUncertain = eventNudgeState.questionUncertainty(questionState[1], outcome);
@@ -377,7 +379,8 @@ export class CustodianSessionStore extends CustodianTranscriptState {
   ): void {
     const gatewayUrl = this.context?.gateway.connection.gatewayUrl ?? "";
     const recovery = loadTranscript ? readCustodianRecoveryForClient(client, gatewayUrl) : null;
-    this.sessionId = recovery ?? createCustodianSessionId();
+    const sessionId = recovery ?? createCustodianSessionId();
+    this.adoptTranscriptSession(sessionId);
     this.transcriptSessionId = null;
     this.sessionVariant = variant;
     this.bindSessionRecovery(client, gatewayUrl);
@@ -413,6 +416,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     this.sensitive = this.wizardInputPending = this.questionReplyUncertain = false;
     this.error = null;
     this.setupIssue = null;
+    this.retireTranscriptFallback(this.sessionId);
     this.earlierBoundaryAfterId = this.messages.at(-1)?.id ?? null;
     this.startSession(client, variant, false);
   }
@@ -596,7 +600,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     let requestParams = params;
     if (recoveryPending) {
       this.clearSessionRecovery(params.sessionId);
-      this.sessionId = createCustodianSessionId();
+      this.adoptTranscriptSession(createCustodianSessionId());
       requestParams = { ...params, sessionId: this.sessionId };
       this.retryParams = requestParams;
     }
@@ -616,6 +620,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
     this.sensitive = this.wizardInputPending = this.questionReplyUncertain = false;
     this.earlierBoundaryAfterId = null;
     this.transcriptSessionId = null;
+    this.retireTranscriptFallback();
   }
 
   private async requestReply(
@@ -655,7 +660,7 @@ export class CustodianSessionStore extends CustodianTranscriptState {
       if (epoch !== this.requestEpoch || client !== this.activeClient) {
         return { outcome: "sent" };
       }
-      this.sessionId = result.sessionId;
+      this.adoptTranscriptSession(result.sessionId);
       this.sensitive = result.sensitive === true;
       this.wizardInputPending = result.wizardInputPending === true;
       this.retryParams = null;

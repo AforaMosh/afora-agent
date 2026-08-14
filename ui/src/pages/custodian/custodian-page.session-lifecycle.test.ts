@@ -110,6 +110,16 @@ describe("custodian page session lifecycle", () => {
     expect(request.mock.calls[2]?.[1]).not.toHaveProperty("wizardAnswer");
     expect(request.mock.calls[2]?.[1]?.sessionId).not.toBe("evicted-wizard-session");
     await waitForFast(() => expect(page.textContent).toContain("Fresh session ready."));
+    const rejectedTurn = page.querySelector(".chat-group.user");
+    const earlierDivider = page.querySelector(".chat-divider");
+    expect(rejectedTurn?.textContent).toContain("Twitch");
+    expect(earlierDivider?.textContent).toContain("Earlier");
+    expect(
+      rejectedTurn && earlierDivider
+        ? rejectedTurn.compareDocumentPosition(earlierDivider) & Node.DOCUMENT_POSITION_FOLLOWING
+        : 0,
+    ).toBeTruthy();
+    expect(page.querySelector(".custodian__structured-response")).toBeNull();
     expect(page.querySelector(".custodian__wizard-step")).toBeNull();
   });
 
