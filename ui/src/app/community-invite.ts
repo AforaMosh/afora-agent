@@ -1,10 +1,10 @@
-// One-shot Discord community nudge. This module is the only part of the invite the
-// startup graph pays for, so it holds one decision and nothing else: an operator
-// who already answered the card is terminal here and the lazy runtime chunk is
-// never fetched again. Reading, validating and writing the record belongs to that
-// chunk, along with every arming rule and the card itself.
+// One-shot Discord community nudge. Nothing here is in the startup graph: the
+// shell idle-imports this module after first paint, because an unsolicited nudge
+// should not cost the operator a single byte of the wait before the app appears.
+// This module holds one decision — has the card already been answered, in which
+// case it is terminal and the arming rules are never fetched. Reading, validating
+// and writing the record belongs to that runtime chunk, along with the card.
 
-import { createIdleImport } from "../lib/idle-import.ts";
 import type { SessionCapability } from "../lib/sessions/session-capability.ts";
 import { getSafeLocalStorage } from "../local-storage.ts";
 import type { ApplicationGateway } from "./gateway.ts";
@@ -88,20 +88,16 @@ export function startCommunityInvite(host: CommunityInviteHost): () => void {
   }
   let stop: (() => void) | null = null;
   let disposed = false;
-  const runtimeImport = createIdleImport(
-    () => import("./community-invite.runtime.ts"),
-    ({ runCommunityInvite }) => {
-      // The chunk can land after the shell disconnected; starting then would leak
-      // subscriptions onto a detached host.
-      if (!disposed) {
-        stop = runCommunityInvite(host);
-      }
-    },
-  );
-  runtimeImport.schedule();
+  // The shell already reached this module at idle, so the arming rules need no
+  // second idle wait — just the guard, since the chunk can land after the shell
+  // disconnected and starting then would leak subscriptions onto a detached host.
+  void import("./community-invite.runtime.ts").then(({ runCommunityInvite }) => {
+    if (!disposed) {
+      stop = runCommunityInvite(host);
+    }
+  });
   return () => {
     disposed = true;
-    runtimeImport.dispose();
     stop?.();
     stop = null;
   };
