@@ -228,7 +228,7 @@ function renderSessionSection(params: {
                     );
                   }}
                 >
-                  ${icons.moreHorizontal}
+                  ${icons.ellipsis}
                 </button>
               `
             : nothing}
