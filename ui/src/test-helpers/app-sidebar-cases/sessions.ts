@@ -371,17 +371,13 @@ describe("AppSidebar session accessibility", () => {
     expect(lead).not.toBeNull();
     expect(lead?.childElementCount).toBe(0);
     expect(link?.querySelector(".sidebar-recent-session__text")).not.toBeNull();
-    const rowState = row?.querySelector(".session-row-state");
-    expect(rowState?.getAttribute("role")).toBe("img");
-    expect(rowState?.getAttribute("aria-label")).toBe("Unread");
-    expect(rowState?.querySelector(".session-unread-dot")).not.toBeNull();
+    // Opening the session consumed its unread dot; the derived title keeps the fact.
+    expect(row?.querySelector(".session-row-state")).toBeNull();
     expect(link?.querySelector(".sidebar-recent-session__name")?.textContent).toBe(
       "Quarterly launch plan",
     );
-    expect(link?.getAttribute("title")).toBe("Quarterly launch plan · now · Unread");
-    expect(link?.getAttribute("aria-describedby")).toBe(
-      `sidebar-session-state-${encodeURIComponent(key)}`,
-    );
+    expect(link?.getAttribute("title")).toBe("Quarterly launch plan · now");
+    expect(link?.hasAttribute("aria-describedby")).toBe(false);
     expect(row?.querySelector(".session-row-trail")).toBeNull();
   });
 });
