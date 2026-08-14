@@ -116,7 +116,7 @@ describe("local TUI PTY fixture support", () => {
   });
 
   it("does not replay a session rollover when an old busy notice is redrawn", async () => {
-    const newSessionPrefix = "new session: agent:main:tui-";
+    const newSessionPrefix = "new session";
     const acceptedSession = createDeferred();
     const writes: string[] = [];
     let output = "";

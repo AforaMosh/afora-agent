@@ -401,14 +401,15 @@ export function createSessionActions(context: SessionActionContext) {
     applySessionInfoFromPatch(result);
     chatLog.clearAll();
     btw.clear();
-    chatLog.addSystem(`session ${state.currentSessionKey}`);
     state.historyLoaded = true;
     void rememberSessionKey?.(state.currentSessionKey);
     tui.requestRender(true);
     return true;
   };
 
-  const loadHistory = async (): Promise<TuiHistoryLoadResult> => {
+  const loadHistory = async (
+    sessionNotice: string | false = "session loaded",
+  ): Promise<TuiHistoryLoadResult> => {
     // History rebuilds mutate shared UI state after multiple awaits. Only the
     // latest request may render, or a slow reload can replace a newer selection.
     const generation = ++historyLoadGeneration;
@@ -490,7 +491,9 @@ export function createSessionActions(context: SessionActionContext) {
       });
       chatLog.clearAll();
       btw.clear();
-      chatLog.addSystem(`session ${state.currentSessionKey}`);
+      if (sessionNotice) {
+        chatLog.addSystem(sessionNotice);
+      }
       for (const entry of projection.entries) {
         const message = entry.message as Record<string, unknown>;
         if (isCommandMarkedMessage(message)) {
@@ -593,7 +596,7 @@ export function createSessionActions(context: SessionActionContext) {
     }
   };
 
-  const setSession = async (rawKey: string) => {
+  const setSession = async (rawKey: string, sessionNotice = "session loaded") => {
     const previousSelection = captureSessionSelection();
     const nextSelection = resolveSessionSelection(rawKey);
     const nextKey = nextSelection.key;
@@ -632,7 +635,7 @@ export function createSessionActions(context: SessionActionContext) {
     btw.clear();
     updateHeader();
     updateFooter();
-    await loadHistory();
+    await loadHistory(sessionNotice);
   };
 
   const abortActive = async (params?: { preferActive?: boolean }) => {

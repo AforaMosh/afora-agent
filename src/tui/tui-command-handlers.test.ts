@@ -26,7 +26,8 @@ import {
 import { createEditorSubmitHandler, createSubmitBurstCoalescer } from "./tui-submit.js";
 import type { SessionInfo } from "./tui-types.js";
 
-type LoadHistoryMock = ReturnType<typeof vi.fn> & (() => Promise<void>);
+type LoadHistoryMock = ReturnType<typeof vi.fn> &
+  ((options?: { sessionNotice?: string | false }) => Promise<void>);
 type RunAuthFlow = NonNullable<Parameters<typeof createCommandHandlers>[0]["runAuthFlow"]>;
 type AbortActiveMock = ReturnType<typeof vi.fn> &
   ((params?: { preferActive?: boolean }) => Promise<void>);
@@ -35,7 +36,8 @@ type SelectableOverlay = {
   onSelect?: (item: { value: string; label?: string; description?: string }) => void;
 };
 type SetActivityStatusMock = ReturnType<typeof vi.fn> & ((text: string) => void);
-type SetSessionMock = ReturnType<typeof vi.fn> & ((key: string) => Promise<void>);
+type SetSessionMock = ReturnType<typeof vi.fn> &
+  ((key: string, sessionNotice?: string) => Promise<void>);
 type ConsumeCompletedRunMock = ReturnType<typeof vi.fn> & ((runId: string) => boolean);
 type FlushPendingHistoryRefreshMock = ReturnType<typeof vi.fn> & (() => void);
 type RefreshAgentsMock = ReturnType<typeof vi.fn> & (() => Promise<Result<void, string>>);
@@ -1366,7 +1368,7 @@ describe("tui command handlers", () => {
     const uuidParts: string[] = createOptions.key.slice("tui-".length).split("-");
     expect(uuidParts.map((part) => part.length)).toEqual([8, 4, 4, 4, 12]);
     expect(uuidParts.every((part) => /^[0-9a-f]+$/.test(part))).toBe(true);
-    expect(setSessionMock).toHaveBeenCalledWith("agent:main:tui-canonical");
+    expect(setSessionMock).toHaveBeenCalledWith("agent:main:tui-canonical", "new session");
     // /reset still resets the shared session
     expect(resetSession).toHaveBeenCalledTimes(1);
     expect(resetSession).toHaveBeenCalledWith("agent:main:main", "reset", undefined);
@@ -1405,7 +1407,7 @@ describe("tui command handlers", () => {
     expect(refreshSessionInfo).toHaveBeenCalledOnce();
     expect(harness.state.currentSessionKey).toBe("agent:main:replacement");
     expect(harness.state.currentSessionId).toBe("replacement-session");
-    expect(harness.addSystem).toHaveBeenCalledWith("session agent:main:replacement reset");
+    expect(harness.addSystem).toHaveBeenCalledWith("session reset");
   });
 
   it.each([

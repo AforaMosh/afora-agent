@@ -1173,7 +1173,7 @@ describe("TUI PTY real backends", () => {
 
         const steerResponseOffset = fixture.run.visibleOutput().lastIndexOf("LOCAL_STEER_COMPLETE");
         await waitForOutputAfter(fixture.run, "| idle", steerResponseOffset);
-        await createFreshSession(fixture.run, "new session: agent:main:tui-");
+        await createFreshSession(fixture.run, "new session");
         const freshResponseStart = fixture.run.visibleOutput().length;
         await fixture.run.write("send after local new\r");
         await waitFor({
@@ -1212,9 +1212,10 @@ describe("TUI PTY real backends", () => {
         const firstReplyOffset = lastOutputIndexAfter(fixture.run, reply, 0);
         await waitForOutputAfter(fixture.run, "| idle", firstReplyOffset);
         const newOffset = fixture.run.visibleOutput().length;
-        await createFreshSession(fixture.run, "new session: agent:main:tui-");
+        await createFreshSession(fixture.run, "new session");
         const newOutput = fixture.run.visibleOutput().slice(newOffset);
-        const createdKey = newOutput.match(/new session: (agent:main:tui-\S+)/)?.[1];
+        const createdRest = newOutput.match(/session (tui-[0-9a-f-]+)/)?.[1];
+        const createdKey = createdRest ? `agent:main:${createdRest}` : undefined;
         expect(createdKey).toBeDefined();
         const sessionLabel = `session ${createdKey!.split(":").at(-1)}`;
         await waitForSynchronizedFrameRows(
@@ -1257,7 +1258,7 @@ describe("TUI PTY real backends", () => {
         await fixture.run.waitForOutput(first, LOCAL_OUTPUT_TIMEOUT_MS);
         const firstReplyOffset = fixture.run.visibleOutput().lastIndexOf(first);
         await waitForOutputAfter(fixture.run, "| idle", firstReplyOffset);
-        await createFreshSession(fixture.run, "new session: agent:main:tui-");
+        await createFreshSession(fixture.run, "new session");
         await fixture.run.write("T03_HISTORY_SECOND_PROMPT\r");
         await fixture.run.waitForOutput(second, LOCAL_OUTPUT_TIMEOUT_MS);
         const secondReplyOffset = fixture.run.visibleOutput().lastIndexOf(second);
@@ -1925,9 +1926,12 @@ export default {
         await fixture.waitForOutput("Default model: tui-pty-validation (128k ctx)");
         const newOffset = fixture.run.visibleOutput().length;
         await fixture.run.write("/new\r", { delay: false });
-        await waitForOutputAfter(fixture.run, "new session: agent:", newOffset);
+        await waitForOutputAfter(fixture.run, "new session", newOffset);
         const createdOutput = fixture.run.visibleOutput().slice(newOffset);
-        const createdKey = createdOutput.match(/new session: (agent:\S+)/)?.[1];
+        const createdRest = createdOutput.match(/session (tui-[0-9a-f-]+)/)?.[1];
+        const createdKey = createdRest
+          ? `${fixture.sessionKey.slice(0, fixture.sessionKey.lastIndexOf(":"))}:${createdRest}`
+          : undefined;
         expect(createdKey).toBeDefined();
         expect(createdKey).not.toBe(fixture.sessionKey);
         fixture.trackSessionKey(createdKey!);
@@ -1980,7 +1984,7 @@ export default {
         );
         const selectedInfo = selected.sessionInfo!;
         await fixture.run.write("/reset\r", { delay: false });
-        await fixture.waitForOutput(`session ${createdKey} reset`);
+        await fixture.waitForOutput("session reset");
         const reset = await waitForHistoryMessages(
           controlClient,
           createdKey!,

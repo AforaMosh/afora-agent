@@ -475,7 +475,6 @@ async function exerciseSelectorOutputSafety(
     await fixture.run.waitForOutput(
       formatTuiFooter({
         agentLabel: `main (${sessionDisplay.text})`,
-        sessionLabel: "main (Main)",
         sessionInfo: { model: selectedModel, contextTokens: 128 },
         deliver: false,
       }),
@@ -500,7 +499,6 @@ async function exerciseSelectorOutputSafety(
     expect(historyLoad.payload).toMatchObject({ sessionKey: selectedSessionKey });
     await assertTerminalAttackSanitized(fixture, sessionKey, 5_000);
     const expectedAgentLabel = `main (${sessionDisplay.text})`;
-    const expectedSessionLabel = `${sessionKey.text} (${sessionDisplay.text})`;
     await fixture.run.waitForOutput(
       sanitizeRenderableLine(
         `openclaw tui pty fixture - pty-fixture://local - agent ${expectedAgentLabel} - session ${sessionKey.text}`,
@@ -510,7 +508,6 @@ async function exerciseSelectorOutputSafety(
     await fixture.run.waitForOutput(
       formatTuiFooter({
         agentLabel: expectedAgentLabel,
-        sessionLabel: expectedSessionLabel,
         sessionInfo: { model: selectedModel, contextTokens: 128 },
         deliver: false,
       }),

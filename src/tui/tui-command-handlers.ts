@@ -75,8 +75,8 @@ type CommandHandlerContext = {
   openOverlay: (component: Component) => OverlayHandle;
   closeOverlay: (handle?: OverlayHandle) => void;
   refreshSessionInfo: () => Promise<void>;
-  loadHistory: () => Promise<unknown>;
-  setSession: (key: string) => Promise<void>;
+  loadHistory: (options?: { sessionNotice?: string | false }) => Promise<unknown>;
+  setSession: (key: string, sessionNotice?: string) => Promise<void>;
   refreshAgents: () => Promise<Result<void, string>>;
   abortActive: (params?: { preferActive?: boolean }) => Promise<void>;
   setActivityStatus: (text: string) => void;
@@ -753,8 +753,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         state.sessionInfo.outputTokens = null;
         state.sessionInfo.totalTokens = null;
         tui.requestRender();
-        await setSession(result.key);
-        chatLog.addSystem(`new session: ${result.key}`);
+        await setSession(result.key, "new session");
       } catch (err) {
         chatLog.addSystem(`new session failed: ${formatTuiErrorMessage(err)}`);
       } finally {
@@ -787,12 +786,12 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           resetResultSelection = captureSessionSelection();
           await refreshSessionInfo();
         } else {
-          await loadHistory();
+          await loadHistory({ sessionNotice: false });
         }
         if (!isCurrentSessionSelection(resetResultSelection)) {
           return;
         }
-        chatLog.addSystem(`session ${state.currentSessionKey} reset`);
+        chatLog.addSystem("session reset");
       } catch (err) {
         if (!isCurrentSessionSelection(resetResultSelection)) {
           return;

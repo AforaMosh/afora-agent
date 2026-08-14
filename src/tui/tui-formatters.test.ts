@@ -36,7 +36,6 @@ describe("formatTuiFooter", () => {
     expect(
       formatTuiFooter({
         agentLabel: "Main",
-        sessionLabel: "work",
         sessionInfo: {
           model: "gpt-5.6-sol@openai:setup-64cddea3-938c-431e-be3b-aa47090577c7",
           fastMode: "auto",
@@ -50,7 +49,7 @@ describe("formatTuiFooter", () => {
         deliver: true,
       }),
     ).toBe(
-      "agent Main | session work | gpt-5.6-sol high | fast:auto | verbose full | trace:raw | reasoning:stream | deliver:on | tokens 1.2k/128k (1%)",
+      "agent Main | gpt-5.6-sol high | fast:auto | verbose full | trace:raw | reasoning:stream | deliver:on | tokens 1.2k/128k (1%)",
     );
   });
 
@@ -58,17 +57,15 @@ describe("formatTuiFooter", () => {
     expect(
       formatTuiFooter({
         agentLabel: "Main",
-        sessionLabel: "main",
         sessionInfo: { model: "fixture-model" },
         deliver: false,
       }),
-    ).toBe("agent Main | session main | fixture-model | deliver:off | tokens ?");
+    ).toBe("agent Main | fixture-model | deliver:off | tokens ?");
   });
 
   it("wraps the compact summary within the terminal width", () => {
     const summary = formatTuiFooter({
       agentLabel: "Main",
-      sessionLabel: "a-long-session-name",
       sessionInfo: {
         model: "fixture-provider/a-long-model-name",
         traceLevel: "raw",
@@ -91,7 +88,6 @@ describe("formatTuiFooter", () => {
     ];
     const footer = formatTuiFooter({
       agentLabel: `agent-start${attacks[0]}agent-end\nمرحبا`,
-      sessionLabel: `session-start${attacks[2]}session-end\r\nשלום`,
       sessionInfo: {
         model: `provider/model-start${attacks[1]}middle${attacks[3]}${attacks[4]}${attacks[5]}model-end\tUnicode`,
       },
@@ -100,8 +96,6 @@ describe("formatTuiFooter", () => {
 
     expect(footer).toContain("agent-startagent-end");
     expect(footer).toContain("مرحبا");
-    expect(footer).toContain("session-startsession-end");
-    expect(footer).toContain("שלום");
     expect(footer).toContain("model-startmiddlemodel-end Unicode");
     expect(footer).toContain("\u2067");
     expect(footer).toContain("\u2069");
@@ -114,7 +108,6 @@ describe("formatTuiFooter", () => {
   it("renders active goal usage", () => {
     const footer = formatTuiFooter({
       agentLabel: "Main",
-      sessionLabel: "main",
       sessionInfo: {
         goal: {
           schemaVersion: 1,
@@ -138,7 +131,6 @@ describe("formatTuiFooter", () => {
   it("renders resumable blocked goals", () => {
     const footer = formatTuiFooter({
       agentLabel: "Main",
-      sessionLabel: "main",
       sessionInfo: {
         goal: {
           schemaVersion: 1,

@@ -638,7 +638,7 @@ describe.sequential("TUI PTY harness", () => {
         (entry) =>
           entry.method === "acceptTaskSuggestion" && objectFieldEquals(entry, "taskId", "task_pty"),
       );
-      await fixture.run.waitForOutput("session agent:main:task-pty");
+      await fixture.run.waitForOutput("session loaded");
     },
     TEST_TIMEOUT_MS,
   );
@@ -998,7 +998,19 @@ describe.sequential("TUI PTY harness", () => {
     "creates a backend session from /new and adopts its canonical key",
     async () => {
       await fixture.run.write("/new\r", { delay: false });
-      await fixture.run.waitForOutput("new session: agent:main:tui-");
+      await fixture.run.waitForOutput("new session");
+      const rows = await waitForSynchronizedFrameRows(
+        fixture.run,
+        (frame) =>
+          frame.some((row) => row.trim() === "new session") &&
+          frame.some((row) => row.includes("agent main (Main)") && row.includes("deliver:off")),
+        TEST_TIMEOUT_MS,
+      );
+      const footerRow = rows.find(
+        (row) => row.includes("agent main (Main)") && row.includes("deliver:off"),
+      );
+      expect(footerRow).toBeDefined();
+      expect(footerRow!).not.toContain("session");
       const created = await fixture.waitForLogEntry((entry) => entry.method === "createSession");
       expect(created.payload).toMatchObject({ agentId: "main" });
       expect(created.payload).not.toHaveProperty("parentSessionKey");

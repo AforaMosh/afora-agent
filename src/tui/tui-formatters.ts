@@ -49,7 +49,6 @@ function formatModelFooter(params: {
 /** Format the compact TUI footer from authoritative session and process state. */
 export function formatTuiFooter(params: {
   agentLabel: string;
-  sessionLabel: string;
   sessionInfo: SessionInfo;
   thinkingLevel?: string | null;
   deliver: boolean;
@@ -65,7 +64,6 @@ export function formatTuiFooter(params: {
     reasoning === "on" ? "reasoning" : reasoning === "stream" ? "reasoning:stream" : null;
   const footer = [
     `agent ${params.agentLabel}`,
-    `session ${params.sessionLabel}`,
     formatModelFooter({ model: sessionInfo.model, thinkingLevel: params.thinkingLevel }),
     formatGoalFooter(sessionInfo.goal),
     fastLabel,

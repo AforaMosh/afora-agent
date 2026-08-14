@@ -1809,7 +1809,7 @@ describe("tui session actions", () => {
     expect(state.sessionInfo.updatedAt).toBe(123);
     expect(state.historyLoaded).toBe(true);
     expect(clearAll).toHaveBeenCalled();
-    expect(addSystem).toHaveBeenCalledWith("session agent:main:new");
+    expect(addSystem).not.toHaveBeenCalled();
   });
 
   it("fences pre-reset history and session-info reads when reset commits", async () => {

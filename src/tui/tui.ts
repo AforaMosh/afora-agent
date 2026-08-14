@@ -1344,16 +1344,11 @@ async function runTuiUnlocked(opts: RunTuiOptions): Promise<TuiResult> {
     : undefined;
 
   const updateFooter = () => {
-    const sessionKeyLabel = formatSessionKey(currentSessionKey);
-    const sessionLabel = state.sessionInfo.displayName
-      ? `${sessionKeyLabel} (${state.sessionInfo.displayName})`
-      : sessionKeyLabel;
     const agentLabel = formatAgentLabel(state.currentAgentId);
     footer.setText(
       theme.dim(
         formatTuiFooter({
           agentLabel,
-          sessionLabel,
           sessionInfo: state.sessionInfo,
           thinkingLevel: thinkingLevelOverride ?? state.sessionInfo.thinkingLevel,
           // Delivery is fixed at launch; session switches and patches cannot change it.
@@ -1416,9 +1411,12 @@ async function runTuiUnlocked(opts: RunTuiOptions): Promise<TuiResult> {
     setSession,
     abortActive,
   } = sessionActions;
-  const loadHistory = async (options?: { retireMissingReconnectRun?: boolean }) => {
+  const loadHistory = async (options?: {
+    retireMissingReconnectRun?: boolean;
+    sessionNotice?: string | false;
+  }) => {
     const activeRunAtStart = state.activeChatRunId;
-    const result = await loadHistorySnapshot();
+    const result = await loadHistorySnapshot(options?.sessionNotice);
     if (result.loaded) {
       if (
         options?.retireMissingReconnectRun === true &&

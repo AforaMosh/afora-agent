@@ -59,7 +59,7 @@ describe("TUI reset transition PTY", () => {
         // Release before the controlled paste coalescer flushes. Admission must use
         // the transition snapshot captured when Enter arrived, not live state.
         await writeFile(resetReleasePath, "released\n", "utf8");
-        await run.waitForOutput("session main (Reset session after)");
+        await run.waitForOutput("session reset");
         await run.waitForOutput("overlap during reset\nnewer suffix", 7_000);
 
         await run.write("\r", { delay: false });
