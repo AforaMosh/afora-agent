@@ -498,6 +498,7 @@ export class WizardSession {
         this.error = String(err);
       }
     } finally {
+      this.clearCurrentStep();
       this.settled = true;
       if (this.expiryTimer) {
         clearTimeout(this.expiryTimer);

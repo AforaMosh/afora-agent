@@ -58,6 +58,34 @@ describe("WizardSession", () => {
     await expect(session.next()).resolves.toMatchObject({ done: true, status: "done" });
   });
 
+  test.each(["done", "error"] as const)(
+    "scrubs a delivered QR when its runner reaches %s",
+    async (outcome) => {
+      let finish!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const session = new WizardSession(async (_prompter, _signal, owner) => {
+        owner.pushStep(qrStep());
+        await gate;
+        if (outcome === "error") {
+          throw new Error("setup failed");
+        }
+      });
+
+      const delivered = await session.next();
+      expect(delivered.step?.type).toBe("qr");
+      finish();
+      await session.whenSettled();
+
+      expect(delivered.step?.qrDataUrl).toBeUndefined();
+      await expect(session.next()).resolves.toMatchObject({
+        done: true,
+        status: outcome,
+      });
+    },
+  );
+
   test("steps progress in order", async () => {
     const session = noteRunner();
 
