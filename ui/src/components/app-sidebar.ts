@@ -32,7 +32,6 @@ import {
 } from "./app-sidebar-customizer.ts";
 import { sidebarPluginTabs } from "./app-sidebar-nav-menus.ts";
 import {
-  renderAppSidebarAttention,
   renderAppSidebarBrand,
   renderAppSidebarFooterBar,
   renderAppSidebarHomeRow,
@@ -69,7 +68,8 @@ import {
   resolveLobsterRunOutcome,
 } from "./lobster-pet-contract.ts";
 import { SessionOrganizerController } from "./session-organizer-controller.ts";
-import type { SidebarAutomationAttentionChangeDetail } from "./sidebar-attention.ts";
+import type { SidebarAutomationAttention } from "./sidebar-attention-items.ts";
+import type { SidebarIssuesChangeDetail } from "./sidebar-attention.ts";
 import { SidebarMenusController } from "./sidebar-menus-controller.ts";
 // The shared loader retries transient chunk failures online; a deploy-pruned
 // chunk still stays off until reload when that retry fails, by design.
@@ -84,10 +84,11 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
   @state() sidebarNarrationLines: ReadonlyMap<string, string> = new Map();
   @state() sidebarObserverDigests: ReadonlyMap<string, SessionObserverDigest> = new Map();
   @state() private sidebarScrolling = false;
-  @state() automationAttention = {
+  @state() sidebarAutomationAttention: SidebarAutomationAttention = {
     count: 0,
-    severity: null as "danger" | "warning" | null,
+    severity: null,
   };
+
   override readonly sessionOrganizer = new SessionOrganizerController(this);
   override readonly sidebarMenus = new SidebarMenusController(this);
   private readonly sidebarCustomizer = new SidebarCustomizerController(this);
@@ -139,6 +140,9 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
   private readonly refreshAppearanceSettings = () => this.context?.theme.refresh();
   private readonly hiddenSessionCatalogsChanged = () => {
     this.hiddenSessionCatalogIds = loadStoredHiddenSessionCatalogIds();
+  };
+  private readonly sidebarIssuesChanged = (event: CustomEvent<SidebarIssuesChangeDetail>) => {
+    this.sidebarAutomationAttention = event.detail.automationAttention;
   };
 
   // Catalog rows are non-startup content. Load their renderer through the same
@@ -614,7 +618,7 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
       <aside
         class="sidebar"
         ?data-hover-suppressed=${this.sidebarMenus.sessionMenu !== null}
-        @sidebar-automation-attention-change=${this.handleAutomationAttentionChange}
+        @sidebar-issues-change=${this.sidebarIssuesChanged}
         @contextmenu=${(event: MouseEvent) => {
           // Editable controls keep the platform editing menu; all other sidebar chrome is owned here.
           if (!(event.target as Element).closest("input, textarea, [contenteditable]")) {
@@ -666,7 +670,6 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
                   ${this.renderSessions()}
                 </div>
                 <div class="sidebar-shell__footer">
-                  ${renderAppSidebarAttention(this)}
                   <openclaw-sidebar-update-card
                     .updateAvailable=${this.updateAvailable}
                     .updateSchedule=${this.updateSchedule}
