@@ -253,7 +253,8 @@ export function renderRecentSession(params: {
     requiredScope: "operator.write",
   });
   const rowDraggable = !session.isChild && groupWriteAccess.allowed;
-  // Always reserve the lead so every title shares the section-label text line.
+  // Leading state occupies the shared icon rail without owning text alignment.
+  const showLead = leadingIndicator !== nothing || session.visibility === "draft";
   const row = html`
     <div
       class=${rowClass}
