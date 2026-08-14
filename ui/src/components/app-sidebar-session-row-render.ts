@@ -417,7 +417,7 @@ export function renderRecentSession(params: {
                   host.toggleSessionMenu(session, trigger);
                 }}
               >
-                ${icons.moreHorizontal}
+                ${icons.ellipsis}
               </button>
             </span>`}
       </span>
