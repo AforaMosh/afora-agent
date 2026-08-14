@@ -119,7 +119,7 @@ describe("openclaw.chat.history wizard recovery", () => {
       },
       0,
       {
-        wizardAction: { kind: "answer", prompt: "Port" },
+        wizardAction: { kind: "answer" },
         wizardActionAccepted: false,
       },
     );
@@ -239,7 +239,7 @@ describe("openclaw.chat.history wizard recovery", () => {
         role: "user" as const,
         text: "Alpha",
         at: 2,
-        wizardAction: { kind: "answer" as const, prompt: "Choose one" },
+        wizardAction: { kind: "answer" as const },
       },
     ];
     transcriptStoreMocks.readTranscriptTail.mockReturnValue(durableTurns);

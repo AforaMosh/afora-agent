@@ -100,7 +100,7 @@ describe("custodian page", () => {
         sessionId: "rich-wizard-session",
         reply: "Choose features.",
         action: "none",
-        wizardAction: { kind: "answer", prompt: "Which channel?" },
+        wizardAction: { kind: "answer" },
         wizardInputPending: true,
         step: {
           id: "features",
@@ -117,7 +117,7 @@ describe("custodian page", () => {
         sessionId: "rich-wizard-session",
         reply: "Enter the secret.",
         action: "none",
-        wizardAction: { kind: "answer", prompt: "Which features?" },
+        wizardAction: { kind: "answer" },
         sensitive: true,
         wizardInputPending: true,
         step: {
@@ -210,7 +210,7 @@ describe("custodian page", () => {
       [...page.querySelectorAll(".custodian__structured-response-prompt")].map(
         (element) => element.textContent,
       ),
-    ).toEqual(["Which channel?", "Which features?", "Setup answer"]);
+    ).toEqual(["Setup answer", "Setup answer", "Setup answer"]);
     expect(page.querySelector(".chat-group.user")).toBeNull();
     expect(page.textContent).not.toContain("fake-client-secret");
     expect(page.querySelector(".agent-chat__composer-shell")).not.toBeNull();

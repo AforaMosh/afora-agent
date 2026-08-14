@@ -442,7 +442,7 @@ suite.define(() => {
           sessionId: "e2e-rich-wizard",
           reply: "Choose features.",
           action: "none",
-          wizardAction: { kind: "answer", prompt: "Which channel?" },
+          wizardAction: { kind: "answer" },
           wizardInputPending: true,
           step: {
             id: "features",
@@ -466,7 +466,7 @@ suite.define(() => {
           sessionId: "e2e-rich-wizard",
           reply: "Enter the secret.",
           action: "none",
-          wizardAction: { kind: "answer", prompt: "Which features?" },
+          wizardAction: { kind: "answer" },
           sensitive: true,
           wizardInputPending: true,
           step: {
@@ -528,7 +528,7 @@ suite.define(() => {
           sessionId: "e2e-rich-wizard",
           reply: "Confirm setup.",
           action: "none",
-          wizardAction: { kind: "answer", prompt: "Connection name" },
+          wizardAction: { kind: "answer" },
           wizardInputPending: true,
           step: {
             id: "confirm",
@@ -563,7 +563,7 @@ suite.define(() => {
           sessionId: "e2e-rich-wizard",
           reply: "Setup complete.",
           action: "none",
-          wizardAction: { kind: "answer", prompt: "Connect Twitch now?" },
+          wizardAction: { kind: "answer" },
         });
         await page.getByText("Setup complete.").waitFor();
         expect(

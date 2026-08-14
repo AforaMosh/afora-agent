@@ -460,7 +460,7 @@ describe("SystemAgentChatEngine wizard", () => {
     expect(done.step).toBeUndefined();
   });
 
-  it("submits a typed answer directly and records the server-owned option label", async () => {
+  it("records the server-owned option label without exposing a configured service URL", async () => {
     useTempStateDir();
     let selected: unknown;
     const engine = new SystemAgentChatEngine({
@@ -470,7 +470,7 @@ describe("SystemAgentChatEngine wizard", () => {
       deps: { loadOverview: fakeOverviewLoader() },
       runChannelSetupWizard: async (_channel: string, prompter: WizardPrompter) => {
         selected = await prompter.select({
-          message: "Choose one",
+          message: "Use ClickClack at http://10.0.0.7:3000?",
           options: [
             { value: "alpha", label: "Alpha" },
             { value: "beta", label: "Beta" },
@@ -485,7 +485,8 @@ describe("SystemAgentChatEngine wizard", () => {
 
     expect(selected).toBe("beta");
     expect(answered.wizardActionAccepted).toBe(true);
-    expect(answered.wizardAction).toEqual({ kind: "answer", prompt: "Choose one" });
+    expect(answered.wizardAction).toEqual({ kind: "answer" });
+    expect(JSON.stringify(answered.wizardAction)).not.toContain("http://10.0.0.7:3000");
     expect(engine.historySince(0)).toContainEqual({ role: "user", text: "Beta" });
   });
 
@@ -508,7 +509,7 @@ describe("SystemAgentChatEngine wizard", () => {
     const stepId = expectDefined(prompt.step?.id, "expected an active wizard step");
     const invalid = await engine.answerWizard({ stepId, value: "banana" });
     expect(invalid.wizardActionAccepted).toBe(false);
-    expect(invalid.wizardAction).toEqual({ kind: "answer", prompt: "Port" });
+    expect(invalid.wizardAction).toEqual({ kind: "answer" });
     expect(invalid.step?.id).toBe(stepId);
     expect(invalid.text).toContain("Enter port 18789");
 

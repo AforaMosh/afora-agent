@@ -29,7 +29,6 @@ export type CustodianMessage = {
 export type CustodianStructuredResponse = {
   display: string;
   kind: "answer" | "cancel";
-  prompt?: string;
   state: "submitting" | "submitted";
 };
 
@@ -138,7 +137,6 @@ function createCustodianTranscriptMessages(
           display,
           kind: turn.wizardAction.kind,
           state: "submitted",
-          ...(turn.wizardAction.prompt ? { prompt: turn.wizardAction.prompt } : {}),
         },
       });
       continue;
@@ -214,10 +212,6 @@ function renderCustodianEarlierDivider(message: CustodianMessage, boundaryAfterI
     : nothing;
 }
 
-function structuredPrompt(message: CustodianMessage): string {
-  return message.structuredResponse?.prompt ?? t("custodian.structured.response");
-}
-
 function renderStructuredResponse(message: CustodianMessage) {
   const response = message.structuredResponse;
   if (!response) {
@@ -244,7 +238,9 @@ function renderStructuredResponse(message: CustodianMessage) {
       >${cancelled ? icons.stop : icons.check}</span
     >
     <span class="custodian__structured-response-copy">
-      <span class="custodian__structured-response-prompt">${structuredPrompt(message)}</span>
+      <span class="custodian__structured-response-prompt"
+        >${t("custodian.structured.response")}</span
+      >
       <strong>${response.display}</strong>
       <span class="custodian__structured-response-status">${status}</span>
     </span>

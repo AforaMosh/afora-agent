@@ -4,6 +4,7 @@ import { GATEWAY_SERVER_CAPS } from "@openclaw/gateway-protocol";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../../test/helpers/promise.ts";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import { i18n, t } from "../../i18n/index.ts";
 import { waitForFast } from "../../test-helpers/wait-for.ts";
 import { createContext, mountPage } from "./custodian-page.test-harness.ts";
 
@@ -127,7 +128,7 @@ describe("custodian structured wizard", () => {
       sessionId: string;
       reply: string;
       action: "none";
-      wizardAction: { kind: "answer"; prompt: string };
+      wizardAction: { kind: "answer" };
     }>();
     const step = {
       id: "port",
@@ -187,7 +188,7 @@ describe("custodian structured wizard", () => {
       sessionId: "rotation-session",
       reply: "Accepted by the retired client.",
       action: "none",
-      wizardAction: { kind: "answer", prompt: "Gateway port" },
+      wizardAction: { kind: "answer" },
     });
 
     await waitForFast(() =>
@@ -199,94 +200,97 @@ describe("custodian structured wizard", () => {
     expect(page.querySelector(".custodian__wizard-step")).not.toBeNull();
   });
 
-  it("does not duplicate an accepted answer restored during same-scope recovery", async () => {
-    const actionReply = createDeferred<{
-      sessionId: string;
-      reply: string;
-      action: "none";
-      wizardAction: { kind: "answer"; prompt: string };
-    }>();
-    const step = {
-      id: "port",
-      type: "text" as const,
-      message: "Gateway port",
-    };
-    const nextStep = {
-      id: "host",
-      type: "text" as const,
-      message: "Gateway host",
-    };
-    const request = vi
-      .fn()
-      .mockResolvedValueOnce({
-        turns: [{ role: "assistant", text: "Earlier setup history.", at: 0 }],
-      })
-      .mockResolvedValueOnce({
-        sessionId: "rotation-session",
-        reply: "Enter a port.",
-        action: "none",
-        wizardInputPending: true,
-        step,
-      })
-      .mockReturnValueOnce(actionReply.promise);
-    const harness = createContext(request, ["openclaw.chat", "openclaw.chat.history"], {
-      gatewayCapabilities: [
-        GATEWAY_SERVER_CAPS.SYSTEM_AGENT_WIZARD_CANCEL,
-        GATEWAY_SERVER_CAPS.SYSTEM_AGENT_CHAT_HISTORY_SESSION_RECOVERY,
-        GATEWAY_SERVER_CAPS.SYSTEM_AGENT_WIZARD_ACTION_RECEIPTS,
-      ],
-      recoveryScope: "principal-a",
-    });
-    const { page } = await mountPage(harness.context);
-
-    const input = await waitForFast(() => {
-      const element = page.querySelector<HTMLInputElement>(
-        '.custodian__wizard-step input[name="wizard-text"]',
-      );
-      expect(element).not.toBeNull();
-      return element!;
-    });
-    input.value = "18789";
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    await page.updateComplete;
-    page.querySelector<HTMLButtonElement>(".custodian__wizard-step .btn.primary")!.click();
-    await waitForFast(() => expect(page.textContent).toContain("Submitting answer"));
-
-    const replacementRequest = vi.fn().mockResolvedValue({
-      turns: [
-        { role: "assistant", text: "Enter a port.", at: 1 },
-        {
-          role: "user",
-          text: "18789",
-          at: 2,
-          wizardAction: { kind: "answer", prompt: "Gateway port" },
-        },
-        { role: "assistant", text: "Enter a host.", at: 3 },
-      ],
-      activeWizard: { sessionId: "rotation-session", step: nextStep },
-    });
-    harness.setGatewaySnapshot({
-      client: {
-        request: replacementRequest,
+  it("does not duplicate a localized empty multiselect receipt during recovery", async () => {
+    await i18n.setLocale("es");
+    try {
+      const actionReply = createDeferred<{
+        sessionId: string;
+        reply: string;
+        action: "none";
+        wizardAction: { kind: "answer" };
+      }>();
+      const step = {
+        id: "features",
+        type: "multiselect" as const,
+        message: "Choose features",
+        options: [{ label: "Chat", value: "chat" }],
+      };
+      const nextStep = {
+        id: "name",
+        type: "text" as const,
+        message: "Connection name",
+      };
+      const request = vi
+        .fn()
+        .mockResolvedValueOnce({
+          turns: [{ role: "assistant", text: "Earlier setup history.", at: 0 }],
+        })
+        .mockResolvedValueOnce({
+          sessionId: "rotation-session",
+          reply: "Choose features.",
+          action: "none",
+          wizardInputPending: true,
+          step,
+        })
+        .mockReturnValueOnce(actionReply.promise);
+      const harness = createContext(request, ["openclaw.chat", "openclaw.chat.history"], {
+        gatewayCapabilities: [
+          GATEWAY_SERVER_CAPS.SYSTEM_AGENT_WIZARD_CANCEL,
+          GATEWAY_SERVER_CAPS.SYSTEM_AGENT_CHAT_HISTORY_SESSION_RECOVERY,
+          GATEWAY_SERVER_CAPS.SYSTEM_AGENT_WIZARD_ACTION_RECEIPTS,
+        ],
         recoveryScope: "principal-a",
-        recoveryScopeReady: true,
-      } as unknown as GatewayBrowserClient,
-    });
-    await waitForFast(() => expect(replacementRequest).toHaveBeenCalledOnce());
-    await waitForFast(() => expect(page.textContent).toContain("Answer submitted"));
-    actionReply.resolve({
-      sessionId: "rotation-session",
-      reply: "Accepted by the retired client.",
-      action: "none",
-      wizardAction: { kind: "answer", prompt: "Gateway port" },
-    });
+      });
+      const { page } = await mountPage(harness.context);
 
-    await waitForFast(() =>
-      expect(page.querySelectorAll(".custodian__structured-response")).toHaveLength(1),
-    );
-    expect(page.querySelectorAll(".chat-group.user")).toHaveLength(0);
-    expect(page.textContent).not.toContain("Earlier setup history.");
-    expect(page.querySelector(".custodian__wizard-step")?.textContent).toContain("Gateway host");
+      await waitForFast(() => {
+        expect(
+          page.querySelectorAll('.custodian__wizard-step input[type="checkbox"]'),
+        ).toHaveLength(1);
+      });
+      expect(t("common.none")).not.toBe("None");
+      page.querySelector<HTMLButtonElement>(".custodian__wizard-step .btn.primary")!.click();
+      await waitForFast(() =>
+        expect(page.querySelector(".custodian__structured-response")).not.toBeNull(),
+      );
+
+      const replacementRequest = vi.fn().mockResolvedValue({
+        turns: [
+          { role: "assistant", text: "Choose features.", at: 1 },
+          { role: "user", text: "None", at: 2, wizardAction: { kind: "answer" } },
+          { role: "assistant", text: "Choose a name.", at: 3 },
+        ],
+        activeWizard: { sessionId: "rotation-session", step: nextStep },
+      });
+      harness.setGatewaySnapshot({
+        client: {
+          request: replacementRequest,
+          recoveryScope: "principal-a",
+          recoveryScopeReady: true,
+        } as unknown as GatewayBrowserClient,
+      });
+      await waitForFast(() => expect(replacementRequest).toHaveBeenCalledOnce());
+      actionReply.resolve({
+        sessionId: "rotation-session",
+        reply: "Accepted by the retired client.",
+        action: "none",
+        wizardAction: { kind: "answer" },
+      });
+
+      await waitForFast(() =>
+        expect(page.querySelector(".custodian__structured-response-status")?.textContent).toBe(
+          t("custodian.structured.submitted"),
+        ),
+      );
+      expect(page.querySelectorAll(".custodian__structured-response")).toHaveLength(1);
+      expect(page.querySelectorAll(".chat-group.user")).toHaveLength(0);
+      expect(page.textContent).not.toContain("Earlier setup history.");
+      expect(page.querySelector(".custodian__wizard-step")?.textContent).toContain(
+        "Connection name",
+      );
+    } finally {
+      await i18n.useSystemLocale();
+    }
   });
 
   it("reconciles a visible fallback across successive same-scope recovery", async () => {
@@ -400,7 +404,7 @@ describe("custodian structured wizard", () => {
           role: "user",
           text: "18789",
           at: 2,
-          wizardAction: { kind: "answer", prompt: "Gateway port" },
+          wizardAction: { kind: "answer" },
         },
         { role: "user", text: "18888", at: 3 },
         { role: "assistant", text: "Enter a host.", at: 3 },

@@ -107,7 +107,6 @@ export function createCustodianStructuredInteraction(host: StructuredInteraction
             display: params.display,
             kind: result.wizardAction.kind,
             state: "submitted",
-            ...(result.wizardAction?.prompt ? { prompt: result.wizardAction.prompt } : {}),
           };
     const messages = withResponse(current.messages, params.message.id, response);
     if (messages) {

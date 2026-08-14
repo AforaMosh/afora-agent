@@ -51,17 +51,6 @@ export type ChatWizardAnswerResult = ChatWizardResult & {
   wizardAction: SystemAgentWizardActionReceipt;
 };
 
-function wizardActionReceipt(
-  step: WizardStep,
-  kind: SystemAgentWizardActionReceipt["kind"],
-): SystemAgentWizardActionReceipt {
-  const prompt =
-    !step.sensitive && !step.deviceCode && !step.externalUrl
-      ? (step.title ?? step.message)
-      : undefined;
-  return { kind, ...(prompt ? { prompt } : {}) };
-}
-
 export type ChatWizardHostDependencies = {
   runChannelSetupWizard?: (
     channel: string,
@@ -330,7 +319,7 @@ export class ChatWizardHost {
       ...result,
       accepted: validationError === undefined,
       userHistoryText: formatStructuredWizardAnswerForHistory(step, answer.value),
-      wizardAction: wizardActionReceipt(step, "answer"),
+      wizardAction: { kind: "answer" },
     };
   }
 
@@ -350,7 +339,7 @@ export class ChatWizardHost {
       ...(await this.pump()),
       accepted: true,
       userHistoryText: "Cancel",
-      wizardAction: wizardActionReceipt(step, "cancel"),
+      wizardAction: { kind: "cancel" },
     };
   }
 

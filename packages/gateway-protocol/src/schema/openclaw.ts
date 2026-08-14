@@ -80,8 +80,6 @@ export const SystemAgentChatQuestionSchema = closedObject({
 
 export const SystemAgentWizardActionReceiptSchema = closedObject({
   kind: Type.Union([Type.Literal("answer"), Type.Literal("cancel")]),
-  /** Ordinary non-sensitive prompt copy used to label the receipt. */
-  prompt: Type.Optional(Type.String()),
 });
 
 /** One OpenClaw reply; `action` tells clients about conversation handoffs. */

@@ -1,4 +1,7 @@
-import type { SystemAgentChatResult } from "@openclaw/gateway-protocol";
+import type {
+  SystemAgentChatResult,
+  SystemAgentWizardActionReceipt,
+} from "@openclaw/gateway-protocol";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { WizardStep } from "../../api/types.ts";
 import type { ApplicationContext } from "../../app/context.ts";
@@ -26,6 +29,7 @@ type CustodianTranscriptTurnPosition = {
 };
 
 type CustodianPendingTranscriptFallback = CustodianTranscriptTurnPosition & {
+  kind: SystemAgentWizardActionReceipt["kind"];
   message: CustodianMessage;
 };
 
@@ -62,6 +66,7 @@ export abstract class CustodianTranscriptState {
   protected stageTranscriptFallback(
     sessionId: string | undefined,
     message: CustodianMessage,
+    kind: CustodianPendingTranscriptFallback["kind"],
   ): void {
     const globalIndex = this.messages.length;
     const boundaryIndex =
@@ -69,6 +74,7 @@ export abstract class CustodianTranscriptState {
         ? -1
         : this.messages.findIndex((candidate) => candidate.id === this.earlierBoundaryAfterId);
     this.pendingTranscriptFallbacks.push({
+      kind,
       message,
       globalIndex,
       sessionId,
@@ -128,9 +134,13 @@ export abstract class CustodianTranscriptState {
     if (existing === fallback.message || this.messages.includes(fallback.message)) {
       return;
     }
-    const recoveredDisplay =
-      existing?.structuredResponse?.display ?? (existing?.role === "user" ? existing.text : null);
-    if (recoveredDisplay === fallback.message.text) {
+    // Recovery owns turn order and action kind; display text is localized and cannot identify the
+    // same submission. A plain user turn at this slot is the authoritative fallback projection.
+    const recoveredActionKind = existing?.structuredResponse?.kind;
+    if (
+      existing?.role === "user" ||
+      (recoveredActionKind !== undefined && recoveredActionKind === fallback.kind)
+    ) {
       this.removeTranscriptFallback(fallback);
       return;
     }

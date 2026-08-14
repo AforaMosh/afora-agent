@@ -46,7 +46,6 @@ describe("Custodian wizard reload recovery", () => {
                 at: 0,
                 wizardAction: {
                   kind: "cancel",
-                  prompt: "Choose a previous channel.",
                 },
               },
               { role: "user", text: "connect twitch", at: 1 },
@@ -67,7 +66,6 @@ describe("Custodian wizard reload recovery", () => {
                 at: 3,
                 wizardAction: {
                   kind: "answer",
-                  prompt: "How should OpenClaw appear in Twitch?",
                 },
               },
               {

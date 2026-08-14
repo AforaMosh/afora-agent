@@ -248,7 +248,7 @@ describe("openclaw.chat reset boundary", () => {
         sessionId: "recover-session",
         wizardAnswer: { stepId: portStepId, value: "18789" },
       });
-      expect(accepted.wizardAction).toEqual({ kind: "answer", prompt: "Port" });
+      expect(accepted.wizardAction).toEqual({ kind: "answer" });
       const secretStepId = expectDefined(accepted.step?.id, "expected sensitive step");
       const cancelled = await sendChat({
         sessionId: "recover-session",
@@ -279,7 +279,7 @@ describe("openclaw.chat reset boundary", () => {
         "wizardAction",
       );
       expect(restoredTurns.find((turn) => turn.text === "18789")).toMatchObject({
-        wizardAction: { kind: "answer", prompt: "Port" },
+        wizardAction: { kind: "answer" },
       });
       const restoredCancel = restoredTurns.find((turn) => turn.text === "Cancel");
       expect(restoredCancel).toMatchObject({ wizardAction: { kind: "cancel" } });

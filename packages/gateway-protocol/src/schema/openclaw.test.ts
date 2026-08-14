@@ -97,9 +97,15 @@ describe("OpenClaw chat result protocol", () => {
     expect(
       Value.Check(SystemAgentChatResultSchema, {
         ...result,
-        wizardAction: { kind: "answer", prompt: "Choose a channel" },
+        wizardAction: { kind: "answer" },
       }),
     ).toBe(true);
+    expect(
+      Value.Check(SystemAgentChatResultSchema, {
+        ...result,
+        wizardAction: { kind: "answer", prompt: "private prompt" },
+      }),
+    ).toBe(false);
     expect(
       Value.Check(SystemAgentChatResultSchema, {
         ...result,
@@ -160,13 +166,17 @@ describe("OpenClaw chat history protocol", () => {
       at: 2,
       wizardAction: {
         kind: "answer",
-        prompt: "How should OpenClaw appear in Slack?",
       },
     };
     expect(Value.Check(SystemAgentChatHistoryResultSchema, { turns: [turn] })).toBe(true);
     expect(
       Value.Check(SystemAgentChatHistoryResultSchema, {
         turns: [{ ...turn, sessionId: "slack-session" }],
+      }),
+    ).toBe(false);
+    expect(
+      Value.Check(SystemAgentChatHistoryResultSchema, {
+        turns: [{ ...turn, wizardAction: { ...turn.wizardAction, prompt: "private prompt" } }],
       }),
     ).toBe(false);
     expect(

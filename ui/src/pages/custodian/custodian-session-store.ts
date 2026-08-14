@@ -247,7 +247,8 @@ export class CustodianSessionStore extends CustodianTranscriptState {
       structuredResponse: null,
     };
     if (userTurnProjection === "unless-accepted") {
-      this.stageTranscriptFallback(params.sessionId, userMessage);
+      const kind = params.wizardCancel === undefined ? "answer" : "cancel";
+      this.stageTranscriptFallback(params.sessionId, userMessage, kind);
     }
     if (userTurnProjection === "always") {
       this.messages = [...this.messages, userMessage];

@@ -123,7 +123,7 @@ describe("system-agent chat input", () => {
         text: "Choose a channel.",
         action: "none",
         wizardActionAccepted: false,
-        wizardAction: { kind: "answer", prompt: "Channel" },
+        wizardAction: { kind: "answer" },
         step: {
           id: "channel",
           type: "select",
@@ -147,9 +147,9 @@ describe("system-agent chat input", () => {
           text: "Next step.",
           action: "none",
           wizardActionAccepted: true,
-          wizardAction: { kind: "answer", prompt: "Channel" },
+          wizardAction: { kind: "answer" },
         },
       }).wizardAction,
-    ).toEqual({ kind: "answer", prompt: "Channel" });
+    ).toEqual({ kind: "answer" });
   });
 });
