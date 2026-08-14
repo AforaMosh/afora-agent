@@ -228,13 +228,19 @@ describe("normalizeSessionSectionOrder", () => {
     ]);
   });
 
-  it("honors stored positions", () => {
-    expect(
-      normalizeSessionSectionOrder(
-        ["ungrouped", "category:Alpha", "groups", "category:Beta", "work"],
-        ["Alpha", "Beta"],
-      ),
-    ).toEqual(["ungrouped", "category:Alpha", "groups", "channels", "category:Beta", "work"]);
+  it("adds Channels to a pre-Channels order without moving saved sections", () => {
+    const stored = ["ungrouped", "category:Alpha", "groups", "category:Beta", "work"];
+    const upgraded = normalizeSessionSectionOrder(stored, ["Alpha", "Beta"]);
+
+    expect(upgraded).toEqual([
+      "ungrouped",
+      "category:Alpha",
+      "groups",
+      "channels",
+      "category:Beta",
+      "work",
+    ]);
+    expect(upgraded.filter((sectionId) => sectionId !== "channels")).toEqual(stored);
   });
 
   it("inserts a new category before the first built-in section", () => {

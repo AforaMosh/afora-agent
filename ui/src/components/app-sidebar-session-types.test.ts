@@ -2,11 +2,14 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  loadStoredCollapsedSessionSections,
   loadStoredHiddenSessionCatalogIds,
   loadStoredSidebarSessionStatusFilter,
   setStoredSessionCatalogHidden,
   storeSidebarSessionStatusFilter,
 } from "./app-sidebar-session-types.ts";
+
+const COLLAPSED_SECTIONS_STORAGE_KEY = "openclaw:sidebar:sessions:collapsed-sections";
 
 // getSafeLocalStorage only accepts an own value property under Vitest, so the
 // jsdom getter-backed localStorage must be replaced with a plain mock.
@@ -54,6 +57,18 @@ describe("sidebar session status preference", () => {
     expect(loadStoredSidebarSessionStatusFilter()).toBe("archived");
     storeSidebarSessionStatusFilter("all");
     expect(loadStoredSidebarSessionStatusFilter()).toBe("all");
+  });
+});
+
+describe("collapsed sidebar section preference", () => {
+  it("defaults fresh Channels closed without changing a legacy saved preference", () => {
+    expect([...loadStoredCollapsedSessionSections()]).toEqual(["channels", "work"]);
+
+    localStorage.setItem(
+      COLLAPSED_SECTIONS_STORAGE_KEY,
+      JSON.stringify(["category:Research", "work"]),
+    );
+    expect([...loadStoredCollapsedSessionSections()]).toEqual(["category:Research", "work"]);
   });
 });
 
