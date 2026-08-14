@@ -5,7 +5,7 @@
 import { messageToolOwnsVisibleReply } from "../../../auto-reply/source-reply-delivery-mode.js";
 import type { DiagnosticTraceContext } from "../../../infra/diagnostic-trace-context.js";
 import { extractModelCompat } from "../../../plugins/provider-model-compat.js";
-import type { AuthorizedMemoryReadHost } from "../../../plugins/tool-types.js";
+import type { AuthorizedMemoryReadHost, AuthorizedMemoryWriteHost } from "../../../plugins/tool-types.js";
 import { getPluginToolMeta } from "../../../plugins/tools.js";
 import { isSubagentSessionKey } from "../../../routing/session-key.js";
 import { normalizeDeliveryContext } from "../../../utils/delivery-context.shared.js";
@@ -56,6 +56,7 @@ type SkillUsagePaths = OpenClawCodingToolsOptions["skillUsagePaths"];
 export async function prepareEmbeddedAttemptToolBase(params: {
   agentDir: string;
   authorizedMemoryRead?: AuthorizedMemoryReadHost;
+  authorizedMemoryWrite?: AuthorizedMemoryWriteHost;
   authorizedMemoryVirtualBroker?: AuthorizedMemoryVirtualFileBroker;
   attempt: EmbeddedRunAttemptParams;
   effectiveCwd: string;
@@ -291,6 +292,7 @@ export async function prepareEmbeddedAttemptToolBase(params: {
           sessionId: attempt.sessionId,
           runId: attempt.runId,
           authorizedMemoryRead,
+          authorizedMemoryWrite: params.authorizedMemoryWrite,
           ...(fsPolicy ? { fsPolicy } : {}),
           ...(authorizedMemoryVirtualBroker
             ? {

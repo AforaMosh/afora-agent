@@ -5,17 +5,20 @@
 import os from "node:os";
 import { isAcpRuntimeSpawnAvailable } from "../../acp/runtime/availability.js";
 import type { ThinkLevel } from "../../auto-reply/thinking.js";
+import { readAuthorizedTranscriptDerivation } from "../../config/sessions/session-transcript-memory-policy.js";
 import {
   formatActiveNodeContextLabel,
   getCurrentActiveNodeContext,
 } from "../../infra/active-node-context.js";
 import { getMachineDisplayName } from "../../infra/machine-name.js";
 import { resolveRuntimeOsLabel } from "../../infra/os-summary.js";
+import { isMemoryIsolationCutoverAgent } from "../../plugins/memory-cutover.js";
 import { listRegisteredPluginAgentPromptGuidance } from "../../plugins/command-registry-state.js";
 import { extractModelCompat } from "../../plugins/provider-model-compat.js";
 import type { ProviderRuntimeModel } from "../../plugins/provider-runtime-model.types.js";
 import { transformProviderSystemPrompt } from "../../plugins/provider-runtime.js";
 import { isCronSessionKey, isSubagentSessionKey } from "../../routing/session-key.js";
+import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import { resolveSkillsPromptForRun } from "../../skills/loading/workspace.js";
 import { resolveEmbeddedRunSkillEntries } from "../../skills/runtime/embedded-run-entries.js";
 import {
@@ -43,7 +46,12 @@ import { resolveConversationCapabilityProfile } from "../conversation-capability
 import { formatDateStamp, resolveUserTimezone } from "../date-time.js";
 import { resolveOpenClawReferencePaths } from "../docs-path.js";
 import { resolveHeartbeatPromptForSystemPrompt } from "../heartbeat-system-prompt.js";
-import { createAuthorizedMemoryReadHost } from "../memory-authorized-read-host.js";
+import {
+  admitAuthorizedMemoryDerivation,
+  prepareAuthorizedSealedCompactionHost,
+  createAuthorizedMemoryDerivationHost,
+  createAuthorizedMemoryReadHost,
+} from "../memory-authorized-read-host.js";
 import { prepareAgentMemoryPrompt } from "../memory-prompt-prepare.js";
 import {
   applyAuthHeaderOverride,
@@ -261,16 +269,50 @@ export async function buildPreparedCompactionRuntime(prepared: DirectCompactionP
       config: params.config,
       agentId: params.agentId,
     });
+    // Compaction turns transcript and injected memory into a new durable summary. The
+    // derive plan is deliberately admitted before prompt construction, so a read-only
+    // view can never reach a model merely because it is later summarized.
+    if (
+      isMemoryIsolationCutoverAgent(sessionAgentId) &&
+      !(await admitAuthorizedMemoryDerivation({
+        agentId: sessionAgentId,
+        sessionKey: sandboxSessionKey,
+        sessionId: params.sessionId,
+        runId: params.runId,
+        messageChannel: resolvedMessageProvider,
+        agentAccountId: params.agentAccountId,
+      }))
+    ) {
+      throw new Error("memory derivation authorization unavailable for compaction");
+    }
+    if (isMemoryIsolationCutoverAgent(sessionAgentId)) {
+      const transcriptSource = readAuthorizedTranscriptDerivation(
+        openOpenClawAgentDatabase({ agentId: sessionAgentId }).db,
+        params.sessionId,
+      );
+      if (!transcriptSource) {
+        throw new Error("compaction transcript derivation authorization unavailable");
+      }
+    }
     // Compaction shares the live run's admission discipline: prepare one host
     // before tools, then reuse it for the prompt snapshot.
-    const authorizedMemoryRead = createAuthorizedMemoryReadHost({
+    const memoryHostParams = {
       agentId: sessionAgentId,
       sessionKey: sandboxSessionKey,
       sessionId: params.sessionId,
       runId: params.runId,
       messageChannel: resolvedMessageProvider,
       agentAccountId: params.agentAccountId,
-    });
+    };
+    const authorizedMemoryRead = isMemoryIsolationCutoverAgent(sessionAgentId)
+      ? createAuthorizedMemoryDerivationHost(memoryHostParams)
+      : createAuthorizedMemoryReadHost(memoryHostParams);
+    const authorizedSealedCompaction = isMemoryIsolationCutoverAgent(sessionAgentId)
+      ? await prepareAuthorizedSealedCompactionHost(memoryHostParams)
+      : undefined;
+    if (isMemoryIsolationCutoverAgent(sessionAgentId) && !authorizedSealedCompaction) {
+      throw new Error("sealed compaction authorization unavailable");
+    }
     const runtimeCapabilityProfile = resolveConversationCapabilityProfile({
       config: params.config,
       sessionKey: sandboxSessionKey,
@@ -638,6 +680,7 @@ export async function buildPreparedCompactionRuntime(prepared: DirectCompactionP
       effectiveTools,
       allowedToolNames,
       buildSystemPromptText,
+      authorizedSealedCompaction,
       resolvedMessageProvider,
       sessionAgentId,
       disposeToolRuntimes,

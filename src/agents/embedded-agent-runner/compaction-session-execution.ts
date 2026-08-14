@@ -1,13 +1,22 @@
+import { randomUUID } from "node:crypto";
+import { SESSION_TOTAL_TOKENS_VERSION } from "../../config/sessions.js";
 import { formatSqliteSessionFileMarker } from "../../config/sessions/legacy-sqlite-marker.js";
+import { commitSealedSqliteTranscriptCompaction } from "../../config/sessions/session-accessor.sqlite-transcript-write.js";
+import { readAuthorizedTranscriptDerivation } from "../../config/sessions/session-transcript-memory-policy.js";
 /**
  * Executes compaction while owning the transcript lock, session lifecycle,
  * hooks, checkpoint, and optional successor transcript rotation.
  */
-import type { CapturedCompactionCheckpointSnapshot } from "../../gateway/session-compaction-checkpoints.js";
+import {
+  resolveSessionCompactionCheckpointReason,
+  type CapturedCompactionCheckpointSnapshot,
+} from "../../gateway/session-compaction-checkpoints.js";
 import { resolveDiagnosticModelContentCapturePolicy } from "../../infra/diagnostic-llm-content.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { getCurrentPluginMetadataSnapshot } from "../../plugins/current-plugin-metadata-snapshot.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
+import { isMemoryIsolationCutoverAgent } from "../../plugins/memory-cutover.js";
+import { openOpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
 import {
   consumeCompactionSafeguardCancelReason,
   setCompactionSafeguardCancelReason,
@@ -96,6 +105,7 @@ export async function executePreparedCompactionSession(runtime: PreparedCompacti
     buildSystemPromptText,
     resolvedMessageProvider,
     sessionAgentId,
+    authorizedSealedCompaction,
   } = runtime;
   let thinkLevel = runtime.thinkLevel;
   let compactionSessionManager: unknown = null;
@@ -129,6 +139,23 @@ export async function executePreparedCompactionSession(runtime: PreparedCompacti
             : undefined,
         allowedToolNames,
       });
+      // Preparation admits the derive capability, but it can race a revoke or a
+      // transcript append. Re-read the complete source set after opening the
+      // session and before building the compaction prompt so no stale history
+      // reaches the summary model.
+      if (isMemoryIsolationCutoverAgent(sessionAgentId)) {
+        if (
+          !readAuthorizedTranscriptDerivation(
+            openOpenClawAgentDatabase({ agentId: sessionAgentId }).db,
+            sessionTarget.sessionId,
+          )
+        ) {
+          throw new Error("compaction transcript derivation authorization unavailable");
+        }
+        if (!authorizedSealedCompaction) {
+          throw new Error("scoped compaction derived commit unavailable");
+        }
+      }
       checkpointSnapshot = await compactionCheckpointStore.captureSnapshot({
         sessionManager,
         sessionFile: params.sessionFile,
@@ -407,42 +434,133 @@ export async function executePreparedCompactionSession(runtime: PreparedCompacti
             // the sanity check below becomes a no-op instead of crashing compaction.
           }
           const activeSession = session;
-          const result = await compactWithSafetyTimeout(
-            () => {
-              setCompactionSafeguardCancelReason(compactionSessionManager, undefined);
-              return resolveEffectiveCompactionMode(params.config) === "default" &&
-                trigger !== "manual"
-                ? activeSession[agentSessionAutomaticCompaction](params.customInstructions)
-                : activeSession.compact(params.customInstructions);
-            },
-            compactionTimeoutMs,
-            {
-              abortSignal: params.abortSignal,
-              onCancel: () => {
-                activeSession.abortCompaction();
-              },
-            },
-          );
+          const cutoverCompaction = isMemoryIsolationCutoverAgent(sessionAgentId);
+          const deferred = cutoverCompaction
+            ? await compactWithSafetyTimeout(
+                () =>
+                  activeSession.compactDeferred(
+                    params.customInstructions,
+                    resolveEffectiveCompactionMode(params.config) === "default" && trigger !== "manual"
+                      ? "retry-invalid-once"
+                      : "none",
+                  ),
+                compactionTimeoutMs,
+                {
+                  abortSignal: params.abortSignal,
+                  onCancel: () => {
+                    activeSession.abortCompaction();
+                  },
+                },
+              )
+            : undefined;
+          const result = deferred
+            ? deferred.result
+            : await compactWithSafetyTimeout(
+                () => {
+                  setCompactionSafeguardCancelReason(compactionSessionManager, undefined);
+                  return resolveEffectiveCompactionMode(params.config) === "default" &&
+                    trigger !== "manual"
+                    ? activeSession[agentSessionAutomaticCompaction](params.customInstructions)
+                    : activeSession.compact(params.customInstructions);
+                },
+                compactionTimeoutMs,
+                {
+                  abortSignal: params.abortSignal,
+                  onCancel: () => {
+                    activeSession.abortCompaction();
+                  },
+                },
+              );
           const effectiveFirstKeptEntryId = result.firstKeptEntryId;
           const postCompactionLeafId =
-            typeof sessionManager.getLeafId === "function"
+            deferred
+              ? deferred.entry.id
+              : typeof sessionManager.getLeafId === "function"
               ? (sessionManager.getLeafId() ?? undefined)
               : undefined;
           // Estimate tokens after compaction by summing token estimates for remaining messages
-          const tokensAfter = estimateTokensAfterCompaction({
-            messagesAfter: session.messages,
-            observedTokenCount,
-            fullSessionTokensBefore: limitedTranscriptTokensBefore,
-            estimateTokensFn: estimateTokens,
-          });
-          const messageCountAfter = session.messages.length;
-          const compactedCount = Math.max(0, messageCountCompactionInput - messageCountAfter);
+          let tokensAfter = deferred
+            ? undefined
+            : estimateTokensAfterCompaction({
+                messagesAfter: session.messages,
+                observedTokenCount,
+                fullSessionTokensBefore: limitedTranscriptTokensBefore,
+                estimateTokensFn: estimateTokens,
+              });
+          let messageCountAfter = deferred ? undefined : session.messages.length;
+          let compactedCount =
+            messageCountAfter === undefined
+              ? undefined
+              : Math.max(0, messageCountCompactionInput - messageCountAfter);
           const activeSessionId = params.sessionId;
           const activeSessionFile = formatSqliteSessionFileMarker({
             ...sessionTarget,
             sessionId: activeSessionId,
           });
           const activePostLeafId = postCompactionLeafId;
+          if (deferred && authorizedSealedCompaction) {
+            try {
+              if (!checkpointSnapshot) {
+                throw new Error("sealed compaction checkpoint is unavailable");
+              }
+              const staged = await authorizedSealedCompaction.stage(result.summary);
+              if ("unavailable" in staged) {
+                throw new Error("scoped compaction derived commit unavailable");
+              }
+              const compactionPolicyId = randomUUID();
+              await commitSealedSqliteTranscriptCompaction({
+                scope: sessionTarget,
+                event: deferred.entry,
+                compactionPolicyId,
+                source: {
+                  eventSeqs: authorizedSealedCompaction.source.eventSeqs,
+                  sourcePolicySetId: authorizedSealedCompaction.source.sourcePolicySetId,
+                  deliveryAudiencesJson: authorizedSealedCompaction.source.deliveryAudiencesJson,
+                },
+                checkpoint: {
+                  checkpointId: randomUUID(),
+                  sessionKey: sessionTarget.sessionKey,
+                  sessionId: activeSessionId,
+                  createdAt: compactStartedAt,
+                  reason: resolveSessionCompactionCheckpointReason({ trigger: params.trigger }),
+                  tokensVersion: SESSION_TOTAL_TOKENS_VERSION,
+                  tokensBefore: observedTokenCount ?? result.tokensBefore,
+                  ...(typeof tokensAfter === "number" ? { tokensAfter } : {}),
+                  summary: result.summary,
+                  firstKeptEntryId: effectiveFirstKeptEntryId,
+                  preCompaction: {
+                    sessionId: checkpointSnapshot.sessionId,
+                    leafId: checkpointSnapshot.leafId,
+                    ...(checkpointSnapshot.entryId ? { entryId: checkpointSnapshot.entryId } : {}),
+                  },
+                  postCompaction: {
+                    sessionId: activeSessionId,
+                    entryId: deferred.entry.id,
+                  },
+                },
+                commitDerivedState({ database, eventSeq }) {
+                  staged.commitInTransaction({
+                    database: database.db,
+                    compactionPolicyId,
+                    eventSeq,
+                  });
+                },
+              });
+              await activeSession.applyDeferredCompaction(deferred);
+              tokensAfter = estimateTokensAfterCompaction({
+                messagesAfter: session.messages,
+                observedTokenCount,
+                fullSessionTokensBefore: limitedTranscriptTokensBefore,
+                estimateTokensFn: estimateTokens,
+              });
+              messageCountAfter = session.messages.length;
+              compactedCount = Math.max(0, messageCountCompactionInput - messageCountAfter);
+              checkpointSnapshotRetained = true;
+            } catch (error) {
+              activeSession.discardDeferredCompaction(error);
+              throw error;
+            }
+          }
           await runPostCompactionSideEffects({
             config: params.config,
             sessionKey: params.sessionKey,
@@ -450,20 +568,22 @@ export async function executePreparedCompactionSession(runtime: PreparedCompacti
             agentId: sessionAgentId,
             sessionFile: activeSessionFile,
           });
-          checkpointSnapshotRetained = await persistCompactionCheckpoint({
-            config: params.config,
-            sessionKey: params.sessionKey,
-            sessionId: activeSessionId,
-            trigger: params.trigger,
-            snapshot: checkpointSnapshot,
-            summary: result.summary,
-            firstKeptEntryId: effectiveFirstKeptEntryId,
-            tokensBefore: observedTokenCount ?? result.tokensBefore,
-            tokensAfter,
-            sessionFile: activeSessionFile,
-            leafId: activePostLeafId,
-            createdAt: compactStartedAt,
-          });
+          checkpointSnapshotRetained = deferred
+            ? checkpointSnapshotRetained
+            : await persistCompactionCheckpoint({
+                config: params.config,
+                sessionKey: params.sessionKey,
+                sessionId: activeSessionId,
+                trigger: params.trigger,
+                snapshot: checkpointSnapshot,
+                summary: result.summary,
+                firstKeptEntryId: effectiveFirstKeptEntryId,
+                tokensBefore: observedTokenCount ?? result.tokensBefore,
+                tokensAfter,
+                sessionFile: activeSessionFile,
+                leafId: activePostLeafId,
+                createdAt: compactStartedAt,
+              });
           const postMetrics = diagEnabled
             ? summarizeCompactionMessages(session.messages)
             : undefined;
@@ -489,9 +609,9 @@ export async function executePreparedCompactionSession(runtime: PreparedCompacti
             missingSessionKey,
             workspaceDir: effectiveWorkspace,
             messageProvider: resolvedMessageProvider,
-            messageCountAfter,
+            messageCountAfter: messageCountAfter ?? session.messages.length,
             tokensAfter,
-            compactedCount,
+            compactedCount: compactedCount ?? 0,
             sessionFile: activeSessionFile,
             ...(activeSessionId !== params.sessionId
               ? { previousSessionId: params.sessionId }

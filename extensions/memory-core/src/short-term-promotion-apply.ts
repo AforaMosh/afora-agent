@@ -15,6 +15,8 @@ import {
   storeMemoryPreimage,
 } from "./dreaming-consolidation-artifacts.js";
 import {
+  hasOnePromotionAuthorizedView,
+  isPromotionAuthorizedViewBlocked,
   isConsolidationCandidateEligible,
   isPromotionOriginBlocked,
 } from "./dreaming-consolidation-candidates.js";
@@ -33,6 +35,7 @@ import {
   writeMemoryContent,
 } from "./short-term-promotion-memory-write.js";
 import {
+  buildPromotionAuthorizedViewAnnotation,
   buildPromotionRecallAnnotations,
   groupPromotionCandidatesByProjectKey,
 } from "./short-term-promotion-metadata.js";
@@ -86,7 +89,7 @@ function buildPromotionSection(
       // rehydrated snippet so ranking, provenance, and dream narratives remain
       // tied to the source entry instead of this presentation budget.
       lines.push(
-        `- ${formatPromotedSnippetForMemory(candidate.snippet, maxPromotedSnippetTokens)} ${metadata} ${buildPromotionRecallAnnotations(candidate)}`,
+        `- ${formatPromotedSnippetForMemory(candidate.snippet, maxPromotedSnippetTokens)} ${metadata} ${buildPromotionRecallAnnotations(candidate)}${buildPromotionAuthorizedViewAnnotation(candidate)}`,
       );
     }
     if (projectGroups.length > 1) {
@@ -165,6 +168,7 @@ function consolidationCandidateFingerprint(candidate: PromotionCandidate): strin
     endLine: candidate.endLine,
     snippet: candidate.snippet,
     provenance: candidate.provenance,
+    authorizedView: candidate.authorizedView,
     projectKey: candidate.projectKey,
   });
 }
@@ -277,6 +281,7 @@ export async function applyShortTermPromotions(
             startLine: entry.startLine,
             endLine: entry.endLine,
             snippet: entry.snippet,
+            ...(entry.authorizedView ? { authorizedView: entry.authorizedView } : {}),
           },
           entry.provenance,
         )
@@ -293,6 +298,9 @@ export async function applyShortTermPromotions(
       // content into MEMORY.md. Workspace memory files index as 'agent', so
       // legitimate daily-note candidates stay eligible.
       if (isPromotionOriginBlocked(candidate)) {
+        return false;
+      }
+      if (isPromotionAuthorizedViewBlocked(candidate)) {
         return false;
       }
       if (options.consolidation && (!latest || !isConsolidationCandidateEligible(candidate))) {
@@ -322,10 +330,11 @@ export async function applyShortTermPromotions(
       return true;
     })
     .slice(0, limit);
+  const selectedInOneAuthorizedView = hasOnePromotionAuthorizedView(selected) ? selected : [];
 
   const rehydratedSelected: PromotionCandidate[] = [];
   const plannedSourceFingerprints = new Map<string, string>();
-  for (const candidate of selected) {
+  for (const candidate of selectedInOneAuthorizedView) {
     const sourceFingerprintBefore = await promotionSourceFingerprint(workspaceDir, candidate);
     const rehydrated = await rehydratePromotionCandidate(workspaceDir, candidate);
     const sourceFingerprintAfter = await promotionSourceFingerprint(workspaceDir, candidate);
@@ -444,6 +453,9 @@ export async function applyShortTermPromotions(
           continue;
         }
         const currentCandidate = withAuthoritativeProvenance(candidate, entry.provenance);
+        if (isPromotionAuthorizedViewBlocked(currentCandidate)) {
+          continue;
+        }
         if (options.consolidation && !isConsolidationCandidateEligible(currentCandidate)) {
           continue;
         }

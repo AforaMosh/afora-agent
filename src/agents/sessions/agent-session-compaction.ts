@@ -20,8 +20,13 @@ import type { SettingsManager } from "./settings-manager.js";
 
 type CompactionReason = "manual" | "threshold" | "overflow";
 type SummaryOutputPolicy = "none" | "retry-invalid-once";
+export type DeferredSessionCompaction = Readonly<{
+  entry: CompactionEntry;
+  fromExtension: boolean;
+  result: CompactionResult;
+}>;
 type CompactionWorkOutcome =
-  | { status: "compacted"; result: CompactionResult }
+  | { status: "compacted"; result: CompactionResult; deferred?: DeferredSessionCompaction }
   | { status: "aborted" }
   | { status: "skipped" };
 
@@ -42,21 +47,78 @@ export abstract class AgentSessionCompaction extends AgentSessionInspection {
    */
   async compact(customInstructions?: string): Promise<CompactionResult> {
     return await this.runWithSessionWriteSettlement(
-      async () => await this.compactWithSessionWriteSettlement(customInstructions, "none"),
+      async () => (await this.compactWithSessionWriteSettlement(customInstructions, "none")).result,
     );
   }
 
   async [agentSessionAutomaticCompaction](customInstructions?: string): Promise<CompactionResult> {
     return await this.runWithSessionWriteSettlement(
       async () =>
-        await this.compactWithSessionWriteSettlement(customInstructions, "retry-invalid-once"),
+        (await this.compactWithSessionWriteSettlement(customInstructions, "retry-invalid-once"))
+          .result,
     );
+  }
+
+  /**
+   * Produces a summary without making it visible in the transcript. The caller
+   * owns one sealed durable commit, then must apply this exact entry below.
+   */
+  async compactDeferred(
+    customInstructions?: string,
+    summaryOutputPolicy: SummaryOutputPolicy = "none",
+  ): Promise<DeferredSessionCompaction> {
+    return await this.runWithSessionWriteSettlement(async () => {
+      const outcome = await this.compactWithSessionWriteSettlement(
+        customInstructions,
+        summaryOutputPolicy,
+        true,
+      );
+      if (!outcome.deferred) {
+        throw new Error("Deferred compaction entry is unavailable");
+      }
+      return outcome.deferred;
+    });
+  }
+
+  /** Apply only the entry committed by the sealed transcript owner. */
+  async applyDeferredCompaction(params: DeferredSessionCompaction): Promise<void> {
+    this.sessionManager.applyPersistedCompaction(params.entry);
+    const sessionContext = this.sessionManager.buildSessionContext();
+    this.agent.state.messages = sessionContext.messages;
+    if (this.currentExtensionRunner) {
+      await this.currentExtensionRunner.emit({
+        type: "session_compact",
+        compactionEntry: params.entry,
+        fromExtension: params.fromExtension,
+      });
+    }
+    this.emit({
+      type: "compaction_end",
+      reason: "manual",
+      result: params.result,
+      aborted: false,
+      willRetry: false,
+    });
+  }
+
+  /** The sealed owner calls this if staging or its durable commit fails. */
+  discardDeferredCompaction(error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+    this.emit({
+      type: "compaction_end",
+      reason: "manual",
+      result: undefined,
+      aborted: false,
+      willRetry: false,
+      errorMessage: `Compaction failed: ${message}`,
+    });
   }
 
   private async compactWithSessionWriteSettlement(
     customInstructions?: string,
     summaryOutputPolicy: SummaryOutputPolicy = "none",
-  ): Promise<CompactionResult> {
+    deferPersistence = false,
+  ): Promise<Extract<CompactionWorkOutcome, { status: "compacted" }>> {
     this.disconnectFromAgent();
     await this.abort();
     this.compactionAbortController = new AbortController();
@@ -70,19 +132,22 @@ export abstract class AgentSessionCompaction extends AgentSessionInspection {
         summaryOutputPolicy,
         settings,
         signal: this.compactionAbortController.signal,
+        deferPersistence,
       });
       if (outcome.status !== "compacted") {
         throw new Error("Compaction cancelled");
       }
 
-      this.emit({
-        type: "compaction_end",
-        reason: "manual",
-        result: outcome.result,
-        aborted: false,
-        willRetry: false,
-      });
-      return outcome.result;
+      if (!deferPersistence) {
+        this.emit({
+          type: "compaction_end",
+          reason: "manual",
+          result: outcome.result,
+          aborted: false,
+          willRetry: false,
+        });
+      }
+      return outcome;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const aborted =
@@ -146,6 +211,7 @@ export abstract class AgentSessionCompaction extends AgentSessionInspection {
     customInstructions?: string;
     mode: "manual" | "auto";
     summaryOutputPolicy: SummaryOutputPolicy;
+    deferPersistence?: boolean;
   }): Promise<CompactionWorkOutcome> {
     const isManual = options.mode === "manual";
     if (!this.model) {
@@ -236,6 +302,24 @@ export abstract class AgentSessionCompaction extends AgentSessionInspection {
 
     if (options.signal.aborted) {
       return { status: "aborted" };
+    }
+
+    if (options.deferPersistence) {
+      return {
+        status: "compacted",
+        result: compactionResult,
+        deferred: Object.freeze({
+          entry: this.sessionManager.createCompactionEntry(
+            compactionResult.summary,
+            compactionResult.firstKeptEntryId,
+            compactionResult.tokensBefore,
+            compactionResult.details,
+            fromExtension,
+          ),
+          fromExtension,
+          result: compactionResult,
+        }),
+      };
     }
 
     this.sessionManager.appendCompaction(

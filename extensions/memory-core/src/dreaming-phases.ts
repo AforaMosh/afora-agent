@@ -15,6 +15,7 @@ import {
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { normalizeStringEntries, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { appendFailedDreamingEvent } from "./dreaming-events.js";
+import { filterToOnePromotionAuthorizedView } from "./dreaming-consolidation-candidates.js";
 import {
   normalizeDailyIngestionState,
   normalizeMemoryDay,
@@ -1315,11 +1316,13 @@ async function runLightDreaming(params: {
     entries: await filterFreshLightDreamingEntries({
       workspaceDir: params.workspaceDir,
       nowMs,
-      entries: filterRecallEntriesWithinLookback({
-        entries: await readShortTermRecallEntries({ workspaceDir: params.workspaceDir, nowMs }),
-        nowMs,
-        lookbackDays: params.config.lookbackDays,
-      }),
+      entries: filterToOnePromotionAuthorizedView(
+        filterRecallEntriesWithinLookback({
+          entries: await readShortTermRecallEntries({ workspaceDir: params.workspaceDir, nowMs }),
+          nowMs,
+          lookbackDays: params.config.lookbackDays,
+        }),
+      ),
     }),
   });
   const rankedEntries = dedupeEntries(
@@ -1412,11 +1415,13 @@ async function runRemDreaming(params: {
   });
   const allEntries = await filterLiveShortTermRecallEntries({
     workspaceDir: params.workspaceDir,
-    entries: filterRecallEntriesWithinLookback({
-      entries: await readShortTermRecallEntries({ workspaceDir: params.workspaceDir, nowMs }),
-      nowMs,
-      lookbackDays: params.config.lookbackDays,
-    }),
+    entries: filterToOnePromotionAuthorizedView(
+      filterRecallEntriesWithinLookback({
+        entries: await readShortTermRecallEntries({ workspaceDir: params.workspaceDir, nowMs }),
+        nowMs,
+        lookbackDays: params.config.lookbackDays,
+      }),
+    ),
   });
   // Prefer entries staged by light sleep so REM synthesises from the
   // sequential light→REM pipeline instead of rescanning the full store.

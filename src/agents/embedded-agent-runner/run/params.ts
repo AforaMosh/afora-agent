@@ -113,6 +113,8 @@ export type RunEmbeddedAgentParams = {
   jobId?: string;
   /** Relative workspace path that memory-triggered writes are allowed to append to. */
   memoryFlushWritePath?: string;
+  /** Pre-admitted host-owned mutation for a transcript-derived memory flush. */
+  authorizedMemoryWrite?: import("../../../plugins/tool-types.js").AuthorizedMemoryWriteHost;
   /** Delivery target for topic/thread routing. */
   messageTo?: string;
   /** Thread/topic identifier for routing replies to the originating thread. */
