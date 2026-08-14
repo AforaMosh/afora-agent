@@ -6,6 +6,10 @@ import {
   resolveAgentDirMock,
   resolveSessionAgentIdMock,
 } from "./commands-agent-scope.test-support.js";
+import {
+  buildCompactParams,
+  requireCompactEmbeddedAgentSessionCall,
+} from "./commands-compact.test-support.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
 vi.mock("./commands-compact.runtime.js", () => ({
@@ -32,41 +36,6 @@ const {
   waitForEmbeddedAgentRunEnd,
 } = await import("./commands-compact.runtime.js");
 const { handleCompactCommand } = await import("./commands-compact.js");
-
-function buildCompactParams(
-  commandBodyNormalized: string,
-  cfg: OpenClawConfig,
-): HandleCommandsParams {
-  return {
-    cfg,
-    ctx: {
-      Provider: "whatsapp",
-      Surface: "whatsapp",
-      CommandSource: "text",
-      CommandBody: commandBodyNormalized,
-      commandText: commandBodyNormalized,
-    },
-    command: {
-      commandBodyNormalized,
-      isAuthorizedSender: true,
-      senderIsOwner: false,
-      senderId: "owner",
-      channel: "whatsapp",
-      ownerList: [],
-    },
-    sessionKey: "agent:main:main",
-    sessionStore: {},
-    resolveDefaultThinkingLevel: async () => "medium",
-  } as unknown as HandleCommandsParams;
-}
-
-function requireCompactEmbeddedAgentSessionCall(index = 0) {
-  const call = vi.mocked(compactEmbeddedAgentSession).mock.calls[index]?.[0];
-  if (!call) {
-    throw new Error(`compactEmbeddedAgentSession call ${index} missing`);
-  }
-  return call;
-}
 
 function requireResolveSessionAgentIdCall(index = 0) {
   const call = (
@@ -1004,138 +973,5 @@ describe("handleCompactCommand", () => {
     expect(vi.mocked(formatContextUsageShort)).toHaveBeenLastCalledWith(null, null);
     expect(result?.reply?.text).toContain("Compaction finished (resulting context unknown) •");
     expect(result?.reply?.text).not.toContain("undefined");
-  });
-
-  it("resolves /compact context budget from the active Codex runtime config instead of stale session metadata", async () => {
-    vi.mocked(compactEmbeddedAgentSession).mockResolvedValueOnce({
-      ok: true,
-      compacted: true,
-      result: {
-        summary: "compacted",
-        firstKeptEntryId: "first-kept",
-        tokensBefore: 199_000,
-        tokensAfter: 56_000,
-      },
-    });
-
-    await handleCompactCommand(
-      {
-        ...buildCompactParams("/compact", {
-          agents: {
-            defaults: {
-              models: {
-                "openai/gpt-5.5": {
-                  agentRuntime: { id: "codex" },
-                },
-              },
-            },
-          },
-          commands: { text: true },
-          channels: { whatsapp: { allowFrom: ["*"] } },
-          models: {
-            providers: {
-              openai: {
-                models: [{ id: "gpt-5.5", contextWindow: 258_000 }],
-              },
-            },
-          },
-        } as unknown as OpenClawConfig),
-        provider: "openai",
-        model: "openai/gpt-5.5",
-        contextTokens: 0,
-        sessionEntry: {
-          sessionId: "live-session",
-          updatedAt: Date.now(),
-          contextTokens: 400_000,
-        },
-      } as HandleCommandsParams,
-      true,
-    );
-
-    expect(requireCompactEmbeddedAgentSessionCall().contextTokenBudget).toBe(258_000);
-    expect(vi.mocked(formatContextUsageShort)).toHaveBeenLastCalledWith(56_000, 258_000);
-  });
-
-  it.each([
-    { globalCap: undefined, agentCap: undefined, expectedBudget: 1_000_000 },
-    { globalCap: 372_000, agentCap: 120_000, expectedBudget: 120_000 },
-    { globalCap: 120_000, agentCap: 372_000, expectedBudget: 372_000 },
-  ])("respects the target agent context cap for /compact (#117470)", async (testCase) => {
-    vi.mocked(compactEmbeddedAgentSession).mockResolvedValueOnce({
-      ok: true,
-      compacted: true,
-      result: {
-        summary: "compacted",
-        firstKeptEntryId: "first-kept",
-        tokensBefore: 134_930,
-        tokensAfter: 56_000,
-      },
-    });
-
-    await handleCompactCommand(
-      {
-        ...buildCompactParams("/compact", {
-          agents: {
-            ...(testCase.globalCap === undefined
-              ? {}
-              : { defaults: { contextTokens: testCase.globalCap } }),
-            ...(testCase.agentCap === undefined
-              ? {}
-              : { list: [{ id: "main", contextTokens: testCase.agentCap }] }),
-          },
-          commands: { text: true },
-          channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
-        provider: "claude-cli",
-        model: "claude-fable-5",
-        contextTokens: testCase.globalCap ?? 0,
-        sessionEntry: {
-          sessionId: "fable-session",
-          updatedAt: Date.now(),
-          contextTokens: 1_000_000,
-        },
-      } as HandleCommandsParams,
-      true,
-    );
-
-    expect(requireCompactEmbeddedAgentSessionCall().contextTokenBudget).toBe(
-      testCase.expectedBudget,
-    );
-  });
-
-  it("retains persisted context when an unknown custom model is stored as a legacy alias", async () => {
-    vi.mocked(compactEmbeddedAgentSession).mockResolvedValueOnce({
-      ok: true,
-      compacted: false,
-      reason: "already compacted",
-    });
-
-    await handleCompactCommand(
-      {
-        ...buildCompactParams("/compact", {
-          agents: {
-            defaults: {
-              models: { "custom/actual-model": { alias: "legacy-fast-model" } },
-            },
-          },
-          commands: { text: true },
-          channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
-        provider: "custom",
-        model: "actual-model",
-        contextTokens: 0,
-        sessionEntry: {
-          sessionId: "legacy-model-session",
-          updatedAt: Date.now(),
-          providerOverride: "custom",
-          modelOverride: "legacy-fast-model",
-          modelOverrideSource: "user",
-          contextTokens: 777_777,
-        },
-      } as HandleCommandsParams,
-      true,
-    );
-
-    expect(requireCompactEmbeddedAgentSessionCall().contextTokenBudget).toBe(777_777);
   });
 });
