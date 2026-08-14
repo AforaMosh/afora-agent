@@ -11,6 +11,7 @@ export const WORKER_TUNNEL_READY_MARKER = "OPENCLAW_WORKER_TUNNEL_READY";
 
 const STOP_GRACE_MS = 1_500;
 const STOP_KILL_WAIT_MS = 2_000;
+const EXIT_OUTPUT_DRAIN_MS = 100;
 const STDERR_LIMIT = 4_096;
 
 type WorkerSshProcessExit = {
@@ -67,6 +68,7 @@ export function createWorkerSshRunner(): WorkerSshRunner {
       });
       let stdout = "";
       let stderr = "";
+      let exitOutputDrainTimer: ReturnType<typeof setTimeout> | undefined;
       const settleReadyError = () => {
         if (readySettled) {
           return;
@@ -80,6 +82,11 @@ export function createWorkerSshRunner(): WorkerSshRunner {
         }
         exitedSettled = true;
         resolveExited(exit);
+      };
+      const releaseOutputPipes = () => {
+        clearTimeout(exitOutputDrainTimer);
+        child.stdout.destroy();
+        child.stderr.destroy();
       };
       child.stdout.setEncoding("utf8");
       child.stdout.on("error", () => {});
@@ -108,23 +115,26 @@ export function createWorkerSshRunner(): WorkerSshRunner {
           settleExited({ code: null, signal: null });
         }
       });
-      // "exit" fires before "close", and "close" can be delayed indefinitely while a
-      // descendant holds a piped stdio descriptor; settle on the real exit so connected
-      // tunnels awaiting `exited` observe termination without depending on stream closure.
-      let exitEventResult: WorkerSshProcessExit | undefined;
+      // "exit" precedes stdio drain, while "close" can be pinned by a descendant holding a
+      // pipe. Give an unready child one bounded drain window so its failure detail survives
+      // without letting inherited descriptors stall retries indefinitely.
       child.once("exit", (code, signal) => {
-        exitEventResult = { code, signal };
-        settleReadyError();
-        settleExited(exitEventResult);
-        // Release our pipe ends so a descendant holding the other side cannot pin local
-        // descriptors across retries; this also lets "close" fire promptly.
+        settleExited({ code, signal });
         child.stdin.destroy();
-        child.stdout.destroy();
-        child.stderr.destroy();
+        if (readySettled) {
+          releaseOutputPipes();
+        } else {
+          exitOutputDrainTimer = setTimeout(() => {
+            settleReadyError();
+            releaseOutputPipes();
+          }, EXIT_OUTPUT_DRAIN_MS);
+          exitOutputDrainTimer.unref?.();
+        }
       });
       child.once("close", (code, signal) => {
         closed = true;
         settleReadyError();
+        releaseOutputPipes();
         settleExited({ code, signal });
       });
       child.stdin.on("error", () => {});
@@ -141,6 +151,11 @@ export function createWorkerSshRunner(): WorkerSshRunner {
         stop() {
           return (stopPromise ??= (async () => {
             if (closed) {
+              return;
+            }
+            if (exitedSettled) {
+              settleReadyError();
+              releaseOutputPipes();
               return;
             }
             child.kill("SIGTERM");

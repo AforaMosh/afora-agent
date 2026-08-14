@@ -63,6 +63,19 @@ describe("worker SSH process runner", () => {
     await expect(process.ready).rejects.toThrow("Worker SSH tunnel failed");
   });
 
+  it("drains final stderr between exit and close before rejecting readiness", async () => {
+    const child = createChild();
+    spawnMock.mockReturnValue(child);
+    const process = createWorkerSshRunner().start(["ssh"], { timeoutMs: 10_000 });
+
+    child.emit("exit", 255, null);
+    child.stderr.write("connection refused");
+    child.emit("close", 255, null);
+
+    await expect(process.exited).resolves.toEqual({ code: 255, signal: null });
+    await expect(process.ready).rejects.toThrow("Worker SSH tunnel failed: connection refused");
+  });
+
   it("fails stop when a SIGKILLed child never reports exit", async () => {
     vi.useFakeTimers();
     const child = createChild();
