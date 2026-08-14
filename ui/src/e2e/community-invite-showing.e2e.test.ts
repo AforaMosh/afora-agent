@@ -3,11 +3,14 @@
 // do not exist there, so mutual exclusion, lock release and the fail-closed
 // behavior of a browser without a lock manager can only be observed here.
 import { expect, it } from "vitest";
-import { installMockGateway } from "../test-helpers/control-ui-e2e.ts";
+import { installMockGateway, startControlUiE2eServer } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
 const suite = createControlUiE2eSuite({
   name: "Control UI community invite showing E2E",
+  // The private source server, because this proof imports the invite module the
+  // app loads lazily rather than driving it through the shipped bundle.
+  startServer: () => startControlUiE2eServer(undefined, { source: true }),
   startServerBeforeBrowser: true,
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
