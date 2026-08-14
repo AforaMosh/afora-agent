@@ -18,6 +18,7 @@ import {
   createPrefixedOutputWriter,
   isArtifactSetFresh,
   parseMode,
+  PLUGIN_SDK_TYPE_INPUTS,
   resolveBoundaryEntryShimRequiredOutputs,
   resolveBoundaryRootShimsTimeoutMs,
   resolveTsxImportSpecifier,
@@ -700,6 +701,25 @@ describe("prepare-extension-package-boundary-artifacts", () => {
       expect(productionOutputs).not.toContain(`dist/plugin-sdk/${entry}.d.ts`);
       expect(privateQaOutputs).toContain(`dist/plugin-sdk/${entry}.d.ts`);
       expect(privateQaOutputs).toContain(`packages/plugin-sdk/dist/src/plugin-sdk/${entry}.d.ts`);
+    }
+  });
+
+  it("gates plugin-sdk dts freshness on the whole src tree and every workspace package src dir", () => {
+    // Regression: the dts emit graph follows imports across most of src/ and
+    // the workspace packages. A partial input listing (missing src/agents) let
+    // cache-restored stale declarations stay "fresh" after #123839 widened
+    // ClaudeCliCredentialReadOptions, failing innocent extension boundary
+    // compiles with TS2353 at extensions/anthropic/cli-auth-seam.ts.
+    expect(PLUGIN_SDK_TYPE_INPUTS).toContain("src");
+    const repoRoot = path.resolve(import.meta.dirname, "../..");
+    const packageSrcDirs = fs
+      .readdirSync(path.join(repoRoot, "packages"), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `packages/${entry.name}/src`)
+      .filter((srcDir) => fs.existsSync(path.join(repoRoot, srcDir)));
+    expect(packageSrcDirs.length).toBeGreaterThan(0);
+    for (const srcDir of packageSrcDirs) {
+      expect(PLUGIN_SDK_TYPE_INPUTS).toContain(srcDir);
     }
   });
 

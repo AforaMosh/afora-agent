@@ -158,29 +158,24 @@ function listSourceDtsOutputs(sourceDir: string, outputPrefix: string) {
   return outputs.toSorted((a, b) => a.localeCompare(b));
 }
 
-const PLUGIN_SDK_TYPE_INPUTS = [
+function listWorkspacePackageSrcDirs() {
+  return fs
+    .readdirSync(resolve(repoRoot, "packages"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `packages/${entry.name}/src`)
+    .filter((srcDir) => fs.existsSync(resolve(repoRoot, srcDir)))
+    .toSorted();
+}
+
+// The dts programs follow imports from the plugin-sdk barrels across most of
+// src/ and the workspace packages (the emitted graph spans src/agents,
+// src/config, src/gateway, ...). Freshness must cover those whole trees: a
+// partial listing let a src/agents-only type change keep cache-restored stale
+// declarations "fresh", failing innocent extension compiles with TS2353.
+export const PLUGIN_SDK_TYPE_INPUTS = [
   "tsconfig.json",
-  "src/plugin-sdk",
-  // provider-auth re-exports these signatures into generated SDK declarations.
-  "src/agents/cli-credentials.ts",
-  "src/plugins/provider-runtime-model.types.ts",
-  "src/plugins/types.ts",
-  "src/auto-reply",
-  "packages/ai/src",
-  "packages/llm-core/src",
-  "packages/markdown-core/src",
-  "packages/media-core/src",
-  "packages/model-catalog-core/src",
-  "packages/memory-host-sdk/src",
-  "packages/media-generation-core/src",
-  "packages/media-understanding-common/src",
-  "packages/normalization-core/src",
-  "packages/retry/src",
-  "packages/acp-core/src",
-  "packages/terminal-core/src",
-  "src/video-generation/dashscope-compatible.ts",
-  "src/video-generation/types.ts",
-  "src/types",
+  "src",
+  ...listWorkspacePackageSrcDirs(),
 ];
 const ROOT_DTS_INPUTS = ["tsconfig.plugin-sdk.dts.json", ...PLUGIN_SDK_TYPE_INPUTS];
 const ROOT_DTS_STAMP = "dist/plugin-sdk/.boundary-dts.stamp";
