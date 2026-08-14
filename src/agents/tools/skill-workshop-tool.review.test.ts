@@ -302,7 +302,7 @@ describe("skill_workshop review mode", () => {
     expect(proposalMutationBudget.remaining).toBe(0);
   });
 
-  it("caps reviewer live-skill reads at the read budget", async () => {
+  it("reads and patches a live skill up to the configured skill size limit", async () => {
     const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-read-cap-");
     await seedLiveSkill(
       workspaceDir,
@@ -322,16 +322,48 @@ describe("skill_workshop review mode", () => {
       skill_name: "big-skill",
     });
     const text = (read.content[0] as { text: string }).text;
-    expect(read.details).toMatchObject({ skillKey: "big-skill", truncated: true });
-    expect(text.length).toBeLessThanOrEqual(20_000 + 100);
-    expect(text).toContain("[truncated: skill exceeds the Workshop read budget]");
+    expect(read.details).toMatchObject({ skillKey: "big-skill", truncated: false });
+    expect(text).toContain("A detailed operational line.");
+    expect(Buffer.byteLength(text, "utf8")).toBeGreaterThan(20_000);
+
+    const patch = await reviewTool.execute("large-patch", {
+      action: "patch",
+      skill_name: "big-skill",
+      old_string: "# Big Skill",
+      new_string: "# Bigger Skill",
+    });
+    expect(patch.details).toMatchObject({ status: "pending", kind: "update" });
+  });
+
+  it("measures the configured reviewer read limit in UTF-8 bytes", async () => {
+    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-byte-cap-");
+    await seedLiveSkill(workspaceDir, "unicode-skill", "Unicode operator skill", "# Skill\n");
+    const liveSkillFile = path.join(workspaceDir, "skills", "unicode-skill", "SKILL.md");
+    await fs.appendFile(liveSkillFile, `\n${"🦞".repeat(300)}`);
+
+    const reviewTool = createSkillWorkshopTool({
+      workspaceDir,
+      config: { skills: { workshop: { maxSkillBytes: 1024 } } },
+      proposalOnly: true,
+      updateProposals: true,
+      proposalMutationBudget: { remaining: 1 },
+    });
+    const read = await reviewTool.execute("review-read", {
+      action: "read",
+      skill_name: "unicode-skill",
+    });
+    const text = (read.content[0] as { text: string }).text;
+    const prefix = text.replace("\n[truncated: skill exceeds the Workshop read budget]", "");
+    expect(read.details).toMatchObject({ skillKey: "unicode-skill", truncated: true });
+    expect(Buffer.byteLength(prefix, "utf8")).toBeLessThanOrEqual(1024);
+    expect(prefix).not.toContain("�");
 
     await expect(
       reviewTool.execute("oversized-patch", {
         action: "patch",
-        skill_name: "big-skill",
-        old_string: "A detailed operational line.",
-        new_string: "A rewritten operational line.",
+        skill_name: "unicode-skill",
+        old_string: "# Skill",
+        new_string: "# Updated Skill",
       }),
     ).rejects.toThrow("cannot be updated autonomously");
   });

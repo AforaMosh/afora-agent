@@ -35,6 +35,7 @@ import type {
   SkillWorkshopProposalReviewCompletion,
 } from "../../skills/workshop/types.js";
 import { readWritableWorkspaceSkill } from "../../skills/workshop/workspace-skill-read.js";
+import { truncateUtf8Prefix } from "../../utils/utf8-truncate.js";
 import { stringEnum } from "../schema/typebox.js";
 import {
   asToolParamsRecord,
@@ -95,9 +96,6 @@ function resolveProposalOnlyActions(updateProposals: boolean, supportsCompletion
   ];
 }
 const SKILL_WORKSHOP_MUTATION_ACTIONS = new Set(["create", "patch", "update", "revise"]);
-// Reads give the model the text it must quote to patch. Composition still uses
-// the authoritative live body, while the cap bounds provider payloads.
-const SKILL_WORKSHOP_READ_MAX_CHARS = 20_000;
 const SKILL_PROPOSAL_STATUSES = [
   "pending",
   "applied",
@@ -351,13 +349,13 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
         ) {
           throw new ToolInputError(`skill is outside this collection review: ${skill.skillKey}`);
         }
-        const readMaxChars = options.collectionReconcile
+        const readLimit = options.collectionReconcile
           ? MAX_RECONCILED_SKILL_BYTES
-          : SKILL_WORKSHOP_READ_MAX_CHARS;
-        const truncated = skill.content.length > readMaxChars;
-        // A truncated read is context, not sight of the whole skill: it earns no
-        // receipt, so oversized skills cannot be patched by a reviewer that never
-        // saw their later content.
+          : workshopConfig.maxSkillBytes;
+        const truncated = options.collectionReconcile
+          ? skill.content.length > readLimit
+          : Buffer.byteLength(skill.content, "utf8") > readLimit;
+        // A truncated read earns no receipt, preventing patches based on unseen content.
         if (options.collectionReconcile) {
           await recordSkillCollectionReadReceipt({
             context: options.collectionReconcile,
@@ -371,7 +369,7 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
           readSkillHashes.set(skill.skillKey, sha256Hex(skill.content));
         }
         const text = truncated
-          ? `${truncateUtf16Safe(skill.content, readMaxChars)}\n[truncated: skill exceeds the Workshop read budget]`
+          ? `${options.collectionReconcile ? truncateUtf16Safe(skill.content, readLimit) : truncateUtf8Prefix(skill.content, readLimit)}\n[truncated: skill exceeds the Workshop read budget]`
           : skill.content;
         return {
           content: [{ type: "text", text }],
@@ -539,7 +537,7 @@ export function createSkillWorkshopTool(options: SkillWorkshopToolOptions): AnyA
         const readHash = readSkillHashes.get(target.skillKey);
         if (!readHash) {
           throw new ToolInputError(
-            target.content.length > SKILL_WORKSHOP_READ_MAX_CHARS
+            Buffer.byteLength(target.content, "utf8") > workshopConfig.maxSkillBytes
               ? `skill "${target.skillKey}" exceeds the reviewer read budget and cannot be updated autonomously`
               : `read the live skill first: call action=read with skill_name "${target.skillKey}", then ${action === "patch" ? "quote its current text in the patch" : "rewrite it from the returned content"}`,
           );
