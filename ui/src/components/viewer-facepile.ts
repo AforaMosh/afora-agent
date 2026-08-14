@@ -108,20 +108,28 @@ export function projectPresencePayload(
   return cachedPresenceProjection;
 }
 
+/** Other people currently watching this session, for surfaces that name them
+ *  rather than stack their avatars. */
+export function sessionPresenceViewers(
+  value: unknown,
+  authenticatedSelfUserId: string | undefined,
+  selfInstanceId: string | undefined,
+  sessionKey: string,
+): readonly PresenceViewer[] {
+  const projection = projectPresencePayload(value, authenticatedSelfUserId, selfInstanceId);
+  return projection.users.filter(
+    (user) => user.id !== projection.selfUserId && user.watchedSessions.includes(sessionKey),
+  );
+}
+
 export function hasSessionPresenceViewers(
   value: unknown,
   authenticatedSelfUserId: string | undefined,
   selfInstanceId: string | undefined,
   sessionKey: string,
-  excludeUserId?: string,
 ): boolean {
-  const projection = projectPresencePayload(value, authenticatedSelfUserId, selfInstanceId);
-  const excludedUserId = normalized(excludeUserId);
-  return projection.users.some(
-    (user) =>
-      user.id !== projection.selfUserId &&
-      user.id !== excludedUserId &&
-      user.watchedSessions.includes(sessionKey),
+  return (
+    sessionPresenceViewers(value, authenticatedSelfUserId, selfInstanceId, sessionKey).length > 0
   );
 }
 
