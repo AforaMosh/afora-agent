@@ -1335,6 +1335,12 @@ async function createChatPickerScenario(
       status: "failed",
       lastRunError: "Model out of credits: openai/gpt-5.6",
     }),
+    sessionRow("agent:main:release-draft", "Release notes draft", baseTime - 82_000, {
+      visibility: "draft",
+    }),
+    sessionRow("agent:main:private-planning", "Private planning", baseTime - 83_000, {
+      incognito: true,
+    }),
     sessionRow("agent:main:work-openclaw", "OpenClaw work checkout", baseTime - 85_000, {
       createdActor: MOCK_CREATOR_PETER,
       execCwd: "/Users/peter/Work/openclaw",
