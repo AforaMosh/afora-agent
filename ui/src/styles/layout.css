@@ -888,7 +888,7 @@ openclaw-settings-save-indicator {
   --sidebar-type-page-weight: 500;
   --sidebar-type-section-size: var(--control-ui-text-xs);
   --sidebar-type-section-line-height: 1;
-  --sidebar-type-section-weight: 650;
+  --sidebar-type-section-weight: 600;
   --sidebar-type-section-tracking: 0.04em;
   --sidebar-type-session-size: calc(13px * var(--control-ui-text-scale));
   --sidebar-type-session-line-height: 20px;
@@ -940,7 +940,7 @@ openclaw-settings-save-indicator {
      never shine through with a mismatched tone. */
   --sidebar-bg: color-mix(in srgb, var(--bg) 96%, var(--bg-elevated) 4%);
   --sidebar-section-gap: var(--space-3);
-  --sidebar-heading-row-gap: 2px;
+  --sidebar-heading-row-gap: var(--space-1);
   --sidebar-row-gap: 1px;
   --sidebar-row-surface: transparent;
   --sidebar-row-surface-hover: color-mix(in srgb, var(--bg-hover) 84%, transparent);
@@ -2156,6 +2156,7 @@ body.update-dialog-open .sidebar-update-card__status {
 .sidebar-session-tree__children,
 .sidebar-session-tree__list,
 .sidebar-session-catalog-host__sessions,
+.sidebar-session-work-project,
 .sidebar-session-catalog-project,
 .sidebar-session-catalog-project__sessions {
   display: flex;
@@ -2166,6 +2167,18 @@ body.update-dialog-open .sidebar-update-card__status {
 
 .sidebar-recent-sessions__list {
   min-height: 12px;
+}
+
+/* Project boundaries use the 8px subgroup step; rows inside each project keep
+   the 1px session rhythm shared with Sessions. */
+.sidebar-recent-sessions__list:has(> .sidebar-session-work-project),
+.sidebar-session-catalog-host__sessions:has(> .sidebar-session-catalog-project) {
+  gap: var(--sidebar-subgroup-gap);
+}
+
+.sidebar-session-work-project,
+.sidebar-session-catalog-project {
+  gap: var(--sidebar-heading-row-gap);
 }
 
 .sidebar-session-tree__children {
@@ -2260,8 +2273,8 @@ body.update-dialog-open .sidebar-update-card__status {
   align-items: center;
   gap: 0;
   width: 100%;
-  min-height: 18px;
-  padding-block: 2px 0;
+  min-height: 24px;
+  padding-block: 2px;
   padding-inline: var(--sidebar-inset) 12px;
   border: 0;
   border-radius: var(--radius-sm);
@@ -2290,18 +2303,18 @@ body.update-dialog-open .sidebar-update-card__status {
   color: var(--text);
 }
 
-/* Structural label, not content: at the session row's 13px/500 a group reads as
-   just another session. Type carries the whole split because the head color
-   stays near `--text` for readability; case stays as authored (project names). */
+/* Folders share the session size but carry one extra weight step; muted color
+   keeps the container distinct without competing with the session title. */
 .sidebar-session-catalog-project__label {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: clip;
   white-space: nowrap;
-  font-size: calc(12px * var(--control-ui-text-scale));
-  font-weight: 650;
-  letter-spacing: 0.03em;
+  font-size: var(--sidebar-type-session-size);
+  font-weight: 600;
+  letter-spacing: normal;
+  line-height: var(--sidebar-type-session-line-height);
   margin-inline-start: var(--sidebar-row-gap);
 }
 
@@ -4860,7 +4873,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   font-size: var(--sidebar-type-subtitle-size);
   letter-spacing: normal;
   line-height: var(--sidebar-type-subtitle-line-height);
-  margin-block-start: 1px;
+  margin-block-start: 2px;
   color: color-mix(in srgb, var(--muted) 55%, var(--text) 45%);
 }
 
