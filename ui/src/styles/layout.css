@@ -1030,6 +1030,7 @@ openclaw-settings-save-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   height: 48px;
   min-height: 48px;
   padding: 0 8px;
@@ -3440,8 +3441,8 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 0 1 auto;
-  width: fit-content;
+  flex: 1 1 auto;
+  width: 100%;
   max-width: 100%;
   min-height: 40px;
   min-width: 0;
@@ -3512,6 +3513,18 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   min-width: 0;
   overflow: hidden;
   text-overflow: clip;
+}
+
+/* The agent name uses a shorter dissolve than sidebar content rows: it should
+   soften only the final clipped glyph, while short names stay fully opaque. */
+.sidebar-agent-card__name[data-overflow-fade] {
+  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 6px), transparent 100%);
+  mask-image: linear-gradient(to right, black 0, black calc(100% - 6px), transparent 100%);
+}
+
+.sidebar-agent-card__name[data-overflow-fade]:dir(rtl) {
+  -webkit-mask-image: linear-gradient(to left, black 0, black calc(100% - 6px), transparent 100%);
+  mask-image: linear-gradient(to left, black 0, black calc(100% - 6px), transparent 100%);
 }
 
 .sidebar-agent-card__chevron {
