@@ -501,7 +501,7 @@ suite.define(() => {
           paddingTop: "3px",
         },
         {
-          height: 32,
+          height: 43,
           minHeight: "32px",
           nameFontSize: "13px",
           paddingBottom: "3px",
