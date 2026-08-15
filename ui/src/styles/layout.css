@@ -2267,7 +2267,7 @@ body.update-dialog-open .sidebar-update-card__status {
   display: flex;
   justify-content: flex-start;
   gap: 14px;
-  padding: 0 10px 10px var(--sidebar-text-offset);
+  padding: 8px 10px 10px var(--sidebar-text-offset);
 }
 
 .sidebar-session-pagination__button {
