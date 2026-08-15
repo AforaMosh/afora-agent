@@ -85,6 +85,7 @@ const PINNED_CREATOR_VIEWERS_SESSION_KEY = "agent:main:launch-review";
 const PINNED_AWAY_CREATOR_SESSION_KEY = "agent:main:vendor-audit";
 const PINNED_INCOGNITO_SESSION_KEY = "agent:main:private-retro";
 const INCOGNITO_CREATOR_SESSION_KEY = "agent:main:private-planning";
+const POPOVER_MATRIX_SESSION_KEY = "agent:main:creator-long-title";
 const ACTIVE_CATALOG_SESSION_KEY = "catalog:codex:gateway:codex-thread-1";
 const CUSTODIAN_CHAT_REPLY_DELAY_MS = 600;
 
@@ -1447,15 +1448,23 @@ async function createChatPickerScenario(
       unread: true,
     }),
     sessionRow(
-      "agent:main:creator-long-title",
+      POPOVER_MATRIX_SESSION_KEY,
       "Reconcile the sidebar creator column across every narrow workspace layout",
       baseTime - 87_000,
       {
         createdActor: MOCK_CREATOR_MIRA,
         createdVia: "cron",
+        execCwd: "/Users/peter/Projects/sidebar-lab",
         hasAutomation: true,
         hasComposerDraft: true,
         incognito: true,
+        placement: {
+          state: "requested",
+          generation: 1,
+          createdAtMs: baseTime - 120_000,
+          updatedAtMs: baseTime - 87_000,
+          stateChangedAtMs: baseTime - 90_000,
+        },
       },
     ),
     mainChildRow,
@@ -1702,11 +1711,13 @@ async function createChatPickerScenario(
       },
       {
         id: "presence-patricia",
+        name: "Patricia Erichsen",
         email: "patricia.erichsen@example.com",
         watchedSessions: [
           ACTIVE_CREATOR_SESSION_KEY,
           PINNED_VIEWERS_SESSION_KEY,
           PINNED_CREATOR_VIEWERS_SESSION_KEY,
+          POPOVER_MATRIX_SESSION_KEY,
           ACTIVE_CATALOG_SESSION_KEY,
         ],
       },

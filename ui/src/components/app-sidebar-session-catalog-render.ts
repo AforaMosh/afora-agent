@@ -570,6 +570,7 @@ function renderCatalogSessionRow(
         age: meta,
         cwd: session.cwd,
         branch: session.gitBranch,
+        pullRequest: session.pullRequest,
       })}
     </openclaw-tooltip>
   `;

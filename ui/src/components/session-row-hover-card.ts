@@ -186,6 +186,7 @@ export function renderCatalogSessionInformationCard(params: {
   age: string;
   cwd?: string;
   branch?: string;
+  pullRequest?: SidebarRecentSession["pullRequest"];
 }): TemplateResult {
   const rows: SessionContextRow[] = [];
   if (params.cwd) {
@@ -195,6 +196,12 @@ export function renderCatalogSessionInformationCard(params: {
     rows.push({
       icon: icons.gitBranch,
       value: params.branch,
+    });
+  }
+  if (params.pullRequest) {
+    rows.push({
+      icon: icons.gitPullRequest,
+      value: formatSessionPullRequestSummary(params.pullRequest),
     });
   }
   return renderInformationCard(params.title, params.age, rows);
