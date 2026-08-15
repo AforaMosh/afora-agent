@@ -167,8 +167,8 @@ export function presenceViewerLabel(user: PresenceViewer): string {
 
 function renderViewerAvatar(view: IdentityAvatarView) {
   const fallback = html`<span
-    class=${view.imageUrl ? "viewer-avatar__fallback" : nothing}
-    style=${`background: hsl(${view.fallback.colorSeed % 360} 48% 42%)`}
+    class="viewer-avatar__fallback"
+    style=${`--viewer-hue:${view.fallback.colorSeed % 360}`}
     >${view.fallback.initials}</span
   >`;
   if (!view.imageUrl) {

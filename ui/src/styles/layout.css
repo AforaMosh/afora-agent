@@ -2617,6 +2617,8 @@ body.update-dialog-open .sidebar-update-card__status {
    outranks a lone class, which showed image + initials side by side. */
 .viewer-avatar > .viewer-avatar__fallback {
   display: none;
+  background: hsl(var(--viewer-hue) 18% 23%);
+  color: hsl(var(--viewer-hue) 28% 78%);
 }
 
 .viewer-avatar.is-fallback > img {
