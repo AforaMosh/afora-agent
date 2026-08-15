@@ -968,8 +968,8 @@ openclaw-settings-save-indicator {
   --sidebar-trailing-slot: 20px;
   --sidebar-header-action-size: 22px;
   --sidebar-scrollbar-gutter: 8px;
-  --sidebar-lucide-icon-size: 16px;
-  --sidebar-lucide-stroke-width: 1.5px;
+  --sidebar-lucide-icon-size: var(--top-band-glyph-size);
+  --sidebar-lucide-stroke-width: var(--top-band-glyph-stroke-width);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1071,11 +1071,11 @@ html.openclaw-native-macos .shell:not(.shell--mobile-nav) .sidebar-brand {
 }
 
 .sidebar-brand__icon svg {
-  width: 16px;
-  height: 16px;
+  width: var(--top-band-glyph-size);
+  height: var(--top-band-glyph-size);
   stroke: currentColor;
   fill: none;
-  stroke-width: 1.7px;
+  stroke-width: var(--top-band-glyph-stroke-width);
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -1087,8 +1087,8 @@ html.openclaw-native-macos .shell:not(.shell--mobile-nav) .sidebar-brand {
 }
 
 .sidebar-brand__new-thread svg {
-  width: 18px;
-  height: 18px;
+  width: var(--top-band-glyph-size);
+  height: var(--top-band-glyph-size);
 }
 
 html.openclaw-native-nav .sidebar-brand__collapse,

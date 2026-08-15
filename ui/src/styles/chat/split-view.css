@@ -163,6 +163,14 @@ openclaw-chat-pane {
   -webkit-user-select: none;
 }
 
+/* Sidebar controls, breadcrumb glyphs, and pane actions are one top band. The
+   shared Lucide box keeps their optical weight stable across wrappers. */
+.chat-pane__header svg[data-lucide-icon] {
+  width: var(--top-band-glyph-size);
+  height: var(--top-band-glyph-size);
+  stroke-width: var(--top-band-glyph-stroke-width);
+}
+
 /* Identity trail: project, then session. One flex row owns the alignment of
    every segment, so the 26px project chip and the 12px text segments centre on
    a single line and a future parent-session segment inherits it for free. */

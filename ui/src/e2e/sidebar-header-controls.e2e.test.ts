@@ -149,6 +149,28 @@ suite.define(() => {
             }),
           )
           .toEqual({ background: "rgba(0, 0, 0, 0)", border: "none" });
+        const topBandGlyphs = page.locator(
+          ".sidebar-brand__actions svg[data-lucide-icon], .chat-pane__header svg[data-lucide-icon]",
+        );
+        await expect.poll(() => topBandGlyphs.count()).toBeGreaterThan(5);
+        expect(
+          await topBandGlyphs.evaluateAll((glyphs) =>
+            glyphs.map((glyph) => {
+              const style = getComputedStyle(glyph);
+              return {
+                height: style.height,
+                strokeWidth: style.strokeWidth,
+                width: style.width,
+              };
+            }),
+          ),
+        ).toEqual(
+          Array(await topBandGlyphs.count()).fill({
+            height: "16px",
+            strokeWidth: "1.5px",
+            width: "16px",
+          }),
+        );
 
         await capture(page, `after-open-${colorScheme}-context.png`);
         await capture(sidebarHeader, `after-open-${colorScheme}-crop.png`);
