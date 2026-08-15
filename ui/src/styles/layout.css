@@ -955,6 +955,7 @@ openclaw-settings-save-indicator {
   --sidebar-group-gap: var(--space-4);
   --sidebar-group-heading-gap: 2px;
   --sidebar-subgroup-gap: var(--space-2);
+  --sidebar-project-gap: var(--space-3);
   --sidebar-lead: 20px;
   position: relative;
   display: flex;
@@ -2167,11 +2168,11 @@ body.update-dialog-open .sidebar-update-card__status {
   min-height: 12px;
 }
 
-/* Project boundaries use the 8px subgroup step; rows inside each project keep
+/* Project boundaries use the wider group step; rows inside each project keep
    the 1px session rhythm shared with Sessions. */
 .sidebar-recent-sessions__list:has(> .sidebar-session-work-project),
 .sidebar-session-catalog-host__sessions:has(> .sidebar-session-catalog-project) {
-  gap: var(--sidebar-subgroup-gap);
+  gap: var(--sidebar-project-gap);
 }
 
 .sidebar-session-work-project,
