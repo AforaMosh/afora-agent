@@ -1753,6 +1753,7 @@ body.update-dialog-open .sidebar-update-card__status {
   --sidebar-inset: 8px;
   --sidebar-lead: 20px;
   --sidebar-row-gap: 8px;
+  --sidebar-depth-step: var(--sidebar-lead);
   --sidebar-text-offset: calc(var(--sidebar-inset) + var(--sidebar-lead) + var(--sidebar-row-gap));
 
   display: flex;
@@ -2169,12 +2170,11 @@ body.update-dialog-open .sidebar-update-card__status {
     calc(var(--sidebar-inset) + 10px) 0 / 1px 100% no-repeat;
 }
 
-/* Sessions inside a project hang off the project's text axis, so the header
-   reads as their parent rather than as one more row in the same column. The
-   step is the header's own lead slot, which is what puts the rows under the
-   project name instead of under its mark. */
+/* Each Coding depth advances by the same lead step. The row's own inset, lead,
+   and gap then put session titles one step after project labels; the branch
+   glyph/value pair supplies the final step inside the row. */
 .sidebar-session-catalog-project__sessions {
-  margin-inline-start: calc(var(--sidebar-row-inset) + var(--sidebar-lead) * 2 + 12px);
+  margin-inline-start: calc(var(--sidebar-depth-step) * 2);
 }
 
 /* Project marks are product artwork, not sidebar glyphs, so they fill the lead
@@ -2247,19 +2247,16 @@ body.update-dialog-open .sidebar-update-card__status {
   text-align: center;
 }
 
-/* A project heading is a rung of the Coding ladder, not a row of its own kind:
-   its mark takes the lead slot every session row reserves, and its name lands
-   on the shared text axis. Losing the inline inset hangs the mark off the rail
-   and leaves the project name floating between the section label and its own
-   sessions. */
+/* Disclosure and project artwork each occupy one lead step. Starting at the
+   section inset keeps the resulting label on the next rung of the same ladder. */
 .sidebar-session-catalog-project__head {
   display: flex;
   align-items: center;
-  gap: var(--sidebar-row-gap);
+  gap: 0;
   width: 100%;
   min-height: 18px;
   padding-block: 2px 0;
-  padding-inline: calc(var(--sidebar-row-inset) + var(--sidebar-lead)) 12px;
+  padding-inline: var(--sidebar-inset) 12px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -2290,7 +2287,7 @@ body.update-dialog-open .sidebar-update-card__status {
   font-size: calc(12px * var(--control-ui-text-scale));
   font-weight: 650;
   letter-spacing: 0.03em;
-  margin-inline-start: 6px;
+  margin-inline-start: var(--sidebar-row-gap);
 }
 
 .sidebar-session-pagination {
@@ -4815,7 +4812,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 .sidebar-recent-session__subtitle--git {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   overflow: visible;
 }
 
