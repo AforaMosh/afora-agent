@@ -280,6 +280,33 @@ export function renderRecentSession(params: {
     requiredScope: "operator.write",
   });
   const rowDraggable = !session.isChild && groupWriteAccess.allowed;
+  const childToggle =
+    session.childSessionKeys.length > 0
+      ? html`<button
+          class="sidebar-child-session-toggle ${session.runningChildCount > 0
+            ? "sidebar-child-session-toggle--running"
+            : session.failedChildCount > 0
+              ? "sidebar-child-session-toggle--failed"
+              : ""}"
+          type="button"
+          data-child-session-toggle=${session.key}
+          aria-expanded=${String(childrenExpanded)}
+          aria-label=${t(
+            childrenExpanded ? "sessionsView.hideChildSessions" : "sessionsView.showChildSessions",
+            { count: String(session.childSessionKeys.length), session: label },
+          )}
+          @click=${() => host.toggleSessionChildren(session)}
+        >
+          <span class="sidebar-child-session-toggle__icon" aria-hidden="true"
+            >${childrenExpanded ? icons.chevronDown : icons.chevronRight}</span
+          >
+          ${childrenExpanded
+            ? nothing
+            : html`<span class="sidebar-child-session-toggle__count"
+                >${session.childSessionKeys.length}</span
+              >`}
+        </button>`
+      : nothing;
   const boardIndicator = sessionHasBoard(session.key)
     ? html`<span
         class="sidebar-board-glyph"
@@ -329,12 +356,17 @@ export function renderRecentSession(params: {
     state: primaryState,
     stateId,
     metadata: session.pinned
-      ? renderSessionWorktreePullRequest(displayedPullRequestState)
+      ? html`<span class="session-row-pinned-details"
+            >${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
+              displayedPullRequestState,
+            )}</span
+          ><span class="session-row-pinned-creator">${params.lead ? ownerIndicator : nothing}</span
+          ><span class="session-row-pinned-children">${childToggle}</span>`
       : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
           displayedPullRequestState,
         )}`,
-    legacy: session.pinned || session.isChild,
-    actionOnly: !hasRestSummary,
+    legacy: session.isChild,
+    actionOnly: !session.pinned && !hasRestSummary,
     actions: session.isChild
       ? nothing
       : html`<span class="session-row-actions">
@@ -455,44 +487,8 @@ export function renderRecentSession(params: {
               ? nothing
               : renderSidebarSessionSubtitle(subtitleValue, params.project)}
           </span>
-          ${session.pinned
-            ? html`${params.lead
-                ? ownerIndicator
-                : nothing}${boardIndicator}${viewerFacepile}${rowBadges}`
-            : nothing}
         </a>
-        ${session.childSessionKeys.length > 0
-          ? html`<button
-              class="sidebar-child-session-toggle ${session.runningChildCount > 0
-                ? "sidebar-child-session-toggle--running"
-                : session.failedChildCount > 0
-                  ? "sidebar-child-session-toggle--failed"
-                  : ""}"
-              type="button"
-              data-child-session-toggle=${session.key}
-              aria-expanded=${String(childrenExpanded)}
-              aria-label=${t(
-                childrenExpanded
-                  ? "sessionsView.hideChildSessions"
-                  : "sessionsView.showChildSessions",
-                { count: String(session.childSessionKeys.length), session: label },
-              )}
-              @click=${() => host.toggleSessionChildren(session)}
-            >
-              <span class="sidebar-child-session-toggle__icon" aria-hidden="true"
-                >${childrenExpanded ? icons.chevronDown : icons.chevronRight}</span
-              >
-              ${childrenExpanded
-                ? nothing
-                : html`<span class="sidebar-child-session-toggle__count"
-                    >${session.childSessionKeys.length}</span
-                  >`}
-            </button>`
-          : nothing}
-        <!-- The endcap is the row's trailing rail, so it stays last: nothing pins
-        it, and a sibling rendered after it pushes that row's state inboard while
-        childless rows keep the true edge. -->
-        ${endcap}
+        ${session.pinned ? nothing : childToggle} ${endcap}
       </div>
       ${session.isChild
         ? nothing

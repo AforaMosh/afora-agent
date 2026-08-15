@@ -971,13 +971,12 @@ openclaw-settings-save-indicator {
 }
 
 .sidebar-shell {
-  --sidebar-pad-x: 10px;
+  --sidebar-pad-x: 6px;
   --sidebar-row-inset: var(--sidebar-pad-x);
   --sidebar-text-start: 34px;
   --sidebar-tree-depth: 16px;
   --sidebar-trailing-slot: 20px;
   --sidebar-header-action-size: 22px;
-  --sidebar-scrollbar-gutter: 8px;
   --sidebar-lucide-icon-size: var(--top-band-glyph-size);
   --sidebar-lucide-stroke-width: var(--top-band-glyph-stroke-width);
   display: flex;
@@ -1124,12 +1123,11 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
      horizontal scrollbar beside the divider. */
   overflow-x: hidden;
   overflow-y: auto;
-  /* The scrollport reaches the column boundary so the thumb does too. Its
-     borrowed shell padding is paid back inside, leaving the content rail at
-     exactly the same width. */
+  /* The scrollport reaches the column boundary so the thumb does too. Stable
+     scrollbar space owns the gutter; the padding here is only content air. */
   margin-right: calc(-1 * var(--sidebar-pad-x));
   padding-block-end: var(--space-4);
-  padding-right: calc(var(--sidebar-scrollbar-gutter) + var(--sidebar-pad-x));
+  padding-right: var(--sidebar-pad-x);
   scrollbar-color: transparent transparent;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
@@ -1753,7 +1751,7 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .sidebar-recent-sessions {
-  --sidebar-inset: 8px;
+  --sidebar-inset: var(--sidebar-row-inset);
   --sidebar-lead: 20px;
   --sidebar-row-gap: 8px;
   --sidebar-list-row-gap: 1px;
@@ -2470,26 +2468,14 @@ body.update-dialog-open .sidebar-update-card__status {
   opacity: 0.72;
 }
 
-.sidebar-session-indicator > openclaw-session-owner-chip,
-.session-row-host--pinned > .sidebar-recent-session__link > openclaw-session-owner-chip,
-.session-row-host--pinned > .sidebar-recent-session__link > openclaw-viewer-facepile,
-.session-row-host--pinned > .sidebar-recent-session__link > .session-row-badges,
-.session-row-host--pinned > .sidebar-recent-session__link > .sidebar-board-glyph {
+.sidebar-session-indicator > openclaw-session-owner-chip {
   transition: opacity var(--duration-fast) ease;
 }
 
 @media (hover: hover) {
   .session-row-host:is(:hover, :focus-within, .session-row-host--menu-open)
     .sidebar-session-indicator
-    > openclaw-session-owner-chip,
-  .session-row-host--pinned:is(:hover, :focus-within, .session-row-host--menu-open)
-    > .sidebar-recent-session__link
-    > :is(
-      openclaw-session-owner-chip,
-      openclaw-viewer-facepile,
-      .session-row-badges,
-      .sidebar-board-glyph
-    ) {
+    > openclaw-session-owner-chip {
     opacity: 0;
     pointer-events: none;
   }
@@ -2806,8 +2792,9 @@ body.update-dialog-open .sidebar-update-card__status {
   margin-right: 2px;
 }
 
-.session-row-host--pinned .sidebar-recent-session__aside {
-  margin-right: 0;
+.sidebar-shell .session-row-state {
+  min-width: var(--sidebar-trailing-slot);
+  min-height: var(--sidebar-trailing-slot);
 }
 
 /* While the actions are surfaced, the link content fades out beneath them over
@@ -3292,7 +3279,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   justify-content: flex-start;
   gap: 8px;
   min-height: 32px;
-  padding: 0 8px;
+  padding: 0 var(--sidebar-row-inset);
   border-radius: var(--radius-md);
   border: 0;
   background: var(--sidebar-row-surface);
@@ -3414,9 +3401,10 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 /* Pinned sessions share the page-nav visual contract while retaining session actions. */
 .sidebar-zone-entry .sidebar-recent-session {
   position: relative;
+  gap: 4px;
   min-height: 32px;
-  padding: 0 8px;
-  border: 1px solid transparent;
+  padding: 0 var(--sidebar-row-inset);
+  border: 0;
   background: transparent;
   color: var(--muted);
   transition:
@@ -3471,7 +3459,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   min-height: 40px;
   min-width: 0;
   padding: 4px var(--sidebar-row-inset, 10px);
-  padding-inline-start: calc(var(--sidebar-row-inset, 10px) - 5px);
+  padding-inline-start: calc(var(--sidebar-row-inset, 10px) - 3px);
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -3897,7 +3885,7 @@ openclaw-sidebar-attention {
 
 .sidebar-identity-card {
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) var(--sidebar-trailing-slot);
+  grid-template-columns: var(--sidebar-lead) minmax(0, 1fr) var(--sidebar-trailing-slot);
   align-items: center;
   gap: 8px;
   width: auto;

@@ -34,7 +34,7 @@ export function resolveIdentityAvatarView(identity: IdentityAvatarInput): Identi
 /** Reconcile changed images without overwriting event fallback on unchanged rerenders. */
 export function identityAvatarClass(className: string, view: IdentityAvatarView) {
   return guard([className, view.imageUrl, view.pending], () =>
-    live(`${className}${view.pending ? " is-fallback" : ""}`),
+    live(`${className}${view.imageUrl === null || view.pending ? " is-fallback" : ""}`),
   );
 }
 

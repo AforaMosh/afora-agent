@@ -45,6 +45,10 @@ describe("shared identity avatar view", () => {
     expect(view.fallback.initials).toBe("R");
     expect(view.imageUrl).toBeNull();
     expect(view.pending).toBe(false);
+
+    const container = document.createElement("div");
+    renderAvatar(view, container);
+    expect(container.querySelector(".test-avatar")?.classList.contains("is-fallback")).toBe(true);
   });
 
   it("keeps hostile avatar origins out of the shared authenticated renderer", () => {
