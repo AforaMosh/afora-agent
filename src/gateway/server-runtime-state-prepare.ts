@@ -165,6 +165,7 @@ export async function prepareGatewayKernelState(params: {
   const {
     workerEnvironmentService,
     workerLiveEvents,
+    nodeWorkerGatewayNamespace,
     bindDeviceNodeControl,
     bindNodeWorkspaceBindingResolver,
     handleNodeWorkspaceTransferRequest,
@@ -176,13 +177,13 @@ export async function prepareGatewayKernelState(params: {
     },
   };
   const workerPlacementRuntime =
-    workerEnvironmentService && workerEnvironmentStartup
+    workerEnvironmentService && workerEnvironmentStartup && nodeWorkerGatewayNamespace
       ? await startupTrace.measure("worker-environments.placement-runtime", async () => {
           const placementModule = await loadWorkerPlacementStartupModule();
           return placementModule.createGatewayWorkerPlacementRuntime({
             placements: workerEnvironmentStartup.placementStore,
             environments: workerEnvironmentService,
-            admitNewPlacements: true,
+            gatewayNamespace: nodeWorkerGatewayNamespace,
             revokeSessionAuthority: (request) => workerDispatchAuthority.revoke(request),
             warn: (message) => log.warn(message),
           });
@@ -194,6 +195,12 @@ export async function prepareGatewayKernelState(params: {
       workerPlacementRuntime.dispatchService.dispatch,
     );
   }
+  const bindDeviceNodeRuntime = bindDeviceNodeControl
+    ? (transport: Parameters<NonNullable<typeof bindDeviceNodeControl>>[0]) => {
+        bindDeviceNodeControl(transport);
+        workerPlacementRuntime?.bindNodeWorkerSupervisorTransport(transport);
+      }
+    : undefined;
   const workerPlacementControlAvailable = workerPlacementRuntime?.dispatchService;
   const workerPlacementDispatchAvailable = workerPlacementControlAvailable;
   const workerDesktopObserveAvailable =
@@ -485,7 +492,7 @@ export async function prepareGatewayKernelState(params: {
     pluginRuntime,
     workerEnvironmentService,
     workerLiveEvents,
-    bindDeviceNodeControl,
+    bindDeviceNodeControl: bindDeviceNodeRuntime,
     workerDispatchAuthority,
     workerPlacementRuntime,
     workerPlacementControlAvailable,
