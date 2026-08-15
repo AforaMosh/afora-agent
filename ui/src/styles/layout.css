@@ -1191,7 +1191,7 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
 
 .sidebar-shell__update-overlay openclaw-sidebar-update-card {
   display: block;
-  width: 100%;
+  width: calc(100% - var(--scrollbar-size));
   pointer-events: auto;
 }
 
