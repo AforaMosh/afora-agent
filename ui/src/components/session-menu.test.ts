@@ -7,6 +7,7 @@ import type { SessionMenuAction, SessionMenuActionKind, SessionMenuWork } from "
 
 type SessionMenuData = {
   label: string;
+  sessionId: string | null;
   pinned: boolean;
   unread: boolean;
   archived: boolean;
@@ -52,6 +53,7 @@ async function mountMenu(
   document.body.append(container);
   const session: SessionMenuData = {
     label: "Test session",
+    sessionId: "session-123",
     pinned: false,
     unread: false,
     archived: false,
@@ -154,6 +156,7 @@ describe("session menu", () => {
       "Mark as unread",
       "Rename…",
       "Fork",
+      "Copy session ID",
       "Add to Workboard",
       "Move to group",
       "Archive session",
@@ -254,6 +257,29 @@ describe("session menu", () => {
     menuItem(menu, "Pin session").click();
 
     expect(calls).toEqual(["close", "toggle-pin"]);
+  });
+
+  it("dispatches Copy session ID and exposes a keyboard shortcut", async () => {
+    const calls: string[] = [];
+    const menu = await mountMenu({
+      onClose: () => calls.push("close"),
+      onAction: (action) => calls.push(action.kind),
+    });
+    const copy = menuItem(menu, "Copy session ID");
+
+    expect(copy.disabled).toBe(false);
+    expect(copy.querySelector(".session-menu__shortcut")?.textContent).toBe("C");
+    expect(copy.getAttribute("aria-keyshortcuts")).toBe("C");
+
+    copy.click();
+
+    expect(calls).toEqual(["close", "copy-session-id"]);
+  });
+
+  it("disables Copy session ID when the gateway row has no session ID", async () => {
+    const menu = await mountMenu({ session: { sessionId: null } });
+
+    expect(menuItem(menu, "Copy session ID").disabled).toBe(true);
   });
 
   it("opens group actions and dispatches group, removal, and creation choices", async () => {

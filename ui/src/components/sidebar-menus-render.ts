@@ -2,7 +2,9 @@ import { html, nothing } from "lit";
 import { keyed } from "lit/directives/keyed.js";
 import { DEFAULT_SIDEBAR_ENTRIES, serializeSidebarEntry } from "../app-navigation.ts";
 import { readPresenceEntries, resolveCurrentSelfUser } from "../app/user-profile.ts";
+import { t } from "../i18n/index.ts";
 import { normalizeAgentLabel } from "../lib/agents/display.ts";
+import { copyToClipboard } from "../lib/clipboard.ts";
 import { openEditor } from "../lib/editor-links.ts";
 import { isGatewayMethodAdvertised } from "../lib/gateway-methods.ts";
 import { openExternalUrlSafe } from "../lib/open-external-url.ts";
@@ -14,6 +16,7 @@ import {
   normalizeAgentId,
   resolveUiConfiguredMainKey,
 } from "../lib/sessions/session-key.ts";
+import { showToast } from "../lib/toast.ts";
 import { renderSidebarAgentMenu, renderSidebarIdentityMenu } from "./app-sidebar-agent-menu.ts";
 import { renderSidebarCustomizeMenu, renderSidebarMoreMenu } from "./app-sidebar-nav-menus.ts";
 import { formatSidebarTimestamp } from "./app-sidebar-session-catalogs.ts";
@@ -176,6 +179,7 @@ export function renderSidebarSessionMenuForController(controller: SidebarMenusCo
       <openclaw-session-menu
         .session=${{
           label: session.label,
+          sessionId: session.sessionId ?? null,
           pinned: session.pinned,
           unread: batchRows ? allUnread : session.unread,
           archived: allArchived,
@@ -219,6 +223,11 @@ export function renderSidebarSessionMenuForController(controller: SidebarMenusCo
               break;
             case "open-in":
               openEditor(action.editor, action.path);
+              break;
+            case "copy-session-id":
+              void copyToClipboard(session.sessionId ?? "").then((copied) => {
+                showToast({ message: t(copied ? "common.copied" : "common.copyFailed") });
+              });
               break;
             case "toggle-pin":
               void host.sessionOrganizer.patchSession(session, { pinned: !session.pinned });
