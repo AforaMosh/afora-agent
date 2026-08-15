@@ -250,16 +250,20 @@ async function handleChatHistoryRequest({
       return;
     }
   }
-  const workspaceIconPreparation =
-    method === "chat.startup"
-      ? prepareSessionWorkspaceIcon({ sessionKey, agentId: sessionAgentId }).catch(
-          (error: unknown) => {
-            context.logGateway.debug(
-              `chat.startup continuing without a workspace icon: ${formatErrorMessage(error)}`,
-            );
-          },
-        )
-      : Promise.resolve();
+  if (method === "chat.startup") {
+    // Icon discovery is decorative and can walk the workspace's whole candidate
+    // list on a cold cache. prepareSessionWorkspaceIcon() publishes its pending
+    // snapshot into the session cache synchronously, before this call returns,
+    // so the icon HTTP route can await it as soon as this response goes out;
+    // chat.startup itself must never block on that discovery finishing.
+    void prepareSessionWorkspaceIcon({ sessionKey, agentId: sessionAgentId }).catch(
+      (error: unknown) => {
+        context.logGateway.debug(
+          `chat.startup continuing without a workspace icon: ${formatErrorMessage(error)}`,
+        );
+      },
+    );
+  }
   const modelCatalogPromise =
     method === "chat.history"
       ? (() => {
@@ -528,7 +532,6 @@ async function handleChatHistoryRequest({
     ...(includeAgentsList && startupAgentsList ? { agentsList: startupAgentsList } : {}),
     ...(startupMetadata ? { metadata: startupMetadata } : {}),
   };
-  await workspaceIconPreparation;
   respond(true, payload);
 }
 
