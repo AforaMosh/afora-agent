@@ -86,6 +86,16 @@ describe("sidebar customizer model", () => {
     });
   });
 
+  it("keeps WorkBoard choices out when the route is unavailable", () => {
+    const items = buildSidebarCustomizerEntries({
+      canonical: ["workboard:ops", "route:tasks"],
+      enabledRouteIds: ["tasks"],
+      workboards: [{ id: "ops", name: "Operations" }],
+    });
+
+    expect(items.some((item) => item.id === "workboard:ops")).toBe(false);
+  });
+
   it("only exposes visibility for catalogs with an existing persistence owner", () => {
     const sections = [
       {

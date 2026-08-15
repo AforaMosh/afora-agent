@@ -100,7 +100,9 @@ export function buildSidebarCustomizerEntries(params: {
     }),
   ];
   const boardOffset = items.length;
-  for (const [index, board] of params.workboards.entries()) {
+  const workboards =
+    (params.enabledRouteIds?.includes("workboard") ?? true) ? params.workboards : [];
+  for (const [index, board] of workboards.entries()) {
     const entry = serializeSidebarEntry({ type: "workboard", boardId: board.id });
     items.push({
       id: entry,
@@ -128,7 +130,7 @@ export function buildSidebarCustomizerEntries(params: {
       label: session.label.trim() || session.key,
       sessionKey: session.key,
       visible: true,
-      fallbackIndex: boardOffset + params.workboards.length + index,
+      fallbackIndex: boardOffset + workboards.length + index,
     });
   }
   return items.toSorted((a, b) => {
