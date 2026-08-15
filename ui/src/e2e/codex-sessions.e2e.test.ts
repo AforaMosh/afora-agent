@@ -453,7 +453,9 @@ suite.define(() => {
       const openclawProject = section.locator(
         '[data-session-catalog-project="/Users/dev/openclaw"]',
       );
-      const openclawProjectToggle = openclawProject.locator(".sidebar-session-group-toggle");
+      const openclawProjectToggle = openclawProject.locator(
+        ":scope > .sidebar-session-catalog-project__head",
+      );
       const openclawProjectItem = openclawProject;
       const openclawProjectList = openclawProjectItem.locator(":scope > [role=list]");
       expect(await openclawProjectItem.getAttribute("role")).toBe("listitem");
