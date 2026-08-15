@@ -89,28 +89,36 @@ suite.define(() => {
       const project = page.locator(`[data-session-work-project="${OPENCLAW_ROOT}"]`);
       const projectMark = project.locator(".sidebar-session-group-toggle__lead").first();
       const projectLabel = project.locator(".sidebar-session-catalog-project__label");
-      const sessionName = project
-        .locator('[data-session-key="agent:main:oc-branch"] .sidebar-recent-session__name')
-        .first();
+      const sessionRow = project.locator('[data-session-key="agent:main:oc-branch"]');
+      const sessionName = sessionRow.locator(".sidebar-recent-session__name").first();
+      const branchText = sessionRow.locator(".sidebar-recent-session__subtitle-text");
+      const sectionLabel = page.locator(
+        '[data-session-section="work"] > .sidebar-recent-sessions__head .sidebar-recent-sessions__label-text',
+      );
       await projectLabel.waitFor();
       await sessionName.waitFor();
 
       const startOf = async (locator: typeof projectMark) =>
         Math.round((await locator.boundingBox())?.x ?? Number.NaN);
-      const [markStart, labelStart, nameStart] = await Promise.all([
+      const [sectionStart, markStart, labelStart, nameStart, branchStart] = await Promise.all([
+        startOf(sectionLabel),
         startOf(projectMark),
         startOf(projectLabel),
         startOf(sessionName),
+        startOf(branchText),
       ]);
 
-      // A project name reads as a peer of the sessions it heads, and its mark
-      // sits in the same lead slot every session row reserves.
-      expect(labelStart).toBe(nameStart);
+      // The project mark starts where the section label starts; each text level
+      // then advances exactly once, including the Git glyph before its value.
+      expect(markStart).toBe(sectionStart);
       expect(labelStart - markStart).toBe(
-        await project.evaluate((element) =>
-          Number.parseInt(getComputedStyle(element).getPropertyValue("--sidebar-lead"), 10),
+        await project.evaluate(
+          (element) =>
+            Number.parseInt(getComputedStyle(element).getPropertyValue("--sidebar-lead"), 10) + 6,
         ),
       );
+      expect(nameStart).toBeGreaterThan(labelStart);
+      expect(branchStart).toBeGreaterThan(nameStart);
     } finally {
       await context.close();
     }
