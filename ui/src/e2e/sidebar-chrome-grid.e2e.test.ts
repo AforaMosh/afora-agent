@@ -277,6 +277,36 @@ suite.define(() => {
         expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
           true,
         );
+        const viewportWidth = page.viewportSize()!.width;
+        await page.locator("html").evaluate((element) => {
+          element.setAttribute("dir", "rtl");
+        });
+        // The footer copy stretches across its grid cell, so its element box
+        // does not expose the visual text start in RTL. Sample intrinsic rows.
+        const rtlStarts = await Promise.all(
+          sharedTextAnchors.slice(0, 2).map(async (locator) => {
+            const box = await locator.boundingBox();
+            return Math.round(viewportWidth - (box?.x ?? Number.NaN) - (box?.width ?? Number.NaN));
+          }),
+        );
+        expect(rtlStarts).toEqual(Array(rtlStarts.length).fill(rtlStarts[0]));
+        const rtlParent = await parentRow.locator(".sidebar-recent-session__name").boundingBox();
+        const rtlChild = await childRow.locator(".sidebar-recent-session__name").boundingBox();
+        expect(
+          Math.round(
+            viewportWidth -
+              rtlChild!.x -
+              rtlChild!.width -
+              (viewportWidth - rtlParent!.x - rtlParent!.width),
+          ),
+        ).toBe(16);
+        expect(await body.evaluate((element) => getComputedStyle(element).overflowX)).toBe(
+          "hidden",
+        );
+        await capture(page, sidebarSurface, `grid-${colorScheme}-rtl.png`);
+        await page.locator("html").evaluate((element) => {
+          element.removeAttribute("dir");
+        });
         const expectScrollportAtColumnEdge = async () => {
           const [bodyBox, sidebarBox] = await Promise.all([
             body.boundingBox(),
@@ -425,12 +455,13 @@ suite.define(() => {
           railWidth: activeDivider.railWidth,
           shell: "rgba(0, 0, 0, 0)",
         });
+        await capture(page, sidebarSurface, `grid-${colorScheme}-resize-focus.png`);
         await page.keyboard.press("End");
         await expect
           .poll(async () => Math.round((await shellNav.boundingBox())?.width ?? 0))
           .toBe(400);
-        expect(await Promise.all(textAnchors.map(left))).toEqual(
-          Array(textAnchors.length).fill(await left(pageText)),
+        expect(await Promise.all(sharedTextAnchors.map(left))).toEqual(
+          Array(sharedTextAnchors.length).fill(await left(pageText)),
         );
         expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
           true,
@@ -438,32 +469,6 @@ suite.define(() => {
         await expectScrollportAtColumnEdge();
         await installGridGuides(page, sidebarRoot, pageText, headControl);
         await capture(page, sidebarSurface, `grid-${colorScheme}-width-400.png`);
-
-        await page.locator("html").evaluate((element) => {
-          element.setAttribute("dir", "rtl");
-        });
-        const viewportWidth = page.viewportSize()!.width;
-        const rtlStarts = await Promise.all(
-          textAnchors.map(async (locator) => {
-            const box = await locator.boundingBox();
-            return Math.round(viewportWidth - (box?.x ?? Number.NaN) - (box?.width ?? Number.NaN));
-          }),
-        );
-        expect(rtlStarts).toEqual(Array(rtlStarts.length).fill(rtlStarts[0]));
-        const rtlParent = await parentRow.locator(".sidebar-recent-session__name").boundingBox();
-        const rtlChild = await childRow.locator(".sidebar-recent-session__name").boundingBox();
-        expect(
-          Math.round(
-            viewportWidth -
-              rtlChild!.x -
-              rtlChild!.width -
-              (viewportWidth - rtlParent!.x - rtlParent!.width),
-          ),
-        ).toBe(16);
-        expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
-          true,
-        );
-        await capture(page, sidebarSurface, `grid-${colorScheme}-rtl-400.png`);
       } finally {
         await suite.closeBrowserContext(context);
       }

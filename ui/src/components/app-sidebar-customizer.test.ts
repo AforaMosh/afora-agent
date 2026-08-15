@@ -84,6 +84,7 @@ describe("sidebar customizer model", () => {
       sessionKey: "agent:main:taxes",
       visible: true,
     });
+    expect(items[2]?.icon).toBeDefined();
   });
 
   it("keeps WorkBoard choices out when the route is unavailable", () => {

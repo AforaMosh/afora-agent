@@ -118,31 +118,6 @@ suite.define(() => {
                   },
                 ]),
               },
-              {
-                id: "claude",
-                label: "Claude Code",
-                capabilities: { continueSession: true, archive: true },
-                hosts: [
-                  {
-                    hostId: "gateway:local",
-                    label: "Gateway",
-                    kind: "gateway",
-                    connected: true,
-                    sessions: [
-                      {
-                        threadId: "claude-session",
-                        name: "Claude catalog session",
-                        cwd: "/workspace/openclaw",
-                        status: "idle",
-                        archived: false,
-                        canContinue: true,
-                        canArchive: true,
-                        updatedAt: baseTime - 5_000,
-                      },
-                    ],
-                  },
-                ],
-              },
             ],
           },
           "sessions.catalog.list": {
@@ -167,6 +142,31 @@ suite.define(() => {
                         canContinue: true,
                         canArchive: true,
                         updatedAt: baseTime - 4_000,
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                id: "claude",
+                label: "Claude Code",
+                capabilities: { continueSession: true, archive: true },
+                hosts: [
+                  {
+                    hostId: "gateway:local",
+                    label: "Gateway",
+                    kind: "gateway",
+                    connected: true,
+                    sessions: [
+                      {
+                        threadId: "claude-session",
+                        name: "Claude catalog session",
+                        cwd: "/workspace/openclaw",
+                        status: "idle",
+                        archived: false,
+                        canContinue: true,
+                        canArchive: true,
+                        updatedAt: baseTime - 5_000,
                       },
                     ],
                   },

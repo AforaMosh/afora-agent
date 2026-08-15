@@ -272,6 +272,11 @@ suite.define(() => {
       const visiblePageItems = sidebar.locator(
         '.sidebar-zone-entry[data-sidebar-entry^="route:"] > .nav-item',
       );
+      const pinnedPageIconPaths = await sidebar
+        .locator('[data-session-key="agent:main:tax-research"] .nav-item__icon svg')
+        .evaluate((icon) =>
+          [...icon.querySelectorAll("path")].map((path) => path.getAttribute("d")),
+        );
       await expect
         .poll(() => trimmedTextContents(visiblePageItems))
         .toEqual(["Automations", "Plugins"]);
@@ -588,6 +593,28 @@ suite.define(() => {
         '[data-sidebar-customizer-id="session:agent:main:tax-research"]',
       );
       await expect.poll(() => pinnedSessionRow.isVisible()).toBe(true);
+      expect(
+        await pinnedSessionRow
+          .locator(".sidebar-customizer__item-icon svg")
+          .evaluate((icon) =>
+            [...icon.querySelectorAll("path")].map((path) => path.getAttribute("d")),
+          ),
+      ).toEqual(pinnedPageIconPaths);
+      const customizerAxes = await customizer.evaluate((surface) => {
+        const lefts = (selector: string) =>
+          [...surface.querySelectorAll<HTMLElement>(selector)].map(
+            (element) => element.getBoundingClientRect().x,
+          );
+        return {
+          grips: lefts('.sidebar-customizer__row[draggable="true"] .sidebar-customizer__grip'),
+          icons: lefts(".sidebar-customizer__item-icon"),
+          labels: lefts(".sidebar-customizer__label"),
+        };
+      });
+      for (const rail of Object.values(customizerAxes)) {
+        expect(rail.length).toBeGreaterThan(1);
+        expect(Math.max(...rail) - Math.min(...rail)).toBeLessThanOrEqual(0.5);
+      }
       await pinnedSessionRow
         .getByRole("button", { name: "Remove Tax filing research from sidebar" })
         .click();

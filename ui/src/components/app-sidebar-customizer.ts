@@ -126,6 +126,7 @@ export function buildSidebarCustomizerEntries(params: {
     items.push({
       id: entry,
       entry,
+      icon: icons.botMessageSquare,
       kind: "entry",
       label: session.label.trim() || session.key,
       sessionKey: session.key,

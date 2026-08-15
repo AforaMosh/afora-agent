@@ -1126,8 +1126,8 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
   /* The scrollport reaches the column boundary so the thumb does too. Its
      borrowed shell padding is paid back inside, leaving the content rail at
      exactly the same width. */
-  margin-inline-end: calc(-1 * var(--sidebar-pad-x));
-  padding-inline-end: calc(var(--sidebar-scrollbar-gutter) + var(--sidebar-pad-x));
+  margin-right: calc(-1 * var(--sidebar-pad-x));
+  padding-right: calc(var(--sidebar-scrollbar-gutter) + var(--sidebar-pad-x));
   scrollbar-color: transparent transparent;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
@@ -1242,20 +1242,11 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
 
 .sidebar-customizer__row--section {
   min-height: 34px;
-  padding-inline: 8px 9px;
+  padding-inline: 9px;
 }
 
-.sidebar-customizer__row[data-iconless="true"] {
-  grid-template-columns: minmax(0, 1fr) 28px;
-}
-
-.sidebar-customizer__row[data-iconless="true"] .sidebar-customizer__label {
-  grid-column: 1;
-}
-
-.sidebar-customizer__row[data-iconless="true"] .sidebar-customizer__visibility {
-  grid-column: 2;
-}
+/* Customization keeps the normal sidebar rails: the grip overlays one fixed
+   rail, column one owns the lead glyph, and column two owns every label. */
 
 .sidebar-customizer__row:hover,
 .sidebar-customizer__row:focus-within {
@@ -1289,6 +1280,10 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
   transition: opacity var(--duration-fast) ease;
 }
 
+.sidebar-customizer__item-icon {
+  grid-column: 1;
+}
+
 .sidebar-customizer__item-icon svg,
 .sidebar-customizer__grip svg,
 .sidebar-customizer__visibility svg {
@@ -1300,11 +1295,6 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
   position: absolute;
   inset-inline-start: -14px;
   opacity: 0.58;
-}
-
-.sidebar-customizer__row--section .sidebar-customizer__grip {
-  position: static;
-  inset-inline-start: auto;
 }
 
 .sidebar-customizer__row:hover .sidebar-customizer__grip,
@@ -1324,6 +1314,7 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
 }
 
 .sidebar-customizer__label {
+  grid-column: 2;
   min-width: 0;
   overflow: hidden;
   font-size: calc(13px * var(--control-ui-text-scale));
@@ -1340,6 +1331,7 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
 }
 
 .sidebar-customizer__visibility {
+  grid-column: 3;
   display: inline-flex;
   width: 28px;
   height: 28px;
@@ -2170,7 +2162,7 @@ body.update-dialog-open .sidebar-update-card__status {
    step is the header's own lead slot, which is what puts the rows under the
    project name instead of under its mark. */
 .sidebar-session-catalog-project__sessions {
-  margin-left: calc(var(--sidebar-row-inset) + var(--sidebar-lead) * 2 + 12px);
+  margin-inline-start: calc(var(--sidebar-row-inset) + var(--sidebar-lead) * 2 + 12px);
 }
 
 /* Project marks are product artwork, not sidebar glyphs, so they fill the lead
@@ -2245,7 +2237,7 @@ body.update-dialog-open .sidebar-update-card__status {
 
 /* A project heading is a rung of the Coding ladder, not a row of its own kind:
    its mark takes the lead slot every session row reserves, and its name lands
-   on the shared text axis. Losing the left inset hangs the mark off the rail
+   on the shared text axis. Losing the inline inset hangs the mark off the rail
    and leaves the project name floating between the section label and its own
    sessions. */
 .sidebar-session-catalog-project__head {
@@ -2254,7 +2246,8 @@ body.update-dialog-open .sidebar-update-card__status {
   gap: var(--sidebar-row-gap);
   width: 100%;
   min-height: 18px;
-  padding: 2px 12px 0 calc(var(--sidebar-row-inset) + var(--sidebar-lead));
+  padding-block: 2px 0;
+  padding-inline: calc(var(--sidebar-row-inset) + var(--sidebar-lead)) 12px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -2285,7 +2278,7 @@ body.update-dialog-open .sidebar-update-card__status {
   font-size: calc(12px * var(--control-ui-text-scale));
   font-weight: 650;
   letter-spacing: 0.03em;
-  margin-left: 6px;
+  margin-inline-start: 6px;
 }
 
 .sidebar-session-pagination {
