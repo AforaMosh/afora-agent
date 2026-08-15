@@ -739,7 +739,8 @@ function extractIdentifierAuditText(message: AgentMessage): string {
   if (message.role !== "toolResult") {
     return text;
   }
-  const toolName = String((message as { toolName?: unknown }).toolName ?? "")
+  const toolNameRaw = (message as { toolName?: unknown }).toolName;
+  const toolName = (typeof toolNameRaw === "string" ? toolNameRaw : "")
     .replace(/^(?:functions|tools)\./u, "")
     .trim();
   if (toolName !== "exec") {
