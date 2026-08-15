@@ -3837,12 +3837,20 @@ openclaw-sidebar-attention {
   line-height: 16px;
 }
 
+.sidebar-issues-panel__row--warning .sidebar-issues-panel__state {
+  color: color-mix(in srgb, var(--warn) 82%, var(--text));
+}
+
+.sidebar-issues-panel__row--blocking .sidebar-issues-panel__state {
+  color: var(--danger);
+}
+
 .sidebar-issues-panel__action {
   flex: none;
-  padding: 4px 7px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--muted) 10%, transparent);
-  color: var(--text);
+  padding: 4px 9px;
+  border-radius: var(--radius-full);
+  background: var(--info);
+  color: var(--bg-elevated);
   font-size: var(--control-ui-text-xs);
   font-weight: 600;
   transition:
@@ -3851,8 +3859,8 @@ openclaw-sidebar-attention {
 }
 
 .sidebar-issues-panel__row:hover .sidebar-issues-panel__action {
-  background: color-mix(in srgb, var(--muted) 16%, transparent);
-  color: var(--text-strong);
+  background: color-mix(in srgb, var(--info) 90%, white);
+  color: var(--bg-elevated);
 }
 
 .sidebar-issues-panel__chevron {
