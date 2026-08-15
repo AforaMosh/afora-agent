@@ -43,6 +43,7 @@ export function resolveSidebarSessionSubtitle(params: {
   session: SidebarRecentSession;
   hasDisplay: boolean;
   displaySubtitle: string | undefined;
+  displayWork?: SessionWorkContext;
   sidebarLiveActivity: boolean;
   narrationLine: string | undefined;
   observerDigest?: Pick<
@@ -85,7 +86,7 @@ export function resolveSidebarSessionSubtitle(params: {
     : session.subtitle && session.workSession && session.subtitle !== session.label
       ? session.subtitle
       : undefined;
-  const workContext = params.hasDisplay ? undefined : session.workContext;
+  const workContext = params.hasDisplay ? params.displayWork : session.workContext;
   const finalReply =
     !running && !params.hasDisplay ? session.lastMessagePreview?.trim() || undefined : undefined;
   const subtitle = running
@@ -113,7 +114,7 @@ export function resolveSidebarSessionSubtitle(params: {
  */
 export function renderSidebarSessionSubtitle(value: SidebarSessionSubtitle, project?: string) {
   if (value.work) {
-    return renderWorkSubtitle(value.work, project);
+    return renderSidebarSessionWorkContext(value.work, project);
   }
   if (!value.subtitle) {
     return nothing;
@@ -133,7 +134,7 @@ export function renderSidebarSessionSubtitle(value: SidebarSessionSubtitle, proj
   return html`<span class="sidebar-recent-session__subtitle${approval}">${value.subtitle}</span>`;
 }
 
-function renderWorkSubtitle(work: SessionWorkContext, project?: string) {
+export function renderSidebarSessionWorkContext(work: SessionWorkContext, project?: string) {
   const repo = work.repo && work.repo !== project ? work.repo : undefined;
   const text = [repo, work.branch, work.node].filter(Boolean).join(" · ");
   if (!text) {

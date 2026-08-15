@@ -10,6 +10,7 @@ import type { ApplicationNavigationOptions } from "../app/context.ts";
 import { t } from "../i18n/index.ts";
 import { handleContextMenuEvent } from "../lib/keyboard-shortcuts.ts";
 import { shouldHandleNavigationClick } from "../lib/navigation-click.ts";
+import { repoName, type SessionWorkContext } from "../lib/session-display.ts";
 import { restSessionRow, revealSessionRow } from "../lib/session-row-reveal.ts";
 import type { CatalogSessionKey } from "../lib/sessions/catalog-key.ts";
 import { buildCatalogSessionKey } from "../lib/sessions/catalog-key.ts";
@@ -41,6 +42,7 @@ import {
   renderCatalogSessionInformationCard,
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
+import { renderSidebarSessionWorkContext } from "./session-row-subtitle.ts";
 import { renderWorkspaceIcon, type WorkspaceIconSource } from "./workspace-icon.ts";
 
 type SessionCatalogGroupsParams = {
@@ -369,7 +371,7 @@ function renderCatalogHostGroup(
                             session,
                             liveRowsByKey,
                             params,
-                            true,
+                            group.label,
                           ),
                         )}
                       </div>`}
@@ -393,7 +395,7 @@ function renderCatalogSessionRow(
   session: SessionCatalogSession,
   liveRowsByKey: ReadonlyMap<string, GatewaySessionRow>,
   params: SessionCatalogGroupsParams,
-  projectChild = false,
+  project?: string,
 ) {
   const rawTimestamp = session.recencyAt ?? session.updatedAt ?? session.createdAt;
   const timestamp =
@@ -401,11 +403,18 @@ function renderCatalogSessionRow(
       ? rawTimestamp * 1000
       : rawTimestamp;
   const adoptedRow = session.sessionKey ? liveRowsByKey.get(session.sessionKey) : undefined;
+  const branch = session.gitBranch?.trim() || undefined;
+  const work = {
+    repo: session.cwd ? repoName(session.cwd) : undefined,
+    branch,
+    worktree: session.source === "worktree",
+  } satisfies SessionWorkContext;
   if (adoptedRow) {
     const label = session.name || session.threadId;
     return params.renderLiveRow(adoptedRow, {
       label,
       meta: formatSidebarTimestamp(timestamp),
+      ...(branch ? { subtitle: branch, work } : {}),
       title: `${label} · ${host.label}`,
       ...(session.pullRequest ? { pullRequest: session.pullRequest } : {}),
     });
@@ -465,7 +474,7 @@ function renderCatalogSessionRow(
       <div
         class="sidebar-recent-session session-row-host ${active
           ? "sidebar-recent-session--active"
-          : ""} ${projectChild ? "sidebar-recent-session--catalog-project-child" : ""} ${running
+          : ""} ${project ? "sidebar-recent-session--catalog-project-child" : ""} ${running
           ? "session-row-host--running"
           : ""}"
         data-session-key=${key}
@@ -501,6 +510,7 @@ function renderCatalogSessionRow(
             <span class="sidebar-recent-session__title">
               <span class="sidebar-recent-session__name hover-marquee">${label}</span>
             </span>
+            ${renderSidebarSessionWorkContext(work, project)}
           </span>
           ${renderSessionRowBadges({
             hasAutomation: false,

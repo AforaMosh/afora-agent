@@ -23,6 +23,8 @@ describe("AppSidebar project session activity", () => {
                 threadId: "active-thread",
                 name: "Active session",
                 cwd: "/work/openclaw",
+                gitBranch: "feature/catalog-context",
+                source: "worktree",
                 status: "active",
                 archived: false,
                 canContinue: false,
@@ -62,6 +64,11 @@ describe("AppSidebar project session activity", () => {
     const projectList = active?.closest('[role="list"]');
     expect(project).not.toBeNull();
     expect(project?.querySelector(".sidebar-session-group-toggle__lead svg")).not.toBeNull();
+    expect(active?.querySelector(".session-row-git-glyph")).not.toBeNull();
+    expect(active?.querySelector(".session-row-worktree-glyph")).not.toBeNull();
+    expect(active?.querySelector(".sidebar-recent-session__subtitle-text")?.textContent).toBe(
+      "feature/catalog-context",
+    );
     expect(hostList?.getAttribute("role")).toBe("list");
     expect(hostList?.getAttribute("aria-label")).toBe("Local Codex");
     expect(

@@ -6,6 +6,7 @@ import type {
 import type { ApplicationNavigationOptions } from "../app/context.ts";
 import { t } from "../i18n/index.ts";
 import { formatRelativeTimestamp } from "../lib/format.ts";
+import type { SessionWorkContext } from "../lib/session-display.ts";
 import type {
   CatalogSessionContinuedDetail,
   CatalogSessionKey,
@@ -74,6 +75,7 @@ export function visibleCatalogHosts(
 export type CatalogBackingSessionDisplay = {
   label: string;
   subtitle?: string;
+  work?: SessionWorkContext;
   meta: string;
   title: string;
   pullRequest?: SessionCatalogSession["pullRequest"];
