@@ -242,6 +242,15 @@ suite.define(() => {
         );
         expect(await left(childRow.locator(".sidebar-recent-session__name"))).toBe(textAxis + 16);
 
+        const leadCenters = await Promise.all(
+          [
+            sidebar.locator(".sidebar-agent-card__avatar"),
+            homeRow.locator(".nav-item__icon"),
+            sidebar.locator(".sidebar-identity-card .viewer-avatar--footer"),
+          ].map(center),
+        );
+        expect(Math.max(...leadCenters) - Math.min(...leadCenters)).toBeLessThanOrEqual(1);
+
         const trailingAnchors = [
           headControl,
           pinnedRow.locator("[data-session-menu]"),
