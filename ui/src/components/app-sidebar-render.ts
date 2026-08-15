@@ -32,7 +32,6 @@ import type { SidebarWorkboardBoard } from "./app-sidebar-workboard.ts";
 import { icons } from "./icons.ts";
 import {
   renderSessionAttentionIcon,
-  renderSessionRunSpinner,
   sessionAttentionSubtitle,
 } from "./session-attention-presentation.ts";
 import { renderSessionGlyph, renderSessionUnreadBadge } from "./session-glyph.ts";
@@ -197,13 +196,10 @@ export function renderAppSidebarHomeRow(host: AppSidebarRenderHost) {
   const hasComposerDraft = !active && host.hasSessionDraft(mainKey);
   const running = mainRow?.hasActiveRun === true;
   const unread = mainRow?.unread === true && !active;
-  // Home keeps its page/attention glyph leading and shares trailing activity with session rows.
+  // Home keeps its route identity leading; transient state wraps or trails it.
   const homeGlyph = renderSessionGlyph({
-    content:
-      attention.kind === "none"
-        ? html`<span class="nav-item__icon" aria-hidden="true">${icons.home}</span>`
-        : renderSessionAttentionIcon(attention),
-    running: false,
+    content: html`<span class="nav-item__icon" aria-hidden="true">${icons.home}</span>`,
+    running,
     badge: unread ? renderSessionUnreadBadge() : nothing,
   });
   return html`
@@ -228,8 +224,10 @@ export function renderAppSidebarHomeRow(host: AppSidebarRenderHost) {
         host.openMainSession(agentId);
       }}
     >
-      ${attentionLabel
-        ? html`<openclaw-tooltip .content=${attentionLabel}>${homeGlyph}</openclaw-tooltip>`
+      ${running
+        ? html`<openclaw-tooltip .content=${t("sessionsView.activeRun")}
+            >${homeGlyph}</openclaw-tooltip
+          >`
         : homeGlyph}
       <span class="nav-item__text">${t("nav.home")}</span>
       ${sessionHasBoard(mainKey)
@@ -242,9 +240,13 @@ export function renderAppSidebarHomeRow(host: AppSidebarRenderHost) {
             >
           </openclaw-tooltip>`
         : nothing}
-      ${running || outboxCount > 0 || hasComposerDraft
+      ${attention.kind !== "none" || outboxCount > 0 || hasComposerDraft
         ? html`<span class="nav-item__state sidebar-home-session-states">
-            ${running ? renderSessionRunSpinner() : nothing}
+            ${attention.kind !== "none"
+              ? html`<openclaw-tooltip .content=${attentionLabel}
+                  >${renderSessionAttentionIcon(attention)}</openclaw-tooltip
+                >`
+              : nothing}
             ${renderSessionRowBadges({ hasAutomation: false, outboxCount, hasComposerDraft })}
           </span>`
         : nothing}

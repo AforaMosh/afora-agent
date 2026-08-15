@@ -178,9 +178,9 @@ suite.define(() => {
 
     await currentPage.getByRole("button", { name: "Stop generating" }).waitFor();
     const mainSession = currentPage.locator(".nav-item--home");
-    // Home mirrors session rows: active-run state lives in the trailing metadata endcap.
+    // Home keeps route identity stable while active-run state rings its icon.
     const mainSessionRunIndicator = mainSession
-      .locator(".nav-item__state")
+      .locator(".session-glyph")
       .getByRole("img", { name: "Active run" });
     await mainSession.waitFor({ state: "visible" });
     const sessionListsBeforeActive = (await gateway.getRequests("sessions.list")).length;
@@ -325,9 +325,9 @@ suite.define(() => {
 
     await currentPage.getByRole("button", { name: "Stop generating" }).waitFor();
     const mainSession = currentPage.locator(".nav-item--home");
-    // Home mirrors session rows: active-run state lives in the trailing metadata endcap.
+    // Home keeps route identity stable while active-run state rings its icon.
     const mainSessionRunIndicator = mainSession
-      .locator(".nav-item__state")
+      .locator(".session-glyph")
       .getByRole("img", { name: "Active run" });
     await mainSession.waitFor({ state: "visible" });
     const sessionListsBeforeActive = (await gateway.getRequests("sessions.list")).length;

@@ -486,14 +486,12 @@ describe("AppSidebar agent chip", () => {
     await sidebar.updateComplete;
 
     expect(sidebar.querySelector(".sidebar-agent-card__subtitle")).toBeNull();
-    // Run state uses the session spinner at the row edge without changing the Home icon.
-    const spinner = sidebar.querySelector(".nav-item--home .nav-item__state .session-run-spinner");
-    expect(spinner).not.toBeNull();
+    // Run state rings the stable Home icon instead of displacing it.
+    const ring = sidebar.querySelector(".nav-item--home .session-glyph__ring");
     expect(sidebar.querySelector(".nav-item--home .nav-item__icon")).not.toBeNull();
-    expect(sidebar.querySelector(".nav-item--home .session-glyph__ring")).toBeNull();
-    expect(spinner?.getAttribute("role")).toBe("img");
-    expect(spinner?.getAttribute("aria-label")).toBe("Active run");
-    expect(spinner?.getAttribute("title")).toBe("Active run");
+    expect(ring?.getAttribute("role")).toBe("img");
+    expect(ring?.getAttribute("aria-label")).toBe("Active run");
+    expect(sidebar.querySelector(".nav-item--home .session-run-spinner")).toBeNull();
   });
 
   it("uses the shared tooltip for the Home dashboard glyph", async () => {
