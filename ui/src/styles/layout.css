@@ -2460,6 +2460,7 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .sidebar-session-indicator > openclaw-session-owner-chip,
+.session-row-host--pinned > .sidebar-recent-session__link > openclaw-session-owner-chip,
 .session-row-host--pinned > .sidebar-recent-session__link > openclaw-viewer-facepile,
 .session-row-host--pinned > .sidebar-recent-session__link > .session-row-badges,
 .session-row-host--pinned > .sidebar-recent-session__link > .sidebar-board-glyph {
@@ -2472,7 +2473,12 @@ body.update-dialog-open .sidebar-update-card__status {
     > openclaw-session-owner-chip,
   .session-row-host--pinned:is(:hover, :focus-within, .session-row-host--menu-open)
     > .sidebar-recent-session__link
-    > :is(openclaw-viewer-facepile, .session-row-badges, .sidebar-board-glyph) {
+    > :is(
+      openclaw-session-owner-chip,
+      openclaw-viewer-facepile,
+      .session-row-badges,
+      .sidebar-board-glyph
+    ) {
     opacity: 0;
     pointer-events: none;
   }

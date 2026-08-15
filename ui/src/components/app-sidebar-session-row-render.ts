@@ -453,7 +453,11 @@ export function renderRecentSession(params: {
               ? nothing
               : renderSidebarSessionSubtitle(subtitleValue, params.project)}
           </span>
-          ${session.pinned ? html`${boardIndicator}${viewerFacepile}${rowBadges}` : nothing}
+          ${session.pinned
+            ? html`${params.lead
+                ? ownerIndicator
+                : nothing}${boardIndicator}${viewerFacepile}${rowBadges}`
+            : nothing}
         </a>
         ${session.childSessionKeys.length > 0
           ? html`<button
