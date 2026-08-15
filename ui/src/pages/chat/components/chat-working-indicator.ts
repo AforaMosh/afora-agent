@@ -152,7 +152,7 @@ export function renderChatWorkingIndicator(
           `}
       <span class="chat-working-indicator__status">
         ${waitingApproval
-          ? html`<span>${t("chat.waitingForApproval")}</span>`
+          ? html`<span class="pending-text-shimmer">${t("chat.waitingForApproval")}</span>`
           : options.startupPhase
             ? html`
                 <span>${startupStatusLabel(options.startupPhase)}</span>

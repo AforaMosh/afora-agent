@@ -130,7 +130,7 @@ export function renderSidebarSessionSubtitle(value: SidebarSessionSubtitle, proj
       >`,
     );
   }
-  const waiting = value.waitingAttention ? " sidebar-recent-session__subtitle--waiting" : "";
+  const waiting = value.waitingAttention ? " pending-text-shimmer" : "";
   return html`<span
     class="sidebar-recent-session__subtitle${waiting}"
     ${ref(createOverflowFadeRef())}

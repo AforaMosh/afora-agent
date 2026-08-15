@@ -4960,42 +4960,43 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   color: color-mix(in srgb, var(--danger) 86%, var(--text));
 }
 
-/* Pending operator responses get a narrow themed highlight through the
-   glyphs. Failed-state subtitles remain static. */
-.sidebar-recent-session__subtitle--waiting {
-  --sidebar-waiting-text: color-mix(in srgb, var(--warn) 82%, var(--text));
-  --sidebar-waiting-highlight: color-mix(in srgb, var(--text-strong) 82%, var(--warn));
+/* Pending operator responses get one soft themed highlight through the
+   glyphs. The background stays under every glyph throughout the cycle. */
+.pending-text-shimmer {
+  --pending-text-base: color-mix(in srgb, var(--warn) 82%, var(--text));
+  --pending-text-highlight: color-mix(in srgb, var(--pending-text-base) 72%, var(--text-strong));
 
   background-image: linear-gradient(
     90deg,
-    var(--sidebar-waiting-text) 0%,
-    var(--sidebar-waiting-text) 45%,
-    var(--sidebar-waiting-highlight) 50%,
-    var(--sidebar-waiting-text) 55%,
-    var(--sidebar-waiting-text) 100%
+    var(--pending-text-base) 0%,
+    var(--pending-text-base) 47%,
+    var(--pending-text-highlight) 50%,
+    var(--pending-text-base) 53%,
+    var(--pending-text-base) 100%
   );
-  background-size: 200% 100%;
-  background-repeat: no-repeat;
+  background-position: 100% 0;
+  background-size: 220% 100%;
+  background-repeat: repeat-x;
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: sidebar-waiting-shimmer 2s linear infinite;
+  animation: pending-text-shimmer 2.8s linear infinite;
 }
 
-@keyframes sidebar-waiting-shimmer {
+@keyframes pending-text-shimmer {
   from {
     background-position: 100% 0;
   }
   to {
-    background-position: -100% 0;
+    background-position: 0% 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-recent-session__subtitle--waiting {
+  .pending-text-shimmer {
     background-image: none;
-    color: var(--sidebar-waiting-text);
+    color: var(--pending-text-base);
     -webkit-text-fill-color: currentColor;
     animation: none;
   }
