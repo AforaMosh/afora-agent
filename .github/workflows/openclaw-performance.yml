@@ -396,7 +396,11 @@ jobs:
           npm_wrapper="$PERFORMANCE_HELPER_DIR/scripts/ocm-npm-workspace-deps.mts"
           workspace_dependency_dirs=""
           if [[ -f "${GITHUB_WORKSPACE}/packages/ai/package.json" ]]; then
-            workspace_dependency_dirs="${GITHUB_WORKSPACE}/packages/ai"
+            workspace_dependency_dirs="$(
+              pnpm --dir "$GITHUB_WORKSPACE" --filter '@openclaw/ai...' --fail-if-no-match \
+                list --depth -1 --json |
+                node -e 'const fs = require("node:fs"); const path = require("node:path"); const projects = JSON.parse(fs.readFileSync(0, "utf8")); process.stdout.write(projects.map((project) => project.path).join(path.delimiter));'
+            )"
           fi
           chmod 0755 "$npm_wrapper"
           {

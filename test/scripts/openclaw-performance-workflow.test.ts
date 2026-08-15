@@ -1093,6 +1093,11 @@ esac
       'if [[ -f "${GITHUB_WORKSPACE}/packages/ai/package.json" ]]; then',
     );
     expect(configure.run).toContain(
+      "pnpm --dir \"$GITHUB_WORKSPACE\" --filter '@openclaw/ai...' --fail-if-no-match",
+    );
+    expect(configure.run).toContain("list --depth -1 --json");
+    expect(configure.run).toContain("projects.map((project) => project.path)");
+    expect(configure.run).toContain(
       "OPENCLAW_OCM_WORKSPACE_DEPENDENCY_DIRS=$workspace_dependency_dirs",
     );
   });
