@@ -165,6 +165,25 @@ describe("session row placement badges", () => {
     expect(container.querySelector(".session-row-badge--cloud")).toBeNull();
   });
 
+  it("summarizes badges beyond the row density limit", () => {
+    render(
+      renderSessionRowBadges({
+        hasAutomation: true,
+        pullRequest: { numbers: [111532], state: "open" },
+        hasApproval: true,
+        hasComposerDraft: true,
+        maxVisible: 2,
+      }),
+      container,
+    );
+
+    expect(container.querySelectorAll(".session-row-badge")).toHaveLength(3);
+    const overflow = container.querySelector(".session-row-badge--overflow");
+    expect(overflow?.textContent).toBe("+2");
+    expect(overflow?.getAttribute("aria-label")).toBe("Approval needed, Unsent draft");
+    expectTooltipText(overflow, "Approval needed\nUnsent draft");
+  });
+
   it("keeps conflict attention visible for child sessions", () => {
     render(
       renderSessionRowBadges({

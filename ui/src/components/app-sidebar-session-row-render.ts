@@ -403,13 +403,14 @@ export function renderRecentSession(params: {
             .selfInstanceId=${host.sessionData.presenceInstanceId}
             .sessionKey=${session.key}
             .excludeUserId=${ownerId}
-            .maxVisible=${3}
+            .maxVisible=${session.pinned ? 3 : 2}
             variant="session"
           ></openclaw-viewer-facepile>
           ${renderSessionRowBadges({
             ...session,
             // An active row shows the composer itself, so its own draft is not news.
             hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
+            maxVisible: session.pinned ? undefined : 2,
             pullRequest: session.pullRequest ?? display?.pullRequest,
             // The subtitle already reads "Waiting for approval" whenever the row
             // owns that attention; a second glyph says nothing new.

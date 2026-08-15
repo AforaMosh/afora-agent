@@ -515,6 +515,7 @@ function renderCatalogSessionRow(
           ${renderSessionRowBadges({
             hasAutomation: false,
             pullRequest: session.pullRequest,
+            maxVisible: 2,
           })}
         </a>
         ${renderSessionRowEndcap({
