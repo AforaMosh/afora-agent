@@ -30,6 +30,7 @@ import { icons } from "./icons.ts";
 import type { SessionDataController } from "./session-data-controller.ts";
 import type { SessionPullRequestIndicatorState } from "./session-menu-work.ts";
 import type { SessionOrganizerController } from "./session-organizer-controller.ts";
+import { renderSessionOwnerChip } from "./session-owner-chip.ts";
 import {
   describeSessionPrimaryState,
   resolveSessionPrimaryState,
@@ -45,16 +46,12 @@ import {
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
 import { renderSessionRowMarkers } from "./session-row-origin.ts";
-import { renderSessionOwnerChip } from "./session-owner-chip.ts";
 import {
   renderSidebarSessionSubtitle,
   resolveSidebarSessionSubtitle,
 } from "./session-row-subtitle.ts";
 import type { SidebarMenusController } from "./sidebar-menus-controller.ts";
-import {
-  isSessionPresenceIdentityWatching,
-  sessionPresenceViewers,
-} from "./viewer-facepile.ts";
+import { isSessionPresenceIdentityWatching, sessionPresenceViewers } from "./viewer-facepile.ts";
 
 const SIDEBAR_VISIBLE_CHILD_SESSION_LIMIT = 4;
 
@@ -217,12 +214,7 @@ export function renderRecentSession(params: {
     session.key,
     ownerId,
   );
-  const ownerIndicator = renderSessionOwnerChip(
-    ownerActor,
-    "row",
-    ownerAttribution,
-    ownerViewing,
-  );
+  const ownerIndicator = renderSessionOwnerChip(ownerActor, "row", ownerAttribution, ownerViewing);
   const primaryState = resolveSessionPrimaryState(session);
   const running = primaryState.kind === "running";
   const stateDescription = describeSessionPrimaryState(primaryState);
@@ -316,13 +308,12 @@ export function renderRecentSession(params: {
       session.attention.kind !== "approval" &&
       sessionHasPendingApproval(host.sessionData.approvalBadgeSnapshot(), session.key),
   });
-  const hasViewers =
-    sessionPresenceViewers(
-      host.sessionData.presencePayload,
-      host.sessionDataContext?.gateway.snapshot.selfUser?.id,
-      host.sessionData.presenceInstanceId,
-      session.key,
-    ).some((viewer) => viewer.id !== ownerId);
+  const hasViewers = sessionPresenceViewers(
+    host.sessionData.presencePayload,
+    host.sessionDataContext?.gateway.snapshot.selfUser?.id,
+    host.sessionData.presenceInstanceId,
+    session.key,
+  ).some((viewer) => viewer.id !== ownerId);
   const hasRestSummary =
     primaryState.kind !== "none" ||
     sessionHasBoard(session.key) ||

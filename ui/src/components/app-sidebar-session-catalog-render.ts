@@ -37,13 +37,13 @@ import {
 import { sidebarSessionStateId } from "./app-sidebar-session-types.ts";
 import { icons } from "./icons.ts";
 import { hasProviderBrandIcon, renderProviderBrandIcon } from "./provider-icon.ts";
+import { renderSessionOwnerChip } from "./session-owner-chip.ts";
 import { renderSessionRowBadges } from "./session-row-badges.ts";
 import { renderSessionRowEndcap } from "./session-row-endcap.ts";
 import {
   renderCatalogSessionInformationCard,
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
-import { renderSessionOwnerChip } from "./session-owner-chip.ts";
 import { renderSidebarSessionWorkContext } from "./session-row-subtitle.ts";
 import { isSessionPresenceIdentityWatching } from "./viewer-facepile.ts";
 import { renderWorkspaceIcon, type WorkspaceIconSource } from "./workspace-icon.ts";
