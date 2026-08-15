@@ -975,10 +975,7 @@ openclaw-settings-save-indicator {
   flex-direction: column;
   min-height: 0;
   flex: 1;
-  /* 9px top pad centers the brand row's 30px icons on the app's shared
-     24px chrome centerline (pane-header actions, floating toggles). The
-     macOS app overrides this with its 50px titlebar clearance. */
-  padding: 9px var(--sidebar-pad-x) 12px;
+  padding: 0 var(--sidebar-pad-x) 12px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -1008,9 +1005,15 @@ openclaw-settings-save-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 0 8px 12px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 8px;
   flex-shrink: 0;
+}
+
+html.openclaw-native-macos .shell:not(.shell--mobile-nav) .sidebar-brand {
+  height: var(--openclaw-native-titlebar-height, 50px);
+  min-height: var(--openclaw-native-titlebar-height, 50px);
 }
 
 .sidebar-brand__actions {
@@ -1098,6 +1101,10 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
   scrollbar-color: transparent transparent;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
+}
+
+.shell:not(.shell--mobile-nav) .sidebar-shell__body {
+  padding-block-start: 12px;
 }
 
 .sidebar-shell__body::-webkit-scrollbar,

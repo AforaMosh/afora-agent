@@ -106,6 +106,7 @@ suite.define(() => {
         const collapse = sidebarActions.locator(".sidebar-brand__collapse");
         const search = sidebarActions.locator(".sidebar-brand__search");
         const shellControls = page.locator(".shell-chrome-controls");
+        const paneHeader = page.locator(".chat-pane__header").first();
         await sidebarHeader.waitFor({ state: "visible" });
         if (captureBaseline) {
           await capture(page, `before-open-${colorScheme}-context.png`);
@@ -123,6 +124,23 @@ suite.define(() => {
         await expect.poll(() => shellControls.count()).toBe(0);
         await expect.poll(() => search.getAttribute("aria-label")).toBe("Open command palette");
         await expect.poll(() => collapse.getAttribute("aria-label")).toBe("Collapse sidebar");
+        await expect
+          .poll(async () => {
+            const [sidebarBox, paneBox] = await Promise.all([
+              sidebarHeader.boundingBox(),
+              paneHeader.boundingBox(),
+            ]);
+            return sidebarBox && paneBox
+              ? {
+                  sidebarHeight: Math.round(sidebarBox.height),
+                  paneHeight: Math.round(paneBox.height),
+                  centerDelta: Math.round(
+                    sidebarBox.y + sidebarBox.height / 2 - (paneBox.y + paneBox.height / 2),
+                  ),
+                }
+              : null;
+          })
+          .toEqual({ sidebarHeight: 48, paneHeight: 48, centerDelta: 0 });
         await expect
           .poll(() =>
             collapse.evaluate((element) => {
@@ -146,6 +164,17 @@ suite.define(() => {
         await expect.poll(() => expand.isVisible()).toBe(true);
         await expect.poll(() => separator.isVisible()).toBe(true);
         await expect.poll(() => shellControls.getByRole("button").count()).toBe(1);
+        await expect
+          .poll(async () => {
+            const [controlBox, paneBox] = await Promise.all([
+              expand.boundingBox(),
+              paneHeader.boundingBox(),
+            ]);
+            return controlBox && paneBox
+              ? Math.round(controlBox.y + controlBox.height / 2 - (paneBox.y + paneBox.height / 2))
+              : null;
+          })
+          .toBe(0);
         await expect
           .poll(() =>
             expand.evaluate((element) => {
