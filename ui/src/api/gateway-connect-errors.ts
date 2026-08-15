@@ -25,12 +25,6 @@ export function enrichProtocolMismatchDetails(
   };
 }
 
-export function resolveGatewayErrorDetailCode(
-  error: { details?: unknown } | null | undefined,
-): string | null {
-  return readConnectErrorDetailCode(error?.details);
-}
-
 export function isLegacyGatewayBuildIdSchemaError(
   error: GatewayProtocolRequestError,
   clientBuildId: string | undefined,

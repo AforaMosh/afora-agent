@@ -1,11 +1,13 @@
-import { readControlUiBuildMismatchDetails } from "@openclaw/gateway-client/browser";
+import {
+  readConnectErrorDetailCode,
+  readControlUiBuildMismatchDetails,
+} from "@openclaw/gateway-client/browser";
 import type { ControlUiBootstrapProfileHint } from "../../../src/gateway/control-ui-contract.js";
 // Control UI module owns the application gateway store: the reactive
 // snapshot around GatewayBrowserClient consumed by the app shell.
 import type { EventLogEntry } from "../api/event-log.ts";
 import {
   GatewayBrowserClient,
-  resolveGatewayErrorDetailCode,
   type GatewayBrowserClientOptions,
   type GatewayEventListener,
   type GatewayHelloOk,
@@ -449,7 +451,7 @@ export function createApplicationGateway(
           canvasPluginSurfaceUrl: null,
           selfUser: null,
           lastError: error?.message ?? `disconnected (${code}): ${reason || "no reason"}`,
-          lastErrorCode: resolveGatewayErrorDetailCode(error) ?? error?.code ?? null,
+          lastErrorCode: readConnectErrorDetailCode(error?.details) ?? error?.code ?? null,
         });
       },
       onGap: ({ expected, received }) => {

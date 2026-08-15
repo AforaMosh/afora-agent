@@ -25,6 +25,7 @@ import {
   isRetryableGatewayStartupUnavailableError,
   MIN_CLIENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
+  readConnectErrorDetailCode,
   resolveGatewayStartupRetryAfterMs,
   resolveSafeTimeoutDelayMs,
 } from "@openclaw/gateway-client/browser";
@@ -56,10 +57,7 @@ import {
   enrichProtocolMismatchDetails,
   isLegacyGatewayBuildIdSchemaError,
   isNonRecoverableConnectError,
-  resolveGatewayErrorDetailCode,
 } from "./gateway-connect-errors.ts";
-
-export { resolveGatewayErrorDetailCode };
 
 export class GatewayRequestError extends GatewayProtocolRequestError {
   constructor(error: ErrorShape) {
@@ -585,7 +583,7 @@ export class GatewayBrowserClient {
 
   private handleConnectFailure(err: GatewayProtocolRequestError, plan: ConnectPlan) {
     const connectErrorCode =
-      err instanceof GatewayRequestError ? resolveGatewayErrorDetailCode(err) : null;
+      err instanceof GatewayRequestError ? readConnectErrorDetailCode(err.details) : null;
     if (
       !this.clientBuildIdRetryBudgetUsed &&
       isLegacyGatewayBuildIdSchemaError(err, plan.params.client.buildId)
@@ -720,7 +718,7 @@ export class GatewayBrowserClient {
     }
     const connectError =
       error instanceof GatewayRequestError ? toGatewayErrorInfo(error) : undefined;
-    const connectErrorCode = resolveGatewayErrorDetailCode(connectError);
+    const connectErrorCode = readConnectErrorDetailCode(connectError?.details);
     // This decision drives both scheduling and the store's reconnect rendering.
     const retry =
       connectErrorCode === ConnectErrorDetailCodes.AUTH_TOKEN_MISMATCH

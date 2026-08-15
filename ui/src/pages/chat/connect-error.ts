@@ -4,10 +4,10 @@ import {
   ConnectErrorDetailCodes,
   describePairingConnectRequirement,
   formatConnectPairingRequiredMessage,
+  readConnectErrorDetailCode,
   readConnectPairingRequiredMessage,
   readPairingConnectErrorDetails,
 } from "../../../../packages/gateway-protocol/src/connect-error-details.js";
-import { resolveGatewayErrorDetailCode } from "../../api/gateway.ts";
 
 type ErrorWithMessageAndDetails = {
   message?: unknown;
@@ -61,7 +61,7 @@ function formatPairingRequiredError(error: ErrorWithMessageAndDetails): string {
 
 function formatErrorFromMessageAndDetails(error: ErrorWithMessageAndDetails): string {
   const message = normalizeErrorMessage(error.message);
-  const detailCode = resolveGatewayErrorDetailCode(error);
+  const detailCode = readConnectErrorDetailCode(error.details);
 
   switch (detailCode) {
     case ConnectErrorDetailCodes.AUTH_TOKEN_MISMATCH:

@@ -2,11 +2,11 @@
 import {
   ErrorCodes,
   GatewayErrorDetailCodes,
+  readConnectErrorDetailCode,
   readMissingScopeError,
 } from "@openclaw/gateway-client/browser";
 import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
 import { ConnectErrorDetailCodes } from "../../../packages/gateway-protocol/src/connect-error-details.js";
-import { resolveGatewayErrorDetailCode } from "../api/gateway.ts";
 
 /** Identifies an expired process-local wizard session without parsing public copy. */
 export function isWizardNotFoundError(err: unknown): boolean {
@@ -36,7 +36,7 @@ export function isMissingOperatorReadScopeError(err: unknown): boolean {
   if (readMissingScopeError(err)?.missingScope === "operator.read") {
     return true;
   }
-  const detailCode = resolveGatewayErrorDetailCode(err as { details?: unknown });
+  const detailCode = readConnectErrorDetailCode((err as { details?: unknown }).details);
   // Older gateways sometimes reused the connect-time authorization detail for RPC failures.
   return detailCode === ConnectErrorDetailCodes.AUTH_UNAUTHORIZED;
 }

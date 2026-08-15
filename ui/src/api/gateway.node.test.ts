@@ -5,6 +5,7 @@ import {
   GATEWAY_CLIENT_CAPS,
   MIN_CLIENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
+  readConnectErrorDetailCode,
 } from "@openclaw/gateway-client/browser";
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -154,8 +155,7 @@ class MockWebSocket {
   }
 }
 
-const { GatewayBrowserClient, GatewayRequestError, resolveGatewayErrorDetailCode } =
-  await import("./gateway.ts");
+const { GatewayBrowserClient, GatewayRequestError } = await import("./gateway.ts");
 
 type ConnectFrame = {
   id?: string;
@@ -614,7 +614,9 @@ describe("GatewayBrowserClient", () => {
     });
 
     expect(error.message).toBe(`protocol mismatch: Control UI v${PROTOCOL_VERSION}`);
-    expect(resolveGatewayErrorDetailCode(error)).toBe(ConnectErrorDetailCodes.PROTOCOL_MISMATCH);
+    expect(readConnectErrorDetailCode(error.details)).toBe(
+      ConnectErrorDetailCodes.PROTOCOL_MISMATCH,
+    );
   });
 
   it("reuses cached device token scopes when connecting from bootstrap handoff", async () => {
