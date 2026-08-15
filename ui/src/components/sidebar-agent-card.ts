@@ -15,7 +15,6 @@ class SidebarAgentCard extends OpenClawLightDomContentsElement {
   @property({ attribute: false }) authToken: string | null = null;
   @property({ attribute: false }) avatarAuthReady = false;
   @property({ attribute: false }) avatarText = "";
-  @property({ attribute: false }) subtitle = "";
   @property({ attribute: false }) menuOpen = false;
   /** Unread sessions exist on non-active agents; surfaces next to the name. */
   @property({ attribute: false }) menuUnread = false;
@@ -84,9 +83,6 @@ class SidebarAgentCard extends OpenClawLightDomContentsElement {
                 >${icons.chevronDown}</span
               >
             </span>
-            ${this.subtitle
-              ? html`<span class="sidebar-agent-card__subtitle">${this.subtitle}</span>`
-              : nothing}
           </span>
           ${this.approvalCount > 0
             ? html`<openclaw-tooltip .content=${approvalLabel}>

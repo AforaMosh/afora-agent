@@ -7,7 +7,6 @@ import {
 } from "../app-navigation.ts";
 import type { RouteId } from "../app-route-paths.ts";
 import type { ApplicationContext } from "../app/context.ts";
-import { t } from "../i18n/index.ts";
 import {
   isCronSessionKey,
   resolveChannelSessionInfo,
@@ -519,13 +518,6 @@ export function resolveSidebarAgentResumeKey(
   mainKey: string,
 ): string {
   return latest?.key ?? buildAgentMainSessionKey({ agentId, mainKey });
-}
-
-export function resolveSidebarAgentChipSubtitle(latest: SessionRow | null): string {
-  if (latest?.hasActiveRun) {
-    return t("agentChip.working");
-  }
-  return latest ? resolveSessionDisplayName(latest.key, latest) : t("agentChip.ready");
 }
 
 export function collectKnownSidebarSessionCatalogIds(input: {
