@@ -80,7 +80,7 @@ class SidebarAgentCard extends OpenClawLightDomContentsElement {
             <span class="sidebar-agent-card__name">
               ${this.agentName}
               <span class="sidebar-agent-card__chevron" aria-hidden="true"
-                >${icons.chevronDown}</span
+                >${icons.chevronsUpDown}</span
               >
             </span>
           </span>
