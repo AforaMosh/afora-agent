@@ -387,9 +387,13 @@ function renderCatalogHostGroup(
                 </div>
               `;
             })}
-            ${projectGroups.ungrouped.map((session) =>
-              renderCatalogSessionRow(catalog, host, session, liveRowsByKey, params),
-            )}`
+            ${projectGroups.ungrouped.length > 0
+              ? html`<div class="sidebar-session-projectless" role="list">
+                  ${projectGroups.ungrouped.map((session) =>
+                    renderCatalogSessionRow(catalog, host, session, liveRowsByKey, params),
+                  )}
+                </div>`
+              : nothing}`
           : host.sessions.map((session) =>
               renderCatalogSessionRow(catalog, host, session, liveRowsByKey, params),
             )}

@@ -1134,7 +1134,7 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
 }
 
 .shell:not(.shell--mobile-nav) .sidebar-shell__body {
-  padding-block-start: 12px;
+  padding-block-start: 4px;
 }
 
 .sidebar-shell__body::-webkit-scrollbar,
@@ -2194,6 +2194,16 @@ body.update-dialog-open .sidebar-update-card__status {
   margin-inline-start: var(--sidebar-depth-step);
 }
 
+/* Projectless work hangs directly from its agent section. It advances to the
+   same rail a project folder would occupy, without inventing a folder row. */
+.sidebar-session-projectless {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sidebar-list-row-gap);
+  min-width: 0;
+  margin-inline-start: var(--sidebar-depth-step);
+}
+
 /* Project marks are product artwork, not sidebar glyphs, so they fill the lead
    slot at its own scale instead of inheriting the Lucide stroke treatment. */
 .sidebar-session-group-toggle__lead .workspace-icon {
@@ -2466,19 +2476,6 @@ body.update-dialog-open .sidebar-update-card__status {
   justify-content: center;
   margin: 0;
   opacity: 0.72;
-}
-
-.sidebar-session-indicator > openclaw-session-owner-chip {
-  transition: opacity var(--duration-fast) ease;
-}
-
-@media (hover: hover) {
-  .session-row-host:is(:hover, :focus-within, .session-row-host--menu-open)
-    .sidebar-session-indicator
-    > openclaw-session-owner-chip {
-    opacity: 0;
-    pointer-events: none;
-  }
 }
 
 .sidebar-child-session-toggle {
@@ -3665,10 +3662,11 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 .sidebar-footer-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  box-sizing: border-box;
   width: 100%;
   min-height: 60px;
-  padding: 4px 0 2px;
+  padding: 4px 4px 2px;
 }
 
 openclaw-sidebar-attention {
@@ -3678,9 +3676,9 @@ openclaw-sidebar-attention {
 .sidebar-issues-button {
   position: relative;
   display: inline-grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   place-items: center;
   padding: 0;
   border: 0;
@@ -3937,9 +3935,10 @@ openclaw-sidebar-attention {
   align-items: center;
   gap: 8px;
   width: auto;
+  height: 40px;
   flex: 1 1 auto;
   min-width: 0;
-  padding-block: 5px;
+  padding-block: 3px;
   padding-inline-start: var(--sidebar-row-inset);
   padding-inline-end: 0;
   border: none;

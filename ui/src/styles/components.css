@@ -5657,6 +5657,26 @@ td.data-table-key-col {
     opacity: 1;
     pointer-events: auto;
   }
+
+  .session-row-host--pinned:is(
+      :hover,
+      :focus-within,
+      .session-row-host--menu-open,
+      [data-tooltip-open="true"]
+    )
+    .session-row-endcap__rest-summary {
+    opacity: 1;
+  }
+
+  .session-row-host--pinned:is(
+      :hover,
+      :focus-within,
+      .session-row-host--menu-open,
+      [data-tooltip-open="true"]
+    )
+    :is(.viewer-facepile, .session-row-pinned-status, .session-row-state) {
+    opacity: 0;
+  }
 }
 
 /* Pinned rows expose only one people stack and one state signal at rest.
@@ -5676,6 +5696,10 @@ td.data-table-key-col {
   height: 20px;
   align-items: center;
   justify-content: flex-end;
+}
+
+.session-row-pinned-people:has(> openclaw-session-owner-chip) {
+  justify-content: flex-start;
 }
 
 .session-row-pinned-status {
@@ -5847,6 +5871,15 @@ td.data-table-key-col {
 .session-action:focus-visible:not(:disabled) {
   background: transparent;
   color: var(--text);
+}
+
+.sidebar-recent-session--active .session-row-endcap--action-only .session-row-endcap__management {
+  background: transparent;
+}
+
+.sidebar-recent-session--active .session-action:hover:not(:disabled),
+.sidebar-recent-session--active .session-action:focus-visible:not(:disabled) {
+  background: var(--sidebar-row-surface-pressed);
 }
 
 .session-action:focus-visible {

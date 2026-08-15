@@ -339,9 +339,13 @@ function renderSessionSection(params: {
                     ? html`${workProjects.groups.map((project) =>
                         renderWorkProjectGroup(host, project),
                       )}
-                      ${workProjects.ungrouped.map((session) =>
-                        renderSessionTree({ host, session }),
-                      )}`
+                      ${workProjects.ungrouped.length > 0
+                        ? html`<div class="sidebar-session-projectless" role="list">
+                            ${workProjects.ungrouped.map((session) =>
+                              renderSessionTree({ host, session }),
+                            )}
+                          </div>`
+                        : nothing}`
                     : section.rows.map((session) => renderSessionTree({ host, session }))}
                 </div>`
               : nothing}
