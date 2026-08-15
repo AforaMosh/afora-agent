@@ -42,6 +42,27 @@ function expectTooltipText(badge: Element | null | undefined, text: string) {
 }
 
 describe("session row placement badges", () => {
+  it("keeps incognito visible ahead of the capped badge overflow", () => {
+    render(
+      renderSessionRowBadges({
+        hasAutomation: true,
+        incognito: true,
+        hasApproval: true,
+        maxVisible: 2,
+      }),
+      container,
+    );
+
+    const badges = Array.from(container.querySelectorAll(".session-row-badge"));
+    expect(badges.map((badge) => badge.getAttribute("aria-label"))).toEqual([
+      "Incognito session",
+      "Automation attached",
+      "Approval needed",
+    ]);
+    expect(badges[0]?.classList.contains("session-row-badge--incognito")).toBe(true);
+    expect(badges[2]?.classList.contains("session-row-badge--overflow")).toBe(true);
+  });
+
   it("renders the durable outbox count and stays quiet when empty", () => {
     render(
       renderSessionRowBadges({

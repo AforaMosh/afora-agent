@@ -1325,6 +1325,11 @@ async function createChatPickerScenario(
       pinned: true,
     }),
     sessionRow("agent:main:production-export", "Production export", baseTime - 75_000, {
+      agentStatus: {
+        note: "Approval pending",
+        attention: "hand",
+        expiresAt: ATTENTION_FIXTURE_EXPIRES_AT,
+      },
       category: "Research",
       createdActor: MOCK_CREATOR_MIRA,
       execCwd: "/Users/peter/Projects/clawdbot",
@@ -1336,6 +1341,7 @@ async function createChatPickerScenario(
       lastRunError: "Model out of credits: openai/gpt-5.6",
     }),
     sessionRow("agent:main:release-draft", "Release notes draft", baseTime - 82_000, {
+      hasComposerDraft: true,
       visibility: "draft",
     }),
     sessionRow("agent:main:private-planning", "Private planning", baseTime - 83_000, {
@@ -1359,6 +1365,7 @@ async function createChatPickerScenario(
       execCwd: "/Users/peter/Projects",
       execNode: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
       pinned: true,
+      unread: true,
     }),
     sessionRow("agent:main:whatsapp:group:family", "Family", baseTime - 90_000, {
       kind: "group",
@@ -1374,6 +1381,13 @@ async function createChatPickerScenario(
         id: "wt-sidebar-zones",
         branch: "claude/sidebar-agent-zones",
         repoRoot: "~/Projects/openclaw",
+      },
+    }),
+    sessionRow("agent:main:peekaboo-audit", "permission audit", baseTime - 165_000, {
+      worktree: {
+        id: "wt-peekaboo-audit",
+        branch: "main",
+        repoRoot: "~/Projects/peekaboo",
       },
     }),
     ...buildSessionRows({

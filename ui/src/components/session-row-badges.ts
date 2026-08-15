@@ -82,6 +82,7 @@ export function renderSessionWorktreePullRequest(state: SessionPullRequestIndica
 
 export function renderSessionRowBadges(params: {
   isChild?: boolean;
+  incognito?: boolean;
   hasAutomation: boolean;
   pullRequest?: SessionCatalogPullRequestSummary;
   hasApproval?: boolean;
@@ -121,6 +122,7 @@ export function renderSessionRowBadges(params: {
         })
       : "";
   if (
+    !params.incognito &&
     !hasAutomation &&
     !pullRequestLabel &&
     !params.hasApproval &&
@@ -153,6 +155,16 @@ export function renderSessionRowBadges(params: {
       : "";
   const cloudLabel = [cloudPlacementLabel, diskSpaceLabel].filter(Boolean).join(" · ");
   const badges = [
+    params.incognito
+      ? {
+          label: t("sessionsView.incognito"),
+          content: renderSessionRowBadge(
+            t("sessionsView.incognito"),
+            icons.lock,
+            "session-row-badge--incognito",
+          ),
+        }
+      : null,
     hasAutomation
       ? {
           label: t("sessionsView.automationAttached"),
