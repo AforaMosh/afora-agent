@@ -5660,12 +5660,18 @@ td.data-table-key-col {
 }
 
 @media (hover: none), (pointer: coarse) {
-  .session-row-endcap__rest-summary {
-    display: none;
+  .session-row-endcap__swap,
+  .session-row-endcap--action-only .session-row-endcap__swap {
+    display: inline-flex;
+    inline-size: auto;
+    align-items: center;
+    gap: 6px;
   }
 
-  .session-row-endcap__management {
+  .session-row-endcap__management,
+  .session-row-endcap--action-only .session-row-endcap__management {
     position: static;
+    padding-inline-start: 0;
     opacity: 1;
     pointer-events: auto;
   }

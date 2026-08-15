@@ -84,7 +84,7 @@
    hosts without the full strip, they sit below the AppKit drag region. */
 .shell-chrome-controls {
   position: fixed;
-  top: 10px;
+  top: 8px;
   left: calc(var(--shell-nav-width) + var(--shell-chrome-controls-inset));
   z-index: 45;
   display: flex;
