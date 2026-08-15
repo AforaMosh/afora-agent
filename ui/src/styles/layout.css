@@ -1876,7 +1876,7 @@ body.update-dialog-open .sidebar-update-card__status {
   flex: 0 0 12px;
 }
 
-.sidebar-session-catalog-provider-icon[data-provider-icon="codex"] {
+.provider-brand-icon.sidebar-session-catalog-provider-icon[data-provider-icon="codex"] {
   color: #111;
 }
 
