@@ -132,12 +132,9 @@ async function unpinAutomations(page: Page, sidebar: Locator) {
   await moreButton.click();
   const moreMenu = sidebar.locator("wa-dropdown.sidebar-more-menu");
   await moreMenu.getByRole("menuitem", { name: "Customize sidebar" }).click();
-  const editor = sidebar.locator(
-    "wa-dropdown.sidebar-customize-menu:not(.sidebar-more-menu):not(.sidebar-agent-menu)",
-  );
-  const automations = editor.getByRole("menuitemcheckbox", { name: "Automations" });
-  await expect.poll(() => automations.getAttribute("aria-checked")).toBe("true");
-  await automations.click();
+  const editor = sidebar.locator(".sidebar-customizer");
+  const automations = editor.locator('[data-sidebar-customizer-id="route:cron"]');
+  await automations.getByRole("button", { name: "Hide Automations from sidebar" }).click();
   await expect.poll(() => sidebar.locator('[data-sidebar-entry="route:cron"]').count()).toBe(0);
   await page.keyboard.press("Escape");
   await moreButton.click();
@@ -187,10 +184,21 @@ suite.define(() => {
       try {
         const footer = failedOnce.sidebar.locator(".sidebar-footer-bar");
         const automationRow = failedOnce.sidebar.locator('[data-sidebar-entry="route:cron"]');
-        const badge = automationRow.locator(".sidebar-automation-attention-badge");
+        const badge = automationRow.locator(".sidebar-nav-health-indicator");
         await badge.waitFor();
-        expect(await badge.textContent()).toBe("1");
+        expect((await badge.textContent())?.trim()).toBe("");
         expect(await badge.getAttribute("aria-label")).toBe("1 automation needs attention");
+        expect(
+          await badge.evaluate((element) => {
+            const style = getComputedStyle(element);
+            const dot = getComputedStyle(element, "::before");
+            return {
+              role: element.getAttribute("role"),
+              slot: [style.width, style.height],
+              dot: [dot.width, dot.height],
+            };
+          }),
+        ).toEqual({ role: "status", slot: ["20px", "20px"], dot: ["7px", "7px"] });
         expect(await failedOnce.sidebar.locator(".sidebar-issues-button").count()).toBe(0);
         await captureUnionProof(
           failedOnce.page,
@@ -203,9 +211,9 @@ suite.define(() => {
         const menuSurface = moreMenu.locator('[part="menu"]');
         const menuBadge = moreMenu
           .locator('wa-dropdown-item[value="cron"]')
-          .locator(".sidebar-automation-attention-badge");
+          .locator(".sidebar-nav-health-indicator");
         await menuBadge.waitFor();
-        expect(await menuBadge.textContent()).toBe("1");
+        expect((await menuBadge.textContent())?.trim()).toBe("");
         expect(await menuBadge.getAttribute("aria-label")).toBe("1 automation needs attention");
         await captureUnionProof(
           failedOnce.page,

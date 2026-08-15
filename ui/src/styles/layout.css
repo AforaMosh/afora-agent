@@ -3525,8 +3525,7 @@ openclaw-sidebar-attention {
   stroke-width: 1.5px;
 }
 
-.sidebar-issues-button__count,
-.sidebar-automation-attention-badge {
+.sidebar-issues-button__count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3552,19 +3551,26 @@ openclaw-sidebar-attention {
   box-shadow: 0 0 0 2px var(--sidebar-bg);
 }
 
-.sidebar-automation-attention-badge {
-  flex: none;
+.sidebar-nav-health-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sidebar-trailing-slot);
+  height: var(--sidebar-trailing-slot);
   margin-inline-start: auto;
-}
-
-.sidebar-automation-attention-badge--danger {
-  background: color-mix(in srgb, var(--danger) 16%, transparent);
-  color: var(--danger);
-}
-
-.sidebar-automation-attention-badge--warning {
-  background: color-mix(in srgb, var(--warn) 16%, transparent);
   color: var(--warn);
+}
+
+.sidebar-nav-health-indicator::before {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+  content: "";
+}
+
+.sidebar-nav-health-indicator--danger {
+  color: var(--danger);
 }
 
 .sidebar-issues-panel {

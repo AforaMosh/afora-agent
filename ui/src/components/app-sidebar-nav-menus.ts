@@ -22,7 +22,6 @@ import { consumeDropdownKeyboardDismissal, trackDropdownKeyboardDismissal } from
 
 type SidebarMenuPosition = { x: number; y: number };
 
-
 /** Settings routes highlight Settings; hub tabs highlight their hub entry. */
 export function isSidebarRouteActive(
   activeRouteId: NavigationRouteId | undefined,
@@ -73,12 +72,13 @@ function renderAutomationAttentionIndicator(attention: SidebarAutomationAttentio
       : "attention.automationsNeedAttention",
     { count: String(attention.count) },
   );
-  return html`<span
-    class="sidebar-automation-attention-badge sidebar-automation-attention-badge--${attention.severity}"
-    role="img"
-    aria-label=${label}
-    >${attention.count > 9 ? "9+" : attention.count}</span
-  >`;
+  return html`<openclaw-tooltip .content=${label}>
+    <span
+      class="sidebar-nav-health-indicator sidebar-nav-health-indicator--${attention.severity}"
+      role="status"
+      aria-label=${label}
+    ></span>
+  </openclaw-tooltip>`;
 }
 
 export function renderSidebarNavRoute(params: SidebarNavRouteParams) {

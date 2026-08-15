@@ -192,8 +192,8 @@ suite.define(() => {
         '.sidebar-zone-entry[data-sidebar-entry="route:cron"]',
       );
       await expect
-        .poll(() => directAutomation.locator(".sidebar-automation-attention-badge").textContent())
-        .toBe("1");
+        .poll(() => directAutomation.locator(".sidebar-nav-health-indicator").count())
+        .toBe(1);
       await captureSidebarUiProof(page, "automation-attention-direct.png");
 
       const moreButton = sidebar.locator(".sidebar-nav__more");
@@ -214,9 +214,9 @@ suite.define(() => {
         .locator("wa-dropdown.sidebar-more-menu")
         .locator('wa-dropdown-item[value="cron"]');
       await expect
-        .poll(() => menuAutomation.locator(".sidebar-automation-attention-badge").textContent())
-        .toBe("1");
-      await expect.poll(() => sidebar.locator(".sidebar-automation-attention-badge").count()).toBe(1);
+        .poll(() => menuAutomation.locator(".sidebar-nav-health-indicator").count())
+        .toBe(1);
+      await expect.poll(() => sidebar.locator(".sidebar-nav-health-indicator").count()).toBe(1);
       await captureSidebarUiProof(page, "automation-attention-more.png");
     } finally {
       await suite.closeBrowserContext(context);
