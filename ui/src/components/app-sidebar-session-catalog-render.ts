@@ -353,6 +353,7 @@ function renderCatalogHostGroup(
                     className: "sidebar-session-catalog-project__head",
                     labelClassName: "sidebar-session-catalog-project__label",
                     title: group.title,
+                    count: collapsed ? group.sessions.length : undefined,
                     lead: html`<span class="sidebar-session-group-toggle__lead" aria-hidden="true"
                       >${renderWorkspaceIcon(iconSource)}</span
                     >`,
