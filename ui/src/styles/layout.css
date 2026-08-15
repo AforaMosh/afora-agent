@@ -2456,7 +2456,7 @@ body.update-dialog-open .sidebar-update-card__status {
   align-items: center;
   justify-content: center;
   margin: 0;
-  opacity: 1;
+  opacity: 0.72;
 }
 
 .sidebar-session-indicator > openclaw-session-owner-chip,
@@ -2770,11 +2770,6 @@ body.update-dialog-open .sidebar-update-card__status {
     transform: none !important;
     transition: none !important;
   }
-}
-
-.session-row-host--pinned .sidebar-recent-session__link > .nav-item__icon {
-  margin-inline: 0 8px;
-  opacity: 1;
 }
 
 .sidebar-recent-session--child {
