@@ -557,7 +557,7 @@ suite.define(() => {
           .locator(".sidebar-session-catalog-project__label")
           .textContent(),
       ).toBe("other");
-      expect(await section.getByText("Worktree fix session", { exact: true }).count()).toBe(1);
+      expect(await section.getByRole("link", { name: /^Worktree fix session ·/u }).count()).toBe(1);
       const toggle = section.locator(".sidebar-session-group-toggle");
       expect(await toggle.getAttribute("title")).toBeNull();
       // Counts only render while a section is collapsed.
@@ -631,9 +631,13 @@ suite.define(() => {
 
       await openclawProject.click();
       await expect.poll(() => openclawProject.getAttribute("aria-expanded")).toBe("false");
-      expect(await section.getByText("Local planning session", { exact: true }).count()).toBe(0);
-      expect(await section.getByText("Worktree fix session", { exact: true }).count()).toBe(0);
-      expect(await section.getByText("Other project session", { exact: true }).count()).toBe(1);
+      expect(await section.getByRole("link", { name: /^Local planning session ·/u }).count()).toBe(
+        0,
+      );
+      expect(await section.getByRole("link", { name: /^Worktree fix session ·/u }).count()).toBe(0);
+      expect(await section.getByRole("link", { name: /^Other project session ·/u }).count()).toBe(
+        1,
+      );
       expect(await openclawProject.count()).toBe(1);
       expect(await openclawProject.locator(".sidebar-session-group-count").textContent()).toBe("2");
       expect(
@@ -645,8 +649,10 @@ suite.define(() => {
 
       await openclawProject.click();
       await expect.poll(() => openclawProject.getAttribute("aria-expanded")).toBe("true");
-      expect(await section.getByText("Local planning session", { exact: true }).count()).toBe(1);
-      expect(await section.getByText("Worktree fix session", { exact: true }).count()).toBe(1);
+      expect(await section.getByRole("link", { name: /^Local planning session ·/u }).count()).toBe(
+        1,
+      );
+      expect(await section.getByRole("link", { name: /^Worktree fix session ·/u }).count()).toBe(1);
       expect(
         await page.evaluate(
           (key) => JSON.parse(localStorage.getItem(key) ?? "[]"),
