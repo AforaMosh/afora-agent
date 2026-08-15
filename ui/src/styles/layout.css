@@ -2874,6 +2874,11 @@ body.update-dialog-open .sidebar-update-card__status {
     box-shadow var(--duration-fast) ease;
 }
 
+.sidebar-zone-entry:has(.session-row-host--pinned)
+  + .sidebar-zone-entry:has(.session-row-host--pinned) {
+  margin-block-start: 1px;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   @starting-style {
     .sidebar-r .sidebar-zone-entry {
