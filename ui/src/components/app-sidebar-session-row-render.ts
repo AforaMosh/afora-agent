@@ -359,7 +359,7 @@ export function renderRecentSession(params: {
           href=${session.href}
           class="sidebar-recent-session__link"
           draggable="false"
-          title=${title}
+          aria-label=${title}
           aria-current=${session.visuallyActive ? "page" : nothing}
           aria-describedby=${stateId ?? nothing}
           @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}

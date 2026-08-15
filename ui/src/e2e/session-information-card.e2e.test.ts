@@ -98,6 +98,11 @@ suite.define(() => {
       await page.locator(`[data-session-key="${WORK_KEY}"]`).hover();
       await expect.poll(() => card(page).count(), { timeout: 3_000 }).toBe(1);
 
+      const sessionLink = page.locator(
+        `[data-session-key="${WORK_KEY}"] .sidebar-recent-session__link`,
+      );
+      expect(await sessionLink.getAttribute("title")).toBeNull();
+      expect(await sessionLink.getAttribute("aria-label")).toContain(LONG_TITLE);
       expect(await card(page).locator(".session-hover-card__title").textContent()).toBe(LONG_TITLE);
       const rows = await card(page).locator(".session-hover-card__row").allTextContents();
       expect(rows.map((row) => row.replace(/\s+/gu, " ").trim())).toEqual([

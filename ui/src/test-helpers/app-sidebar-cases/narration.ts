@@ -69,7 +69,8 @@ describe("AppSidebar live narration", () => {
     const link = sidebar.querySelector<HTMLAnchorElement>(
       `[data-session-key="${key}"] .sidebar-recent-session__link`,
     );
-    expect(link?.title).toContain("Final verification is running.");
+    expect(link?.getAttribute("aria-label")).toContain("Final verification is running.");
+    expect(link?.hasAttribute("title")).toBe(false);
     expect(link?.querySelector("[aria-live]")).toBeNull();
 
     sessions.publishList({

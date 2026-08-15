@@ -874,10 +874,11 @@ suite.define(() => {
       expect(await tree.getAttribute("role")).toBe("listitem");
       expect(await row.getAttribute("role")).toBeNull();
       expect(await row.getAttribute("aria-label")).toBeNull();
-      expect(await link.getAttribute("aria-label")).toBeNull();
+      expect(await link.getAttribute("aria-label")).toContain(readableTitle);
+      expect(await link.getAttribute("title")).toBeNull();
       expect(await link.getAttribute("aria-current")).toBe("page");
       expect(await link.getAttribute("aria-describedby")).toBeNull();
-      expect(await link.ariaSnapshot()).toContain(`link "${readableTitle}"`);
+      expect(await link.ariaSnapshot()).toContain(`link "${readableTitle}`);
       await captureSessionAccessibilityProof(page, "after-derived-title");
 
       const listCountBeforePatch = (await gateway.getRequests("sessions.list")).length;

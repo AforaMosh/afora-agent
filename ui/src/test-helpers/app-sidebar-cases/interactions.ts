@@ -629,7 +629,8 @@ describe("AppSidebar catalog session rows", () => {
       const state = row?.querySelector(".session-row-state");
 
       expect(link?.getAttribute("aria-describedby")).toContain(state?.id);
-      expect(link?.getAttribute("title")).toBe("Running catalog · Local Codex · Active run");
+      expect(link?.getAttribute("aria-label")).toBe("Running catalog · Local Codex · Active run");
+      expect(link?.hasAttribute("title")).toBe(false);
       expect(state?.getAttribute("aria-label")).toBe("Active run");
       expect(state?.querySelector(".session-run-spinner")).not.toBeNull();
       expect(state?.querySelector(".session-run-spinner")?.hasAttribute("title")).toBe(false);
