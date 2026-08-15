@@ -47,13 +47,11 @@ function sidebarSession(overrides: Partial<SidebarRecentSession> = {}): SidebarR
   } as SidebarRecentSession;
 }
 
-function renderCard(overrides: Partial<SidebarRecentSession> = {}, owner?: { label: string }) {
+function renderCard(overrides: Partial<SidebarRecentSession> = {}) {
   render(
     renderSessionInformationCard({
       session: sidebarSession(overrides),
       title: "Reconcile the workspace conflict",
-      owner: owner ? { type: "human", id: "profile-ada", label: owner.label } : undefined,
-      attribution: "created",
     }),
     container,
   );
@@ -87,23 +85,17 @@ describe("session information card", () => {
     renderCard({
       worktree: { id: "wt-1", branch: "feature/sidebar", repoRoot: "/Users/ada/code/openclaw" },
     });
-    expect(rowTexts()).toEqual(["Project /Users/ada/code/openclaw", "Branch feature/sidebar"]);
+    expect(rowTexts()).toEqual(["openclaw", "feature/sidebar"]);
 
     renderCard({ execCwd: "/Users/ada/scratch" });
-    expect(rowTexts()).toEqual(["Project /Users/ada/scratch"]);
+    expect(rowTexts()).toEqual(["scratch"]);
   });
 
-  it("names the creator only when the caller says attribution is on screen", () => {
+  it("keeps creator attribution out of compact context", () => {
     renderCard({ createdActor: { type: "human", id: "profile-ada", label: "Ada" } });
     expect(rowTexts()).toEqual([]);
 
-    renderCard(
-      { createdActor: { type: "human", id: "profile-ada", label: "Ada" } },
-      {
-        label: "Ada",
-      },
-    );
-    expect(rowTexts()).toEqual(["Created by Ada"]);
+    expect(container.textContent).not.toContain("Created by");
   });
 
   it("never repeats row state the reader can already see", () => {
@@ -139,8 +131,8 @@ describe("session information card", () => {
     });
 
     expect(rowTexts()).toEqual([
-      "Draft Keep this session to yourself until you publish it",
-      "Incognito Keep this session only until the Gateway restarts",
+      "Keep this session to yourself until you publish it",
+      "Keep this session only until the Gateway restarts",
       "#12, #13 · Open",
     ]);
   });
@@ -157,7 +149,7 @@ describe("session information card", () => {
     );
 
     expect(container.querySelector(".session-hover-card__age")?.textContent).toBe("3d");
-    expect(rowTexts()).toEqual(["Project /Users/ada/code/clawhub", "Branch main"]);
+    expect(rowTexts()).toEqual(["clawhub", "main"]);
 
     render(renderCatalogSessionInformationCard({ title: "Loose", age: "" }), container);
     expect(rowTexts()).toEqual([]);

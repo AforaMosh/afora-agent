@@ -62,7 +62,7 @@ describe("AppSidebar session information card", () => {
       ...(cardHost(sidebar, "agent:main:work")?.querySelectorAll(".session-hover-card__row") ?? []),
     ].map((row) => (row.textContent ?? "").replace(/\s+/gu, " ").trim());
 
-    expect(rows).toEqual(["Project /Users/ada/code/openclaw", "Branch feature/sidebar"]);
+    expect(rows).toEqual(["openclaw", "feature/sidebar"]);
   });
 
   it("gives child rows no card of their own", async () => {
@@ -135,6 +135,6 @@ describe("AppSidebar session information card", () => {
       (row.textContent ?? "").replace(/\s+/gu, " ").trim(),
     );
 
-    expect(rows).toEqual(["Project /work/openclaw", "Branch main"]);
+    expect(rows).toEqual(["openclaw", "main"]);
   });
 });

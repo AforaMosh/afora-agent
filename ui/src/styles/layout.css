@@ -3934,7 +3934,8 @@ openclaw-tooltip.session-hover-tooltip {
 }
 
 .session-hover-card {
-  width: 296px;
+  width: min(296px, calc(100vw - 44px));
+  max-width: 320px;
 }
 
 .session-hover-card__header {
@@ -3950,26 +3951,25 @@ openclaw-tooltip.session-hover-tooltip {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  color: var(--text-strong);
-  font-weight: 550;
+  color: var(--text);
+  font-size: var(--control-ui-text-md);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .session-hover-card__age {
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--control-ui-text-scale));
   font-variant-numeric: tabular-nums;
+  font-weight: 450;
   white-space: nowrap;
-}
-
-.session-hover-card__divider {
-  height: 1px;
-  margin: 8px 0;
-  background: color-mix(in srgb, var(--border-strong) 68%, transparent);
 }
 
 .session-hover-card__body {
   display: flex;
   flex-direction: column;
+  margin-block-start: 12px;
 }
 
 .session-hover-card__row {
@@ -3986,7 +3986,7 @@ openclaw-tooltip.session-hover-tooltip {
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 82%, transparent);
 }
 
 .session-hover-card__icon svg {
@@ -3994,29 +3994,25 @@ openclaw-tooltip.session-hover-tooltip {
   height: 16px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.6px;
+  stroke-width: 1.5px;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .session-hover-card__text {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
 }
 
-/* The label names the fact quietly; the value is what the reader opened the
-   card for, so it takes the emphasis and the room to wrap in full. Truncating
-   a path here would only repeat the truncation the row already made. */
-.session-hover-card__label {
-  flex: none;
-  color: var(--muted);
-}
-
 .session-hover-card__value {
-  color: var(--text);
-  overflow-wrap: anywhere;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+  font-size: var(--control-ui-text-sm);
+  font-weight: 450;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .session-hover-card__row--danger .session-hover-card__icon,

@@ -1,9 +1,9 @@
 import { html, nothing, type TemplateResult } from "lit";
 import { t } from "../i18n/index.ts";
 import { formatRelativeTimestamp } from "../lib/format.ts";
+import { repoName } from "../lib/session-display.ts";
 import type { SidebarRecentSession } from "./app-sidebar-session-types.ts";
 import { icons } from "./icons.ts";
-import type { SessionCreatedActor } from "./session-owner-chip.ts";
 import {
   formatSessionPullRequestSummary,
   isCloudWorkerPlacementState,
@@ -18,51 +18,32 @@ import { presenceViewerLabel, sessionPresenceViewers } from "./viewer-facepile.t
 export const SESSION_CARD_COLD_DELAY_MS = 400;
 
 /**
- * One line of session context. `label` is the quiet word for what the fact is;
- * `value` is the fact itself and carries the emphasis, because the reader came
- * for the branch name, not for the word "Branch".
+ * One line of session context. The icon supplies the category and the value is
+ * the fact itself, because the reader came for the branch name, not a prefix.
  */
 type SessionContextRow = {
   icon: TemplateResult;
-  label?: string;
   value: string | TemplateResult;
   danger?: boolean;
 };
 
-/**
- * The caller decides whether attribution belongs on screen at all — a solo
- * Gateway shows none — and the card names the person the row's avatar can only
- * hint at. The avatar itself stays on the row: repeating it here would spend a
- * line of the card on something already visible beside it.
- */
-function ownerRow(
-  owner: SessionCreatedActor | undefined,
-  attribution: "created" | "archived",
-): SessionContextRow | undefined {
-  const name = owner?.label ?? owner?.id;
-  if (!name) {
-    return undefined;
-  }
-  return {
-    icon: icons.circleUser,
-    label: t(
-      attribution === "archived" ? "sessionsView.archivedByLabel" : "sessionsView.createdByLabel",
-    ),
-    value: name,
-  };
+function basename(path: string | undefined): string | undefined {
+  const normalized = path?.trim().replace(/[\\/]+$/u, "");
+  return normalized ? normalized.split(/[\\/]/u).findLast(Boolean) : undefined;
 }
 
 /**
- * The row abbreviates the checkout to a folder name; the card is where the
- * whole path belongs. A session with no checkout still has a working directory,
- * and a session with neither simply has no project to claim.
+ * Keep the card as scannable as the row: a repository is a folder name here,
+ * never a machine-specific path.
  */
 function projectRow(session: SidebarRecentSession): SessionContextRow | undefined {
-  const path = session.worktree?.repoRoot ?? session.execCwd;
-  if (!path) {
+  const project = session.worktree?.repoRoot
+    ? repoName(session.worktree.repoRoot)
+    : basename(session.execCwd);
+  if (!project) {
     return undefined;
   }
-  return { icon: icons.folder, label: t("sessionsView.projectLabel"), value: path };
+  return { icon: icons.folder, value: project };
 }
 
 function cloudRow(session: SidebarRecentSession): SessionContextRow | undefined {
@@ -92,8 +73,6 @@ function cloudRow(session: SidebarRecentSession): SessionContextRow | undefined 
 
 function buildSessionContextRows(params: {
   session: SidebarRecentSession;
-  owner?: SessionCreatedActor;
-  attribution: "created" | "archived";
   presencePayload?: unknown;
   selfUserId?: string;
   selfInstanceId?: string;
@@ -106,33 +85,28 @@ function buildSessionContextRows(params: {
     session.key,
   );
   const rows: (SessionContextRow | undefined)[] = [
-    ownerRow(params.owner, params.attribution),
     projectRow(session),
     session.worktree?.branch
       ? {
           icon: icons.gitBranch,
-          label: t("sessionsView.branchLabel"),
           value: session.worktree.branch,
         }
       : undefined,
     viewers.length > 0
       ? {
           icon: icons.eye,
-          label: t("presence.rosterTitle"),
           value: viewers.map(presenceViewerLabel).join(", "),
         }
       : undefined,
     session.visibility === "draft"
       ? {
           icon: icons.eyeOff,
-          label: t("newSession.draft"),
           value: t("newSession.draftDescription"),
         }
       : undefined,
     session.incognito
       ? {
           icon: icons.lock,
-          label: t("newSession.incognito"),
           value: t("newSession.incognitoDescription"),
         }
       : undefined,
@@ -156,7 +130,6 @@ function renderSessionContextRow(row: SessionContextRow): TemplateResult {
   >
     <span class="session-hover-card__icon" aria-hidden="true">${row.icon}</span>
     <span class="session-hover-card__text">
-      ${row.label ? html`<span class="session-hover-card__label">${row.label}</span>` : nothing}
       ${typeof row.value === "string"
         ? html`<span class="session-hover-card__value">${row.value}</span>`
         : row.value}
@@ -182,8 +155,7 @@ function renderInformationCard(
     </div>
     ${rows.length === 0
       ? nothing
-      : html`<div class="session-hover-card__divider"></div>
-          <div class="session-hover-card__body">${rows.map(renderSessionContextRow)}</div>`}
+      : html`<div class="session-hover-card__body">${rows.map(renderSessionContextRow)}</div>`}
   </div>`;
 }
 
@@ -194,8 +166,6 @@ function renderInformationCard(
 export function renderSessionInformationCard(params: {
   session: SidebarRecentSession;
   title: string;
-  owner?: SessionCreatedActor;
-  attribution: "created" | "archived";
   presencePayload?: unknown;
   selfUserId?: string;
   selfInstanceId?: string;
@@ -219,12 +189,11 @@ export function renderCatalogSessionInformationCard(params: {
 }): TemplateResult {
   const rows: SessionContextRow[] = [];
   if (params.cwd) {
-    rows.push({ icon: icons.folder, label: t("sessionsView.projectLabel"), value: params.cwd });
+    rows.push({ icon: icons.folder, value: basename(params.cwd) ?? params.cwd });
   }
   if (params.branch) {
     rows.push({
       icon: icons.gitBranch,
-      label: t("sessionsView.branchLabel"),
       value: params.branch,
     });
   }

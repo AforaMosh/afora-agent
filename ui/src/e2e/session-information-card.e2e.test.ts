@@ -101,9 +101,13 @@ suite.define(() => {
       expect(await card(page).locator(".session-hover-card__title").textContent()).toBe(LONG_TITLE);
       const rows = await card(page).locator(".session-hover-card__row").allTextContents();
       expect(rows.map((row) => row.replace(/\s+/gu, " ").trim())).toEqual([
-        "Project /Users/ada/code/openclaw",
-        "Branch feature/sidebar-cards",
+        "openclaw",
+        "feature/sidebar-cards",
       ]);
+      expect(await card(page).locator(".session-hover-card__divider").count()).toBe(0);
+      expect(await card(page).getByText("Created by").count()).toBe(0);
+      expect(await card(page).getByText("/Users/ada/code/openclaw").count()).toBe(0);
+      expect(Math.round((await card(page).boundingBox())?.width ?? 0)).toBe(296);
       // Two lines of title, not one clipped line.
       const title = await card(page).locator(".session-hover-card__title").boundingBox();
       expect(title?.height ?? 0).toBeGreaterThan(20);
