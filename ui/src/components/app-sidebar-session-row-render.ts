@@ -407,17 +407,17 @@ export function renderRecentSession(params: {
             }}
         @contextmenu=${openMenuFromEvent ?? nothing}
         @keydown=${openMenuFromEvent ?? nothing}
-        @mouseenter=${session.pinned
+        @mouseenter=${!session.isChild
           ? (event: MouseEvent) => revealSessionRow(event.currentTarget as HTMLElement)
           : nothing}
-        @mouseleave=${session.pinned
+        @mouseleave=${!session.isChild
           ? (event: MouseEvent) =>
               restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)
           : nothing}
-        @focusin=${session.pinned
+        @focusin=${!session.isChild
           ? (event: FocusEvent) => revealSessionRow(event.currentTarget as HTMLElement)
           : nothing}
-        @focusout=${session.pinned
+        @focusout=${!session.isChild
           ? (event: FocusEvent) =>
               restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)
           : nothing}
