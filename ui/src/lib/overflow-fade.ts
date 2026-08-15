@@ -7,9 +7,13 @@ export function createOverflowFadeRef(options: { revealTrailingActions?: boolean
     if (!target) {
       return;
     }
-    const content = target.querySelector<HTMLElement>(".sidebar-recent-session__name-content");
+    const content = target.querySelector<HTMLElement>(
+      ".sidebar-recent-session__name-content, .sidebar-agent-card__name-content",
+    );
     const contentWidth = content?.scrollWidth ?? target.scrollWidth;
-    const restingWidth = target.clientWidth;
+    const restingWidth = content?.classList.contains("sidebar-agent-card__name-content")
+      ? content.clientWidth
+      : target.clientWidth;
     target.toggleAttribute("data-overflow-fade", contentWidth > restingWidth + 1);
     const management = options.revealTrailingActions
       ? target

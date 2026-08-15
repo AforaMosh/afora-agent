@@ -3462,6 +3462,12 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   white-space: nowrap;
 }
 
+.sidebar-agent-card__name-content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
 .sidebar-agent-card__chevron {
   display: inline-flex;
   flex: none;

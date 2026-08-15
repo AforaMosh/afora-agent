@@ -1619,7 +1619,7 @@ async function createChatPickerScenario(
   } satisfies SystemChangesListResult;
   return {
     assistantAgentId: "main",
-    assistantName: "Molty",
+    assistantName: "Molty Sidebar Systems Custodian",
     defaultAgentId: "main",
     serverBuildId: "mock",
     serverVersion: "2026.7.10",
