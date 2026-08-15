@@ -2177,14 +2177,10 @@ body.update-dialog-open .sidebar-update-card__status {
     calc(var(--sidebar-inset) + 10px) 0 / 1px 100% no-repeat;
 }
 
-/* The project list advances one level, while the creator rail returns to the
-   project icon axis below. The row title takes the next level independently. */
+/* The project list advances one level, placing the creator rail on the project
+   icon axis. The standard row gap then keeps its text close to that identity. */
 .sidebar-session-catalog-project__sessions {
   margin-inline-start: var(--sidebar-depth-step);
-}
-
-.sidebar-recent-session--catalog-project-child .sidebar-session-indicator {
-  margin-inline-end: var(--sidebar-depth-step);
 }
 
 /* Project marks are product artwork, not sidebar glyphs, so they fill the lead
