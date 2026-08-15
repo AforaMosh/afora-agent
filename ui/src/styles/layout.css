@@ -2440,6 +2440,10 @@ body.update-dialog-open .sidebar-update-card__status {
   opacity: 1;
 }
 
+.sidebar-session-indicator:has(> openclaw-session-owner-chip) {
+  align-self: flex-start;
+}
+
 .sidebar-child-session-toggle {
   display: inline-flex;
   align-items: center;
