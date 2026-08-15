@@ -1866,14 +1866,17 @@ body.update-dialog-open .sidebar-update-card__status {
   place-items: center;
 }
 
-/* Disclosure leads the label. A collapsed section has to advertise the rows it
-   hides; an expanded one already shows them, so its chevron returns only on
-   hover, keyboard focus, or a coarse pointer that has no hover to offer. */
+/* Disclosure leads the label and stays visible in both directions so expanded
+   sections advertise that they can be collapsed without requiring hover. */
 .sidebar-session-group-toggle__icon {
   display: inline-flex;
   flex: 0 0 auto;
   opacity: 0;
   transition: opacity var(--duration-fast) ease;
+}
+
+.sidebar-session-group-toggle__lead--disclosure .sidebar-session-group-toggle__icon {
+  opacity: 0.75;
 }
 
 .sidebar-session-group-toggle__icon--collapsed,
