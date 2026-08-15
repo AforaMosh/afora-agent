@@ -75,6 +75,15 @@ const OBSERVER_DEMO_SESSION_KEY = "agent:main:session-observer-demo";
 const OBSERVER_DEMO_RUN_ID = "mock-session-observer-run";
 const ACTIVE_CREATOR_SESSION_KEY = "agent:main:work-openclaw";
 const PINNED_CREATOR_SESSION_KEY = "agent:main:tax-research";
+// The pinned zone is where creator attribution and participant presence share
+// the narrowest row, so the pinned fixtures span that matrix end to end:
+// creator alone, participants alone, both together, and an away creator whose
+// session other people are watching.
+const PINNED_CREATOR_ONLY_SESSION_KEY = "agent:main:quarterly-budget";
+const PINNED_VIEWERS_SESSION_KEY = "agent:main:oncall-handoff";
+const PINNED_CREATOR_VIEWERS_SESSION_KEY = "agent:main:launch-review";
+const PINNED_AWAY_CREATOR_SESSION_KEY = "agent:main:vendor-audit";
+const PINNED_INCOGNITO_SESSION_KEY = "agent:main:private-retro";
 const INCOGNITO_CREATOR_SESSION_KEY = "agent:main:private-planning";
 const ACTIVE_CATALOG_SESSION_KEY = "catalog:codex:gateway:codex-thread-1";
 const CUSTODIAN_CHAT_REPLY_DELAY_MS = 600;
@@ -1247,6 +1256,22 @@ async function createChatPickerScenario(
       runtimeMs: 200_000,
     },
   );
+  // Two children so the pinned child toggle shows a count above one, and one of
+  // them fails so the toggle's failed styling is reachable from the pinned zone.
+  const budgetChildRows = [
+    sessionRow("agent:main:subagent:budget-forecast", "Forecast rebuild", baseTime - 34_000, {
+      spawnedBy: PINNED_CREATOR_ONLY_SESSION_KEY,
+      hasActiveRun: true,
+      status: "running",
+      startedAt: baseTime - 150_000,
+      runtimeMs: 150_000,
+    }),
+    sessionRow("agent:main:subagent:budget-vendors", "Vendor reconciliation", baseTime - 36_000, {
+      spawnedBy: PINNED_CREATOR_ONLY_SESSION_KEY,
+      status: "failed",
+      lastRunError: "Spreadsheet export rejected two vendor rows",
+    }),
+  ];
   const swarmGroupId = "swarm:agent:main:main:mock-turn";
   const swarmChildRows =
     fixture === "swarm"
@@ -1335,6 +1360,47 @@ async function createChatPickerScenario(
       hasActiveRun: true,
       status: "running",
       childSessions: ["agent:main:subagent:tax-receipts"],
+      pinned: true,
+    }),
+    // Pinned matrix, one axis per row: creator without participants, participants
+    // without a creator, creator watching alongside participants, an away creator
+    // whose participants stayed, and an incognito row that carries both.
+    sessionRow(PINNED_CREATOR_ONLY_SESSION_KEY, "Quarterly budget", baseTime - 62_000, {
+      childSessions: budgetChildRows.map((row) => row.key),
+      createdActor: MOCK_CREATOR_MIRA,
+      lastReadAt: baseTime - 200_000,
+      pinned: true,
+      unread: true,
+    }),
+    sessionRow(PINNED_VIEWERS_SESSION_KEY, "On-call handoff", baseTime - 64_000, {
+      hasActiveRun: true,
+      pinned: true,
+      startedAt: baseTime - 320_000,
+      status: "running",
+    }),
+    sessionRow(PINNED_CREATOR_VIEWERS_SESSION_KEY, "Launch review", baseTime - 66_000, {
+      createdActor: MOCK_CREATOR_PETER,
+      hasComposerDraft: true,
+      lastReadAt: baseTime - 240_000,
+      pinned: true,
+      unread: true,
+    }),
+    sessionRow(PINNED_AWAY_CREATOR_SESSION_KEY, "Vendor contract audit", baseTime - 68_000, {
+      agentStatus: {
+        note: "Waiting on countersignature",
+        attention: "hand",
+        expiresAt: ATTENTION_FIXTURE_EXPIRES_AT,
+      },
+      createdActor: MOCK_CREATOR_MIRA,
+      hasActiveRun: true,
+      pinned: true,
+      startedAt: baseTime - 410_000,
+      status: "running",
+    }),
+    sessionRow(PINNED_INCOGNITO_SESSION_KEY, "Private retro", baseTime - 70_000, {
+      createdActor: MOCK_CREATOR_PETER,
+      hasComposerDraft: true,
+      incognito: true,
       pinned: true,
     }),
     sessionRow("agent:main:production-export", "Production export", baseTime - 75_000, {
@@ -1596,8 +1662,10 @@ async function createChatPickerScenario(
     // ui/src/lib/terminal-availability.ts).
     terminalEnabled: true,
     historyMessages: buildScrollableChatHistory(baseTime),
-    // Peter is the active creator. Colin and Patricia deliberately watch the
-    // same rows to prove participant presence never grows the creator column.
+    // Peter is the active creator. Colin, Patricia, Ada, and Nils deliberately
+    // watch the same rows to prove participant presence never grows the creator
+    // column. Mira creates pinned rows but never appears here, so her chip is
+    // the away-creator case while her participants stay live.
     presenceUsers: [
       {
         self: true,
@@ -1611,6 +1679,8 @@ async function createChatPickerScenario(
         watchedSessions: [
           ACTIVE_CREATOR_SESSION_KEY,
           PINNED_CREATOR_SESSION_KEY,
+          PINNED_CREATOR_VIEWERS_SESSION_KEY,
+          PINNED_INCOGNITO_SESSION_KEY,
           INCOGNITO_CREATOR_SESSION_KEY,
           ACTIVE_CATALOG_SESSION_KEY,
           "agent:main:sidebar-zones",
@@ -1623,6 +1693,9 @@ async function createChatPickerScenario(
         email: "colin@example.com",
         watchedSessions: [
           ACTIVE_CREATOR_SESSION_KEY,
+          PINNED_VIEWERS_SESSION_KEY,
+          PINNED_CREATOR_VIEWERS_SESSION_KEY,
+          PINNED_AWAY_CREATOR_SESSION_KEY,
           INCOGNITO_CREATOR_SESSION_KEY,
           ACTIVE_CATALOG_SESSION_KEY,
         ],
@@ -1630,7 +1703,28 @@ async function createChatPickerScenario(
       {
         id: "presence-patricia",
         email: "patricia.erichsen@example.com",
-        watchedSessions: [ACTIVE_CREATOR_SESSION_KEY, ACTIVE_CATALOG_SESSION_KEY],
+        watchedSessions: [
+          ACTIVE_CREATOR_SESSION_KEY,
+          PINNED_VIEWERS_SESSION_KEY,
+          PINNED_CREATOR_VIEWERS_SESSION_KEY,
+          ACTIVE_CATALOG_SESSION_KEY,
+        ],
+      },
+      {
+        id: "presence-ada",
+        name: "Ada",
+        email: "ada@example.com",
+        watchedSessions: [
+          PINNED_VIEWERS_SESSION_KEY,
+          PINNED_AWAY_CREATOR_SESSION_KEY,
+          PINNED_INCOGNITO_SESSION_KEY,
+        ],
+      },
+      {
+        id: "presence-nils",
+        name: "Nils",
+        email: "nils@example.com",
+        watchedSessions: [PINNED_CREATOR_VIEWERS_SESSION_KEY, PINNED_AWAY_CREATOR_SESSION_KEY],
       },
     ],
     methodResponses: {
@@ -2378,6 +2472,10 @@ async function createChatPickerScenario(
           {
             match: { spawnedBy: "agent:main:tax-research" },
             response: pagedSessionsListResponse([taxChildRow], 0),
+          },
+          {
+            match: { spawnedBy: PINNED_CREATOR_ONLY_SESSION_KEY },
+            response: pagedSessionsListResponse(budgetChildRows, 0),
           },
           ...buildSearchSessionListCases(telegramSessions, searchPrefixes("telegram")),
           ...buildSearchSessionListCases(claudeSessions, [
