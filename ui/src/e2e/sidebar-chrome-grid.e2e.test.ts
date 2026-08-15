@@ -263,7 +263,7 @@ suite.define(() => {
           headControl,
           pinnedRow.locator("[data-session-menu]"),
           draftRow.locator("[data-session-menu]"),
-          sidebar.locator(".sidebar-identity-card__chevron"),
+          sidebar.locator(".sidebar-identity-card__more"),
         ];
         const trailingAxis = await center(headControl);
         expect(await Promise.all(trailingAnchors.map(center))).toEqual(

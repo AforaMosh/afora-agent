@@ -1033,6 +1033,7 @@ openclaw-settings-save-indicator {
   height: 48px;
   min-height: 48px;
   padding: 0 8px;
+  padding-inline-start: 0;
   flex-shrink: 0;
 }
 
@@ -2727,6 +2728,10 @@ body.update-dialog-open .sidebar-update-card__status {
    so any padding here would offset them from the resting state they replace. */
 .sidebar-recent-session__aside {
   margin-right: 2px;
+}
+
+.session-row-host--pinned .sidebar-recent-session__aside {
+  margin-right: 0;
 }
 
 /* While the actions are surfaced, the link content fades out beneath them over

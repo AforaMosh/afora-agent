@@ -118,6 +118,31 @@ suite.define(() => {
                   },
                 ]),
               },
+              {
+                id: "claude",
+                label: "Claude Code",
+                capabilities: { continueSession: true, archive: true },
+                hosts: [
+                  {
+                    hostId: "gateway:local",
+                    label: "Gateway",
+                    kind: "gateway",
+                    connected: true,
+                    sessions: [
+                      {
+                        threadId: "claude-session",
+                        name: "Claude catalog session",
+                        cwd: "/workspace/openclaw",
+                        status: "idle",
+                        archived: false,
+                        canContinue: true,
+                        canArchive: true,
+                        updatedAt: baseTime - 5_000,
+                      },
+                    ],
+                  },
+                ],
+              },
             ],
           },
           "sessions.catalog.list": {
@@ -200,7 +225,7 @@ suite.define(() => {
         });
         expect(
           await sectionLabels.evaluateAll((labels) => labels.map((label) => label.textContent)),
-        ).toEqual(expect.arrayContaining(["Sessions", "Research", "Codex"]));
+        ).toEqual(expect.arrayContaining(["Sessions", "Research", "Codex", "Claude Code"]));
         const sectionLabelLefts = await sectionLabels.evaluateAll((labels) =>
           labels.map((label) => label.getBoundingClientRect().x),
         );
@@ -229,7 +254,13 @@ suite.define(() => {
           await typeMetrics(
             customizeSurface.locator(".sidebar-customizer__label--section").first(),
           ),
-        ).toEqual(sectionContract);
+        ).toMatchObject({
+          family: sectionContract.family,
+          lineHeight: "16px",
+          size: "12px",
+          tracking: "-0.14px",
+          weight: "650",
+        });
 
         await captureSidebarUiUnionProof(
           page,
@@ -285,7 +316,7 @@ suite.define(() => {
               textOverflow: style.textOverflow,
             };
           });
-        expect(zoomMetrics.textOverflow).toBe("ellipsis");
+        expect(zoomMetrics.textOverflow).toBe("clip");
         expect(zoomMetrics.height).toBeGreaterThanOrEqual(zoomMetrics.lineHeight - 0.5);
         expect(zoomMetrics.overflowY).toBeLessThanOrEqual(1);
         await captureSidebarUiUnionProof(page, [draftRow], `${variant}-zoom-200.png`);
