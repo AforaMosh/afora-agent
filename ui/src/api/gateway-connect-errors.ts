@@ -1,6 +1,5 @@
 import {
   ConnectErrorDetailCodes,
-  GatewayProtocolRequestError,
   MIN_CLIENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
   readConnectErrorDetailCode,
@@ -22,13 +21,4 @@ export function enrichProtocolMismatchDetails(
     clientMaxProtocol: PROTOCOL_VERSION,
     ...(details && typeof details === "object" && !Array.isArray(details) ? details : {}),
   };
-}
-
-export function isLegacyGatewayBuildIdSchemaError(
-  error: GatewayProtocolRequestError,
-  clientBuildId: string | undefined,
-): boolean {
-  return Boolean(
-    clientBuildId && /invalid connect params.*unexpected property.*buildid/iu.test(error.message),
-  );
 }
