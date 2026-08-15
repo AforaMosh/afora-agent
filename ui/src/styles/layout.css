@@ -2444,6 +2444,10 @@ body.update-dialog-open .sidebar-update-card__status {
   align-self: flex-start;
 }
 
+.sidebar-session-indicator:has(> .nav-item__icon) {
+  align-self: flex-start;
+}
+
 .sidebar-session-indicator > openclaw-session-owner-chip,
 .session-row-host--pinned > .sidebar-recent-session__link > openclaw-viewer-facepile,
 .session-row-host--pinned > .sidebar-recent-session__link > .session-row-badges,
