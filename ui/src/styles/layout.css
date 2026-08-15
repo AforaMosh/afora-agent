@@ -1826,6 +1826,17 @@ body.update-dialog-open .sidebar-update-card__status {
   text-align: left;
 }
 
+/* The lead slot and the label own the two rails the whole sidebar reads on, so
+   only what trails the label — chevron, count, status — may take spacing. A
+   flex gap would push every headed label one gap past --sidebar-text-start and
+   the ladder would step by a different amount at each level. */
+.sidebar-session-group-toggle
+  > :not(.sidebar-session-group-toggle__lead):not(.sidebar-recent-sessions__label-text),
+.sidebar-session-catalog-project__head
+  > :not(.sidebar-session-group-toggle__lead):not(.sidebar-session-catalog-project__label) {
+  margin-left: 5px;
+}
+
 .sidebar-session-group-toggle__lead {
   display: inline-grid;
   width: var(--sidebar-lead);
@@ -2200,6 +2211,11 @@ body.update-dialog-open .sidebar-update-card__status {
   text-align: center;
 }
 
+/* A project heading is a rung of the Coding ladder, not a row of its own kind:
+   its mark takes the lead slot every session row reserves, and its name lands
+   on the shared text axis. Losing the left inset hangs the mark off the rail
+   and leaves the project name floating between the section label and its own
+   sessions. */
 .sidebar-session-catalog-project__head {
   display: flex;
   align-items: center;

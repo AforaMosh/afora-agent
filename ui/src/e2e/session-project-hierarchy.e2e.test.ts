@@ -82,6 +82,40 @@ suite.define(() => {
     }
   });
 
+  it("steps the Coding ladder on the shared lead and text rails", async () => {
+    const { context, page } = await openSidebar();
+
+    try {
+      const project = page.locator(`[data-session-work-project="${OPENCLAW_ROOT}"]`);
+      const projectMark = project.locator(".sidebar-session-group-toggle__lead").first();
+      const projectLabel = project.locator(".sidebar-session-catalog-project__label");
+      const sessionName = project
+        .locator('[data-session-key="agent:main:oc-branch"] .sidebar-recent-session__name')
+        .first();
+      await projectLabel.waitFor();
+      await sessionName.waitFor();
+
+      const startOf = async (locator: typeof projectMark) =>
+        Math.round((await locator.boundingBox())?.x ?? Number.NaN);
+      const [markStart, labelStart, nameStart] = await Promise.all([
+        startOf(projectMark),
+        startOf(projectLabel),
+        startOf(sessionName),
+      ]);
+
+      // A project name reads as a peer of the sessions it heads, and its mark
+      // sits in the same lead slot every session row reserves.
+      expect(labelStart).toBe(nameStart);
+      expect(labelStart - markStart).toBe(
+        await project.evaluate((element) =>
+          Number.parseInt(getComputedStyle(element).getPropertyValue("--sidebar-lead"), 10),
+        ),
+      );
+    } finally {
+      await context.close();
+    }
+  });
+
   it("marks Git facts and never fades away the worktree marker", async () => {
     const { context, page } = await openSidebar();
 
