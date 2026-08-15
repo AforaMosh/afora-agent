@@ -1,3 +1,4 @@
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import type { SessionTranscriptRuntimeTarget } from "../../config/sessions/session-accessor.js";
 /**
  * CLI turn compaction lifecycle.
@@ -189,6 +190,42 @@ function getSessionBranchMessages(sessionManager: SessionManagerLike): AgentMess
 
 function resolveSessionTokenSnapshot(sessionEntry: SessionEntry | undefined): number | undefined {
   return resolvePositiveInteger(resolveFreshSessionTotalTokens(sessionEntry));
+}
+
+function resolveFreshProviderContextBoundary(params: {
+  messages: AgentMessage[];
+  sessionEntry: SessionEntry | undefined;
+}): { accountedPromptTokens: number; trailingMessages: AgentMessage[] } | undefined {
+  const freshPromptTokens = resolveSessionTokenSnapshot(params.sessionEntry);
+  if (freshPromptTokens === undefined) {
+    return undefined;
+  }
+  for (let index = params.messages.length - 1; index >= 0; index -= 1) {
+    const message = params.messages[index] as unknown;
+    if (!isRecord(message) || message.role !== "assistant" || !isRecord(message.usage)) {
+      continue;
+    }
+    const contextUsage = message.usage.contextUsage;
+    if (!isRecord(contextUsage) || contextUsage.state !== "available") {
+      continue;
+    }
+    const promptTokens = resolvePositiveInteger(
+      typeof contextUsage.promptTokens === "number" ? contextUsage.promptTokens : undefined,
+    );
+    const totalTokens = resolvePositiveInteger(
+      typeof contextUsage.totalTokens === "number" ? contextUsage.totalTokens : undefined,
+    );
+    if (promptTokens !== freshPromptTokens || totalTokens === undefined) {
+      continue;
+    }
+    // Matching the persisted prompt snapshot pins the exact provider boundary;
+    // only later local items are absent from that provider's total-token count.
+    return {
+      accountedPromptTokens: Math.max(promptTokens, totalTokens),
+      trailingMessages: params.messages.slice(index + 1),
+    };
+  }
+  return undefined;
 }
 
 function isNativeHarnessCompactionSession(
@@ -608,9 +645,15 @@ export async function runCliTurnCompactionLifecycle(params: {
     contextTokenBudget,
   });
 
+  const branchMessages = getSessionBranchMessages(sessionManager);
+  const freshProviderBoundary = resolveFreshProviderContextBoundary({
+    messages: branchMessages,
+    sessionEntry: params.sessionEntry,
+  });
   const preemptiveCompaction = cliCompactionDeps.shouldPreemptivelyCompactBeforePrompt({
-    messages: getSessionBranchMessages(sessionManager),
+    messages: freshProviderBoundary?.trailingMessages ?? branchMessages,
     prompt: "",
+    accountedPromptTokens: freshProviderBoundary?.accountedPromptTokens,
     contextTokenBudget,
     reserveTokens: settingsManager.getCompactionReserveTokens(),
     toolResultMaxChars: cliCompactionDeps.resolveLiveToolResultMaxChars({
@@ -618,10 +661,9 @@ export async function runCliTurnCompactionLifecycle(params: {
     }),
   });
   const tokenSnapshot = resolveSessionTokenSnapshot(params.sessionEntry);
-  const currentTokenCount = Math.max(
-    preemptiveCompaction.estimatedPromptTokens,
-    tokenSnapshot ?? 0,
-  );
+  const currentTokenCount = freshProviderBoundary
+    ? preemptiveCompaction.estimatedPromptTokens
+    : Math.max(preemptiveCompaction.estimatedPromptTokens, tokenSnapshot ?? 0);
   if (
     !preemptiveCompaction.shouldCompact &&
     currentTokenCount <= preemptiveCompaction.promptBudgetBeforeReserve

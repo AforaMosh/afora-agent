@@ -131,6 +131,20 @@ describe("preemptive-compaction", () => {
     expect(result.estimatedPromptTokens).toBeLessThan(result.promptBudgetBeforeReserve);
   });
 
+  it("adds exact provider-accounted context to only the locally estimated tail", () => {
+    const result = shouldPreemptivelyCompactBeforePrompt({
+      messages: [makeAssistantHistory("tail")],
+      prompt: "",
+      accountedPromptTokens: 179_933,
+      contextTokenBudget: 272_000,
+      reserveTokens: 32_000,
+    });
+
+    expect(result.estimatedPromptTokens).toBe(179_971);
+    expect(result.promptBudgetBeforeReserve).toBe(240_000);
+    expect(result.route).toBe("fits");
+  });
+
   it("formats all-route pre-prompt diagnostics for a fits decision", () => {
     const result = shouldPreemptivelyCompactBeforePrompt({
       messages: [makeAssistantHistory("short history")],

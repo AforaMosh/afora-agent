@@ -10,6 +10,10 @@ import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { ContextEngine } from "../../context-engine/types.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry-empty.js";
 import {
+  estimateLlmBoundaryTokenPressure,
+  shouldPreemptivelyCompactBeforePrompt,
+} from "../embedded-agent-runner/run/preemptive-compaction.js";
+import {
   resetCliCompactionTestDeps,
   runCliTurnCompactionLifecycle,
   setCliCompactionTestDeps,
@@ -252,6 +256,108 @@ describe("runCliTurnCompactionLifecycle", () => {
 
     expect(scenario.compactCalls).toEqual([]);
     expect(updatedEntry).toBe(scenario.sessionEntry);
+  });
+
+  it("trusts fresh provider usage over a larger transcript estimate", async () => {
+    const measuredMessages = [
+      {
+        role: "toolResult",
+        toolCallId: "call-large-read",
+        toolName: "read",
+        content: [{ type: "text", text: "x".repeat(483_458) }],
+        isError: false,
+        timestamp: 1,
+      },
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "done" }],
+        usage: {
+          contextUsage: {
+            state: "available",
+            promptTokens: 179_933,
+            totalTokens: 180_000,
+          },
+        },
+        timestamp: 2,
+      },
+    ];
+    expect(
+      estimateLlmBoundaryTokenPressure({ messages: measuredMessages as never, prompt: "" }),
+    ).toBe(290_136);
+    const scenario = await prepareCompactionScenario({
+      suffix: "fresh-provider-usage",
+      tmpDir,
+      sessionEntry: {
+        contextTokens: 272_000,
+        totalTokens: 179_933,
+        totalTokensFresh: true,
+        totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION,
+      },
+      deps: {
+        openSessionManager: () =>
+          ({
+            getBranch: () => measuredMessages.map((message) => ({ type: "message", message })),
+          }) as never,
+        createPreparedEmbeddedAgentSettingsManager: async () => ({
+          getCompactionReserveTokens: () => 32_000,
+          getCompactionKeepRecentTokens: () => 0,
+          applyOverrides: () => {},
+        }),
+        shouldPreemptivelyCompactBeforePrompt,
+      },
+    });
+
+    const updatedEntry = await scenario.run();
+
+    expect(scenario.compactCalls).toEqual([]);
+    expect(updatedEntry).toBe(scenario.sessionEntry);
+  });
+
+  it("adds transcript items after fresh provider usage to the compaction decision", async () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "measured answer" }],
+        usage: {
+          contextUsage: {
+            state: "available",
+            promptTokens: 239_800,
+            totalTokens: 239_900,
+          },
+        },
+        timestamp: 1,
+      },
+      {
+        role: "user",
+        content: "unmeasured follow-up ".repeat(100),
+        timestamp: 2,
+      },
+    ];
+    const scenario = await prepareCompactionScenario({
+      suffix: "fresh-provider-usage-with-tail",
+      tmpDir,
+      sessionEntry: {
+        contextTokens: 272_000,
+        totalTokens: 239_800,
+        totalTokensFresh: true,
+        totalTokensVersion: SESSION_TOTAL_TOKENS_VERSION,
+      },
+      deps: {
+        openSessionManager: () =>
+          ({ getBranch: () => messages.map((message) => ({ type: "message", message })) }) as never,
+        createPreparedEmbeddedAgentSettingsManager: async () => ({
+          getCompactionReserveTokens: () => 32_000,
+          getCompactionKeepRecentTokens: () => 0,
+          applyOverrides: () => {},
+        }),
+        shouldPreemptivelyCompactBeforePrompt,
+      },
+    });
+
+    await scenario.run();
+
+    expect(scenario.compactCalls).toHaveLength(1);
+    expect(scenario.compactCalls[0]?.currentTokenCount).toBeGreaterThan(240_000);
   });
 
   it("accepts no compactable entries only from a successful compaction result", async () => {

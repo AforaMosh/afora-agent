@@ -276,6 +276,8 @@ export function shouldPreemptivelyCompactBeforePrompt(params: {
   unwindowedMessages?: AgentMessage[];
   systemPrompt?: string;
   prompt: string;
+  /** Exact provider-counted context preceding `messages`; local estimates cover only the tail. */
+  accountedPromptTokens?: number;
   contextTokenBudget: number;
   reserveTokens: number;
   toolResultMaxChars?: number;
@@ -285,20 +287,30 @@ export function shouldPreemptivelyCompactBeforePrompt(params: {
   const llmBoundaryTokenPressure = normalizeLlmBoundaryTokenPressure(
     params.llmBoundaryTokenPressure,
   );
+  const accountedPromptTokensRaw = params.accountedPromptTokens;
+  const accountedPromptTokens = Math.max(
+    0,
+    typeof accountedPromptTokensRaw === "number" && Number.isFinite(accountedPromptTokensRaw)
+      ? Math.floor(accountedPromptTokensRaw)
+      : 0,
+  );
   let estimatedPromptTokens =
-    llmBoundaryTokenPressure?.estimatedPromptTokens ??
-    estimateLlmBoundaryTokenPressure({
-      messages: params.messages,
-      systemPrompt: params.systemPrompt,
-      prompt: params.prompt,
-    });
+    accountedPromptTokens +
+    (llmBoundaryTokenPressure?.estimatedPromptTokens ??
+      estimateLlmBoundaryTokenPressure({
+        messages: params.messages,
+        systemPrompt: params.systemPrompt,
+        prompt: params.prompt,
+      }));
   let pressureSource = llmBoundaryTokenPressure?.source ?? "transcript_estimate";
   if (params.unwindowedMessages && params.unwindowedMessages !== params.messages) {
-    const unwindowedEstimatedPromptTokens = estimateLlmBoundaryTokenPressure({
-      messages: params.unwindowedMessages,
-      systemPrompt: params.systemPrompt,
-      prompt: params.prompt,
-    });
+    const unwindowedEstimatedPromptTokens =
+      accountedPromptTokens +
+      estimateLlmBoundaryTokenPressure({
+        messages: params.unwindowedMessages,
+        systemPrompt: params.systemPrompt,
+        prompt: params.prompt,
+      });
     if (unwindowedEstimatedPromptTokens > estimatedPromptTokens) {
       estimatedPromptTokens = unwindowedEstimatedPromptTokens;
       messagesForPressure = params.unwindowedMessages;
