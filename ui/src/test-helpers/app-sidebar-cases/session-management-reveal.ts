@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { GatewaySessionRow, SessionsListResult } from "../../api/types.ts";
-import { restSessionRow } from "../../lib/session-row-reveal.ts";
+import { createOverflowFadeRef } from "../../lib/overflow-fade.ts";
 import {
   createGateway,
   createSessions,
@@ -9,8 +9,6 @@ import {
   mountSidebar,
 } from "../app-sidebar.ts";
 import "../../components/app-sidebar.ts";
-
-const ACTION_COVER_PROPERTY = "--session-row-action-cover";
 
 async function mountWithRows(rows: GatewaySessionRow[]) {
   const harness = createSessionsHarness("main", [rows[0]?.key ?? "agent:main:only"]);
@@ -58,8 +56,8 @@ describe("AppSidebar session management reveal", () => {
       const order = [...rowFor(sidebar, key).children].map(
         (child) => child.className.split(" ")[0],
       );
-      expect(order.indexOf("sidebar-recent-session__aside")).toBe(order.length - 1);
-      expect(order.indexOf("sidebar-recent-session__aside")).toBeGreaterThan(
+      expect(order.indexOf("session-row-endcap")).toBe(order.length - 1);
+      expect(order.indexOf("session-row-endcap")).toBeGreaterThan(
         order.indexOf("sidebar-recent-session__link"),
       );
     }
@@ -82,65 +80,44 @@ describe("AppSidebar session management reveal", () => {
     );
   });
 
-  it("keeps the measured cover while the row menu holds the reveal open", () => {
+  it("measures only the clipped distance plus action-only management", () => {
     const host = document.createElement("div");
-    host.className = "session-row-host session-row-host--menu-open";
-    host.style.setProperty(ACTION_COVER_PROPERTY, "48px");
+    host.className = "session-row-host";
+    host.dataset.sessionActionOnly = "true";
+    const name = document.createElement("span");
+    name.className = "sidebar-recent-session__name";
+    const content = document.createElement("span");
+    content.className = "sidebar-recent-session__name-content";
+    const management = document.createElement("span");
+    management.className = "session-row-endcap__management";
+    Object.defineProperty(name, "clientWidth", { configurable: true, value: 120 });
+    Object.defineProperty(content, "scrollWidth", { configurable: true, value: 180 });
+    Object.defineProperty(management, "offsetWidth", { configurable: true, value: 40 });
+    name.append(content);
+    host.append(name, management);
     document.body.append(host);
     try {
-      // The menu is promoted to the top layer, so the pointer arriving on it
-      // reads as leaving the row: no containment, hover, or focus guard sees it.
-      // The fade rides on this value, and losing it would leave an opaque title
-      // under the buttons the open menu is still holding visible.
-      restSessionRow(host, null);
-      expect(host.style.getPropertyValue(ACTION_COVER_PROPERTY)).toBe("48px");
-
-      host.classList.remove("session-row-host--menu-open");
-      restSessionRow(host, null);
-      expect(host.style.getPropertyValue(ACTION_COVER_PROPERTY)).toBe("");
+      createOverflowFadeRef({ revealTrailingActions: true })(name);
+      expect(name.hasAttribute("data-overflow-fade")).toBe(true);
+      expect(name.hasAttribute("data-overflow-reveal")).toBe(true);
+      expect(name.style.getPropertyValue("--overflow-reveal-translate")).toBe("-100px");
+      expect(name.style.getPropertyValue("--overflow-reveal-duration")).toBe("1000ms");
     } finally {
       host.remove();
     }
   });
 
-  it("keeps every other row's fade while one row's menu is open", async () => {
-    const sidebar = await mountWithRows([
-      { key: "agent:main:one", kind: "direct", label: "One", updatedAt: 2 },
-      { key: "agent:main:two", kind: "direct", label: "Two", updatedAt: 1 },
-    ]);
-    const sibling = () => rowFor(sidebar, "agent:main:two");
-    sibling().dispatchEvent(new MouseEvent("mouseenter"));
-    expect(sibling().style.getPropertyValue(ACTION_COVER_PROPERTY)).not.toBe("");
-    sibling().dispatchEvent(new MouseEvent("mouseleave"));
-
-    rowFor(sidebar, "agent:main:one")
-      .querySelector<HTMLButtonElement>("[data-session-menu]")
-      ?.click();
-    await sidebar.updateComplete;
-
-    // An open menu suppresses the traversal on other rows, never their fade.
-    // CSS reveals Pin and More under the pointer whatever the menu is doing, so
-    // a row that stopped publishing this measurement would hand those controls
-    // unfaded title text to sit on.
-    sibling().dispatchEvent(new MouseEvent("mouseenter"));
-    expect(sibling().style.getPropertyValue(ACTION_COVER_PROPERTY)).not.toBe("");
-  });
-
-  it("measures how far the actions float over the row on entry", async () => {
+  it("marks top-level rows as manageable without pointer-driven measurement", async () => {
     const sidebar = await mountWithRows([
       { key: "agent:main:one", kind: "direct", label: "One", updatedAt: 2 },
     ]);
     const row = rowFor(sidebar, "agent:main:one");
-    expect(row.style.getPropertyValue(ACTION_COVER_PROPERTY)).toBe("");
-
-    row.dispatchEvent(new MouseEvent("mouseenter"));
-    expect(row.style.getPropertyValue(ACTION_COVER_PROPERTY)).not.toBe("");
-
-    row.dispatchEvent(new MouseEvent("mouseleave"));
-    expect(row.style.getPropertyValue(ACTION_COVER_PROPERTY)).toBe("");
+    expect(row.dataset.sessionManageable).toBe("true");
+    expect(row.querySelector(".sidebar-recent-session__name-content")).not.toBeNull();
+    expect(row.querySelector(".session-row-endcap__management")).not.toBeNull();
   });
 
-  it("gives catalog rows the same reveal measurement", async () => {
+  it("gives catalog rows the same measured-reveal structure", async () => {
     const gateway = createGateway({} as GatewayBrowserClient);
     const { sidebar } = await mountSidebar(gateway, createSessions("main", ["agent:main:main"]));
     sidebar.sessionData.sessionCatalogs = [
@@ -174,8 +151,7 @@ describe("AppSidebar session management reveal", () => {
 
     const row = sidebar.querySelector<HTMLElement>('[data-session-key*="idle-thread"]');
     expect(row?.querySelector(".session-row-actions")).not.toBeNull();
-    row?.dispatchEvent(new MouseEvent("mouseenter"));
-
-    expect(row?.style.getPropertyValue(ACTION_COVER_PROPERTY)).not.toBe("");
+    expect(row?.dataset.sessionManageable).toBe("true");
+    expect(row?.querySelector(".sidebar-recent-session__name-content")).not.toBeNull();
   });
 });

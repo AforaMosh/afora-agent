@@ -110,14 +110,14 @@ describe("AppSidebar session indicators", () => {
         ),
       ).not.toBeNull();
     });
-    // Pinned rows keep their established Pages-like endcap while ordinary
-    // sessions use the shared rest/management rail.
+    // Child rows keep their established compact endcap whether pinned or not;
+    // the rest/management swap belongs only to top-level session rows.
     const pinnedRow = sidebar.querySelector(`[data-session-key="${pinnedKey}"]`);
     const runningRow = sidebar.querySelector(`[data-session-key="${runningKey}"]`);
     expectNoLead(pinnedRow);
     expectNoLead(runningRow);
     expect(pinnedRow?.querySelector(".session-row-aside")).not.toBeNull();
-    expect(runningRow?.querySelector(".session-row-endcap")).not.toBeNull();
+    expect(runningRow?.querySelector(".session-row-aside")).not.toBeNull();
   });
 
   it("leaves a failure the reader has already seen dismissed", async () => {
