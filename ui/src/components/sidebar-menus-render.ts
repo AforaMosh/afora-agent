@@ -16,7 +16,6 @@ import {
 } from "../lib/sessions/session-key.ts";
 import { renderSidebarAgentMenu, renderSidebarIdentityMenu } from "./app-sidebar-agent-menu.ts";
 import { renderSidebarMoreMenu } from "./app-sidebar-nav-menus.ts";
-import { formatSidebarTimestamp } from "./app-sidebar-session-catalogs.ts";
 import {
   renderSidebarCatalogViewMenu,
   renderSidebarSessionGroupMenu,
@@ -139,7 +138,6 @@ export function renderSidebarSessionMenuForController(controller: SidebarMenusCo
             rows.every((row) => categoryClearReturnsToGroups(row, host.sessionsGrouping)),
         }}
         .selectionCount=${rows.length}
-        .lastActive=${batchRows ? "" : formatSidebarTimestamp(session.updatedAt)}
         .anchor=${menu}
         .trigger=${controller.sessionMenuTrigger}
         .disabled=${!host.connected}

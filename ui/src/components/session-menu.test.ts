@@ -16,7 +16,6 @@ type SessionMenuData = {
 };
 type SessionMenuElement = HTMLElement & {
   anchor: { x: number; y: number };
-  lastActive: string;
   session: SessionMenuData;
   updateComplete: Promise<boolean>;
 };
@@ -39,7 +38,6 @@ async function mountMenu(
     deleteAllowed?: boolean;
     cloudWorkerStopAllowed?: boolean;
     selectionCount?: number;
-    lastActive?: string;
     groups?: readonly string[];
     trigger?: HTMLElement | null;
     onAction?: (action: SessionMenuAction) => void;
@@ -65,7 +63,6 @@ async function mountMenu(
     html`<openclaw-session-menu
       .session=${session}
       .selectionCount=${options.selectionCount ?? 1}
-      .lastActive=${options.lastActive ?? "57d"}
       .anchor=${{ x: 100, y: 100 }}
       .trigger=${options.trigger ?? null}
       .disabled=${false}
@@ -140,12 +137,6 @@ describe("session menu", () => {
       }),
     );
     expect(onAction).not.toHaveBeenCalled();
-  });
-
-  it("shows when the session was last active", async () => {
-    const menu = await mountMenu({ lastActive: "57d" });
-
-    expect(menu.querySelector(".session-menu__info")?.textContent?.trim()).toBe("Last active 57d");
   });
 
   it("renders the full plain-session item set in order", async () => {
