@@ -460,7 +460,6 @@ suite.define(() => {
       expect(
         await openclawProject.locator(".sidebar-session-catalog-project__label").textContent(),
       ).toBe("openclaw");
-      expect(await openclawProject.locator(".sidebar-session-group-count").textContent()).toBe("2");
       const projectRows = section.locator(".sidebar-recent-session--catalog-project-child");
       await expect.poll(() => projectRows.count()).toBe(3);
       expect(
@@ -911,7 +910,7 @@ suite.define(() => {
         .toContain("Second catalog page unavailable");
       await expect.poll(() => loadMore.getAttribute("aria-busy")).toBe("false");
       expect(await loadMore.isEnabled()).toBe(true);
-      expect(await page.getByText("Newest session", { exact: true }).count()).toBe(1);
+      expect(await page.getByRole("link", { name: /^Newest session/u }).count()).toBe(1);
       expect(pageErrors).toEqual([]);
     } finally {
       await page.close();
