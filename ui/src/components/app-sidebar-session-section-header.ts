@@ -57,7 +57,8 @@ export function renderSidebarSessionSectionToggle(params: {
     title=${params.title ?? nothing}
     @click=${() => params.onToggle()}
   >
-    ${params.lead ?? nothing}
+    ${params.lead ??
+    html`<span class="sidebar-session-group-toggle__lead" aria-hidden="true"></span>`}
     <span
       class=${params.labelClassName ?? "sidebar-recent-sessions__label-text"}
       ${ref(createOverflowFadeRef())}

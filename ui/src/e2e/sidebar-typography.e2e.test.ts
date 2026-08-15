@@ -183,6 +183,12 @@ suite.define(() => {
         expect(
           await sectionLabels.evaluateAll((labels) => labels.map((label) => label.textContent)),
         ).toEqual(expect.arrayContaining(["Sessions", "Research", "Codex"]));
+        const sectionLabelLefts = await sectionLabels.evaluateAll((labels) =>
+          labels.map((label) => label.getBoundingClientRect().x),
+        );
+        expect(Math.max(...sectionLabelLefts) - Math.min(...sectionLabelLefts)).toBeLessThanOrEqual(
+          0.5,
+        );
 
         const variant = `typography-${colorScheme}`;
         await captureSidebarUiUnionProof(page, [sidebarSurface], `${variant}-full.png`);
