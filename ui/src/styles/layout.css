@@ -3415,9 +3415,52 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 }
 
 .sidebar-zone-entry .sidebar-recent-session__link {
+  flex: 0 1 auto;
   gap: 8px;
   min-height: 30px;
   padding: 0;
+}
+
+.sidebar-zone-entry .session-row-endcap {
+  margin-inline-start: auto;
+}
+
+.sidebar-zone-entry .sidebar-child-session-toggle {
+  width: auto;
+  height: 20px;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 0 1px;
+}
+
+.sidebar-zone-entry
+  .sidebar-recent-session:has(.sidebar-recent-session__subtitle)
+  > .sidebar-child-session-toggle {
+  align-self: flex-start;
+}
+
+.session-row-host--pinned
+  .session-row-pinned-people:has(> openclaw-session-owner-chip)
+  .viewer-facepile {
+  margin-left: -5px;
+}
+
+.session-row-host--pinned .viewer-facepile--session {
+  margin-left: 0;
+}
+
+.session-row-host--pinned :is(.session-owner-chip, .viewer-avatar__fallback) {
+  border-color: color-mix(in srgb, var(--border-strong) 64%, transparent);
+  background: color-mix(in srgb, var(--muted) 24%, var(--bg-elevated));
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+}
+
+.session-row-host--pinned .viewer-avatar--overflow {
+  width: auto;
+  min-width: 18px;
+  padding-inline: 4px;
+  background: color-mix(in srgb, var(--muted) 16%, var(--bg-elevated));
+  color: var(--muted);
 }
 
 .sidebar-zone-entry .sidebar-recent-session__name {

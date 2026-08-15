@@ -5659,49 +5659,37 @@ td.data-table-key-col {
   }
 }
 
-/* Pinned rows reserve the child and primary-state rails. Identity details can
-   grow left, but their right edge never displaces those two scan targets. */
+/* Pinned rows expose only one people stack and one state signal at rest.
+   Everything else remains available in the hover card or management reveal. */
 .session-row-host--pinned .session-row-endcap__rest-summary {
   display: inline-grid;
-  grid-template-columns: max-content 20px 32px var(--sidebar-trailing-slot, 20px);
+  grid-template-columns: 44px var(--sidebar-trailing-slot, 20px);
   align-items: center;
-  gap: 0;
-}
-
-.session-row-pinned-details {
-  grid-column: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-self: end;
   gap: 4px;
-  padding-inline-end: 4px;
 }
 
-.session-row-pinned-creator {
+.session-row-pinned-people {
+  grid-column: 1;
+  grid-row: 1;
+  display: inline-flex;
+  width: 44px;
+  height: 20px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.session-row-pinned-status {
   grid-column: 2;
+  grid-row: 1;
   display: inline-grid;
-  width: 20px;
+  width: var(--sidebar-trailing-slot, 20px);
   height: 20px;
   place-items: center;
 }
 
-.session-row-pinned-children {
-  grid-column: 3;
-  display: inline-grid;
-  width: 32px;
-  height: 24px;
-  place-items: center;
-}
-
-.session-row-pinned-children .sidebar-child-session-toggle {
-  width: 32px;
-  height: 24px;
-  flex-basis: 32px;
-  padding: 0;
-}
-
 .session-row-host--pinned .session-row-endcap__rest-summary > .session-row-state {
-  grid-column: 4;
+  grid-column: 2;
+  grid-row: 1;
 }
 
 @media (hover: none), (pointer: coarse) {

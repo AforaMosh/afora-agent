@@ -215,6 +215,7 @@ export function renderRecentSession(params: {
     ownerId,
   );
   const ownerIndicator = renderSessionOwnerChip(ownerActor, "row", ownerAttribution, ownerViewing);
+  const pinnedOwnerVisible = session.pinned && Boolean(params.lead && ownerActor?.id);
   const primaryState = resolveSessionPrimaryState(session);
   const running = primaryState.kind === "running";
   const displayedPullRequestState = running ? "none" : pullRequestState;
@@ -322,7 +323,7 @@ export function renderRecentSession(params: {
     .selfInstanceId=${host.sessionData.presenceInstanceId}
     .sessionKey=${session.key}
     .excludeUserId=${ownerId}
-    .maxVisible=${session.pinned ? 3 : 2}
+    .maxVisible=${session.pinned ? (pinnedOwnerVisible ? 1 : 2) : 2}
     variant="session"
   ></openclaw-viewer-facepile>`;
   const rowBadges = renderSessionRowBadges({
@@ -332,7 +333,8 @@ export function renderRecentSession(params: {
     incognito: false,
     // An active row shows the composer itself, so its own draft is not news.
     hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
-    maxVisible: session.pinned ? undefined : 2,
+    maxVisible: session.pinned ? 1 : 2,
+    hideOverflow: session.pinned,
     pullRequest: running ? undefined : (session.pullRequest ?? display?.pullRequest),
     // The subtitle already reads "Waiting for approval" whenever the row
     // owns that attention; a second glyph says nothing new.
@@ -352,16 +354,21 @@ export function renderRecentSession(params: {
     hasViewers ||
     displayedPullRequestState !== "none" ||
     rowBadges !== nothing;
+  const pinnedStatus =
+    primaryState.kind !== "none"
+      ? nothing
+      : rowBadges !== nothing
+        ? rowBadges
+        : displayedPullRequestState !== "none"
+          ? renderSessionWorktreePullRequest(displayedPullRequestState)
+          : boardIndicator;
   const endcap = renderSessionRowEndcap({
     state: primaryState,
     stateId,
     metadata: session.pinned
-      ? html`<span class="session-row-pinned-details"
-            >${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
-              displayedPullRequestState,
-            )}</span
-          ><span class="session-row-pinned-creator">${params.lead ? ownerIndicator : nothing}</span
-          ><span class="session-row-pinned-children">${childToggle}</span>`
+      ? html`<span class="session-row-pinned-people"
+            >${params.lead ? ownerIndicator : nothing}${viewerFacepile}</span
+          ><span class="session-row-pinned-status">${pinnedStatus}</span>`
       : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
           displayedPullRequestState,
         )}`,
@@ -488,7 +495,7 @@ export function renderRecentSession(params: {
               : renderSidebarSessionSubtitle(subtitleValue, params.project)}
           </span>
         </a>
-        ${session.pinned ? nothing : childToggle} ${endcap}
+        ${childToggle} ${endcap}
       </div>
       ${session.isChild
         ? nothing

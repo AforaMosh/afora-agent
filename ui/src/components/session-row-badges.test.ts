@@ -205,6 +205,23 @@ describe("session row placement badges", () => {
     expectTooltipText(overflow, "Approval needed\nUnsent draft");
   });
 
+  it("can keep only the highest-priority badge without an overflow chip", () => {
+    render(
+      renderSessionRowBadges({
+        hasAutomation: true,
+        hasApproval: true,
+        hasComposerDraft: true,
+        maxVisible: 1,
+        hideOverflow: true,
+      }),
+      container,
+    );
+
+    expect(container.querySelectorAll(".session-row-badge")).toHaveLength(1);
+    expectTooltipText(container.querySelector(".session-row-badge"), "Automation attached");
+    expect(container.querySelector(".session-row-badge--overflow")).toBeNull();
+  });
+
   it("keeps conflict attention visible for child sessions", () => {
     render(
       renderSessionRowBadges({

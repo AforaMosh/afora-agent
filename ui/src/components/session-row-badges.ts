@@ -92,6 +92,7 @@ export function renderSessionRowBadges(params: {
   diskSpaceStatus?: SessionPlacementDiskSpace["status"];
   workspaceConflictCount?: number;
   maxVisible?: number;
+  hideOverflow?: boolean;
 }) {
   const hasAutomation = !params.isChild && params.hasAutomation;
   const pullRequestLabel = params.pullRequest
@@ -235,7 +236,7 @@ export function renderSessionRowBadges(params: {
   const hidden = badges.slice(maxVisible);
   return html`<span class="session-row-badges">
     ${visible.map((badge) => badge.content)}
-    ${hidden.length > 0
+    ${hidden.length > 0 && !params.hideOverflow
       ? html`<openclaw-tooltip .content=${hidden.map((badge) => badge.label).join("\n")}>
           <span
             class="session-row-badge session-row-badge--overflow"
