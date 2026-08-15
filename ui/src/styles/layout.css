@@ -917,8 +917,18 @@ openclaw-settings-save-indicator {
   align-self: stretch;
   justify-self: end;
   z-index: 20;
-  width: 1px;
-  --accent: var(--muted);
+  width: var(--rail-resizer-size);
+  --rail-resizer-size: 6px;
+  --rail-divider-color: transparent;
+  --accent: var(--sidebar-divider-active);
+  outline: none;
+}
+
+/* Resting chrome belongs to the shell border. Hover, keyboard focus, and drag
+   all hand that same edge to the divider's active rail, with no second outline
+   competing beside it. */
+.shell:has(.sidebar-resizer:is(:hover, :focus-visible, .dragging)) .shell-nav {
+  border-inline-end-color: transparent;
 }
 
 .shell:has(.sidebar-resizer.dragging) {

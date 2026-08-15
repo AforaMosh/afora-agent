@@ -216,7 +216,7 @@ suite.define(() => {
         const parentRow = sidebar.locator(`[data-session-key="${parentKey}"]`);
         const draftRow = sidebar.locator(`[data-session-key="${draftKey}"]`);
         await parentRow.waitFor();
-        await parentRow.locator(".sidebar-child-session-toggle").click();
+        await parentRow.locator(".sidebar-child-session-toggle").press("Enter");
         const childRow = sidebar.locator(`[data-session-key="${childKey}"]`);
         const catalogRow = sidebar.locator('[data-session-key*="catalog-session"]');
         await childRow.waitFor();
@@ -228,19 +228,27 @@ suite.define(() => {
           .poll(() => page.locator("html").getAttribute("data-theme-mode"))
           .toBe(colorScheme);
 
-        const textAnchors = [
+        const sharedTextAnchors = [
           pageText,
           pinnedRow.locator(".sidebar-recent-session__name"),
-          parentRow.locator(".sidebar-recent-session__name"),
-          draftRow.locator(".sidebar-recent-session__name"),
-          catalogRow.locator(".sidebar-recent-session__name"),
           sidebar.locator(".sidebar-identity-card__name"),
         ];
         const textAxis = await left(pageText);
-        expect(await Promise.all(textAnchors.map(left))).toEqual(
-          Array(textAnchors.length).fill(textAxis),
+        expect(await Promise.all(sharedTextAnchors.map(left))).toEqual(
+          Array(sharedTextAnchors.length).fill(textAxis),
         );
-        expect(await left(childRow.locator(".sidebar-recent-session__name"))).toBe(textAxis + 16);
+        expect(await left(parentRow.locator(".sidebar-recent-session__name"))).toBeLessThan(
+          textAxis,
+        );
+        expect(await left(draftRow.locator(".sidebar-recent-session__name"))).toBeGreaterThan(
+          textAxis,
+        );
+        expect(await left(catalogRow.locator(".sidebar-recent-session__name"))).toBeGreaterThan(
+          textAxis,
+        );
+        expect(await left(childRow.locator(".sidebar-recent-session__name"))).toBe(
+          (await left(parentRow.locator(".sidebar-recent-session__name"))) + 16,
+        );
 
         const leadCenters = await Promise.all(
           [
@@ -359,12 +367,15 @@ suite.define(() => {
         expect(restDivider.shell).not.toBe("rgba(0, 0, 0, 0)");
         expect(restDivider.targetWidth).toBe(6);
         await resizer.hover();
+        await waitForAnimations(resizer);
         const activeDivider = await resizer.evaluate((element) => ({
           activeColor: getComputedStyle(element).getPropertyValue("--accent").trim(),
           globalAccent: getComputedStyle(document.documentElement)
             .getPropertyValue("--accent")
             .trim(),
           hovered: element.matches(":hover"),
+          railColor: getComputedStyle(element, "::after").backgroundColor,
+          railWidth: getComputedStyle(element, "::after").width,
           shell: getComputedStyle(element.previousElementSibling!).borderInlineEndColor,
         }));
         expect(activeDivider.hovered).toBe(true);
@@ -380,6 +391,15 @@ suite.define(() => {
         const resizerY = resizerBounds.y + resizerBounds.height / 2;
         await page.mouse.move(resizerX, resizerY);
         await page.mouse.down();
+        expect(
+          await resizer.evaluate((element) => ({
+            railColor: getComputedStyle(element, "::after").backgroundColor,
+            railWidth: getComputedStyle(element, "::after").width,
+          })),
+        ).toEqual({
+          railColor: activeDivider.railColor,
+          railWidth: activeDivider.railWidth,
+        });
         await page.mouse.move(resizerX + 22, resizerY);
         await expect
           .poll(async () => Math.round((await shellNav.boundingBox())?.width ?? 0))
@@ -390,9 +410,21 @@ suite.define(() => {
         await capture(page, sidebarSurface, `grid-${colorScheme}-width-280.png`);
 
         await resizer.focus();
+        await waitForAnimations(resizer);
         await expect
           .poll(() => resizer.evaluate((element) => getComputedStyle(element).outlineStyle))
           .toBe("none");
+        expect(
+          await resizer.evaluate((element) => ({
+            railColor: getComputedStyle(element, "::after").backgroundColor,
+            railWidth: getComputedStyle(element, "::after").width,
+            shell: getComputedStyle(element.previousElementSibling!).borderInlineEndColor,
+          })),
+        ).toEqual({
+          railColor: activeDivider.railColor,
+          railWidth: activeDivider.railWidth,
+          shell: "rgba(0, 0, 0, 0)",
+        });
         await page.keyboard.press("End");
         await expect
           .poll(async () => Math.round((await shellNav.boundingBox())?.width ?? 0))

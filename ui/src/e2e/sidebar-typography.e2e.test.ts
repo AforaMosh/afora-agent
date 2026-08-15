@@ -2,6 +2,7 @@ import type { Locator } from "playwright";
 import { expect, it } from "vitest";
 import {
   controlUiSessionUrl,
+  expandStoredSessionSections,
   installMockGateway,
   sessionRow,
   sessionsListResponse,
@@ -14,6 +15,20 @@ import {
 const suite = createSidebarCustomizationSuite("Control UI sidebar typography mocked Gateway E2E");
 
 const visualVariants = [{ colorScheme: "light" as const }, { colorScheme: "dark" as const }];
+
+function configResponse(colorScheme: "light" | "dark") {
+  const config = { ui: { prefs: { locale: "en", themeMode: colorScheme } } };
+  const hash = `sidebar-typography-${colorScheme}`;
+  return {
+    appliedConfigHash: hash,
+    config,
+    configRevisionHash: hash,
+    hash,
+    issues: [],
+    raw: JSON.stringify(config),
+    valid: true,
+  };
+}
 
 type TypeMetrics = {
   family: string;
@@ -52,9 +67,11 @@ suite.define(() => {
       const parentKey = "agent:main:release-plan";
       const childKey = "agent:main:verify-release";
       const draftKey = "agent:main:draft";
+      await expandStoredSessionSections(page);
       await installMockGateway(page, {
         featureMethods: ["sessions.catalog.list"],
         methodResponses: {
+          "config.get": configResponse(colorScheme),
           "sessions.list": {
             cases: [
               {
@@ -75,6 +92,7 @@ suite.define(() => {
                       unread: true,
                       worktree: {
                         branch: "feat/pinned-handoff",
+                        id: "pinned-handoff",
                         repoRoot: "/workspace/openclaw",
                       },
                     }),
@@ -85,6 +103,7 @@ suite.define(() => {
                       childSessions: [childKey],
                       worktree: {
                         branch: "feat/release-plan",
+                        id: "release-plan",
                         repoRoot: "/workspace/openclaw",
                       },
                     }),
@@ -146,7 +165,7 @@ suite.define(() => {
         await parentRow.waitFor();
         await catalogRow.waitFor();
 
-        await parentRow.locator(".sidebar-child-session-toggle").click();
+        await parentRow.locator(".sidebar-child-session-toggle").press("Enter");
         const childRow = sidebar.locator(`[data-session-key="${childKey}"]`);
         await childRow.waitFor();
 
@@ -199,19 +218,18 @@ suite.define(() => {
         await sidebar.locator(".sidebar-nav__more").click();
         const moreMenu = sidebar.locator("wa-dropdown.sidebar-more-menu");
         await moreMenu.getByRole("menuitem", { name: "Customize sidebar" }).click();
-        const customizeMenu = sidebar.locator(
-          "wa-dropdown.sidebar-customize-menu:not(.sidebar-more-menu):not(.sidebar-agent-menu)",
-        );
-        const customizeSurface = customizeMenu.locator('[part="menu"]');
+        const customizeSurface = sidebar.locator(".sidebar-customizer");
         await customizeSurface.waitFor();
         expect(
           await typeMetrics(
-            customizeMenu.locator(".sidebar-customize-menu__item", { hasText: "Automations" }),
+            customizeSurface.locator(".sidebar-customizer__label", { hasText: "Automations" }),
           ),
         ).toEqual(navMetrics);
-        expect(await typeMetrics(customizeMenu.locator(".sidebar-customize-menu__title"))).toEqual(
-          sectionContract,
-        );
+        expect(
+          await typeMetrics(
+            customizeSurface.locator(".sidebar-customizer__label--section").first(),
+          ),
+        ).toEqual(sectionContract);
 
         await captureSidebarUiUnionProof(
           page,
