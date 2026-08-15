@@ -1759,10 +1759,6 @@ body.update-dialog-open .sidebar-update-card__status {
   --sidebar-list-row-gap: 1px;
   --sidebar-text-offset: calc(var(--sidebar-inset) + var(--sidebar-lead) + var(--sidebar-row-gap));
   --sidebar-depth-step: calc(var(--sidebar-lead) + var(--sidebar-row-gap));
-  --sidebar-depth-section: var(--sidebar-text-offset);
-  --sidebar-depth-project: calc(var(--sidebar-depth-section) + var(--sidebar-depth-step));
-  --sidebar-depth-session: calc(var(--sidebar-depth-project) + var(--sidebar-depth-step));
-  --sidebar-depth-branch: calc(var(--sidebar-depth-session) + var(--sidebar-depth-step));
 
   display: flex;
   flex-direction: column;
@@ -2181,10 +2177,14 @@ body.update-dialog-open .sidebar-update-card__status {
     calc(var(--sidebar-inset) + 10px) 0 / 1px 100% no-repeat;
 }
 
-/* A project nests two levels above its row. The row's own inset, identity rail,
-   and gap then land its title exactly on --sidebar-depth-session. */
+/* The project list advances one level, while the creator rail returns to the
+   project icon axis below. The row title takes the next level independently. */
 .sidebar-session-catalog-project__sessions {
-  margin-inline-start: calc(var(--sidebar-depth-session) - var(--sidebar-text-offset));
+  margin-inline-start: var(--sidebar-depth-step);
+}
+
+.sidebar-recent-session--catalog-project-child .sidebar-session-indicator {
+  margin-inline-end: var(--sidebar-depth-step);
 }
 
 /* Project marks are product artwork, not sidebar glyphs, so they fill the lead
@@ -2285,6 +2285,7 @@ body.update-dialog-open .sidebar-update-card__status {
   > .sidebar-session-group-toggle__lead
   + .sidebar-session-group-toggle__lead {
   margin-inline-start: var(--sidebar-row-gap);
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
 }
 
 .sidebar-session-catalog-project__head:hover,

@@ -452,7 +452,7 @@ function renderCatalogSessionRow(
   const canOpenTerminal = session.canOpenTerminal === true && params.terminalAvailable;
   const catalogBadges = renderSessionRowBadges({
     hasAutomation: false,
-    pullRequest: session.pullRequest,
+    pullRequest: running ? undefined : session.pullRequest,
     maxVisible: 2,
   });
   const ownerActor = params.sessionOwnershipVisible ? session.createdActor : undefined;

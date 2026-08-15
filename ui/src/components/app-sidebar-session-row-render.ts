@@ -217,6 +217,7 @@ export function renderRecentSession(params: {
   const ownerIndicator = renderSessionOwnerChip(ownerActor, "row", ownerAttribution, ownerViewing);
   const primaryState = resolveSessionPrimaryState(session);
   const running = primaryState.kind === "running";
+  const displayedPullRequestState = running ? "none" : pullRequestState;
   const stateDescription = describeSessionPrimaryState(primaryState);
   const meta = display?.meta ?? formatSidebarTimestamp(session.updatedAt);
   const rowMeta = session.pinned ? "" : meta;
@@ -238,7 +239,7 @@ export function renderRecentSession(params: {
   const title = [
     display?.title ?? [label, narration, rowMeta].filter(Boolean).join(" · "),
     stateDescription,
-    describeSessionWorktreePullRequest(pullRequestState),
+    describeSessionWorktreePullRequest(displayedPullRequestState),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -248,6 +249,7 @@ export function renderRecentSession(params: {
   const rowClass = [
     "sidebar-recent-session",
     "session-row-host",
+    params.project ? "sidebar-recent-session--catalog-project-child" : "",
     menuOpen ? "session-row-host--menu-open" : "",
     session.isChild ? "sidebar-recent-session--child" : "",
     session.archived ? "sidebar-session--archived" : "",
@@ -304,7 +306,7 @@ export function renderRecentSession(params: {
     // An active row shows the composer itself, so its own draft is not news.
     hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
     maxVisible: session.pinned ? undefined : 2,
-    pullRequest: session.pullRequest ?? display?.pullRequest,
+    pullRequest: running ? undefined : (session.pullRequest ?? display?.pullRequest),
     // The subtitle already reads "Waiting for approval" whenever the row
     // owns that attention; a second glyph says nothing new.
     hasApproval:
@@ -321,15 +323,15 @@ export function renderRecentSession(params: {
     primaryState.kind !== "none" ||
     sessionHasBoard(session.key) ||
     hasViewers ||
-    pullRequestState !== "none" ||
+    displayedPullRequestState !== "none" ||
     rowBadges !== nothing;
   const endcap = renderSessionRowEndcap({
     state: primaryState,
     stateId,
     metadata: session.pinned
-      ? renderSessionWorktreePullRequest(pullRequestState)
+      ? renderSessionWorktreePullRequest(displayedPullRequestState)
       : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
-          pullRequestState,
+          displayedPullRequestState,
         )}`,
     legacy: session.pinned || session.isChild,
     actionOnly: !hasRestSummary,
