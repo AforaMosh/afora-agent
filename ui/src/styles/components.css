@@ -5798,14 +5798,17 @@ td.data-table-key-col {
   width: 11px;
   height: 11px;
   flex: 0 0 auto;
-  border: 1.5px solid color-mix(in srgb, var(--run) 22%, transparent);
-  border-top-color: color-mix(in srgb, var(--run) 72%, transparent);
-  border-right-color: color-mix(in srgb, var(--run) 72%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--run) 72%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--muted-strong) 24%, transparent);
+  border-top-color: var(--muted-strong);
+  border-right-color: var(--muted-strong);
+  border-bottom-color: var(--muted-strong);
   border-radius: var(--radius-full);
 }
 
-.session-run-spinner,
+.session-run-spinner {
+  animation: session-run-spin 1.45s linear infinite;
+}
+
 .session-glyph__ring {
   animation: session-run-spin 1.1s linear infinite;
 }
@@ -5817,7 +5820,11 @@ td.data-table-key-col {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .session-run-spinner,
+  .session-run-spinner {
+    animation: none;
+    border-color: var(--muted-strong);
+  }
+
   .session-glyph__ring {
     animation: none;
     border-color: var(--run);

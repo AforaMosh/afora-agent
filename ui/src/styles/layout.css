@@ -2641,7 +2641,7 @@ body.update-dialog-open .sidebar-update-card__status {
   color: var(--text);
 }
 
-.sidebar-recent-session[data-session-unread="true"] .sidebar-recent-session__name {
+.session-row-host--pinned .sidebar-recent-session__name {
   font-weight: var(--sidebar-type-session-unread-weight);
 }
 
@@ -2656,10 +2656,6 @@ body.update-dialog-open .sidebar-update-card__status {
 
 .sidebar-recent-session--child .sidebar-recent-session__link > :not(.sidebar-recent-session__text) {
   margin-left: 6px;
-}
-
-.sidebar-recent-session--child .sidebar-recent-session__name {
-  font-size: var(--control-ui-text-sm);
 }
 
 .sidebar-recent-session--active .sidebar-recent-session__name {
@@ -4784,12 +4780,10 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   stroke-linejoin: round;
 }
 
-.sidebar-recent-session.sidebar-recent-session--attention-amber .sidebar-recent-session__name,
 .sidebar-recent-session.sidebar-recent-session--attention-amber .sidebar-recent-session__subtitle {
   color: color-mix(in srgb, var(--warn) 82%, var(--text));
 }
 
-.sidebar-recent-session.sidebar-recent-session--attention-danger .sidebar-recent-session__name,
 .sidebar-recent-session.sidebar-recent-session--attention-danger .sidebar-recent-session__subtitle {
   color: color-mix(in srgb, var(--danger) 86%, var(--text));
 }
