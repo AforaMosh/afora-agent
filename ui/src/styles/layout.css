@@ -1832,6 +1832,7 @@ body.update-dialog-open .sidebar-update-card__status {
   width: var(--sidebar-lead);
   height: 16px;
   flex: 0 0 var(--sidebar-lead);
+  color: var(--muted);
   place-items: center;
 }
 
