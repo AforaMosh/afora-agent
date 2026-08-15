@@ -2521,28 +2521,8 @@ body.update-dialog-open .sidebar-update-card__status {
   color: var(--muted);
 }
 
-/* Expanded parents already show their children below, so the collapse control
-   is quiet until row hover; collapsed toggles stay visible because the count
-   and status tint are the only signal that hidden children exist. */
 .sidebar-child-session-toggle[aria-expanded="true"] {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--duration-fast) ease;
-}
-
-.session-row-host:hover .sidebar-child-session-toggle[aria-expanded="true"],
-.session-row-host:focus-within .sidebar-child-session-toggle[aria-expanded="true"] {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Touch has no hover: keep the collapse control usable, matching the
-   session-action touch override in components.css. */
-@media (hover: none), (pointer: coarse) {
-  .sidebar-child-session-toggle[aria-expanded="true"] {
-    opacity: 1;
-    pointer-events: auto;
-  }
+  color: var(--muted);
 }
 
 .sidebar-child-session-toggle:hover,
@@ -2577,6 +2557,10 @@ body.update-dialog-open .sidebar-update-card__status {
   font-size: calc(9px * var(--control-ui-text-scale));
   font-variant-numeric: tabular-nums;
   line-height: 1;
+}
+
+.sidebar-child-session-toggle[aria-expanded="true"] .sidebar-child-session-toggle__count {
+  visibility: hidden;
 }
 
 .sidebar-recent-session__link:hover {

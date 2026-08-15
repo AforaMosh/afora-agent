@@ -302,11 +302,9 @@ export function renderRecentSession(params: {
           <span class="sidebar-child-session-toggle__icon" aria-hidden="true"
             >${childrenExpanded ? icons.chevronDown : icons.chevronRight}</span
           >
-          ${childrenExpanded
-            ? nothing
-            : html`<span class="sidebar-child-session-toggle__count"
-                >${session.childSessionKeys.length}</span
-              >`}
+          <span class="sidebar-child-session-toggle__count"
+            >${session.childSessionKeys.length}</span
+          >
         </button>`
       : nothing;
   const boardIndicator = sessionHasBoard(session.key)
