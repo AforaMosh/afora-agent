@@ -124,7 +124,7 @@ suite.define(() => {
     }
   });
 
-  it("travels only titles that are genuinely clipped", async () => {
+  it("reveals only titles that are genuinely clipped", async () => {
     const { context, page } = await openSidebar("light");
 
     try {
@@ -134,29 +134,22 @@ suite.define(() => {
       const longLabel = page.locator(
         `[data-session-key="${LONG_KEY}"] .sidebar-recent-session__name`,
       );
-      const restIndent = await shortLabel.evaluate((el) => getComputedStyle(el).textIndent);
-
       await page.locator(`[data-session-key="${SHORT_KEY}"]`).hover();
-      await page.waitForTimeout(900);
-      expect(await shortLabel.evaluate((el) => el.className)).not.toContain(
-        "hover-marquee--scrolling",
-      );
-      expect(await shortLabel.evaluate((el) => getComputedStyle(el).textIndent)).toBe(restIndent);
-      // Not merely unmoved: a title that ends before the controls is never
-      // armed at all, so no traversal is even queued behind the entry delay.
-      expect(
-        await shortLabel.evaluate((el) => el.style.getPropertyValue("--hover-marquee-shift")),
-      ).toBe("");
+      expect(await shortLabel.getAttribute("data-overflow-fade")).toBeNull();
+      expect(await shortLabel.getAttribute("data-overflow-reveal")).toBeNull();
 
       await page.locator(`[data-session-key="${LONG_KEY}"]`).hover();
-      await expect
-        .poll(() => longLabel.evaluate((el) => el.className), { timeout: 2_000 })
-        .toContain("hover-marquee--scrolling");
-      // The published overlap is what the traversal and the fade both consume.
-      const cover = await page
-        .locator(`[data-session-key="${LONG_KEY}"]`)
-        .evaluate((el) => el.style.getPropertyValue("--session-row-action-cover"));
-      expect(Number.parseFloat(cover)).toBeGreaterThan(0);
+      await expect.poll(() => longLabel.getAttribute("data-overflow-fade")).not.toBeNull();
+      await expect.poll(() => longLabel.getAttribute("data-overflow-reveal")).not.toBeNull();
+      expect(
+        Math.abs(
+          Number.parseFloat(
+            await longLabel.evaluate((el) =>
+              el.style.getPropertyValue("--overflow-reveal-translate"),
+            ),
+          ),
+        ),
+      ).toBeGreaterThan(0);
     } finally {
       await context.close();
     }
@@ -188,7 +181,7 @@ suite.define(() => {
     }
   });
 
-  it("keeps a sibling's fade but holds its title still while a menu is open", async () => {
+  it("keeps a sibling's measured fade while a menu is open", async () => {
     const { context, page } = await openSidebar("light");
 
     try {
@@ -203,17 +196,8 @@ suite.define(() => {
       await sibling.hover();
       await page.waitForTimeout(900);
 
-      // Hover reveals Pin and More from CSS alone, so the measured fade has to
-      // follow them onto this row even while another row's menu is open —
-      // otherwise those controls sit on unfaded title text.
-      expect(
-        Number.parseFloat(
-          await sibling.evaluate((el) => el.style.getPropertyValue("--session-row-action-cover")),
-        ),
-      ).toBeGreaterThan(0);
-      // The traversal is the part an open menu suppresses: nothing moves behind
-      // the surface the operator is reading.
-      expect(await label.evaluate((el) => el.className)).not.toContain("hover-marquee--scrolling");
+      expect(await label.getAttribute("data-overflow-fade")).not.toBeNull();
+      expect(await label.getAttribute("data-overflow-reveal")).not.toBeNull();
     } finally {
       await context.close();
     }
@@ -228,14 +212,12 @@ suite.define(() => {
       await longRow.hover();
       await page.waitForTimeout(900);
 
-      expect(await longLabel.evaluate((el) => el.className)).not.toContain(
-        "hover-marquee--scrolling",
-      );
+      expect(await longLabel.getAttribute("data-overflow-fade")).not.toBeNull();
       expect(
-        Number.parseFloat(
-          await longRow.evaluate((el) => el.style.getPropertyValue("--session-row-action-cover")),
-        ),
-      ).toBeGreaterThan(0);
+        await longLabel
+          .locator(".sidebar-recent-session__name-content")
+          .evaluate((content) => getComputedStyle(content).transform),
+      ).toBe("none");
     } finally {
       await context.close();
     }

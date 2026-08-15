@@ -1,4 +1,5 @@
 import { html, nothing } from "lit";
+import { ref } from "lit/directives/ref.js";
 import type {
   SessionCatalog,
   SessionCatalogHost,
@@ -10,8 +11,8 @@ import type { ApplicationNavigationOptions } from "../app/context.ts";
 import { t } from "../i18n/index.ts";
 import { handleContextMenuEvent } from "../lib/keyboard-shortcuts.ts";
 import { shouldHandleNavigationClick } from "../lib/navigation-click.ts";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import { repoName, type SessionWorkContext } from "../lib/session-display.ts";
-import { restSessionRow, revealSessionRow } from "../lib/session-row-reveal.ts";
 import type { CatalogSessionKey } from "../lib/sessions/catalog-key.ts";
 import { buildCatalogSessionKey } from "../lib/sessions/catalog-key.ts";
 import {
@@ -483,14 +484,10 @@ function renderCatalogSessionRow(
           ? "session-row-host--running"
           : ""}"
         data-session-key=${key}
+        data-session-manageable="true"
+        data-session-action-only=${!running && catalogBadges === nothing ? "true" : nothing}
         @contextmenu=${openMenuFromEvent}
         @keydown=${openMenuFromEvent}
-        @mouseenter=${(event: MouseEvent) => revealSessionRow(event.currentTarget as HTMLElement)}
-        @mouseleave=${(event: MouseEvent) =>
-          restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)}
-        @focusin=${(event: FocusEvent) => revealSessionRow(event.currentTarget as HTMLElement)}
-        @focusout=${(event: FocusEvent) =>
-          restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)}
       >
         <a
           href=${href}
@@ -513,7 +510,11 @@ function renderCatalogSessionRow(
           <span class="sidebar-session-indicator"></span>
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
-              <span class="sidebar-recent-session__name hover-marquee">${label}</span>
+              <span
+                class="sidebar-recent-session__name"
+                ${ref(createOverflowFadeRef({ revealTrailingActions: true }))}
+                ><span class="sidebar-recent-session__name-content">${label}</span></span
+              >
             </span>
             ${renderSidebarSessionWorkContext(work, project)}
           </span>

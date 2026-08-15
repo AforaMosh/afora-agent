@@ -1,6 +1,7 @@
 import { html, nothing, type TemplateResult } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { keyed } from "lit/directives/keyed.js";
+import { ref } from "lit/directives/ref.js";
 import type { SessionObserverDigest } from "../../../packages/gateway-protocol/src/schema/sessions.js";
 import type { NavigationRouteId } from "../app-navigation.ts";
 import { sessionHasPendingApproval } from "../app/approval-presentation.ts";
@@ -9,6 +10,7 @@ import type { AuthenticatedUser } from "../app/user-profile.ts";
 import { t } from "../i18n/index.ts";
 import { sessionHasBoard } from "../lib/board/provider.ts";
 import { handleContextMenuEvent } from "../lib/keyboard-shortcuts.ts";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import { restSessionRow, revealSessionRow } from "../lib/session-row-reveal.ts";
 import { writeSessionDragData } from "../lib/sessions/drag.ts";
 import type { SidebarSessionsGrouping } from "../lib/sessions/grouping.ts";
@@ -367,6 +369,14 @@ export function renderRecentSession(params: {
           </button>
         </span>`,
   });
+  const nameContent = html`${session.archived
+    ? html`<span
+        class="sidebar-session__archive-glyph"
+        aria-label=${t("sessionsView.archived")}
+        title=${t("sessionsView.archived")}
+        >${icons.archive}</span
+      >`
+    : nothing}${label}`;
   const row = html`
     <openclaw-tooltip
       class="sidebar-hover-tooltip session-hover-tooltip"
@@ -382,6 +392,8 @@ export function renderRecentSession(params: {
         data-session-attention=${session.attention.kind === "none"
           ? nothing
           : session.attention.kind}
+        data-session-manageable=${!session.pinned && !session.isChild ? "true" : "false"}
+        data-session-action-only=${!hasRestSummary ? "true" : nothing}
         draggable=${rowDraggable ? "true" : "false"}
         title=${!session.isChild && !groupWriteAccess.allowed ? groupWriteAccess.reason : nothing}
         @dragstart=${!rowDraggable
@@ -399,12 +411,20 @@ export function renderRecentSession(params: {
             }}
         @contextmenu=${openMenuFromEvent ?? nothing}
         @keydown=${openMenuFromEvent ?? nothing}
-        @mouseenter=${(event: MouseEvent) => revealSessionRow(event.currentTarget as HTMLElement)}
-        @mouseleave=${(event: MouseEvent) =>
-          restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)}
-        @focusin=${(event: FocusEvent) => revealSessionRow(event.currentTarget as HTMLElement)}
-        @focusout=${(event: FocusEvent) =>
-          restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)}
+        @mouseenter=${session.pinned
+          ? (event: MouseEvent) => revealSessionRow(event.currentTarget as HTMLElement)
+          : nothing}
+        @mouseleave=${session.pinned
+          ? (event: MouseEvent) =>
+              restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)
+          : nothing}
+        @focusin=${session.pinned
+          ? (event: FocusEvent) => revealSessionRow(event.currentTarget as HTMLElement)
+          : nothing}
+        @focusout=${session.pinned
+          ? (event: FocusEvent) =>
+              restSessionRow(event.currentTarget as HTMLElement, event.relatedTarget as Node | null)
+          : nothing}
       >
         <a
           href=${session.href}
@@ -423,16 +443,15 @@ export function renderRecentSession(params: {
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
               ${origin}
-              <span class="sidebar-recent-session__name hover-marquee"
-                >${session.archived
-                  ? html`<span
-                      class="sidebar-session__archive-glyph"
-                      aria-label=${t("sessionsView.archived")}
-                      title=${t("sessionsView.archived")}
-                      >${icons.archive}</span
-                    >`
-                  : nothing}${label}</span
-              >
+              ${session.pinned
+                ? html`<span class="sidebar-recent-session__name hover-marquee"
+                    >${nameContent}</span
+                  >`
+                : html`<span
+                    class="sidebar-recent-session__name"
+                    ${ref(createOverflowFadeRef({ revealTrailingActions: !session.isChild }))}
+                    ><span class="sidebar-recent-session__name-content">${nameContent}</span></span
+                  >`}
             </span>
             ${session.isChild
               ? nothing
