@@ -1662,6 +1662,10 @@ body.update-dialog-open .sidebar-update-card__status {
   margin: 0 0 2px;
 }
 
+.sidebar-shell__footer openclaw-sidebar-update-card {
+  display: block;
+}
+
 .sidebar-shell__footer .sidebar-update-card__action,
 .sidebar-shell__footer .sidebar-update-card__availability {
   min-height: 40px;

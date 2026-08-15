@@ -112,6 +112,11 @@ suite.define(() => {
 
         const restSurface = await surfaceStyle(availability);
         const restCta = await surfaceStyle(cta);
+        const trailingEdges = await Promise.all([
+          availability.evaluate((element) => element.getBoundingClientRect().right),
+          footer.evaluate((element) => element.getBoundingClientRect().right),
+        ]);
+        expect(Math.abs(trailingEdges[0] - trailingEdges[1])).toBeLessThanOrEqual(1);
         await captureUnionProof(page, "sidebar-update-cta", `${theme}-update-rest.png`, [
           availability,
           footer,
