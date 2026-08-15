@@ -213,6 +213,10 @@ export function renderRecentSession(params: {
     ownerId,
   );
   const ownerIndicator = renderSessionOwnerChip(ownerActor, "row", ownerAttribution, ownerViewing);
+  const soloPinnedIndicator =
+    session.pinned && !host.sessionOwnershipVisible
+      ? html`<span class="nav-item__icon" aria-hidden="true">${icons.botMessageSquare}</span>`
+      : nothing;
   const primaryState = resolveSessionPrimaryState(session);
   const running = primaryState.kind === "running";
   const displayedPullRequestState = running ? "none" : pullRequestState;
@@ -473,9 +477,11 @@ export function renderRecentSession(params: {
           aria-describedby=${stateId ?? nothing}
           @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}
         >
-          ${session.isChild || !host.sessionOwnershipVisible
+          ${session.isChild || (!host.sessionOwnershipVisible && !session.pinned)
             ? nothing
-            : html`<span class="sidebar-session-indicator">${ownerIndicator}</span>`}
+            : html`<span class="sidebar-session-indicator"
+                >${host.sessionOwnershipVisible ? ownerIndicator : soloPinnedIndicator}</span
+              >`}
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
               ${session.isChild ? nothing : titleMarkers}
