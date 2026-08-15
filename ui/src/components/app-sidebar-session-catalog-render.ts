@@ -539,7 +539,9 @@ function renderCatalogSessionRow(
             }
           }}
         >
-          <span class="sidebar-session-indicator">${creator}</span>
+          ${params.sessionOwnershipVisible
+            ? html`<span class="sidebar-session-indicator">${creator}</span>`
+            : nothing}
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
               <span

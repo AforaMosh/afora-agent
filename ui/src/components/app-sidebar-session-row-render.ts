@@ -473,7 +473,7 @@ export function renderRecentSession(params: {
           aria-describedby=${stateId ?? nothing}
           @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}
         >
-          ${session.isChild
+          ${session.isChild || !host.sessionOwnershipVisible
             ? nothing
             : html`<span class="sidebar-session-indicator">${ownerIndicator}</span>`}
           <span class="sidebar-recent-session__text">

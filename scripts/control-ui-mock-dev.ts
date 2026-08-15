@@ -2968,8 +2968,53 @@ function createCustodianMockInitScript(): string {
   return `(() => { const __name = (target) => target; (${installControlUiCustodianMock.toString()})(${CUSTODIAN_CHAT_REPLY_DELAY_MS}); })();`;
 }
 
-function createMockGatewayPlugin(scenario: ControlUiMockGatewayScenario): Plugin {
-  const initScript = escapeScriptContent(createControlUiMockGatewayInitScript(scenario));
+function projectSoloSidebarValue(value: unknown, creator: SessionCreatorFixture): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => projectSoloSidebarValue(entry, creator));
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => {
+      if ((key === "createdActor" || key === "archivedBy") && entry != null) {
+        return [key, creator];
+      }
+      if (key === "creators" && Array.isArray(entry)) {
+        return [key, [creator]];
+      }
+      return [key, projectSoloSidebarValue(entry, creator)];
+    }),
+  );
+}
+
+function createSoloSidebarScenario(
+  scenario: ControlUiMockGatewayScenario,
+): ControlUiMockGatewayScenario {
+  const self = scenario.presenceUsers?.find((user) => user.self);
+  if (!self) {
+    throw new Error("Solo sidebar fixture requires a self presence identity");
+  }
+  const creator = {
+    type: "human",
+    id: self.id,
+    label: self.name ?? self.email ?? self.id,
+  } satisfies SessionCreatorFixture;
+  const projected = projectSoloSidebarValue(structuredClone(scenario), creator);
+  const solo = projected as ControlUiMockGatewayScenario;
+  solo.hasMultipleSessionSharingIdentities = false;
+  solo.presenceUsers = [{ ...self, watchedSessions: [] }];
+  return solo;
+}
+
+function createMockGatewayPlugin(
+  scenario: ControlUiMockGatewayScenario,
+  soloScenario: ControlUiMockGatewayScenario,
+): Plugin {
+  const initScripts = {
+    team: escapeScriptContent(createControlUiMockGatewayInitScript(scenario)),
+    solo: escapeScriptContent(createControlUiMockGatewayInitScript(soloScenario)),
+  };
   const custodianInitScript = escapeScriptContent(createCustodianMockInitScript());
   const bootstrapBody = JSON.stringify(createControlUiMockBootstrapConfig(scenario));
   return {
@@ -2985,7 +3030,10 @@ function createMockGatewayPlugin(scenario: ControlUiMockGatewayScenario): Plugin
     // request and the scenario's bootstrap fields never reach the app.
     enforce: "pre",
     name: "openclaw-control-ui-mock-gateway",
-    transformIndexHtml(html) {
+    transformIndexHtml(html, context) {
+      const query = new URL(context.originalUrl ?? context.path, "http://control-ui.mock");
+      const initScript =
+        query.searchParams.get("solo") === "1" ? initScripts.solo : initScripts.team;
       return html.replace(
         "</head>",
         `    <script data-openclaw-control-ui-mock-gateway>\n${initScript}\n${custodianInitScript}\n    </script>\n  </head>`,
@@ -3041,6 +3089,7 @@ async function waitForShutdown(): Promise<void> {
 
 const options = parseArgs(process.argv.slice(2));
 const scenario = await createChatPickerScenario(options.fixture);
+const soloScenario = createSoloSidebarScenario(scenario);
 const server = await createServer({
   base: "/",
   cacheDir: path.join(repoRoot, ".artifacts", "control-ui-mock-vite"),
@@ -3065,7 +3114,7 @@ const server = await createServer({
       : {}),
     include: ["lit/directives/repeat.js"],
   },
-  plugins: [createMockGatewayPlugin(scenario), createBoardFixturePlugin()],
+  plugins: [createMockGatewayPlugin(scenario, soloScenario), createBoardFixturePlugin()],
   publicDir: path.join(uiRoot, "public"),
   resolve: {
     alias: [
