@@ -1,10 +1,7 @@
 import { html, nothing } from "lit";
 import type { QuestionPrompt } from "../../../app/question-prompt.ts";
-import { icons } from "../../../components/icons.ts";
-import { t } from "../../../i18n/index.ts";
 import type { AssistantIdentity } from "../../../lib/assistant-identity.ts";
 import type { ChatItem } from "../../../lib/chat/chat-types.ts";
-import { formatDurationCompact } from "../../../lib/format.ts";
 import { renderChatAvatar } from "../chat-avatar.ts";
 import type { ChatRunStartupPhase } from "../chat-run-startup.ts";
 import type { PlanStatus } from "../tool-stream.ts";
@@ -13,7 +10,6 @@ import { renderChatTimestamp } from "./chat-message-timestamp.ts";
 import { renderChatPlanChecklist } from "./chat-plan-checklist.ts";
 import { renderChatQuestionSummary } from "./chat-question-card.ts";
 import type { SidebarContent } from "./chat-sidebar.ts";
-import { shouldToggleSelectableDisclosure } from "./chat-tool-cards.ts";
 import { renderChatWorkingIndicator } from "./chat-working-indicator.ts";
 
 /** A contiguous run of in-flight streaming items rendered under one assistant group. */
@@ -148,46 +144,6 @@ export function renderStreamGroup(parts: StreamGroupPart[], opts: StreamGroupOpt
             </div>
           `
         : nothing}
-    </div>
-  `;
-}
-
-/**
- * Collapsed-turn rollup header: one slim "Worked for X" disclosure standing in
- * for the turn's intermediate work once the run is done. The check icon is
- * the turn's done indicator; the expanded groups render after this row.
- */
-export function renderWorkGroupSummary(
-  item: { key: string; durationMs: number | null },
-  opts: { expanded: boolean; onToggle: () => void },
-) {
-  const duration = formatDurationCompact(item.durationMs);
-  const label = duration ? t("chat.workRun.workedFor", { duration }) : t("chat.workRun.worked");
-  return html`
-    <div class="chat-group tool chat-group--work" data-chat-row-key=${item.key}>
-      <span class="chat-work-group__gutter" aria-hidden="true"></span>
-      <div class="chat-group-messages">
-        <div class="chat-activity-group chat-work-group ${opts.expanded ? "is-open" : ""}">
-          <button
-            class="chat-activity-group__summary"
-            type="button"
-            aria-expanded=${String(opts.expanded)}
-            @click=${(event: MouseEvent) => {
-              if (shouldToggleSelectableDisclosure(event)) {
-                opts.onToggle();
-              }
-            }}
-          >
-            <span class="chat-activity-group__icon">${icons.check}</span>
-            <span class="chat-activity-group__label" title=${label}>${label}</span>
-            <span
-              class="collapse-chevron ${opts.expanded ? "" : "collapse-chevron--collapsed"}"
-              aria-hidden="true"
-              >${icons.chevronDown}</span
-            >
-          </button>
-        </div>
-      </div>
     </div>
   `;
 }

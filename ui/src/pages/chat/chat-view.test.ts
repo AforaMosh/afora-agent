@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { expectDefined } from "@openclaw/normalization-core";
-import { html, render } from "lit";
+import { html, nothing, render } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../../test/helpers/promise.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
@@ -287,11 +287,15 @@ function renderStreamGroupMock(
   </div>`;
 }
 
-function renderWorkGroupSummaryMock(
-  ..._args: Parameters<typeof chatMessage.renderWorkGroupSummary>
-): ReturnType<typeof chatMessage.renderWorkGroupSummary> {
-  return html`<div class="chat-work-group"></div>`;
-}
+const renderActivityGroupMock = vi.fn(
+  (
+    ...[_groups, _opts, activity]: Parameters<typeof chatMessage.renderActivityGroup>
+  ): ReturnType<typeof chatMessage.renderActivityGroup> => html`
+    <div class="chat-activity-group">
+      ${activity?.state === "thinking" ? html`<div class="chat-reading-indicator"></div>` : nothing}
+    </div>
+  `,
+);
 
 beforeEach(() => {
   vi.spyOn(chatThread, "buildCachedChatItems").mockImplementation(buildChatItemsMock);
@@ -303,7 +307,7 @@ beforeEach(() => {
   );
   vi.spyOn(chatMessage, "renderMessageGroup").mockImplementation(renderMessageGroupMock);
   vi.spyOn(chatMessage, "renderStreamGroup").mockImplementation(renderStreamGroupMock);
-  vi.spyOn(chatMessage, "renderWorkGroupSummary").mockImplementation(renderWorkGroupSummaryMock);
+  vi.spyOn(chatMessage, "renderActivityGroup").mockImplementation(renderActivityGroupMock);
 });
 
 function createSessionsResultFromRows(
@@ -2745,7 +2749,7 @@ describe("chat loading skeleton", () => {
     expect(replyCall?.[1].activeContinuation).toBeUndefined();
   });
 
-  it("keeps the live token counter current when only run usage changes", () => {
+  it("keeps the embedded live token counter current when only run usage changes", () => {
     // Run usage arrives on its own patches, so the transcript items, the
     // shared render context, and this row's own identity all stay put while
     // the counter ticks.
@@ -2766,16 +2770,6 @@ describe("chat loading skeleton", () => {
     const renderWithUsage = (container: HTMLElement, runOutputTokens: number) => {
       renderChatInto(container, { canAbort: true, runOutputTokens, stream: null });
     };
-
-    const streamGroupSpy = vi.fn(renderStreamGroupMock);
-    vi.spyOn(chatMessage, "renderStreamGroup").mockImplementation(streamGroupSpy);
-    vi.mocked(chatThread.buildCachedChatItems).mockReturnValue([readingIndicator] as ReturnType<
-      typeof chatThread.buildCachedChatItems
-    >);
-    const standalone = document.createElement("div");
-    renderWithUsage(standalone, 5_500);
-    renderWithUsage(standalone, 7_200);
-    expect(streamGroupSpy.mock.calls.at(-1)?.[1]?.runOutputTokens).toBe(7_200);
 
     vi.mocked(chatThread.buildCachedChatItems).mockReturnValue([
       reply,

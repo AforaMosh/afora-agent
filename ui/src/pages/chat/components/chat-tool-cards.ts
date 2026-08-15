@@ -588,19 +588,6 @@ export function isRunningToolCard(card: ToolCard, runActive: boolean | undefined
   return resolveToolCardOutcome(card, runActive) === "running";
 }
 
-export function resolveToolRowText(card: ToolCard, runActive?: boolean): string {
-  const view = resolveToolCallView({ name: card.name, args: card.args, details: card.details });
-  if (view.kind === "command" && view.command) {
-    return `$ ${firstCommandLine(view.command)}`;
-  }
-  const verb = resolveToolRowVerb(view, resolveToolCardOutcome(card, runActive));
-  if (verb && view.target) {
-    return `${verb} ${view.target}`;
-  }
-  const display = resolveToolDisplay({ name: card.name, args: card.args, detailMode: "explain" });
-  return [display.label, toolArgumentPreview(card.args)].filter(Boolean).join(" ");
-}
-
 export function renderToolCard(
   card: ToolCard,
   opts: {
@@ -620,6 +607,7 @@ export function renderToolCard(
   const display = resolveToolDisplay({ name: card.name, args: card.args, detailMode: "explain" });
   const outcome = resolveToolCardOutcome(card, opts.runActive);
   const isError = outcome === "failed";
+  const isInterrupted = outcome === "interrupted";
   const isRunning = outcome === "running";
   const icon = TOOL_ROW_ICONS[view.kind] ?? display.icon;
 
@@ -643,7 +631,9 @@ export function renderToolCard(
         ${renderToolRowContent(card, view, outcome)}
         ${isError
           ? html`<span class="chat-tool-row__badge">${t("chat.toolCards.failed")}</span>`
-          : nothing}
+          : isInterrupted
+            ? html`<span class="chat-tool-row__badge">${t("chat.toolCards.interrupted")}</span>`
+            : nothing}
         ${isRunning
           ? html`<span
               class="chat-tool-row__spinner"

@@ -6,15 +6,15 @@ import { stripInlineDirectiveTagsForDelivery } from "../../../../src/utils/direc
 import type { ExecApprovalRequest } from "../../app/exec-approval.ts";
 import type { ChatQueueItem, ChatStreamSegment } from "../../lib/chat/chat-types.ts";
 import type { DiffStat } from "../../lib/chat/tool-call-diff.ts";
-import { formatUnknownText, truncateText } from "../../lib/format.ts";
+import { formatUnknownText } from "../../lib/format.ts";
 import type { SessionCapability } from "../../lib/sessions/index.ts";
 import { uiSessionEventMatches } from "../../lib/sessions/session-key.ts";
 import type { ChatRunStartupState } from "./chat-run-startup.ts";
 import { buildToolStreamIdentity } from "./tool-stream-identity.ts";
 
 const TOOL_STREAM_LIMIT = 50;
-const TOOL_STREAM_THROTTLE_MS = 80;
-const TOOL_OUTPUT_CHAR_LIMIT = 120_000;
+const TOOL_STREAM_THROTTLE_MS = 50;
+const TOOL_OUTPUT_CHAR_LIMIT = 20_000;
 
 type AgentEventPayload = {
   runId: string;
@@ -51,6 +51,8 @@ export type ToolStreamEntry = {
   isError?: boolean;
   /** True once a result event landed, even when the output text is empty. */
   resultReceived?: boolean;
+  /** The owning run ended before this call received a result. */
+  interrupted?: boolean;
   startedAt: number;
   receivedAt: number;
   message: Record<string, unknown>;
@@ -202,11 +204,10 @@ function formatToolOutput(value: unknown): string | null {
       text = formatUnknownText(value);
     }
   }
-  const truncated = truncateText(text, TOOL_OUTPUT_CHAR_LIMIT);
-  if (!truncated.truncated) {
-    return truncated.text;
+  if (text.length <= TOOL_OUTPUT_CHAR_LIMIT) {
+    return text;
   }
-  return `${truncated.text}\n\n… truncated (${truncated.total} chars, showing first ${truncated.text.length}).`;
+  return `[output truncated]\n${text.slice(-TOOL_OUTPUT_CHAR_LIMIT)}`;
 }
 
 function readLiveDiffStat(value: unknown): DiffStat | undefined {
@@ -284,6 +285,7 @@ function buildToolStreamMessage(entry: ToolStreamEntry): Record<string, unknown>
     // so historical output-less calls (aborted runs) stay inert.
     __openclawToolStreamLive: true,
     __openclawToolStreamResultReceived: entry.resultReceived === true,
+    __openclawToolStreamInterrupted: entry.interrupted === true,
     ...(entry.resultReceived !== true && entry.liveDiffStat
       ? { __openclawToolStreamDiffStat: entry.liveDiffStat }
       : {}),
@@ -346,6 +348,26 @@ export function resetToolStream(host: ToolStreamHost) {
   host.waitingApprovalStatuses?.clear();
   // Resolution can beat the overlay queue update. Keep tombstones across transient stream resets
   // until snapshot reconciliation observes the approval leaving the queue.
+}
+
+export function interruptOpenToolStream(host: ToolStreamHost, runId: string | null): boolean {
+  if (!runId) {
+    return false;
+  }
+  let changed = false;
+  for (const entry of host.toolStreamById.values()) {
+    if (entry.runId !== runId || entry.resultReceived) {
+      continue;
+    }
+    entry.interrupted = true;
+    entry.liveDiffStat = undefined;
+    entry.message = buildToolStreamMessage(entry);
+    changed = true;
+  }
+  if (changed) {
+    flushToolStreamSync(host);
+  }
+  return changed;
 }
 
 function activityEventIdentity(payload: AgentEventPayload): string | null {
@@ -1025,13 +1047,33 @@ export function handleAgentEvent(host: ToolStreamHost, payload?: AgentEventPaylo
   }
 
   const data = payload.data ?? {};
-  const toolCallId = typeof data.toolCallId === "string" ? data.toolCallId : "";
+  const toolCallId = toTrimmedString(data.toolCallId) ?? "";
   if (!toolCallId) {
+    console.warn("[control-ui] Dropped tool activity without a valid target", {
+      phase: toTrimmedString(data.phase) ?? "unknown",
+      runId: payload.runId,
+    });
     return false;
   }
   const toolStreamIdentity = buildToolStreamIdentity(payload.runId, toolCallId);
   let entry = host.toolStreamById.get(toolStreamIdentity);
   const phase = typeof data.phase === "string" ? data.phase : "";
+  if (phase !== "start" && phase !== "input_delta" && phase !== "update" && phase !== "result") {
+    console.warn("[control-ui] Dropped tool activity with an invalid phase", {
+      phase: phase || "unknown",
+      runId: payload.runId,
+      toolCallId,
+    });
+    return false;
+  }
+  if (!entry && phase !== "start") {
+    console.warn("[control-ui] Dropped orphaned tool activity", {
+      phase,
+      runId: payload.runId,
+      toolCallId,
+    });
+    return false;
+  }
   // A started call owns its concrete identity even when later events omit or
   // contradict it; an unnamed placeholder can still adopt its first real name.
   const name =

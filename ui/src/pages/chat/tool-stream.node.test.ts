@@ -9,6 +9,7 @@ import {
 } from "./tool-stream.test-helpers.ts";
 import {
   handleAgentEvent,
+  interruptOpenToolStream,
   reconcileWaitingApprovalsFromSnapshot,
   resetToolStream,
   type ToolStreamEntry,
@@ -292,6 +293,64 @@ describe("app-tool-stream approval lifecycle", () => {
 });
 
 describe("app-tool-stream throttled projections", () => {
+  it.each(["input_delta", "update", "result", "unknown"])(
+    "drops an orphaned %s without creating a projected row",
+    (phase) => {
+      const host = createHost();
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      expect(
+        handleAgentEvent(
+          host,
+          agentEvent("run-1", 1, "tool", {
+            phase,
+            toolCallId: "missing-call",
+            name: "read",
+            partialResult: "partial",
+            result: "complete",
+          }),
+        ),
+      ).toBe(false);
+      expect(host.toolStreamById.size).toBe(0);
+      expect(host.toolStreamOrder).toHaveLength(0);
+      expect(host.chatToolMessages).toHaveLength(0);
+      expect(warn).toHaveBeenCalledOnce();
+      warn.mockRestore();
+    },
+  );
+
+  it("marks only open calls from the interrupted run", () => {
+    useToolStreamFakeTimers();
+    try {
+      const host = createHost();
+      for (const [runId, toolCallId] of [
+        ["run-1", "open"],
+        ["run-2", "sibling"],
+      ] as const) {
+        handleAgentEvent(
+          host,
+          agentEvent(runId, 1, "tool", {
+            phase: "start",
+            name: "read",
+            toolCallId,
+            args: { path: `${toolCallId}.txt` },
+          }),
+        );
+      }
+      vi.advanceTimersByTime(80);
+
+      expect(interruptOpenToolStream(host, "run-1")).toBe(true);
+      expect(
+        host.toolStreamById.get(buildToolStreamIdentity("run-1", "open"))?.message,
+      ).toMatchObject({ __openclawToolStreamInterrupted: true });
+      expect(
+        host.toolStreamById.get(buildToolStreamIdentity("run-2", "sibling"))?.message,
+      ).toMatchObject({ __openclawToolStreamInterrupted: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it.each(["start", "update"] as const)(
     "renders a deferred tool %s when its projection flushes",
     (phase) => {
@@ -324,7 +383,7 @@ describe("app-tool-stream throttled projections", () => {
         }
 
         expect(requestUpdate).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(79);
+        vi.advanceTimersByTime(49);
         expect(requestUpdate).not.toHaveBeenCalled();
         vi.advanceTimersByTime(1);
 
@@ -387,6 +446,34 @@ describe("app-tool-stream throttled projections", () => {
 });
 
 describe("app-tool-stream result blocks", () => {
+  it("caps command output by preserving its newest tail", () => {
+    const host = createHost();
+    const toolCallId = "call-long-output";
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 1, "tool", {
+        phase: "start",
+        name: "exec",
+        toolCallId,
+        args: { command: "long-running-check" },
+      }),
+    );
+    handleAgentEvent(
+      host,
+      agentEvent("run-1", 2, "tool", {
+        phase: "result",
+        name: "exec",
+        toolCallId,
+        result: `${"old\n".repeat(6_000)}latest line`,
+      }),
+    );
+
+    const entry = host.toolStreamById.get(buildToolStreamIdentity("run-1", toolCallId));
+    expect(entry?.output?.startsWith("[output truncated]\n")).toBe(true);
+    expect(entry?.output?.endsWith("latest line")).toBe(true);
+    expect(entry?.output).toHaveLength("[output truncated]\n".length + 20_000);
+  });
+
   it("projects live edit counts and lets the resolved result replace them without flicker", () => {
     useToolStreamFakeTimers();
     try {

@@ -1,10 +1,10 @@
 /**
- * Aggregate summaries for a run of consecutive tool calls, e.g.
- * "Ran 13 commands, read 6 files, edited 9 files, created a file".
+ * Aggregate summaries and live labels for a run of consecutive tool calls.
  */
 
-import { t } from "../../i18n/index.ts";
+import { i18n, t } from "../../i18n/index.ts";
 import {
+  resolveToolCallView,
   resolveToolCallFileOperations,
   resolveToolCallKind,
   resolveToolCallTargetPaths,
@@ -27,10 +27,16 @@ type GroupCounts = {
   commands: number;
   files: Record<FileActivity, FileActivityCounts>;
   searches: number;
+  webSearches: number;
   fetches: number;
-  otherNames: Set<string>;
   others: number;
 };
+
+const WEB_SEARCH_TOOL_NAMES = new Set(["web_search", "websearch", "search_web"]);
+
+function isWebSearch(name: string): boolean {
+  return WEB_SEARCH_TOOL_NAMES.has(name.trim().toLowerCase());
+}
 
 function countFiles(counts: GroupCounts, activity: FileActivity, paths: readonly string[]): void {
   const target = counts.files[activity];
@@ -43,6 +49,10 @@ function countFiles(counts: GroupCounts, activity: FileActivity, paths: readonly
 }
 
 function countCard(counts: GroupCounts, card: ToolGroupSummaryInput): void {
+  if (isWebSearch(card.name)) {
+    counts.webSearches += 1;
+    return;
+  }
   const kind: ToolCallKind = resolveToolCallKind(card.name, card.args);
   const fileOperations = resolveToolCallFileOperations(card.name, card.args);
   if (fileOperations) {
@@ -73,13 +83,12 @@ function countCard(counts: GroupCounts, card: ToolGroupSummaryInput): void {
         break;
       default:
         counts.others += 1;
-        counts.otherNames.add(card.name);
     }
   }
 }
 
 function countLabel(count: number, oneKey: string, manyKey: string): string {
-  return t(count === 1 ? oneKey : manyKey, { count: String(count) });
+  return t(count === 1 ? oneKey : manyKey);
 }
 
 function fileCount(calls: number, paths: Set<string>): number {
@@ -87,8 +96,7 @@ function fileCount(calls: number, paths: Set<string>): number {
 }
 
 /**
- * Build the collapsed group label. The first segment carries the verb
- * ("Ran 13 commands"); later segments continue lowercase ("read 6 files").
+ * Build the collapsed group label. Counts select grammar but are not shown.
  */
 export function summarizeToolGroup(cards: readonly ToolGroupSummaryInput[]): string {
   const counts: GroupCounts = {
@@ -100,8 +108,8 @@ export function summarizeToolGroup(cards: readonly ToolGroupSummaryInput[]): str
       delete: { calls: 0, paths: new Set() },
     },
     searches: 0,
+    webSearches: 0,
     fetches: 0,
-    otherNames: new Set(),
     others: 0,
   };
   for (const card of cards) {
@@ -109,20 +117,16 @@ export function summarizeToolGroup(cards: readonly ToolGroupSummaryInput[]): str
   }
 
   const segments: string[] = [];
-  if (counts.commands > 0) {
+  if (counts.others > 0) {
     segments.push(
-      countLabel(
-        counts.commands,
-        "chat.toolCards.group.commandsOne",
-        "chat.toolCards.group.commandsMany",
-      ),
+      countLabel(counts.others, "chat.toolCards.group.otherOne", "chat.toolCards.group.otherMany"),
     );
   }
   const fileLabels = [
-    ["read", "readsOne", "readsMany"],
     ["edit", "editsOne", "editsMany"],
     ["write", "writesOne", "writesMany"],
     ["delete", "deletesOne", "deletesMany"],
+    ["read", "readsOne", "readsMany"],
   ] as const;
   for (const [activity, one, many] of fileLabels) {
     const { calls, paths } = counts.files[activity];
@@ -140,6 +144,24 @@ export function summarizeToolGroup(cards: readonly ToolGroupSummaryInput[]): str
     segments.push(
       countLabel(
         counts.searches,
+        "chat.toolCards.group.fileSearchesOne",
+        "chat.toolCards.group.fileSearchesMany",
+      ),
+    );
+  }
+  if (counts.commands > 0) {
+    segments.push(
+      countLabel(
+        counts.commands,
+        "chat.toolCards.group.commandsOne",
+        "chat.toolCards.group.commandsMany",
+      ),
+    );
+  }
+  if (counts.webSearches > 0) {
+    segments.push(
+      countLabel(
+        counts.webSearches,
         "chat.toolCards.group.searchesOne",
         "chat.toolCards.group.searchesMany",
       ),
@@ -154,31 +176,35 @@ export function summarizeToolGroup(cards: readonly ToolGroupSummaryInput[]): str
       ),
     );
   }
-  if (counts.others > 0) {
-    const names = [...counts.otherNames].slice(0, 2).join(", ");
-    segments.push(
-      counts.otherNames.size <= 2 && names
-        ? t(
-            counts.others > counts.otherNames.size
-              ? "chat.toolCards.group.namedToolRepeated"
-              : "chat.toolCards.group.namedTool",
-            { names, count: String(counts.others) },
-          )
-        : countLabel(
-            counts.others,
-            "chat.toolCards.group.otherOne",
-            "chat.toolCards.group.otherMany",
-          ),
-    );
-  }
 
   if (segments.length === 0) {
-    return countLabel(
-      cards.length,
-      "chat.toolCards.group.emptyOne",
-      "chat.toolCards.group.emptyMany",
-    );
+    return t("chat.toolCards.group.worked");
   }
-  const label = segments.join(", ");
+  const label = new Intl.ListFormat(i18n.getLocale(), {
+    style: "long",
+    type: "conjunction",
+  }).format(segments);
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export function summarizeActiveTool(card: ToolGroupSummaryInput): string {
+  if (isWebSearch(card.name)) {
+    return t("chat.toolCards.group.searchingWeb");
+  }
+  const view = resolveToolCallView({ name: card.name, args: card.args });
+  if (view.kind === "command") {
+    return t("chat.toolCards.group.runningCommand", {
+      command: view.command?.split("\n")[0]?.trim() || card.name,
+    });
+  }
+  if (view.kind === "read" || view.kind === "fetch") {
+    return t("chat.toolCards.group.readingTarget", { target: view.target || card.name });
+  }
+  if (view.kind === "edit" || view.kind === "write") {
+    return t("chat.toolCards.group.editingFiles");
+  }
+  if (view.kind === "search") {
+    return t("chat.toolCards.group.searchingFiles");
+  }
+  return t("chat.toolCards.group.usingTool", { tool: card.name });
 }

@@ -601,6 +601,9 @@ describe("isRunningToolCard", () => {
 
     expect(resolveToolCardOutcome(call, false)).toBe("unknown");
     expect(resolveToolCardOutcome({ ...call, live: true }, true)).toBe("running");
+    expect(resolveToolCardOutcome({ ...call, live: true, interrupted: true }, false)).toBe(
+      "interrupted",
+    );
     expect(resolveToolCardOutcome({ ...call, completed: true, outputText: "" }, false)).toBe(
       "succeeded",
     );

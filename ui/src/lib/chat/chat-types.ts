@@ -228,6 +228,8 @@ export type ToolCard = {
   live?: boolean;
   /** True once a result landed, including historical results with empty output. */
   completed?: boolean;
+  /** True when the owning live run ended before a result landed. */
+  interrupted?: boolean;
   messageId?: string;
   preview?: {
     kind: "canvas";
@@ -252,4 +254,4 @@ export type ToolCard = {
   };
 };
 
-export type ToolCardOutcome = "running" | "succeeded" | "failed" | "unknown";
+export type ToolCardOutcome = "running" | "succeeded" | "failed" | "interrupted" | "unknown";

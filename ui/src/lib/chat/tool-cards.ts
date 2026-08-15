@@ -154,6 +154,9 @@ export function resolveToolCardOutcome(
   if (isToolCardError(card)) {
     return "failed";
   }
+  if (card.interrupted) {
+    return "interrupted";
+  }
   if (runActive === true && card.live === true && card.completed !== true) {
     return "running";
   }
@@ -330,7 +333,11 @@ function extractToolCards(message: unknown, prefix = "tool"): ToolCard[] {
         args,
         inputText: serializeToolInput(args),
         ...(isLiveToolStream
-          ? { live: true, completed: m["__openclawToolStreamResultReceived"] === true }
+          ? {
+              live: true,
+              completed: m["__openclawToolStreamResultReceived"] === true,
+              interrupted: m["__openclawToolStreamInterrupted"] === true,
+            }
           : {}),
         ...(liveDiffStat ? { liveDiffStat } : {}),
         messageId: transcriptMessageId,

@@ -551,7 +551,7 @@
   right: 6px;
   z-index: 1;
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity 1s ease;
 }
 
 .chat-tool-card--flush:has(> .chat-tool-card__actions) .chat-tool-term__cmd {
@@ -1019,7 +1019,13 @@
   font: inherit;
   text-align: left;
   user-select: text;
-  transition: background 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.chat-activity-group__summary:disabled {
+  cursor: default;
 }
 
 .chat-activity-group__summary:hover,
@@ -1053,11 +1059,40 @@
   font-weight: 600;
   line-height: 1.4;
   text-overflow: ellipsis;
+  transition: opacity 120ms ease;
   white-space: nowrap;
 }
 
 .chat-activity-group__summary .collapse-chevron {
   flex-shrink: 0;
+  opacity: 0;
+  transform: rotate(0deg);
+  transition:
+    opacity 150ms ease,
+    transform 180ms ease;
+}
+
+.chat-activity-group__summary:hover .collapse-chevron,
+.chat-activity-group__summary:focus-visible .collapse-chevron {
+  opacity: 1;
+}
+
+.chat-activity-group.is-open .collapse-chevron {
+  transform: rotate(90deg);
+}
+
+.chat-activity-group.is-thinking .chat-activity-group__label {
+  color: transparent;
+  background: linear-gradient(100deg, var(--muted) 20%, var(--text) 42%, var(--muted) 64%);
+  background-clip: text;
+  background-size: 220% 100%;
+  animation: chat-activity-shimmer 1.7s linear infinite;
+}
+
+@keyframes chat-activity-shimmer {
+  to {
+    background-position: -220% 0;
+  }
 }
 
 /* Rows form a flat indented list below the summary. The rail marks the group
@@ -1066,28 +1101,46 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin: 4px 0 0 10px;
+  max-height: 0;
+  margin: 0 0 0 10px;
   padding-left: 10px;
   border-left: 2px solid color-mix(in srgb, var(--border) 82%, transparent);
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 220ms ease,
+    margin-top 220ms ease,
+    opacity 150ms ease;
 }
 
-/* Completed-turn work rollup: slim "Worked for X" disclosure standing in for
-   the turn's intermediate tool/commentary groups. Sits snug above the final
-   reply, aligned with the message column via a gutter matching the avatar. */
-.chat-group--work {
-  padding-bottom: 8px;
+.chat-activity-group.is-open .chat-activity-group__body {
+  max-height: 14rem;
+  margin-top: 4px;
+  opacity: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 18px,
+    black calc(100% - 18px),
+    transparent
+  );
+  padding-bottom: 18px;
 }
 
-.chat-work-group__gutter {
-  flex: 0 0 36px;
-}
+@media (prefers-reduced-motion: reduce) {
+  .chat-activity-group__body,
+  .chat-activity-group__summary .collapse-chevron,
+  .chat-activity-group__label {
+    transition: none;
+  }
 
-.chat-thread--direct .chat-work-group__gutter {
-  display: none;
-}
-
-.chat-work-group .chat-activity-group__label {
-  color: var(--muted);
+  .chat-activity-group.is-thinking .chat-activity-group__label {
+    animation: none;
+    color: var(--muted);
+    background: none;
+  }
 }
 
 /* Reading indicator = working claw: the brand pincer claws in place where the

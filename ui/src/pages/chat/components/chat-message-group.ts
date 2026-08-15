@@ -7,8 +7,8 @@ import type { BoardProvider } from "../../../lib/board/provider.ts";
 import type { MessageGroup } from "../../../lib/chat/chat-types.ts";
 import { normalizeRoleForGrouping } from "../../../lib/chat/message-normalizer.ts";
 import { formatSenderLabel } from "../../../lib/chat/sender-label.ts";
-import { summarizeToolGroup } from "../../../lib/chat/tool-call-grouping.ts";
-import { extractToolCardsCached } from "../../../lib/chat/tool-cards.ts";
+import { summarizeActiveTool, summarizeToolGroup } from "../../../lib/chat/tool-call-grouping.ts";
+import { extractToolCardsCached, resolveToolCardOutcome } from "../../../lib/chat/tool-cards.ts";
 import type { EmbedSandboxMode } from "../../../lib/chat/tool-display.ts";
 import { fnv1aUtf16 } from "../../../lib/fnv1a.ts";
 import { resolveIdentityHue } from "../../../lib/identity-avatar.ts";
@@ -43,11 +43,7 @@ import {
   renderMessageMeta,
 } from "./chat-message-timestamp.ts";
 import type { SidebarContent, SidebarFullMessageLoader } from "./chat-sidebar.ts";
-import {
-  isRunningToolCard,
-  resolveToolRowText,
-  shouldToggleSelectableDisclosure,
-} from "./chat-tool-cards.ts";
+import { isRunningToolCard, shouldToggleSelectableDisclosure } from "./chat-tool-cards.ts";
 import { renderTurnRecapRow } from "./chat-working-indicator.ts";
 
 type ActiveContinuation = {
@@ -228,42 +224,61 @@ function shouldAnimateUserTurnEntry(messageKey: string, message: unknown): boole
 export function renderActivityGroup(
   groups: readonly MessageGroup[],
   opts: RenderMessageGroupOptions,
+  activity: { key: string; state: "thinking" | "active" | "summary" } = {
+    key: `activity:${groups[0]?.key ?? "empty"}`,
+    state: "summary",
+  },
 ) {
   const firstGroup = groups[0];
-  if (!firstGroup || opts.showToolCalls === false) {
+  if (opts.showToolCalls === false) {
     return nothing;
   }
   const cards = groups.flatMap((group) =>
     group.messages.flatMap((item) => extractToolCardsCached(item.message, item.key)),
   );
-  const latestGroup = groups[groups.length - 1] ?? firstGroup;
-  const latestCards = latestGroup.messages.flatMap((item) =>
-    extractToolCardsCached(item.message, item.key),
+  const runningCard = cards.findLast((card) => isRunningToolCard(card, opts.runActive));
+  const groupSummaryLabel =
+    activity.state === "thinking" || (activity.state === "active" && !runningCard)
+      ? t("chat.toolCards.group.thinking")
+      : runningCard
+        ? summarizeActiveTool({ name: runningCard.name, args: runningCard.args })
+        : summarizeToolGroup(cards.map((card) => ({ name: card.name, args: card.args })));
+  const activityDisclosureId = activity.key;
+  const activityBodyId = `activity-body-${fnv1aUtf16(activity.key).toString(16)}`;
+  const hasDisclosure = cards.length > 0;
+  const activityExpanded =
+    hasDisclosure &&
+    (activity.state !== "summary" || (opts.isToolMessageExpanded?.(activityDisclosureId) ?? false));
+  const hasError = cards.some((card) => resolveToolCardOutcome(card, opts.runActive) === "failed");
+  const hasInterrupted = cards.some(
+    (card) => resolveToolCardOutcome(card, opts.runActive) === "interrupted",
   );
-  // While a run is live, the newest still-running call names the group so
-  // the collapsed header reads like a status line; afterwards it aggregates.
-  const runningCard = opts.runActive
-    ? latestCards.findLast((card) => isRunningToolCard(card, opts.runActive))
-    : undefined;
-  const groupSummaryLabel = runningCard
-    ? `${resolveToolRowText(runningCard, opts.runActive)}…`
-    : summarizeToolGroup(cards.map((card) => ({ name: card.name, args: card.args })));
-  const activityDisclosureId = `activity:${firstGroup.key}`;
-  const activityBodyId = `activity-body-${fnv1aUtf16(firstGroup.key).toString(16)}`;
-  const activityExpanded = opts.isToolMessageExpanded?.(activityDisclosureId) ?? false;
   const showAvatarGutter = opts.showAvatarGutter !== false;
   const assistantName = opts.assistantName ?? "Assistant";
+  const rowKey = firstGroup?.key ?? activity.key;
+  const role = firstGroup?.role ?? "assistant";
+  const summaryContent = html`
+    <span class="chat-activity-group__icon">${icons.activity}</span>
+    <span class="chat-activity-group__label" title=${groupSummaryLabel}>${groupSummaryLabel}</span>
+    ${hasError
+      ? html`<span class="chat-tool-row__badge">${t("chat.toolCards.failed")}</span>`
+      : hasInterrupted
+        ? html`<span class="chat-tool-row__badge">${t("chat.toolCards.interrupted")}</span>`
+        : nothing}
+    ${hasDisclosure
+      ? html`<span class="collapse-chevron" aria-hidden="true">${icons.chevronRight}</span>`
+      : nothing}
+  `;
 
   return html`
     <div
       class="chat-group tool chat-group--activity chat-group--with-footer"
-      data-chat-row-key=${firstGroup.key}
+      data-chat-row-key=${rowKey}
     >
       ${showAvatarGutter &&
-      (normalizeRoleForGrouping(firstGroup.role) !== "assistant" ||
-        opts.showAssistantAvatar !== false)
+      (normalizeRoleForGrouping(role) !== "assistant" || opts.showAssistantAvatar !== false)
         ? renderChatAvatar(
-            firstGroup.role,
+            role,
             {
               name: assistantName,
               avatar: opts.assistantAvatar ?? null,
@@ -274,35 +289,34 @@ export function renderActivityGroup(
             },
             opts.basePath,
             opts.assistantAttachmentAuthToken,
-            firstGroup.sender,
+            firstGroup?.sender,
           )
         : nothing}
       <div class="chat-group-messages">
-        <div class="chat-activity-group ${activityExpanded ? "is-open" : ""}">
-          <button
-            class="chat-activity-group__summary"
-            type="button"
-            aria-expanded=${String(activityExpanded)}
-            aria-controls=${activityBodyId}
-            @click=${(event: MouseEvent) => {
-              if (shouldToggleSelectableDisclosure(event)) {
-                opts.onToggleToolMessageExpanded?.(activityDisclosureId, activityExpanded);
-              }
-            }}
-          >
-            <span class="chat-activity-group__icon">${icons.activity}</span>
-            <span class="chat-activity-group__label" title=${groupSummaryLabel}
-              >${groupSummaryLabel}</span
-            >
-            <span
-              class="collapse-chevron ${activityExpanded ? "" : "collapse-chevron--collapsed"}"
-              aria-hidden="true"
-              >${icons.chevronDown}</span
-            >
-          </button>
-          <div class="chat-activity-group__body" id=${activityBodyId} ?hidden=${!activityExpanded}>
-            ${activityExpanded
-              ? groups.map((group) =>
+        <div
+          class="chat-activity-group ${activityExpanded ? "is-open" : ""} ${activity.state ===
+          "thinking"
+            ? "is-thinking"
+            : ""} ${hasError ? "has-error" : ""}"
+        >
+          ${hasDisclosure
+            ? html`<button
+                class="chat-activity-group__summary"
+                type="button"
+                aria-expanded=${String(activityExpanded)}
+                aria-controls=${activityBodyId}
+                @click=${(event: MouseEvent) => {
+                  if (shouldToggleSelectableDisclosure(event)) {
+                    opts.onToggleToolMessageExpanded?.(activityDisclosureId, activityExpanded);
+                  }
+                }}
+              >
+                ${summaryContent}
+              </button>`
+            : html`<div class="chat-activity-group__summary">${summaryContent}</div>`}
+          ${hasDisclosure
+            ? html`<div class="chat-activity-group__body" id=${activityBodyId}>
+                ${groups.map((group) =>
                   group.messages.map((item, index) =>
                     renderGroupedMessage(
                       item.message,
@@ -311,14 +325,14 @@ export function renderActivityGroup(
                       opts.onOpenSidebar,
                     ),
                   ),
-                )
-              : nothing}
-          </div>
+                )}
+              </div>`
+            : nothing}
         </div>
       </div>
       <div class="chat-group-footer">
         <span class="chat-sender-name">${t("chat.messages.activity")}</span>
-        ${renderChatTimestamp(firstGroup.timestamp)}
+        ${firstGroup ? renderChatTimestamp(firstGroup.timestamp) : nothing}
       </div>
     </div>
   `;
@@ -380,13 +394,18 @@ export function renderMessageGroup(group: MessageGroup, opts: RenderMessageGroup
     return nothing;
   }
 
-  const groupedToolCards =
-    normalizedRole === "tool"
-      ? group.messages.flatMap((item) => extractToolCardsCached(item.message, item.key))
-      : [];
+  const groupedToolCards = group.messages.flatMap((item) =>
+    extractToolCardsCached(item.message, item.key),
+  );
 
-  if (normalizedRole === "tool" && (group.messages.length > 1 || groupedToolCards.length > 1)) {
-    return renderActivityGroup([group], opts);
+  if (groupedToolCards.length > 0) {
+    return renderActivityGroup([group], opts, {
+      key: `activity:${group.key}`,
+      state:
+        opts.runActive && groupedToolCards.some((card) => isRunningToolCard(card, true))
+          ? "active"
+          : "summary",
+    });
   }
 
   const messageActionDetails = group.messages.map((item) =>

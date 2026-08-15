@@ -1,6 +1,6 @@
 // Control UI tests cover collapsed tool-group summary labels.
 import { describe, expect, it } from "vitest";
-import { summarizeToolGroup } from "./tool-call-grouping.ts";
+import { summarizeActiveTool, summarizeToolGroup } from "./tool-call-grouping.ts";
 
 type ToolGroupSummaryInput = Parameters<typeof summarizeToolGroup>[0][number];
 
@@ -14,7 +14,7 @@ describe("summarizeToolGroup", () => {
         { name: "read", args: { path: "/repo/a.ts" } },
         { name: "read", args: { path: "/repo/b.ts" } },
       ],
-      "Read 2 files",
+      "Read files",
     ],
     [
       "call count when reads carry no paths",
@@ -22,7 +22,7 @@ describe("summarizeToolGroup", () => {
         { name: "read", args: {} },
         { name: "read", args: {} },
       ],
-      "Read 2 files",
+      "Read files",
     ],
     [
       "multiple searches",
@@ -30,7 +30,20 @@ describe("summarizeToolGroup", () => {
         { name: "grep", args: { pattern: "a" } },
         { name: "glob", args: { pattern: "b" } },
       ],
-      "Ran 2 searches",
+      "Searched files",
+    ],
+    [
+      "fixed semantic order across categories",
+      [
+        { name: "web_search", args: { query: "disclosures" } },
+        { name: "exec", args: { command: "pnpm check" } },
+        { name: "read", args: { path: "/repo/a.ts" } },
+        {
+          name: "apply_patch",
+          args: { changes: [{ path: "/repo/a.ts", kind: { type: "update" } }] },
+        },
+      ],
+      "Edited a file, read a file, ran a command, and searched the web",
     ],
     [
       "command-discriminated text editor calls",
@@ -57,7 +70,7 @@ describe("summarizeToolGroup", () => {
           args: { command: "create", filename: "/repo/new.ts", file_text: "new" },
         },
       ],
-      "Read a file, edited a file, created a file",
+      "Edited a file, created a file, and read a file",
     ],
     [
       "text editor calls without a recognized command",
@@ -65,7 +78,7 @@ describe("summarizeToolGroup", () => {
         { name: "str_replace_editor", args: { path: "/repo/a.ts" } },
         { name: "str_replace_based_edit_tool", args: { command: "rename" } },
       ],
-      "Used str_replace_editor, str_replace_based_edit_tool",
+      "Used tools",
     ],
     [
       "multi-file apply_patch targets",
@@ -86,7 +99,7 @@ describe("summarizeToolGroup", () => {
           },
         },
       ],
-      "Edited a file, created a file",
+      "Edited a file and created a file",
     ],
     [
       "structured Codex change targets",
@@ -101,7 +114,7 @@ describe("summarizeToolGroup", () => {
           },
         },
       ],
-      "Edited a file, created a file",
+      "Edited a file and created a file",
     ],
     [
       "deleted Codex targets",
@@ -115,18 +128,38 @@ describe("summarizeToolGroup", () => {
       ],
       "Deleted a file",
     ],
-    ["one generic tool by name", [{ name: "mcp__linear" }], "Used mcp__linear"],
+    ["one generic tool", [{ name: "mcp__linear" }], "Used a tool"],
     [
       "repeat generic tool with a multiplier",
       [{ name: "mcp__linear" }, { name: "mcp__linear" }],
-      "Used mcp__linear ×2",
+      "Used tools",
     ],
     [
       "many distinct generic tools as a count",
       [{ name: "alpha" }, { name: "beta" }, { name: "gamma" }],
-      "Used 3 tools",
+      "Used tools",
     ],
   ])("summarizes %s", (_label, cards, expected) => {
     expect(summarizeToolGroup(cards)).toBe(expected);
+  });
+});
+
+describe("summarizeActiveTool", () => {
+  it.each<[string, ToolGroupSummaryInput, string]>([
+    ["command", { name: "exec", args: { command: "pnpm check" } }, "Running pnpm check"],
+    ["file read", { name: "read", args: { path: "/repo/a.ts" } }, "Reading a.ts"],
+    [
+      "file edit",
+      {
+        name: "apply_patch",
+        args: { changes: [{ path: "/repo/a.ts", kind: { type: "update" } }] },
+      },
+      "Editing files",
+    ],
+    ["local search", { name: "grep", args: { pattern: "activity" } }, "Searching files"],
+    ["web search", { name: "web_search", args: { query: "activity" } }, "Searching the web"],
+    ["unknown tool", { name: "custom_tool", args: {} }, "Using custom_tool"],
+  ])("labels %s conservatively", (_label, card, expected) => {
+    expect(summarizeActiveTool(card)).toBe(expected);
   });
 });

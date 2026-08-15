@@ -690,6 +690,23 @@ afterEach(() => {
 });
 
 describe("grouped chat rendering", () => {
+  it("renders thinking without offering an empty disclosure", () => {
+    const container = document.createElement("div");
+
+    render(
+      renderActivityGroup(
+        [],
+        { showReasoning: true, showToolCalls: true },
+        { key: "thinking:run", state: "thinking" },
+      ),
+      container,
+    );
+
+    expect(container.querySelector(".chat-activity-group__label")?.textContent).toBe("Thinking");
+    expect(container.querySelector(".chat-activity-group__summary")).toBeInstanceOf(HTMLDivElement);
+    expect(container.querySelector(".collapse-chevron")).toBeNull();
+  });
+
   it.each([
     ["text/plain MIME", { label: "note.bin", mimeType: "text/plain" }, true],
     ["JSON MIME", { label: "data.bin", mimeType: "application/json" }, true],
@@ -2142,7 +2159,7 @@ describe("grouped chat rendering", () => {
 
     const activity = expectElement(container, ".chat-activity-group__summary", HTMLButtonElement);
     // Aggregate summary from summarizeToolGroup replaces the old "Activity: N tools" label.
-    expect(activity.textContent).toContain("Ran a command, read a file");
+    expect(activity.textContent).toContain("Read a file and ran a command");
     expect(activity.querySelector(".chat-activity-group__preview")).toBeNull();
     expect(activity.textContent).not.toContain("read_file");
     expect(activity.textContent).not.toContain("run_command");
@@ -2171,10 +2188,10 @@ describe("grouped chat rendering", () => {
     });
 
     const activity = expectElement(container, ".chat-activity-group__summary", HTMLButtonElement);
-    expect(activity.textContent).toContain("Read 2 files");
+    expect(activity.textContent).toContain("Read files");
     expect(
       expectElement(activity, ".chat-activity-group__label", HTMLElement).getAttribute("title"),
-    ).toBe("Read 2 files");
+    ).toBe("Read files");
     expect(container.querySelectorAll(".chat-activity-group")).toHaveLength(1);
     expect(container.querySelector(".chat-tool-msg-body")).toBeNull();
   });
@@ -2210,7 +2227,7 @@ describe("grouped chat rendering", () => {
     expect(container.querySelectorAll(".chat-activity-group")).toHaveLength(1);
     expect(container.querySelectorAll(".chat-activity-group__summary")).toHaveLength(1);
     expect(container.querySelector(".chat-activity-group__label")?.textContent).toContain(
-      "Ran a command, read a file, created a file",
+      "Created a file, read a file, and ran a command",
     );
     expect(container.querySelectorAll(".chat-activity-group__body > .chat-bubble")).toHaveLength(3);
     expect(
@@ -2308,12 +2325,12 @@ describe("grouped chat rendering", () => {
     expect(activitySummary.getAttribute("aria-label")).toBeNull();
     expect(activitySummary.classList.contains("chat-activity-group__summary--error")).toBe(false);
     expect(container.querySelector(".chat-activity-group__label")?.textContent).toBe(
-      "Editing a.ts…",
+      "Editing files",
     );
 
     render(renderActivityGroup(groups, { ...opts, runActive: false }), container);
     expect(container.querySelector(".chat-activity-group__label")?.textContent).toBe(
-      "Read a file, edited a file",
+      "Edited a file and read a file",
     );
   });
 
@@ -2420,7 +2437,7 @@ describe("grouped chat rendering", () => {
     renderMessageGroups(container, [group], { runActive: true });
 
     expect(container.querySelector(".chat-activity-group__label")?.textContent).toBe(
-      "Editing a.ts…",
+      "Editing files",
     );
   });
 
@@ -2455,8 +2472,7 @@ describe("grouped chat rendering", () => {
     expect(activitySummary.classList.contains("chat-activity-group__summary--error")).toBe(false);
     expect(activitySummary.getAttribute("aria-label")).toBeNull();
     expect(activitySummary.getAttribute("aria-expanded")).toBe("false");
-    expect(activitySummary.textContent).not.toContain("failed");
-    expect(activitySummary.querySelector(".chat-activity-group__badge")).toBeNull();
+    expect(activitySummary.textContent).toContain("failed");
     selectText(expectElement(activitySummary, ".chat-activity-group__label", HTMLElement));
     pointerClick(activitySummary);
     expect(onToggleToolMessageExpanded).not.toHaveBeenCalled();
