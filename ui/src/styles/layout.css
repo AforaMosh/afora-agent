@@ -1754,8 +1754,12 @@ body.update-dialog-open .sidebar-update-card__status {
   --sidebar-inset: 8px;
   --sidebar-lead: 20px;
   --sidebar-row-gap: 8px;
-  --sidebar-depth-step: var(--sidebar-lead);
   --sidebar-text-offset: calc(var(--sidebar-inset) + var(--sidebar-lead) + var(--sidebar-row-gap));
+  --sidebar-depth-step: calc(var(--sidebar-lead) + var(--sidebar-row-gap));
+  --sidebar-depth-section: var(--sidebar-text-offset);
+  --sidebar-depth-project: calc(var(--sidebar-depth-section) + var(--sidebar-depth-step));
+  --sidebar-depth-session: calc(var(--sidebar-depth-project) + var(--sidebar-depth-step));
+  --sidebar-depth-branch: calc(var(--sidebar-depth-session) + var(--sidebar-depth-step));
 
   display: flex;
   flex-direction: column;
@@ -2174,11 +2178,10 @@ body.update-dialog-open .sidebar-update-card__status {
     calc(var(--sidebar-inset) + 10px) 0 / 1px 100% no-repeat;
 }
 
-/* Each Coding depth advances by the same lead step. The row's own inset, lead,
-   and gap then put session titles one step after project labels; the branch
-   glyph/value pair supplies the final step inside the row. */
+/* A project nests two levels above its row. The row's own inset, identity rail,
+   and gap then land its title exactly on --sidebar-depth-session. */
 .sidebar-session-catalog-project__sessions {
-  margin-inline-start: calc(var(--sidebar-depth-step) * 2);
+  margin-inline-start: calc(var(--sidebar-depth-session) - var(--sidebar-text-offset));
 }
 
 /* Project marks are product artwork, not sidebar glyphs, so they fill the lead
@@ -2271,6 +2274,14 @@ body.update-dialog-open .sidebar-update-card__status {
   transition:
     background var(--duration-fast) ease,
     color var(--duration-fast) ease;
+}
+
+/* The project artwork begins on its parent label axis. Its text, the child
+   identity, the child title, and the Git glyph/value then repeat one depth step. */
+.sidebar-session-catalog-project__head
+  > .sidebar-session-group-toggle__lead
+  + .sidebar-session-group-toggle__lead {
+  margin-inline-start: var(--sidebar-row-gap);
 }
 
 .sidebar-session-catalog-project__head:hover,
@@ -4843,7 +4854,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 .sidebar-recent-session__subtitle--git {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sidebar-row-gap);
   overflow: visible;
 }
 
@@ -4859,10 +4870,14 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
+  width: var(--sidebar-lead);
   height: 14px;
   flex: none;
   color: var(--muted);
+}
+
+.session-row-worktree-glyph {
+  width: 14px;
 }
 
 .session-row-git-glyph svg {
