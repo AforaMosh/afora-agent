@@ -13,7 +13,6 @@ class CatalogSessionMenu extends OpenClawLightDomElement {
   @property({ attribute: false }) x = 0;
   @property({ attribute: false }) y = 0;
   @property({ attribute: false }) trigger: HTMLElement | null = null;
-  @property({ attribute: false }) lastActive = "";
   @property({ attribute: false }) terminalDisabled = false;
   @property({ attribute: false }) onAction: (action: CatalogSessionMenuAction) => void = () => {};
   @property({ attribute: false }) onClose: () => void = () => {};
@@ -73,11 +72,6 @@ class CatalogSessionMenu extends OpenClawLightDomElement {
           aria-label=${menuLabel}
           style="position: fixed; left: ${x}px; top: ${y}px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
         ></button>
-        ${this.lastActive
-          ? html`<div class="session-menu__info">
-              ${t("sessionsView.lastActive", { time: this.lastActive })}
-            </div>`
-          : ""}
         <wa-dropdown-item class="session-menu__item" value="viewer">
           <span slot="icon" class="session-menu__icon" aria-hidden="true"
             >${icons.messageSquare}</span
