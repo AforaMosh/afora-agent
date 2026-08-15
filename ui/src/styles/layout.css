@@ -4897,44 +4897,42 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   color: color-mix(in srgb, var(--danger) 86%, var(--text));
 }
 
-/* A pending approval is a request, not a report, so its subtitle carries a
-   reddish sweep across the text itself. Clipping the gradient to the glyphs
-   keeps the motion inside the words: a band crossing the whole row would read
-   as the row loading. Traversal 1.8s then a 1.5s rest, so the row asks again
-   without ever becoming a strobe. Reduced motion drops to static warning text
-   below -- the colour alone still separates it from an ordinary subtitle. */
+/* A pending approval is a request, not a report, so a narrow themed highlight
+   traverses the glyphs themselves. The failed-state subtitle stays static. */
 .sidebar-recent-session__subtitle--approval {
+  --sidebar-approval-text: color-mix(in srgb, var(--warn) 82%, var(--text));
+  --sidebar-approval-highlight: color-mix(in srgb, var(--text-strong) 82%, var(--warn));
+
   background-image: linear-gradient(
     90deg,
-    currentColor 0%,
-    currentColor 40%,
-    var(--danger) 50%,
-    currentColor 60%,
-    currentColor 100%
+    var(--sidebar-approval-text) 0%,
+    var(--sidebar-approval-text) 45%,
+    var(--sidebar-approval-highlight) 50%,
+    var(--sidebar-approval-text) 55%,
+    var(--sidebar-approval-text) 100%
   );
-  background-size: 300% 100%;
+  background-size: 200% 100%;
   background-repeat: no-repeat;
   background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: sidebar-approval-shimmer 3.3s linear infinite;
+  animation: sidebar-approval-shimmer 2s linear infinite;
 }
 
-/* 1.8s of travel out of 3.3s is 54.55%; the rest holds the band off the end. */
 @keyframes sidebar-approval-shimmer {
-  0% {
+  from {
     background-position: 100% 0;
   }
-  54.55% {
-    background-position: 0% 0;
-  }
-  100% {
-    background-position: 0% 0;
+  to {
+    background-position: -100% 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar-recent-session__subtitle--approval {
     background-image: none;
+    color: var(--sidebar-approval-text);
     -webkit-text-fill-color: currentColor;
     animation: none;
   }
