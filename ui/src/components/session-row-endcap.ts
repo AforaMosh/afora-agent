@@ -15,10 +15,12 @@ export function renderSessionRowEndcap(params: {
   stateId: string | undefined;
   metadata?: TemplateResult | typeof nothing;
   actions?: TemplateResult | typeof nothing;
+  legacy?: boolean;
+  actionOnly?: boolean;
 }): TemplateResult {
   const state = renderSessionPrimaryState(params.state);
-  return html`<span class="sidebar-recent-session__aside session-row-aside">
-    ${state === nothing
+  const stateContent =
+    state === nothing
       ? nothing
       : html`<span
           class="session-row-state"
@@ -26,7 +28,20 @@ export function renderSessionRowEndcap(params: {
           role="img"
           aria-label=${describeSessionPrimaryState(params.state)}
           >${state}</span
-        >`}
-    ${params.metadata ?? nothing} ${params.actions ?? nothing}
+        >`;
+  if (params.legacy) {
+    return html`<span class="sidebar-recent-session__aside session-row-aside">
+      ${stateContent} ${params.metadata ?? nothing} ${params.actions ?? nothing}
+    </span>`;
+  }
+  return html`<span
+    class="session-row-endcap ${params.actionOnly ? "session-row-endcap--action-only" : ""}"
+  >
+    <span class="session-row-endcap__swap">
+      <span class="session-row-endcap__rest-summary"
+        >${params.metadata ?? nothing}${stateContent}</span
+      >
+      <span class="session-row-endcap__management">${params.actions ?? nothing}</span>
+    </span>
   </span>`;
 }

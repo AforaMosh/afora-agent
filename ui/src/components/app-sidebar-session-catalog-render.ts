@@ -441,6 +441,11 @@ function renderCatalogSessionRow(
   const stateDescription = running ? t("sessionsView.activeRun") : "";
   const stateId = running ? sidebarSessionStateId(key) : undefined;
   const canOpenTerminal = session.canOpenTerminal === true && params.terminalAvailable;
+  const catalogBadges = renderSessionRowBadges({
+    hasAutomation: false,
+    pullRequest: session.pullRequest,
+    maxVisible: 2,
+  });
   const openTerminal = () => params.onOpenTerminal(catalogKey, params.newSessionAgentId);
   const openMenu = (x: number, y: number, trigger?: HTMLElement) =>
     params.onOpenMenu(
@@ -512,15 +517,12 @@ function renderCatalogSessionRow(
             </span>
             ${renderSidebarSessionWorkContext(work, project)}
           </span>
-          ${renderSessionRowBadges({
-            hasAutomation: false,
-            pullRequest: session.pullRequest,
-            maxVisible: 2,
-          })}
         </a>
         ${renderSessionRowEndcap({
           state: running ? { kind: "running" } : { kind: "none" },
           stateId,
+          metadata: catalogBadges,
+          actionOnly: !running && catalogBadges === nothing,
           actions: html`<span class="session-row-actions">
             <button
               class="session-action"

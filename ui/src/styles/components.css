@@ -5589,6 +5589,88 @@ td.data-table-key-col {
   grid-area: 1 / 1;
 }
 
+.session-row-endcap {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.session-row-endcap__swap {
+  display: inline-grid;
+  min-width: 0;
+  min-height: 24px;
+  place-items: center end;
+}
+
+.session-row-endcap__rest-summary,
+.session-row-endcap__management {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: opacity 100ms ease-out;
+}
+
+.session-row-endcap__management {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.session-row-endcap--action-only .session-row-endcap__swap {
+  position: relative;
+  inline-size: 0;
+}
+
+.session-row-endcap--action-only .session-row-endcap__management {
+  position: absolute;
+  z-index: 1;
+  inset-inline-end: 0;
+  padding-inline-start: 6px;
+  background: var(--sidebar-row-surface-hover);
+}
+
+.session-row-endcap__management .session-row-actions {
+  position: static;
+  transform: none;
+}
+
+@media (hover: hover) {
+  .session-row-host:not(.session-row-host--pinned):is(
+      :hover,
+      :focus-within,
+      .session-row-host--menu-open,
+      [data-tooltip-open="true"]
+    )
+    .session-row-endcap__rest-summary {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .session-row-host:not(.session-row-host--pinned):is(
+      :hover,
+      :focus-within,
+      .session-row-host--menu-open,
+      [data-tooltip-open="true"]
+    )
+    .session-row-endcap__management {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .session-row-endcap__rest-summary {
+    display: none;
+  }
+
+  .session-row-endcap__management {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .session-row-state {
   display: inline-flex;
   align-items: center;

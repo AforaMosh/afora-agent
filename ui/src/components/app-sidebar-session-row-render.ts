@@ -50,6 +50,7 @@ import {
 } from "./session-row-subtitle.ts";
 import type { SidebarMenusController } from "./sidebar-menus-controller.ts";
 import { projectPresencePayload } from "./viewer-facepile.ts";
+import { sessionPresenceViewers } from "./viewer-facepile.ts";
 
 const SIDEBAR_VISIBLE_CHILD_SESSION_LIMIT = 4;
 
@@ -281,10 +282,59 @@ export function renderRecentSession(params: {
     requiredScope: "operator.write",
   });
   const rowDraggable = !session.isChild && groupWriteAccess.allowed;
+  const boardIndicator = sessionHasBoard(session.key)
+    ? html`<span
+        class="sidebar-board-glyph"
+        role="img"
+        aria-label=${t("sessionsView.dashboardAvailable")}
+        title=${t("sessionsView.dashboardAvailable")}
+        >${icons.layoutDashboard}</span
+      >`
+    : nothing;
+  const viewerFacepile = html`<openclaw-viewer-facepile
+    .presencePayload=${host.sessionData.presencePayload}
+    .selfUserId=${host.sessionDataContext?.gateway.snapshot.selfUser?.id}
+    .selfInstanceId=${host.sessionData.presenceInstanceId}
+    .sessionKey=${session.key}
+    .excludeUserId=${ownerId}
+    .maxVisible=${session.pinned ? 3 : 2}
+    variant="session"
+  ></openclaw-viewer-facepile>`;
+  const rowBadges = renderSessionRowBadges({
+    ...session,
+    // An active row shows the composer itself, so its own draft is not news.
+    hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
+    maxVisible: session.pinned ? undefined : 2,
+    pullRequest: session.pullRequest ?? display?.pullRequest,
+    // The subtitle already reads "Waiting for approval" whenever the row
+    // owns that attention; a second glyph says nothing new.
+    hasApproval:
+      session.attention.kind !== "approval" &&
+      sessionHasPendingApproval(host.sessionData.approvalBadgeSnapshot(), session.key),
+  });
+  const hasViewers =
+    sessionPresenceViewers(
+      host.sessionData.presencePayload,
+      host.sessionDataContext?.gateway.snapshot.selfUser?.id,
+      host.sessionData.presenceInstanceId,
+      session.key,
+    ).some((viewer) => viewer.id !== ownerId);
+  const hasRestSummary =
+    primaryState.kind !== "none" ||
+    sessionHasBoard(session.key) ||
+    hasViewers ||
+    pullRequestState !== "none" ||
+    rowBadges !== nothing;
   const endcap = renderSessionRowEndcap({
     state: primaryState,
     stateId,
-    metadata: renderSessionWorktreePullRequest(pullRequestState),
+    metadata: session.pinned
+      ? renderSessionWorktreePullRequest(pullRequestState)
+      : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
+          pullRequestState,
+        )}`,
+    legacy: session.pinned || session.isChild,
+    actionOnly: !hasRestSummary,
     actions: session.isChild
       ? nothing
       : html`<span class="session-row-actions">
@@ -388,36 +438,7 @@ export function renderRecentSession(params: {
               ? nothing
               : renderSidebarSessionSubtitle(subtitleValue, params.project)}
           </span>
-          ${!session.isChild && sessionHasBoard(session.key)
-            ? html`<span
-                class="sidebar-board-glyph"
-                role="img"
-                aria-label=${t("sessionsView.dashboardAvailable")}
-                title=${t("sessionsView.dashboardAvailable")}
-                >${icons.layoutDashboard}</span
-              >`
-            : nothing}
-          <openclaw-viewer-facepile
-            .presencePayload=${host.sessionData.presencePayload}
-            .selfUserId=${host.sessionDataContext?.gateway.snapshot.selfUser?.id}
-            .selfInstanceId=${host.sessionData.presenceInstanceId}
-            .sessionKey=${session.key}
-            .excludeUserId=${ownerId}
-            .maxVisible=${session.pinned ? 3 : 2}
-            variant="session"
-          ></openclaw-viewer-facepile>
-          ${renderSessionRowBadges({
-            ...session,
-            // An active row shows the composer itself, so its own draft is not news.
-            hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
-            maxVisible: session.pinned ? undefined : 2,
-            pullRequest: session.pullRequest ?? display?.pullRequest,
-            // The subtitle already reads "Waiting for approval" whenever the row
-            // owns that attention; a second glyph says nothing new.
-            hasApproval:
-              session.attention.kind !== "approval" &&
-              sessionHasPendingApproval(host.sessionData.approvalBadgeSnapshot(), session.key),
-          })}
+          ${session.pinned ? html`${boardIndicator}${viewerFacepile}${rowBadges}` : nothing}
         </a>
         ${session.childSessionKeys.length > 0
           ? html`<button

@@ -166,7 +166,7 @@ suite.define(() => {
       await page.goto(`${suite.server.baseUrl}chat`);
       const row = page.locator('[data-session-key="agent:main:touch-forked"]');
       await row.waitFor({ state: "visible", timeout: 10_000 });
-      const aside = row.locator(".session-row-aside");
+      const aside = row.locator(".session-row-endcap");
       const pin = row.getByRole("button", { name: "Pin session" });
       const menu = row.getByRole("button", { name: "Open session menu" });
       await expect.poll(() => pin.isVisible()).toBe(true);
@@ -317,7 +317,7 @@ suite.define(() => {
       // Passive metadata is the state's sibling in the endcap, never its child:
       // a pull request outlives whichever operational state the row is showing.
       await expect
-        .poll(() => row.locator(".session-row-aside [data-session-pr-state='open']").isVisible())
+        .poll(() => row.locator(".session-row-endcap [data-session-pr-state='open']").isVisible())
         .toBe(true);
       await expect.poll(() => state.locator(".session-run-spinner").isVisible()).toBe(true);
       // This session is running and unread at once. The live run outranks the
