@@ -2367,6 +2367,8 @@ body.update-dialog-open .sidebar-update-card__status {
 /* Every sidebar session source renders a thread. Keep density and text styling
    here so gateway threads and native coding catalogs cannot drift apart. */
 .sidebar-recent-session {
+  --session-row-current-surface: var(--sidebar-row-surface);
+
   --sidebar-child-session-toggle-width: max(34px, calc(36px * var(--control-ui-text-scale)));
 
   display: flex;
@@ -2386,6 +2388,7 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .sidebar-recent-session:hover {
+  --session-row-current-surface: var(--sidebar-row-surface-hover);
   background: var(--sidebar-row-surface-hover);
   color: var(--text);
 }
@@ -2396,6 +2399,7 @@ body.update-dialog-open .sidebar-update-card__status {
    Doubled class outranks .sidebar-recent-session:hover so the selection fill
    does not degrade to the weaker hover fill while the row is under pointer. */
 .sidebar-recent-session.sidebar-recent-session--active {
+  --session-row-current-surface: var(--sidebar-row-surface-selected);
   background: var(--sidebar-row-surface-selected);
   color: var(--text-strong);
 }
@@ -2403,6 +2407,7 @@ body.update-dialog-open .sidebar-update-card__status {
 /* Multi-select stays neutral but slightly stronger than the active fill, so
    selection never borrows the danger-leaning accent color. */
 .sidebar-recent-session.sidebar-recent-session--selected {
+  --session-row-current-surface: var(--sidebar-row-surface-pressed);
   background: var(--sidebar-row-surface-pressed);
   color: var(--text-strong);
 }

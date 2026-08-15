@@ -5627,7 +5627,7 @@ td.data-table-key-col {
   z-index: 1;
   inset-inline-end: 0;
   padding-inline-start: 6px;
-  background: var(--sidebar-row-surface-hover);
+  background: var(--session-row-current-surface, transparent);
 }
 
 .session-row-endcap__management .session-row-actions {
@@ -5811,7 +5811,7 @@ td.data-table-key-col {
 
 .session-action:hover:not(:disabled),
 .session-action:focus-visible:not(:disabled) {
-  background: color-mix(in srgb, var(--bg-hover) 92%, transparent);
+  background: transparent;
   color: var(--text);
 }
 
