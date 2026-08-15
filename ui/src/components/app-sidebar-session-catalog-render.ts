@@ -226,12 +226,10 @@ export function renderSessionCatalogGroups(params: SessionCatalogGroupsParams) {
               ariaLabel: catalog.label,
               title: hasError ? errorHelp : undefined,
               count: collapsed ? rows.length : undefined,
-              lead: hasBrandIcon
-                ? html`<span class="sidebar-session-group-toggle__lead" aria-hidden="true"
-                    >${renderProviderBrandIcon(catalog.id, {
-                      className: "sidebar-session-catalog-provider-icon",
-                    })}</span
-                  >`
+              labelPrefix: hasBrandIcon
+                ? renderProviderBrandIcon(catalog.id, {
+                    className: "sidebar-session-catalog-provider-icon",
+                  })
                 : undefined,
               onToggle: () => params.onToggleSection(sectionId),
             })}

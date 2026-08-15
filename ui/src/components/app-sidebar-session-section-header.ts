@@ -45,6 +45,7 @@ export function renderSidebarSessionSectionToggle(params: {
   ariaLabel?: string;
   title?: string;
   lead?: TemplateResult;
+  labelPrefix?: TemplateResult;
   count?: number;
   onToggle: () => void;
 }): TemplateResult {
@@ -70,9 +71,13 @@ export function renderSidebarSessionSectionToggle(params: {
     </span>
     ${params.lead ?? nothing}
     <span
-      class=${params.labelClassName ?? "sidebar-recent-sessions__label-text"}
+      class="${params.labelClassName ?? "sidebar-recent-sessions__label-text"} ${params.labelPrefix
+        ? "sidebar-session-group-toggle__label--prefixed"
+        : ""}"
       ${ref(createOverflowFadeRef())}
-      >${params.label}</span
+      >${params.labelPrefix ?? nothing}<span class="sidebar-session-group-toggle__label-copy"
+        >${params.label}</span
+      ></span
     >
     ${showCount
       ? html`<span class="sidebar-session-group-count" aria-hidden="true">${params.count}</span>`

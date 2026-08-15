@@ -1897,6 +1897,19 @@ body.update-dialog-open .sidebar-update-card__status {
   flex: 0 0 12px;
 }
 
+/* Provider marks are part of the heading wordmark: the mark, not the text that
+   follows it, starts on the same axis as an unbranded section label. */
+.sidebar-session-group-toggle__label--prefixed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sidebar-session-group-toggle__label-copy {
+  min-width: 0;
+}
+
 .provider-brand-icon.sidebar-session-catalog-provider-icon[data-provider-icon="codex"] {
   color: #111;
 }
