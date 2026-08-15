@@ -298,6 +298,9 @@ export function renderRecentSession(params: {
   ></openclaw-viewer-facepile>`;
   const rowBadges = renderSessionRowBadges({
     ...session,
+    // Sidebar identity markers live at the title start; the trailing badge
+    // set must not duplicate incognito with a second lock.
+    incognito: false,
     // An active row shows the composer itself, so its own draft is not news.
     hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
     maxVisible: session.pinned ? undefined : 2,
