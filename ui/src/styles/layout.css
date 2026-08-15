@@ -3935,8 +3935,8 @@ openclaw-tooltip.session-hover-tooltip {
 }
 
 .session-hover-card {
-  width: min(296px, calc(100vw - 44px));
-  max-width: 320px;
+  width: fit-content;
+  max-width: min(296px, calc(100vw - 44px));
 }
 
 .session-hover-card__header {

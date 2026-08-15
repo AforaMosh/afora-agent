@@ -121,6 +121,19 @@ suite.define(() => {
     }
   });
 
+  it("sizes concise cards to their content", async () => {
+    const { context, page } = await openSidebar();
+
+    try {
+      await page.locator(`[data-session-key="${PLAIN_KEY}"]`).hover();
+      await expect.poll(() => card(page).count(), { timeout: 3_000 }).toBe(1);
+      const width = await card(page).evaluate((element) => element.getBoundingClientRect().width);
+      expect(width).toBeLessThan(296);
+    } finally {
+      await context.close();
+    }
+  });
+
   it("keeps the card while the pointer reaches the row's own controls", async () => {
     const { context, page } = await openSidebar();
 
