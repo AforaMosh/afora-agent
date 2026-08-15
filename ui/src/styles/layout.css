@@ -1114,6 +1114,13 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
   display: none;
 }
 
+.sidebar-shell__scroll-region {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
 .sidebar-shell__body {
   min-height: 0;
   flex: 1;
@@ -1166,6 +1173,27 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
   flex-shrink: 0;
   padding-block-start: 12px;
   border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.sidebar-shell__update-overlay {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 28px 0 4px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--sidebar-bg) 42%);
+}
+
+.sidebar-shell__update-overlay:not(:has(.sidebar-update-card)) {
+  display: none;
+}
+
+.sidebar-shell__update-overlay openclaw-sidebar-update-card {
+  display: block;
+  width: 100%;
+  pointer-events: auto;
 }
 
 .sidebar-customizer {
@@ -1673,18 +1701,13 @@ body.update-dialog-open .sidebar-update-card__status {
   stroke-linejoin: round;
 }
 
-.sidebar-shell__footer .sidebar-update-card {
+.sidebar-shell__update-overlay .sidebar-update-card {
   width: 100%;
-  margin: 0 0 2px;
+  margin: 0;
 }
 
-.sidebar-shell__footer openclaw-sidebar-update-card {
-  display: block;
-  width: 100%;
-}
-
-.sidebar-shell__footer .sidebar-update-card__action,
-.sidebar-shell__footer .sidebar-update-card__availability {
+.sidebar-shell__update-overlay .sidebar-update-card__action,
+.sidebar-shell__update-overlay .sidebar-update-card__availability {
   min-height: 40px;
   padding: 6px 10px;
   border: 0;
@@ -1692,21 +1715,21 @@ body.update-dialog-open .sidebar-update-card__status {
   background: color-mix(in srgb, var(--info) 8%, var(--bg-elevated));
 }
 
-.sidebar-shell__footer .sidebar-update-card__action:hover:not(:disabled),
-.sidebar-shell__footer .sidebar-update-card__action:focus-visible {
+.sidebar-shell__update-overlay .sidebar-update-card__action:hover:not(:disabled),
+.sidebar-shell__update-overlay .sidebar-update-card__action:focus-visible {
   border-color: transparent;
   background: color-mix(in srgb, var(--info) 12%, var(--bg-elevated));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--info) 12%, transparent);
 }
 
-.sidebar-shell__footer .sidebar-update-card__icon {
+.sidebar-shell__update-overlay .sidebar-update-card__icon {
   width: 26px;
   height: 26px;
   background: transparent;
   color: var(--info);
 }
 
-.sidebar-shell__footer .sidebar-update-card__text {
+.sidebar-shell__update-overlay .sidebar-update-card__text {
   font-size: calc(13px * var(--control-ui-text-scale));
   font-weight: 500;
 }

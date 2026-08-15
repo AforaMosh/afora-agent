@@ -615,56 +615,60 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
             ? html`<div class="sidebar-customizer__brand" inert>${renderAppSidebarBrand(this)}</div>
                 ${this.renderSidebarCustomizer()}`
             : html`${renderAppSidebarBrand(this)}
-                <div
-                  class="sidebar-shell__body sidebar-shell__body--scroll-${this.sessionData
-                    .sessionsScrollState} ${this.sidebarScrolling
-                    ? "sidebar-shell__body--scrolling"
-                    : ""}"
-                  @scroll=${(event: Event) =>
-                    this.handleSidebarScroll(event.currentTarget as HTMLElement)}
-                >
-                  <nav class="sidebar-nav">
-                    <div
-                      class="nav-section__items"
-                      @dragover=${(event: DragEvent) =>
-                        this.sessionOrganizer.handleSidebarZoneDragOver(event)}
-                      @dragleave=${(event: DragEvent) =>
-                        this.sessionOrganizer.handleSidebarZoneDragLeave(event)}
-                      @drop=${(event: DragEvent) =>
-                        this.sessionOrganizer.handleSidebarZoneDrop(event)}
-                    >
-                      ${renderAppSidebarHomeRow(this)}
-                      ${sidebarZone.entries.map((entry) =>
-                        renderAppSidebarZoneEntry(
-                          this,
-                          entry,
-                          sidebarZone.sessionRows,
-                          sidebarZone.workboardRows,
-                        ),
-                      )}
-                      ${sidebarPluginTabs(this.context?.gateway.snapshot.hello?.controlUiTabs).map(
-                        (tab) => renderAppSidebarPluginTabEntry(this, tab),
-                      )}
-                      ${renderAppSidebarMoreRow(this)}
-                    </div>
-                  </nav>
-                  ${this.renderSessions()}
+                <div class="sidebar-shell__scroll-region">
+                  <div
+                    class="sidebar-shell__body sidebar-shell__body--scroll-${this.sessionData
+                      .sessionsScrollState} ${this.sidebarScrolling
+                      ? "sidebar-shell__body--scrolling"
+                      : ""}"
+                    @scroll=${(event: Event) =>
+                      this.handleSidebarScroll(event.currentTarget as HTMLElement)}
+                  >
+                    <nav class="sidebar-nav">
+                      <div
+                        class="nav-section__items"
+                        @dragover=${(event: DragEvent) =>
+                          this.sessionOrganizer.handleSidebarZoneDragOver(event)}
+                        @dragleave=${(event: DragEvent) =>
+                          this.sessionOrganizer.handleSidebarZoneDragLeave(event)}
+                        @drop=${(event: DragEvent) =>
+                          this.sessionOrganizer.handleSidebarZoneDrop(event)}
+                      >
+                        ${renderAppSidebarHomeRow(this)}
+                        ${sidebarZone.entries.map((entry) =>
+                          renderAppSidebarZoneEntry(
+                            this,
+                            entry,
+                            sidebarZone.sessionRows,
+                            sidebarZone.workboardRows,
+                          ),
+                        )}
+                        ${sidebarPluginTabs(
+                          this.context?.gateway.snapshot.hello?.controlUiTabs,
+                        ).map((tab) => renderAppSidebarPluginTabEntry(this, tab))}
+                        ${renderAppSidebarMoreRow(this)}
+                      </div>
+                    </nav>
+                    ${this.renderSessions()}
+                  </div>
+                  <div class="sidebar-shell__update-overlay">
+                    <openclaw-sidebar-update-card
+                      .updateAvailable=${this.updateAvailable}
+                      .updateSchedule=${this.updateSchedule}
+                      .heldUpdateCampaignId=${this.heldUpdateCampaignId}
+                      .updateBusy=${this.updateBusy}
+                      .statusBanner=${this.updateStatusBanner}
+                      .watchUpdateProgress=${this.watchUpdateProgress}
+                      .canUpdate=${this.canUpdate}
+                      .canHoldUpdate=${this.canHoldUpdate}
+                      .onUpdate=${this.onUpdate}
+                      .refreshRequired=${this.refreshRequired}
+                      .onRefresh=${this.onRefresh}
+                      .onHoldUpdate=${this.onHoldUpdate}
+                    ></openclaw-sidebar-update-card>
+                  </div>
                 </div>
                 <div class="sidebar-shell__footer">
-                  <openclaw-sidebar-update-card
-                    .updateAvailable=${this.updateAvailable}
-                    .updateSchedule=${this.updateSchedule}
-                    .heldUpdateCampaignId=${this.heldUpdateCampaignId}
-                    .updateBusy=${this.updateBusy}
-                    .statusBanner=${this.updateStatusBanner}
-                    .watchUpdateProgress=${this.watchUpdateProgress}
-                    .canUpdate=${this.canUpdate}
-                    .canHoldUpdate=${this.canHoldUpdate}
-                    .onUpdate=${this.onUpdate}
-                    .refreshRequired=${this.refreshRequired}
-                    .onRefresh=${this.onRefresh}
-                    .onHoldUpdate=${this.onHoldUpdate}
-                  ></openclaw-sidebar-update-card>
                   <openclaw-lobster-pet
                     .seed=${lobsterPetSeed(this.sessionKey)}
                     .mode=${resolveLobsterPetMode(
