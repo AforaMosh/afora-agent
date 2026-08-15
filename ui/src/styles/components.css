@@ -5596,6 +5596,7 @@ td.data-table-key-col {
 }
 
 .session-row-endcap__swap {
+  position: relative;
   display: inline-grid;
   min-width: 0;
   min-height: 24px;
@@ -5613,6 +5614,11 @@ td.data-table-key-col {
 }
 
 .session-row-endcap__management {
+  position: absolute;
+  z-index: 1;
+  inset-inline-end: 0;
+  padding-inline-start: 6px;
+  background: var(--session-row-current-surface, transparent);
   opacity: 0;
   pointer-events: none;
 }
@@ -5623,10 +5629,6 @@ td.data-table-key-col {
 }
 
 .session-row-endcap--action-only .session-row-endcap__management {
-  position: absolute;
-  z-index: 1;
-  inset-inline-end: 0;
-  padding-inline-start: 6px;
   background: var(--session-row-current-surface, transparent);
 }
 
@@ -5682,38 +5684,23 @@ td.data-table-key-col {
 /* Pinned rows expose only one people stack and one state signal at rest.
    Everything else remains available in the hover card or management reveal. */
 .session-row-host--pinned .session-row-endcap__rest-summary {
-  display: inline-grid;
-  grid-template-columns: 44px var(--sidebar-trailing-slot, 20px);
+  display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
 .session-row-pinned-people {
-  grid-column: 1;
-  grid-row: 1;
   display: inline-flex;
-  width: 44px;
   height: 20px;
   align-items: center;
   justify-content: flex-end;
 }
 
-.session-row-pinned-people:has(> openclaw-session-owner-chip) {
-  justify-content: flex-start;
-}
-
 .session-row-pinned-status {
-  grid-column: 2;
-  grid-row: 1;
   display: inline-grid;
   width: var(--sidebar-trailing-slot, 20px);
   height: 20px;
   place-items: center;
-}
-
-.session-row-host--pinned .session-row-endcap__rest-summary > .session-row-state {
-  grid-column: 2;
-  grid-row: 1;
 }
 
 @media (hover: none), (pointer: coarse) {

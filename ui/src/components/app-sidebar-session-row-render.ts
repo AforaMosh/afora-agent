@@ -178,8 +178,6 @@ export function renderRecentSession(params: {
   listItem?: boolean;
   /** Project heading this row already sits under, if any. */
   project?: string;
-  /** Glyph shown ahead of the title; set for rows that sit among Pages entries. */
-  lead?: TemplateResult;
 }) {
   const { host, session, display, listItem = true } = params;
   const pinAccess = host.readSessionMutationAccess({
@@ -215,7 +213,6 @@ export function renderRecentSession(params: {
     ownerId,
   );
   const ownerIndicator = renderSessionOwnerChip(ownerActor, "row", ownerAttribution, ownerViewing);
-  const pinnedOwnerVisible = session.pinned && Boolean(params.lead && ownerActor?.id);
   const primaryState = resolveSessionPrimaryState(session);
   const running = primaryState.kind === "running";
   const displayedPullRequestState = running ? "none" : pullRequestState;
@@ -323,7 +320,7 @@ export function renderRecentSession(params: {
     .selfInstanceId=${host.sessionData.presenceInstanceId}
     .sessionKey=${session.key}
     .excludeUserId=${ownerId}
-    .maxVisible=${session.pinned ? (pinnedOwnerVisible ? 1 : 2) : 2}
+    .maxVisible=${2}
     variant="session"
   ></openclaw-viewer-facepile>`;
   const rowBadges = renderSessionRowBadges({
@@ -368,9 +365,11 @@ export function renderRecentSession(params: {
     metadata: session.isChild
       ? nothing
       : session.pinned
-        ? html`<span class="session-row-pinned-people"
-              >${params.lead ? ownerIndicator : nothing}${viewerFacepile}</span
-            ><span class="session-row-pinned-status">${pinnedStatus}</span>`
+        ? html`${hasViewers
+            ? html`<span class="session-row-pinned-people">${viewerFacepile}</span>`
+            : nothing}${pinnedStatus !== nothing
+            ? html`<span class="session-row-pinned-status">${pinnedStatus}</span>`
+            : nothing}`
         : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
             displayedPullRequestState,
           )}`,
@@ -476,11 +475,7 @@ export function renderRecentSession(params: {
         >
           ${session.isChild
             ? nothing
-            : html`<span class="sidebar-session-indicator"
-                >${params.lead
-                  ? html`<span class="nav-item__icon" aria-hidden="true">${params.lead}</span>`
-                  : ownerIndicator}</span
-              >`}
+            : html`<span class="sidebar-session-indicator">${ownerIndicator}</span>`}
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
               ${session.isChild ? nothing : titleMarkers}
@@ -521,7 +516,6 @@ export function renderSessionTree(params: {
   session: SidebarRecentSession;
   listItem?: boolean;
   project?: string;
-  lead?: TemplateResult;
 }): TemplateResult {
   const { host, session, listItem = true } = params;
   const expanded = host.isSessionChildrenExpanded(session);
@@ -540,7 +534,6 @@ export function renderSessionTree(params: {
       session,
       listItem: false,
       project: params.project,
-      lead: params.lead,
     })}
     ${expanded
       ? html`<div class="sidebar-session-tree__children">
