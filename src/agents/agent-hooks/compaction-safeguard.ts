@@ -1345,8 +1345,12 @@ export default function compactionSafeguardExtension(api: ExtensionAPI): void {
 
       const oracleMessages = [...messagesToSummarize, ...turnPrefixMessages];
       const latestUserAsk = extractLatestUserAsk(oracleMessages);
+      // Raw tool-result literals stay in summarization context but cannot veto compaction.
+      const strictIdentifierMessages = oracleMessages
+        .slice(-10)
+        .filter((message) => message.role !== "toolResult");
       const identifiers = extractOpaqueIdentifiers(
-        oracleMessages.slice(-10).map(extractMessageText).filter(Boolean).join("\n"),
+        strictIdentifierMessages.map(extractMessageText).filter(Boolean).join("\n"),
       );
       const {
         summarizableMessages: summaryTargetMessages,

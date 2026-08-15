@@ -2146,6 +2146,105 @@ describe("compaction-safeguard recent-turn preservation", () => {
     expect(retry.customInstructions).toContain("complete summary body within 16000 UTF-16");
   });
 
+  it("does not block a valid summary on ephemeral identifiers from raw tool output", async () => {
+    mockSummarizeInStages.mockReset();
+    const latestAsk = "Keep /srv/releases/current and report deployment status.";
+    const validSummary = [
+      "## Decisions",
+      "Keep the current release target.",
+      "## Open TODOs",
+      "Report deployment status.",
+      "## Constraints/Rules",
+      "Preserve the operator-selected release path.",
+      "## Pending user asks",
+      latestAsk,
+      "## Exact identifiers",
+      "/srv/releases/current",
+    ].join("\n");
+    mockSummarizeInStages.mockResolvedValue(summaryResult(validSummary));
+
+    const sessionManager = stubSessionManager();
+    setCompactionSafeguardRuntime(sessionManager, {
+      model: createAnthropicModelFixture(),
+      recentTurnsPreserve: 0,
+      qualityGuardEnabled: true,
+      qualityGuardMaxRetries: 1,
+    });
+    const event = createCompactionEvent({ messageText: latestAsk, tokensBefore: 1_500 });
+    event.preparation.messagesToSummarize = [
+      { role: "user", content: latestAsk, timestamp: 1 },
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", id: "call_release_status", name: "exec", arguments: {} }],
+        timestamp: 2,
+      } as unknown as AgentMessage,
+      {
+        role: "toolResult",
+        toolCallId: "call_release_status",
+        toolName: "exec",
+        content: [
+          {
+            type: "text",
+            text: [
+              "chunk_id=93d6c4a10fe247bb",
+              "cache=/private/tmp/openclaw-build/cache-entry.json",
+              "artifact=https://cache.example.test/objects/75a8e62f9df24ceb",
+            ].join("\n"),
+          },
+        ],
+        timestamp: 3,
+      } as unknown as AgentMessage,
+    ];
+    (
+      event.preparation as { settings?: { reserveTokens: number }; isSplitTurn?: boolean }
+    ).settings = { reserveTokens: 4_000 };
+    (event.preparation as { isSplitTurn?: boolean }).isSplitTurn = false;
+
+    const { result } = await runCompactionScenario({ sessionManager, event, apiKey: "test-key" });
+
+    expect(expectCompactionResult(result).summary).toBe(validSummary);
+    expect(mockSummarizeInStages).toHaveBeenCalledOnce();
+  });
+
+  it("still blocks a summary that drops a user-authored identifier", async () => {
+    mockSummarizeInStages.mockReset();
+    const latestAsk = "Report deployment status for /srv/releases/current.";
+    const summaryWithoutUserPath = [
+      "## Decisions",
+      "Keep the current release target.",
+      "## Open TODOs",
+      "Report deployment status.",
+      "## Constraints/Rules",
+      "Preserve the operator-selected release path.",
+      "## Pending user asks",
+      "Report deployment status.",
+      "## Exact identifiers",
+      "None captured.",
+    ].join("\n");
+    mockSummarizeInStages.mockResolvedValue(summaryResult(summaryWithoutUserPath));
+
+    const sessionManager = stubSessionManager();
+    setCompactionSafeguardRuntime(sessionManager, {
+      model: createAnthropicModelFixture(),
+      recentTurnsPreserve: 0,
+      qualityGuardEnabled: true,
+      qualityGuardMaxRetries: 1,
+    });
+    const event = createCompactionEvent({ messageText: latestAsk, tokensBefore: 1_500 });
+    (
+      event.preparation as { settings?: { reserveTokens: number }; isSplitTurn?: boolean }
+    ).settings = { reserveTokens: 4_000 };
+    (event.preparation as { isSplitTurn?: boolean }).isSplitTurn = false;
+
+    const { result } = await runCompactionScenario({ sessionManager, event, apiKey: "test-key" });
+
+    expect(result).toEqual({ cancel: true });
+    expect(mockSummarizeInStages).toHaveBeenCalledTimes(2);
+    expect(consumeCompactionSafeguardCancelReason(sessionManager)).toBe(
+      "Compaction safeguard finalized summary failed quality checks.",
+    );
+  });
+
   it("propagates caller abort during corrective generation", async () => {
     mockSummarizeInStages.mockReset();
     const controller = new AbortController();
