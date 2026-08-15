@@ -1,4 +1,6 @@
 import { html, nothing, type TemplateResult } from "lit";
+import { ref } from "lit/directives/ref.js";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import { writeSidebarSectionDragData } from "../lib/sessions/drag.ts";
 import { icons } from "./icons.ts";
 
@@ -56,7 +58,9 @@ export function renderSidebarSessionSectionToggle(params: {
     @click=${() => params.onToggle()}
   >
     ${params.lead ?? nothing}
-    <span class=${params.labelClassName ?? "sidebar-recent-sessions__label-text"}
+    <span
+      class=${params.labelClassName ?? "sidebar-recent-sessions__label-text"}
+      ${ref(createOverflowFadeRef())}
       >${params.label}</span
     >
     <span

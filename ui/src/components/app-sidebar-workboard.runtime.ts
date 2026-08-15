@@ -1,8 +1,10 @@
 import { html } from "lit";
+import { ref } from "lit/directives/ref.js";
 import type { GatewayBrowserClient } from "../api/gateway.ts";
 import { pathForWorkboardBoard } from "../app-route-paths.ts";
 import { t } from "../i18n/index.ts";
 import { shouldHandleNavigationClick } from "../lib/navigation-click.ts";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import { workboardBoardLabel } from "../lib/workboard/board-presentation.ts";
 import { normalizeBoardsPayload } from "../lib/workboard/normalization.ts";
 import { getWorkboardState } from "../lib/workboard/runtime.ts";
@@ -202,7 +204,9 @@ export const renderSidebarWorkboardEntry: SidebarWorkboardRenderers["renderEntry
       <span class="nav-item__icon" aria-hidden="true"
         >${renderWorkboardBoardGlyph(params.board, "workboard-board-glyph--sidebar")}</span
       >
-      <span class="nav-item__text">${workboardBoardLabel(params.board)}</span>
+      <span class="nav-item__text" ${ref(createOverflowFadeRef())}
+        >${workboardBoardLabel(params.board)}</span
+      >
     </a>
   `;
 };

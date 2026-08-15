@@ -1,6 +1,7 @@
 // Sidebar nav rows plus the More and pin-editor menus, split out of
 // app-sidebar.ts to keep that hot component inside the TS LOC ratchet.
 import { html, nothing } from "lit";
+import { ref } from "lit/directives/ref.js";
 import type { GatewayControlUiPluginTab } from "../api/gateway.ts";
 import {
   isPluginsHubRoute,
@@ -15,6 +16,7 @@ import {
 import { pathForRoute } from "../app-route-paths.ts";
 import { t } from "../i18n/index.ts";
 import { shouldHandleNavigationClick } from "../lib/navigation-click.ts";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import { pluginTabSearch } from "../pages/plugin/route.ts";
 import { icons, type IconName } from "./icons.ts";
 import type { SidebarAutomationAttention } from "./sidebar-attention-items.ts";
@@ -102,7 +104,9 @@ export function renderSidebarNavRoute(params: SidebarNavRouteParams) {
       <span class="nav-item__icon" aria-hidden="true"
         >${icons[navigationIconForRoute(params.routeId)]}</span
       >
-      <span class="nav-item__text">${titleForRoute(params.routeId)}</span>
+      <span class="nav-item__text" ${ref(createOverflowFadeRef())}
+        >${titleForRoute(params.routeId)}</span
+      >
       ${renderAutomationAttentionIndicator(params.attention)}
     </a>
   `;
@@ -132,7 +136,7 @@ export function renderSidebarPluginTab(params: {
       }}
     >
       <span class="nav-item__icon" aria-hidden="true">${icons[iconName]}</span>
-      <span class="nav-item__text">${params.tab.label}</span>
+      <span class="nav-item__text" ${ref(createOverflowFadeRef())}>${params.tab.label}</span>
     </a>
   `;
 }

@@ -1,8 +1,10 @@
 import { html, nothing } from "lit";
 import { keyed } from "lit/directives/keyed.js";
+import { ref } from "lit/directives/ref.js";
 import type { SessionObserverDigest } from "../../../packages/gateway-protocol/src/schema/sessions.js";
 import { t } from "../i18n/index.ts";
 import { pickFreshestObserverDigest } from "../lib/observer-digest.ts";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import type { SessionWorkContext } from "../lib/session-display.ts";
 import type { SidebarRecentSession, SidebarSessionAttention } from "./app-sidebar-session-types.ts";
 import { icons } from "./icons.ts";
@@ -124,6 +126,7 @@ export function renderSidebarSessionSubtitle(value: SidebarSessionSubtitle, proj
       value.narration,
       html`<span
         class="sidebar-recent-session__subtitle sidebar-recent-session__subtitle--narration"
+        ${ref(createOverflowFadeRef())}
         >${value.subtitle}</span
       >`,
     );
@@ -131,7 +134,11 @@ export function renderSidebarSessionSubtitle(value: SidebarSessionSubtitle, proj
   // A pending approval is the one subtitle that is also a request: it shimmers
   // so a waiting session reads as waiting without spending the row's state slot.
   const approval = value.awaitingApproval ? " sidebar-recent-session__subtitle--approval" : "";
-  return html`<span class="sidebar-recent-session__subtitle${approval}">${value.subtitle}</span>`;
+  return html`<span
+    class="sidebar-recent-session__subtitle${approval}"
+    ${ref(createOverflowFadeRef())}
+    >${value.subtitle}</span
+  >`;
 }
 
 export function renderSidebarSessionWorkContext(work: SessionWorkContext, project?: string) {
@@ -144,7 +151,9 @@ export function renderSidebarSessionWorkContext(work: SessionWorkContext, projec
     ${work.branch
       ? html`<span class="session-row-git-glyph" aria-hidden="true">${icons.gitBranch}</span>`
       : nothing}
-    <span class="sidebar-recent-session__subtitle-text">${text}</span>
+    <span class="sidebar-recent-session__subtitle-text" ${ref(createOverflowFadeRef())}
+      >${text}</span
+    >
     ${work.worktree
       ? html`<span
           class="session-row-worktree-glyph"

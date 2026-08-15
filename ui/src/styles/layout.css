@@ -982,6 +982,22 @@ openclaw-settings-save-indicator {
   box-shadow: none;
 }
 
+/* Sidebar copy never ends in a synthetic ellipsis. Text that genuinely runs
+   out of room keeps its real glyphs and dissolves at the physical edge; the
+   ResizeObserver-backed attribute prevents short labels from fading. */
+.sidebar-shell [data-overflow-fade] {
+  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 10px), transparent 100%);
+  mask-image: linear-gradient(to right, black 0, black calc(100% - 10px), transparent 100%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  text-overflow: clip;
+}
+
+.sidebar-shell [data-overflow-fade]:dir(rtl) {
+  -webkit-mask-image: linear-gradient(to left, black 0, black calc(100% - 10px), transparent 100%);
+  mask-image: linear-gradient(to left, black 0, black calc(100% - 10px), transparent 100%);
+}
+
 /* Top-layer menus do not inherit sidebar ancestry, so every sidebar-owned
    surface participates explicitly in the same Lucide optical contract. */
 :is(
@@ -2199,7 +2215,7 @@ body.update-dialog-open .sidebar-update-card__status {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -2250,7 +2266,7 @@ body.update-dialog-open .sidebar-update-card__status {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
   font-size: calc(12px * var(--control-ui-text-scale));
   font-weight: 650;
@@ -2628,7 +2644,7 @@ body.update-dialog-open .sidebar-update-card__status {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
   font-family: inherit;
   font-size: var(--sidebar-type-session-size);
@@ -2643,19 +2659,6 @@ body.update-dialog-open .sidebar-update-card__status {
   display: inline-block;
   min-width: max-content;
   transform: translateX(0);
-}
-
-.sidebar-recent-session__name[data-overflow-fade] {
-  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 10px), transparent 100%);
-  mask-image: linear-gradient(to right, black 0, black calc(100% - 10px), transparent 100%);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  text-overflow: clip;
-}
-
-.sidebar-recent-session__name[data-overflow-fade]:dir(rtl) {
-  -webkit-mask-image: linear-gradient(to left, black 0, black calc(100% - 10px), transparent 100%);
-  mask-image: linear-gradient(to left, black 0, black calc(100% - 10px), transparent 100%);
 }
 
 .session-row-host[data-session-manageable="true"]:is(:hover, :focus-within)
@@ -3274,6 +3277,9 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 }
 
 .nav-item__text {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
   font-size: var(--sidebar-type-page-size);
   font-weight: var(--sidebar-type-page-weight);
   line-height: var(--sidebar-type-page-line-height);
@@ -3431,7 +3437,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   font-size: var(--control-ui-text-md);
   font-weight: 650;
   line-height: 1.2;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -3821,7 +3827,7 @@ openclaw-sidebar-attention {
 .sidebar-identity-card__name,
 .sidebar-identity-card__subtitle {
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -3864,7 +3870,7 @@ openclaw-sidebar-attention {
 .sidebar-identity-card__gateway-name {
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -4743,7 +4749,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 
 .sidebar-recent-session__subtitle {
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
   font-size: var(--sidebar-type-subtitle-size);
   letter-spacing: normal;
@@ -4766,7 +4772,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 .sidebar-recent-session__subtitle-text {
   overflow: hidden;
   min-width: 0;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   white-space: nowrap;
 }
 

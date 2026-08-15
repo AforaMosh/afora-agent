@@ -20,6 +20,8 @@ const BLOCKED_KEY = "agent:main:blocked";
 const PINNED_KEY = "agent:main:pinned";
 
 const LONG_TITLE = "Reconcile the workspace conflict that blocks the nightly export from finishing";
+const LONG_SUBTITLE =
+  "Same failure five runs in a row - it may need the complete retry window diagnosis";
 
 /**
  * Every endcap the row can rest with, so a reveal is proven against an empty
@@ -28,7 +30,7 @@ const LONG_TITLE = "Reconcile the workspace conflict that blocks the nightly exp
 function overflowFixture() {
   return sessionsListResponse([
     sessionRow(SHORT_KEY, "Release notes", 6),
-    sessionRow(LONG_KEY, LONG_TITLE, 5),
+    sessionRow(LONG_KEY, LONG_TITLE, 5, { lastMessagePreview: LONG_SUBTITLE }),
     sessionRow(RUNNING_KEY, `${LONG_TITLE} while running`, 4, {
       hasActiveRun: true,
       status: "running",
@@ -150,6 +152,26 @@ suite.define(() => {
           ),
         ),
       ).toBeGreaterThan(0);
+    } finally {
+      await context.close();
+    }
+  });
+
+  it("fades a clipped subtitle without replacing its ending with an ellipsis", async () => {
+    const { context, page } = await openSidebar("light");
+
+    try {
+      const subtitle = page.locator(
+        `[data-session-key="${LONG_KEY}"] .sidebar-recent-session__subtitle`,
+      );
+      await expect.poll(() => subtitle.getAttribute("data-overflow-fade")).not.toBeNull();
+      expect(
+        await subtitle.evaluate((element) => ({
+          overflow: getComputedStyle(element).overflow,
+          textOverflow: getComputedStyle(element).textOverflow,
+          text: element.textContent,
+        })),
+      ).toEqual({ overflow: "hidden", textOverflow: "clip", text: LONG_SUBTITLE });
     } finally {
       await context.close();
     }

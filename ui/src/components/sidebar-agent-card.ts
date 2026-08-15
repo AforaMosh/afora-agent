@@ -1,7 +1,9 @@
 import { html, nothing } from "lit";
 import { property } from "lit/decorators.js";
+import { ref } from "lit/directives/ref.js";
 import { t } from "../i18n/index.ts";
 import { AuthenticatedAvatarRouteLoader } from "../lib/authenticated-avatar-route.ts";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
 import { icons } from "./icons.ts";
 import "./tooltip.ts";
@@ -77,7 +79,7 @@ class SidebarAgentCard extends OpenClawLightDomContentsElement {
                 >`}
           </span>
           <span class="sidebar-agent-card__text">
-            <span class="sidebar-agent-card__name">
+            <span class="sidebar-agent-card__name" ${ref(createOverflowFadeRef())}>
               ${this.agentName}
               <span class="sidebar-agent-card__chevron" aria-hidden="true"
                 >${icons.chevronsUpDown}</span

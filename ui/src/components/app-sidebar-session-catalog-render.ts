@@ -316,7 +316,9 @@ function renderCatalogHostGroup(
             <span class="sidebar-session-group-toggle__lead" aria-hidden="true">
               <span class="sidebar-session-group-toggle__icon">${icons.monitor}</span>
             </span>
-            <span class="sidebar-session-catalog-host__label">${host.label}</span>
+            <span class="sidebar-session-catalog-host__label" ${ref(createOverflowFadeRef())}
+              >${host.label}</span
+            >
             ${host.error
               ? html`<span
                   class="sidebar-session-group-status sidebar-session-group-status--error"

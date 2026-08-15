@@ -1,4 +1,5 @@
 import { html, nothing } from "lit";
+import { ref } from "lit/directives/ref.js";
 import type { GatewayControlUiPluginTab } from "../api/gateway.ts";
 import {
   serializeSidebarEntry,
@@ -15,6 +16,7 @@ import { normalizeAgentLabel, resolveAgentTextAvatar } from "../lib/agents/displ
 import { deriveAvatarInitial, resolveAgentAvatarUrl } from "../lib/avatar.ts";
 import { sessionHasBoard } from "../lib/board/provider.ts";
 import { shouldHandleNavigationClick } from "../lib/navigation-click.ts";
+import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import {
   resolveSessionPreferredFace,
   sessionNavigationTarget,
@@ -229,7 +231,7 @@ export function renderAppSidebarHomeRow(host: AppSidebarRenderHost) {
             >${homeGlyph}</openclaw-tooltip
           >`
         : homeGlyph}
-      <span class="nav-item__text">${t("nav.home")}</span>
+      <span class="nav-item__text" ${ref(createOverflowFadeRef())}>${t("nav.home")}</span>
       ${sessionHasBoard(mainKey)
         ? html`<openclaw-tooltip .content=${t("sessionsView.dashboardAvailable")}>
             <span
@@ -265,7 +267,7 @@ export function renderAppSidebarMoreRow(host: AppSidebarRenderHost) {
         host.sidebarMenus.toggleMoreMenu(event.currentTarget as HTMLElement)}
     >
       <span class="nav-item__icon" aria-hidden="true">${icons.moreHorizontal}</span>
-      <span class="nav-item__text">${t("nav.more")}</span>
+      <span class="nav-item__text" ${ref(createOverflowFadeRef())}>${t("nav.more")}</span>
     </button>
   `;
 }
@@ -307,9 +309,17 @@ export function renderAppSidebarFooterBar(host: AppSidebarRenderHost) {
       >
         <openclaw-viewer-avatar .user=${avatarUser} variant="footer"></openclaw-viewer-avatar>
         <span class="sidebar-identity-card__text">
-          <span class="sidebar-identity-card__name" title=${selfLabel}>${selfLabel}</span>
+          <span
+            class="sidebar-identity-card__name"
+            title=${selfLabel}
+            ${ref(createOverflowFadeRef())}
+            >${selfLabel}</span
+          >
           ${host.offline
-            ? html`<span class="sidebar-identity-card__subtitle" aria-hidden="true"
+            ? html`<span
+                class="sidebar-identity-card__subtitle"
+                aria-hidden="true"
+                ${ref(createOverflowFadeRef())}
                 >${t("connection.reconnecting")}</span
               >`
             : gateway
@@ -321,7 +331,9 @@ export function renderAppSidebarFooterBar(host: AppSidebarRenderHost) {
                     class="sidebar-identity-card__gateway-health"
                     data-health=${gateway.health}
                   ></span>
-                  <span class="sidebar-identity-card__gateway-name">${gateway.name}</span>
+                  <span class="sidebar-identity-card__gateway-name" ${ref(createOverflowFadeRef())}
+                    >${gateway.name}</span
+                  >
                   ${gatewayPrimaryTag
                     ? html`<span class="sidebar-identity-card__gateway-primary"
                         >· ${gatewayPrimaryTag}</span
@@ -329,7 +341,10 @@ export function renderAppSidebarFooterBar(host: AppSidebarRenderHost) {
                     : nothing}
                 </span>`
               : buildSubtitle
-                ? html`<span class="sidebar-identity-card__subtitle" aria-hidden="true"
+                ? html`<span
+                    class="sidebar-identity-card__subtitle"
+                    aria-hidden="true"
+                    ${ref(createOverflowFadeRef())}
                     >${buildSubtitle}</span
                   >`
                 : nothing}
