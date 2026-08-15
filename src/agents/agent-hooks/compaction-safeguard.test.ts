@@ -2181,14 +2181,14 @@ describe("compaction-safeguard recent-turn preservation", () => {
       {
         role: "toolResult",
         toolCallId: "call_release_status",
-        toolName: "exec",
+        toolName: "functions.exec",
         content: [
           {
             type: "text",
             text: [
               "chunk_id=93d6c4a10fe247bb",
-              "cache=/private/tmp/openclaw-build/cache-entry.json",
-              "artifact=https://cache.example.test/objects/75a8e62f9df24ceb",
+              "cache_path=/private/tmp/openclaw-build/cache-entry.json",
+              "temp_path=/tmp/openclaw-build/75a8e62f9df24ceb.json",
             ].join("\n"),
           },
         ],
@@ -2204,6 +2204,69 @@ describe("compaction-safeguard recent-turn preservation", () => {
 
     expect(expectCompactionResult(result).summary).toBe(validSummary);
     expect(mockSummarizeInStages).toHaveBeenCalledOnce();
+  });
+
+  it("still blocks a summary that drops continuity identifiers discovered by a tool", async () => {
+    mockSummarizeInStages.mockReset();
+    const latestAsk = "Inspect the deployment and report status.";
+    const summaryWithoutToolIdentifiers = [
+      "## Decisions",
+      "Keep the current deployment.",
+      "## Open TODOs",
+      "Report deployment status.",
+      "## Constraints/Rules",
+      "Preserve deployment continuity.",
+      "## Pending user asks",
+      latestAsk,
+      "## Exact identifiers",
+      "None captured.",
+    ].join("\n");
+    mockSummarizeInStages.mockResolvedValue(summaryResult(summaryWithoutToolIdentifiers));
+
+    const sessionManager = stubSessionManager();
+    setCompactionSafeguardRuntime(sessionManager, {
+      model: createAnthropicModelFixture(),
+      recentTurnsPreserve: 0,
+      qualityGuardEnabled: true,
+      qualityGuardMaxRetries: 1,
+    });
+    const event = createCompactionEvent({ messageText: latestAsk, tokensBefore: 1_500 });
+    event.preparation.messagesToSummarize = [
+      { role: "user", content: latestAsk, timestamp: 1 },
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", id: "call_deployment", name: "exec", arguments: {} }],
+        timestamp: 2,
+      } as unknown as AgentMessage,
+      {
+        role: "toolResult",
+        toolCallId: "call_deployment",
+        toolName: "exec",
+        content: [
+          {
+            type: "text",
+            text: [
+              "deployment_id=75a8e62f9df24ceb",
+              "deployment_path=/srv/deployments/active/release.json",
+              "artifact_url=https://artifacts.example.test/releases/75a8e62f9df24ceb",
+            ].join("\n"),
+          },
+        ],
+        timestamp: 3,
+      } as unknown as AgentMessage,
+    ];
+    (
+      event.preparation as { settings?: { reserveTokens: number }; isSplitTurn?: boolean }
+    ).settings = { reserveTokens: 4_000 };
+    (event.preparation as { isSplitTurn?: boolean }).isSplitTurn = false;
+
+    const { result } = await runCompactionScenario({ sessionManager, event, apiKey: "test-key" });
+
+    expect(result).toEqual({ cancel: true });
+    expect(mockSummarizeInStages).toHaveBeenCalledTimes(2);
+    expect(consumeCompactionSafeguardCancelReason(sessionManager)).toBe(
+      "Compaction safeguard finalized summary failed quality checks.",
+    );
   });
 
   it("still blocks a summary that drops a user-authored identifier", async () => {
