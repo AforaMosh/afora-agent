@@ -1084,8 +1084,11 @@ esac
     expect(configure.run).toContain(
       'npm_wrapper="$PERFORMANCE_HELPER_DIR/scripts/ocm-npm-workspace-deps.mts"',
     );
-    expect(configure.run).toContain("OCM_INTERNAL_NPM_BIN=$npm_adapter");
-    expect(configure.run).toContain("OPENCLAW_OCM_NPM_WRAPPER=$npm_wrapper");
+    expect(configure.run).toContain("OCM_INTERNAL_NPM_BIN=$npm_wrapper");
+    expect(configure.run).toContain('chmod 0755 "$npm_wrapper"');
+    expect(configure.run).not.toContain("npm_adapter=");
+    expect(configure.run).not.toContain("OPENCLAW_OCM_NPM_WRAPPER");
+    expect(configure.run).not.toContain("node --import tsx");
     expect(configure.run).toContain(
       'if [[ -f "${GITHUB_WORKSPACE}/packages/ai/package.json" ]]; then',
     );
