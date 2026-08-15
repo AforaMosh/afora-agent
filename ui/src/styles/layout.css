@@ -1943,6 +1943,11 @@ body.update-dialog-open .sidebar-update-card__status {
   color: #111;
 }
 
+:root[data-theme-mode="dark"]
+  .provider-brand-icon.sidebar-session-catalog-provider-icon[data-provider-icon="codex"] {
+  color: #f6f6f6;
+}
+
 .sidebar-session-group-count {
   flex: 0 0 auto;
   color: var(--muted);
