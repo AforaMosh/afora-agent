@@ -97,7 +97,8 @@ export function resolveSidebarSessionSubtitle(params: {
     subtitle,
     narration,
     waitingAttention:
-      (session.attention.kind === "approval" || session.attention.kind === "question") &&
+      session.attention.kind !== "none" &&
+      session.attention.kind !== "error" &&
       subtitle === attention,
     work,
   };
