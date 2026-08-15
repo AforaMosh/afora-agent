@@ -343,12 +343,12 @@ class SidebarAttention extends OpenClawLightDomContentsElement {
         </span>
         ${actionLabel
           ? html`<span class="sidebar-issues-panel__action">${actionLabel}</span>`
-          : nothing}
-        <span class="sidebar-issues-panel__chevron" aria-hidden="true">${icons.chevronRight}</span>
+          : html`<span class="sidebar-issues-panel__chevron" aria-hidden="true"
+              >${icons.chevronRight}</span
+            >`}
       </button>
     `;
   }
-
 
   override render() {
     if (this.context?.gateway.snapshot.phase !== "connected") {

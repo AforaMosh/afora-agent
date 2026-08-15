@@ -112,7 +112,7 @@ suite.define(() => {
       expect(await card(page).locator(".session-hover-card__divider").count()).toBe(0);
       expect(await card(page).getByText("Created by").count()).toBe(0);
       expect(await card(page).getByText("/Users/ada/code/openclaw").count()).toBe(0);
-      expect(Math.round((await card(page).boundingBox())?.width ?? 0)).toBe(296);
+      expect(await card(page).evaluate((element) => getComputedStyle(element).width)).toBe("296px");
       // Two lines of title, not one clipped line.
       const title = await card(page).locator(".session-hover-card__title").boundingBox();
       expect(title?.height ?? 0).toBeGreaterThan(20);

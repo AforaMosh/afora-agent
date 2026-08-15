@@ -80,7 +80,7 @@ export function buildSidebarIssuesSnapshot(params: {
       severity: "warning",
       icon: "calendarClock",
       entityLabel: cronJobName(job),
-      stateLabel: t("attention.overdue"),
+      stateLabel: t("attention.missedSchedule"),
       action: { kind: "navigate", routeId: "cron" },
       raisedAt: Math.min(job.state?.nextRunAtMs ?? params.now, params.now),
     });

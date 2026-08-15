@@ -52,10 +52,6 @@ suite.define(() => {
       const parentKey = "agent:main:release-plan";
       const childKey = "agent:main:verify-release";
       const draftKey = "agent:main:draft";
-      const unreadKey = "agent:main:unread";
-      const failedKey = "agent:main:failed";
-      const runningKey = "agent:main:running";
-      const researchKey = "agent:main:research";
       await installMockGateway(page, {
         featureMethods: ["sessions.catalog.list"],
         methodResponses: {
@@ -85,6 +81,7 @@ suite.define(() => {
                   },
                   {
                     ...sessionRow(parentKey, "Release plan", baseTime - 1_000, {
+                      category: "Research",
                       childSessions: [childKey],
                       worktree: {
                         branch: "feat/release-plan",
@@ -100,21 +97,6 @@ suite.define(() => {
                     ),
                     visibility: "draft",
                   },
-                  sessionRow(unreadKey, "Unread handoff", baseTime - 4_000, { unread: true }),
-                  {
-                    ...sessionRow(failedKey, "Model budget review", baseTime - 5_000, {
-                      status: "failed",
-                      endedAt: baseTime - 5_000,
-                    }),
-                    lastRunError: "Model budget exceeded",
-                  },
-                  sessionRow(runningKey, "Sync release evidence", baseTime - 6_000, {
-                    hasActiveRun: true,
-                    status: "running",
-                  }),
-                  sessionRow(researchKey, "Research notes", baseTime - 7_000, {
-                    category: "Research",
-                  }),
                 ]),
               },
             ],
@@ -160,9 +142,6 @@ suite.define(() => {
         const pinnedRow = sidebar.locator(`[data-session-key="${pinnedKey}"]`);
         const parentRow = sidebar.locator(`[data-session-key="${parentKey}"]`);
         const draftRow = sidebar.locator(`[data-session-key="${draftKey}"]`);
-        const unreadRow = sidebar.locator(`[data-session-key="${unreadKey}"]`);
-        const failedRow = sidebar.locator(`[data-session-key="${failedKey}"]`);
-        const runningRow = sidebar.locator(`[data-session-key="${runningKey}"]`);
         const catalogRow = sidebar.locator('[data-session-key*="catalog-session"]');
         await parentRow.waitFor();
         await catalogRow.waitFor();
@@ -176,9 +155,6 @@ suite.define(() => {
         for (const title of [
           childRow.locator(".sidebar-recent-session__name"),
           draftRow.locator(".sidebar-recent-session__name"),
-          unreadRow.locator(".sidebar-recent-session__name"),
-          failedRow.locator(".sidebar-recent-session__name"),
-          runningRow.locator(".sidebar-recent-session__name"),
           catalogRow.locator(".sidebar-recent-session__name"),
         ]) {
           expect(await typeMetrics(title)).toEqual(titleContract);
@@ -188,44 +164,6 @@ suite.define(() => {
         );
         expect({ ...pinnedTitleMetrics, weight: titleContract.weight }).toEqual(titleContract);
         expect(Number(pinnedTitleMetrics.weight)).toBeGreaterThan(Number(titleContract.weight));
-        const titleColors = await Promise.all(
-          [draftRow, unreadRow, failedRow].map((row) =>
-            row
-              .locator(".sidebar-recent-session__name")
-              .evaluate((element) => getComputedStyle(element).color),
-          ),
-        );
-        expect(new Set(titleColors).size).toBe(1);
-        expect(
-          await failedRow
-            .locator(".sidebar-recent-session__subtitle")
-            .evaluate((element) => getComputedStyle(element).color),
-        ).not.toBe(titleColors[0]);
-        expect(
-          await runningRow.locator(".session-run-spinner").evaluate((element) => {
-            const style = getComputedStyle(element);
-            const probe = document.createElement("span");
-            probe.style.color = "var(--muted-strong)";
-            document.body.append(probe);
-            const mutedStrong = getComputedStyle(probe).color;
-            probe.remove();
-            return {
-              animationDuration: style.animationDuration,
-              usesMutedStrong: style.borderTopColor === mutedStrong,
-            };
-          }),
-        ).toEqual({
-          animationDuration: "1.45s",
-          usesMutedStrong: true,
-        });
-        expect(
-          await sidebar.locator(`[data-session-key="agent:main:pinned"]`).getAttribute("class"),
-        ).toContain("session-row-host--pinned");
-        expect(
-          await sidebar
-            .locator(`[data-session-key="agent:main:pinned"]`)
-            .getAttribute("data-session-unread"),
-        ).toBe("true");
         await expect
           .poll(() => parentRow.getAttribute("class"))
           .toContain("sidebar-recent-session--active");

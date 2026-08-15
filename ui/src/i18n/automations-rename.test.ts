@@ -29,7 +29,7 @@ const RENAMED_FEATURE_KEYS = [
   "memoryPage.dreaming.intro",
   "tasksPage.runtime.cron",
   "attention.failingRepeatedly",
-  "attention.overdue",
+  "attention.missedSchedule",
   "palette.items.scheduled",
 ] as const;
 

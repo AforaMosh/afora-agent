@@ -1,4 +1,4 @@
-import type { Locator, Page } from "playwright";
+import type { Locator } from "playwright";
 import { expect, it } from "vitest";
 import type { CronJob, CronJobsListResult, ModelAuthStatusResult } from "../api/types.ts";
 import type { ControlUiMockGatewayScenario } from "../test-helpers/control-ui-e2e.ts";
@@ -113,12 +113,23 @@ async function openIssuesPanel(sidebar: Locator) {
       return bellBox && panelBox
         ? {
             bellSize: [bellBox.width, bellBox.height],
+            panelWidth: panelBox.width,
             bottomGap: Math.round(bellBox.y - (panelBox.y + panelBox.height)),
             leftGap: Math.round(panelBox.x - bellBox.x),
           }
         : null;
     })
-    .toEqual({ bellSize: [28, 28], bottomGap: 6, leftGap: 0 });
+    .toEqual({ bellSize: [28, 28], panelWidth: 304, bottomGap: 6, leftGap: 0 });
+  const headingStyle = await panel.locator(".sidebar-issues-panel__heading").evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      text: element.textContent,
+      textTransform: style.textTransform,
+      letterSpacing: style.letterSpacing,
+    };
+  });
+  expect(headingStyle).toMatchObject({ text: "Issues", textTransform: "uppercase" });
+  expect(Number.parseFloat(headingStyle.letterSpacing)).toBeGreaterThan(0);
   return { bell, panel };
 }
 
@@ -127,7 +138,7 @@ async function assertCanonicalParity(bell: Locator, panel: Locator, count: numbe
   expect(await panel.locator(".sidebar-issues-panel__row").count()).toBe(count);
 }
 
-async function unpinAutomations(page: Page, sidebar: Locator) {
+async function unpinAutomations(sidebar: Locator) {
   const moreButton = sidebar.locator(".sidebar-nav__more");
   await moreButton.click();
   const moreMenu = sidebar.locator("wa-dropdown.sidebar-more-menu");
@@ -135,8 +146,8 @@ async function unpinAutomations(page: Page, sidebar: Locator) {
   const editor = sidebar.locator(".sidebar-customizer");
   const automations = editor.locator('[data-sidebar-customizer-id="route:cron"]');
   await automations.getByRole("button", { name: "Hide Automations from sidebar" }).click();
+  await editor.locator(".sidebar-customizer__done").click();
   await expect.poll(() => sidebar.locator('[data-sidebar-entry="route:cron"]').count()).toBe(0);
-  await page.keyboard.press("Escape");
   await moreButton.click();
   const unpinnedMenu = sidebar.locator("wa-dropdown.sidebar-more-menu");
   await unpinnedMenu.waitFor();
@@ -207,7 +218,7 @@ suite.define(() => {
           [automationRow, footer],
         );
 
-        const moreMenu = await unpinAutomations(failedOnce.page, failedOnce.sidebar);
+        const moreMenu = await unpinAutomations(failedOnce.sidebar);
         const menuSurface = moreMenu.locator('[part="menu"]');
         const menuBadge = moreMenu
           .locator('wa-dropdown-item[value="cron"]')
@@ -234,6 +245,11 @@ suite.define(() => {
           const footer = opened.sidebar.locator(".sidebar-footer-bar");
           const { bell, panel } = await openIssuesPanel(opened.sidebar);
           await assertCanonicalParity(bell, panel, 1);
+          if (scenario.name === "overdue") {
+            expect(await panel.locator(".sidebar-issues-panel__state").textContent()).toBe(
+              "Missed schedule",
+            );
+          }
           await captureUnionProof(opened.page, "sidebar-issues", `${theme}-${scenario.name}.png`, [
             panel,
             footer,
@@ -262,18 +278,29 @@ suite.define(() => {
           hasText: "Reconnect",
         });
         const reconnect = reconnectRow.getByText("Reconnect", { exact: true });
-        expect(await reconnectRow.locator(".sidebar-issues-panel__chevron").count()).toBe(1);
+        expect(await reconnectRow.locator(".sidebar-issues-panel__state").textContent()).toBe(
+          "Authentication expired",
+        );
+        expect(await reconnectRow.locator(".sidebar-issues-panel__chevron").count()).toBe(0);
         expect(
           await reconnect.evaluate((element) => {
             const style = getComputedStyle(element);
-            const dangerProbe = document.createElement("span");
-            dangerProbe.style.color = "var(--danger)";
-            document.body.append(dangerProbe);
-            const usesDangerColor = style.color === getComputedStyle(dangerProbe).color;
-            dangerProbe.remove();
-            return { backgroundColor: style.backgroundColor, usesDangerColor };
+            const textProbe = document.createElement("span");
+            textProbe.style.color = "var(--text)";
+            document.body.append(textProbe);
+            const usesTextColor = style.color === getComputedStyle(textProbe).color;
+            textProbe.remove();
+            return {
+              backgroundColor: style.backgroundColor,
+              borderRadius: style.borderRadius,
+              usesTextColor,
+            };
           }),
-        ).toEqual({ backgroundColor: "rgba(0, 0, 0, 0)", usesDangerColor: true });
+        ).toEqual({
+          backgroundColor: expect.not.stringMatching(/^rgba\(0, 0, 0, 0\)$/u),
+          borderRadius: expect.any(String),
+          usesTextColor: true,
+        });
         expect(await bell.evaluate((element) => Boolean(element.closest("openclaw-tooltip")))).toBe(
           false,
         );

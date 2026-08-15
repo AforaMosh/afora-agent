@@ -3597,10 +3597,11 @@ openclaw-sidebar-attention {
 
 .sidebar-issues-panel__heading {
   margin: 0;
-  color: var(--text-strong);
-  font-size: var(--control-ui-text-sm);
+  color: var(--muted);
+  font-size: var(--control-ui-text-xs);
   font-weight: 600;
-  line-height: 18px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .sidebar-issues-panel__list {
@@ -3695,9 +3696,20 @@ openclaw-sidebar-attention {
 
 .sidebar-issues-panel__action {
   flex: none;
-  color: var(--danger);
+  padding: 4px 7px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+  color: var(--text);
   font-size: var(--control-ui-text-xs);
   font-weight: 600;
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+.sidebar-issues-panel__row:hover .sidebar-issues-panel__action {
+  background: color-mix(in srgb, var(--muted) 16%, transparent);
+  color: var(--text-strong);
 }
 
 .sidebar-issues-panel__chevron {

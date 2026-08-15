@@ -182,7 +182,7 @@ describe("sidebar issue derivation", () => {
       {
         id: "automation.failing-repeatedly.alerted",
         entityLabel: "alerted",
-        stateLabel: "failing repeatedly",
+        stateLabel: "Failing repeatedly",
       },
     ]);
     expect(result.automationAttention).toEqual({ count: 2, severity: "danger" });
@@ -251,11 +251,13 @@ describe("sidebar issue derivation", () => {
       {
         id: "auth.expired.google",
         entityLabel: "Gemini",
+        stateLabel: "Authentication expired",
         action: { kind: "navigate", routeId: "model-setup" },
       },
       {
         id: "auth.expired.openai",
         entityLabel: "OpenAI",
+        stateLabel: "Authentication expired",
         action: { kind: "navigate", routeId: "model-setup" },
       },
     ]);

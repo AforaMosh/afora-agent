@@ -206,7 +206,7 @@ suite.define(() => {
         .locator('[data-sidebar-customizer-id="route:cron"]')
         .getByRole("button", { name: "Hide Automations from sidebar" })
         .click();
-      await page.keyboard.press("Escape");
+      await sidebar.locator(".sidebar-customizer__done").click();
 
       await expect.poll(() => directAutomation.count()).toBe(0);
       await moreButton.click();

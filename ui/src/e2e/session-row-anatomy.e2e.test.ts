@@ -169,6 +169,56 @@ for (const colorScheme of ["light", "dark"] as const) {
         // is opened from must not keep advertising an unread it already showed.
         expect(await row(page, OPEN_KEY).locator(".session-row-state").count()).toBe(0);
 
+        const titleMetrics = (key: string) =>
+          row(page, key)
+            .locator(".sidebar-recent-session__name")
+            .evaluate((element) => {
+              const style = getComputedStyle(element);
+              return {
+                family: style.fontFamily,
+                lineHeight: style.lineHeight,
+                size: style.fontSize,
+                weight: style.fontWeight,
+              };
+            });
+        const titleContract = await titleMetrics(QUIET_KEY);
+        expect(await titleMetrics(UNREAD_KEY)).toEqual(titleContract);
+        expect(await titleMetrics(BLOCKED_KEY)).toEqual(titleContract);
+        const pinnedMetrics = await titleMetrics(PINNED_KEY);
+        expect({ ...pinnedMetrics, weight: titleContract.weight }).toEqual(titleContract);
+        expect(Number(pinnedMetrics.weight)).toBeGreaterThan(Number(titleContract.weight));
+
+        const titleColors = await Promise.all(
+          [QUIET_KEY, UNREAD_KEY, BLOCKED_KEY].map((key) =>
+            row(page, key)
+              .locator(".sidebar-recent-session__name")
+              .evaluate((element) => getComputedStyle(element).color),
+          ),
+        );
+        expect(new Set(titleColors).size).toBe(1);
+        expect(
+          await row(page, BLOCKED_KEY)
+            .locator(".sidebar-recent-session__subtitle")
+            .evaluate((element) => getComputedStyle(element).color),
+        ).not.toBe(titleColors[0]);
+
+        expect(
+          await row(page, RUNNING_KEY)
+            .locator(".session-run-spinner")
+            .evaluate((element) => {
+              const style = getComputedStyle(element);
+              const probe = document.createElement("span");
+              probe.style.color = "var(--muted-strong)";
+              document.body.append(probe);
+              const mutedStrong = getComputedStyle(probe).color;
+              probe.remove();
+              return {
+                animationDuration: style.animationDuration,
+                usesMutedStrong: style.borderTopColor === mutedStrong,
+              };
+            }),
+        ).toEqual({ animationDuration: "1.45s", usesMutedStrong: true });
+
         await captureUiProof(page, `row-state-matrix-${colorScheme}.png`, {
           clip: [row(page, PINNED_KEY), row(page, BLOCKED_KEY)],
         });
