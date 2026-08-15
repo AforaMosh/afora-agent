@@ -19,13 +19,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
-// Local record guard by design: preflight runs this script without installed
-// dependencies (the dependency-free manifest contract), so the canonical
-// @openclaw/normalization-core/record-coerce import cannot resolve here.
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+// Preflight runs without installed dependencies, so the canonical
+// normalization-core import cannot resolve; the plain-Node shared seam can.
+import { isRecord } from "./lib/record-shared.mjs";
 
 const GATEWAY_EVENTS_FILE = "src/gateway/server-methods-list.ts";
 const GATEWAY_EVENT_CONSTANTS_FILE = "src/gateway/events.ts";
