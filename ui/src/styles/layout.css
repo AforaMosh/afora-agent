@@ -2421,6 +2421,25 @@ body.update-dialog-open .sidebar-update-card__status {
   text-decoration: none;
 }
 
+/* Creator identity is optional, but its rail is structural: every session
+   title starts on the same axis whether the gateway reports an owner or not. */
+.sidebar-session-indicator {
+  display: inline-flex;
+  width: var(--sidebar-lead);
+  min-height: 20px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--sidebar-lead);
+}
+
+.sidebar-session-indicator > .nav-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  opacity: 1;
+}
+
 .sidebar-child-session-toggle {
   display: inline-flex;
   align-items: center;
