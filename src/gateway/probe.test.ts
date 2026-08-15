@@ -17,7 +17,7 @@ const gatewayClientState = vi.hoisted(() => ({
   helloServer: {
     version: "2026.4.24",
     connId: "conn-test",
-  },
+  } as { version: string; connId: string; buildId?: string },
   connectError: "scope upgrade pending approval (requestId: req-123)",
   connectErrorDetails: {
     code: "PAIRING_REQUIRED",
@@ -325,6 +325,10 @@ describe("probeGateway", () => {
       role: "operator",
       scopes: ["operator.read"],
     };
+    gatewayClientState.helloServer = {
+      version: "2026.4.24",
+      connId: "conn-test",
+    };
     gatewayClientState.connectError = "scope upgrade pending approval (requestId: req-123)";
     gatewayClientState.connectErrorDetails = {
       code: "PAIRING_REQUIRED",
@@ -414,6 +418,22 @@ describe("probeGateway", () => {
     });
     expect(result.server).toEqual({
       version: "2026.4.24",
+      connId: "conn-test",
+    });
+  });
+
+  it("preserves the optional exact server build identity", async () => {
+    gatewayClientState.helloServer = {
+      version: "2026.4.24",
+      buildId: "1efe57b78b85d6d19ab30cc4f282969b6752989d",
+      connId: "conn-test",
+    };
+
+    const result = await runTokenLightweightProbe();
+
+    expect(result.server).toEqual({
+      version: "2026.4.24",
+      buildId: "1efe57b78b85d6d19ab30cc4f282969b6752989d",
       connId: "conn-test",
     });
   });

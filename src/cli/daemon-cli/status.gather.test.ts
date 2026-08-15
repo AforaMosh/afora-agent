@@ -23,7 +23,7 @@ const callGatewayStatusProbe = vi.fn<
     ok: boolean;
     url?: string;
     error?: string | null;
-    server?: { version?: string | null; connId?: string | null };
+    server?: { version?: string | null; buildId?: string; connId?: string | null };
     version?: string | null;
   }>
 >(async (_opts?: unknown) => ({
@@ -789,6 +789,51 @@ describe("gatherDaemonStatus", () => {
       error.mockRestore();
     }
   }, 1_000);
+
+  it("preserves optional exact Gateway build identity in deep JSON status", async () => {
+    callGatewayStatusProbe.mockResolvedValueOnce({
+      ok: true,
+      url: "ws://127.0.0.1:19001",
+      error: null,
+      server: {
+        version: "2026.5.6",
+        buildId: "1efe57b78b85d6d19ab30cc4f282969b6752989d",
+        connId: "conn-1",
+      },
+    });
+
+    const withBuildId = await gatherStatus({ rpc: { json: true }, deep: true });
+    expect(withBuildId.rpc?.server).toEqual({
+      version: "2026.5.6",
+      buildId: "1efe57b78b85d6d19ab30cc4f282969b6752989d",
+      connId: "conn-1",
+    });
+
+    const writeJson = vi.spyOn(defaultRuntime, "writeJson").mockImplementation(() => {});
+    try {
+      printDaemonStatus(withBuildId, { json: true, deep: true });
+      expect(writeJson).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rpc: expect.objectContaining({
+            server: {
+              version: "2026.5.6",
+              buildId: "1efe57b78b85d6d19ab30cc4f282969b6752989d",
+              connId: "conn-1",
+            },
+          }),
+        }),
+      );
+    } finally {
+      writeJson.mockRestore();
+    }
+
+    const withoutBuildId = await gatherStatus({ rpc: { json: true }, deep: true });
+    expect(withoutBuildId.rpc?.server).toEqual({
+      version: "2026.5.6",
+      connId: "conn-1",
+    });
+    expect(withoutBuildId.rpc?.server).not.toHaveProperty("buildId");
+  });
 
   it("keeps gateway status read-only when service management is unsupported", async () => {
     serviceReadCommand.mockResolvedValueOnce(null);

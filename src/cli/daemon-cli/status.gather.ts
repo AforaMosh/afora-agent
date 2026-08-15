@@ -33,6 +33,7 @@ import { trimToUndefined } from "../../gateway/credentials.js";
 import type { HostDesktopStatus } from "../../gateway/desktop/host-source.js";
 import { resolveGatewayRequiredListenHosts } from "../../gateway/net.js";
 import { resolveGatewayProbeCredentialConfig } from "../../gateway/probe-auth.js";
+import type { GatewayProbeServerSummary } from "../../gateway/probe.js";
 import {
   ALL_GATEWAY_SECRET_INPUT_PATHS,
   readGatewaySecretInputValue,
@@ -340,10 +341,7 @@ export type DaemonStatus = {
       scopes?: string[];
       capability?: string;
     };
-    server?: {
-      version?: string | null;
-      connId?: string | null;
-    };
+    server?: Partial<GatewayProbeServerSummary>;
     version?: string | null;
     error?: string;
     connectFailure?: {
