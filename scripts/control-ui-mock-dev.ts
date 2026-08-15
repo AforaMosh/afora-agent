@@ -265,6 +265,170 @@ function buildSessionRows(params: {
   });
 }
 
+const PEOPLE_MATRIX_WATCHER_NAMES = ["Ava", "Ben", "Cleo", "Drew", "Eli", "Faye"] as const;
+
+function buildSessionPeopleMatrix(input: { baseTime: number; riley: SessionCreatorFixture }) {
+  const rows: ReturnType<typeof sessionRow>[] = [];
+  const watcherSessionKeys = PEOPLE_MATRIX_WATCHER_NAMES.map(() => [] as string[]);
+  const creatorSessionKeys = {
+    mira: [] as string[],
+    peter: [] as string[],
+    riley: [] as string[],
+  };
+  const creators = [
+    { key: "none", label: "No creator" },
+    { key: "m", label: "Creator M", actor: MOCK_CREATOR_MIRA, presence: "mira" as const },
+    { key: "p", label: "Creator P", actor: MOCK_CREATOR_PETER, presence: "peter" as const },
+    { key: "riley", label: "Creator Riley", actor: input.riley, presence: "riley" as const },
+  ] as const;
+  const watcherCounts = [0, 1, 2, 3, 6] as const;
+  const signals = [
+    { key: "none", label: "no signal" },
+    { key: "running", label: "running" },
+    { key: "blocked", label: "red dot" },
+    { key: "unread", label: "unread" },
+    { key: "automation-unread", label: "clock + unread" },
+  ] as const;
+  let ordinal = 0;
+
+  const addRow = (params: {
+    key: string;
+    label: string;
+    creator?: (typeof creators)[number];
+    watcherCount: number;
+    options?: Record<string, unknown>;
+  }) => {
+    const sessionKey = `agent:main:people-matrix:${params.key}`;
+    const actor = params.creator && "actor" in params.creator ? params.creator.actor : undefined;
+    rows.push(
+      sessionRow(sessionKey, params.label, input.baseTime - (ordinal + 1) * 1_000, {
+        ...(actor ? { createdActor: actor } : {}),
+        ...params.options,
+      }),
+    );
+    for (let index = 0; index < params.watcherCount; index += 1) {
+      watcherSessionKeys[index]?.push(sessionKey);
+    }
+    if (params.creator && "presence" in params.creator) {
+      creatorSessionKeys[params.creator.presence].push(sessionKey);
+    }
+    ordinal += 1;
+  };
+
+  for (const creator of creators) {
+    for (const watcherCount of watcherCounts) {
+      for (const signal of signals) {
+        const watcherLabel =
+          watcherCount === 0
+            ? "no watchers"
+            : watcherCount === 1
+              ? "1 watcher"
+              : watcherCount === 6
+                ? "5+ watchers"
+                : `${watcherCount} watchers`;
+        const options: Record<string, unknown> = {};
+        if (signal.key === "running") {
+          Object.assign(options, {
+            hasActiveRun: true,
+            startedAt: input.baseTime - 180_000,
+            status: "running",
+          });
+        } else if (signal.key === "blocked") {
+          Object.assign(options, {
+            lastRunError: "Matrix failure while reconciling participants",
+            status: "failed",
+          });
+        } else if (signal.key === "unread") {
+          Object.assign(options, { lastReadAt: input.baseTime - 600_000, unread: true });
+        } else if (signal.key === "automation-unread") {
+          Object.assign(options, {
+            createdVia: "cron",
+            hasAutomation: true,
+            lastReadAt: input.baseTime - 600_000,
+            unread: true,
+          });
+        }
+
+        if (signal.key !== "running" && signal.key !== "blocked") {
+          if (ordinal % 3 === 0) {
+            options.lastMessagePreview = "Routine handoff ready for review.";
+          } else if (ordinal % 3 === 1) {
+            options.lastMessagePreview = '{ "status": "declined", "exitCode": null, "d…';
+          }
+        }
+
+        const draftWithoutPeople =
+          creator.key === "none" && watcherCount === 0 && signal.key === "none";
+        const draftWithPeople =
+          creator.key === "m" && watcherCount === 3 && signal.key === "unread";
+        if (draftWithoutPeople || draftWithPeople) {
+          Object.assign(options, { hasComposerDraft: true, visibility: "draft" });
+        }
+
+        addRow({
+          key: `${creator.key}-${watcherCount}-${signal.key}`,
+          label: `${draftWithoutPeople || draftWithPeople ? "Draft · " : ""}${creator.label} + ${watcherLabel} + ${signal.label}`,
+          creator,
+          watcherCount,
+          options,
+        });
+      }
+    }
+  }
+
+  addRow({
+    key: "pending-no-creator",
+    label: "No creator + 1 watcher + approval pending",
+    watcherCount: 1,
+    options: {
+      agentStatus: {
+        note: "Approval pending",
+        attention: "hand",
+        expiresAt: ATTENTION_FIXTURE_EXPIRES_AT,
+      },
+    },
+  });
+  addRow({
+    key: "pending-full-stack",
+    label: "Creator M + 3 watchers + waiting",
+    creator: creators[1],
+    watcherCount: 3,
+    options: {
+      agentStatus: {
+        note: "Waiting for approval",
+        attention: "hand",
+        expiresAt: ATTENTION_FIXTURE_EXPIRES_AT,
+      },
+    },
+  });
+  addRow({
+    key: "active-full-stack",
+    label: "Active target · Creator P + 5+ watchers + running",
+    creator: creators[2],
+    watcherCount: 6,
+    options: {
+      hasActiveRun: true,
+      lastMessagePreview: "Select this row to inspect the full active stack.",
+      startedAt: input.baseTime - 240_000,
+      status: "running",
+    },
+  });
+  addRow({
+    key: "worst-case",
+    label: "Worst case · Creator P + 5+ watchers + automation + error",
+    creator: creators[2],
+    watcherCount: 6,
+    options: {
+      createdVia: "cron",
+      hasAutomation: true,
+      lastRunError: "Matrix automation failed after participant handoff",
+      status: "failed",
+    },
+  });
+
+  return { creatorSessionKeys, rows, watcherSessionKeys };
+}
+
 function buildSessionListCases(
   sessions: unknown[],
   matchBase: Record<string, unknown> = {},
@@ -1002,6 +1166,16 @@ async function createChatPickerScenario(
     emails: ["riley@example.com"],
     hasAvatar: false,
   };
+  const mockCreatorRiley = {
+    type: "human",
+    id: selfProfile.id,
+    label: selfProfile.displayName ?? "Riley",
+  } satisfies SessionCreatorFixture;
+  const sessionPeopleMatrix = buildSessionPeopleMatrix({
+    baseTime: baseTime - 20_000,
+    riley: mockCreatorRiley,
+  });
+  const mockSessionCreators = [...MOCK_SESSION_CREATORS, mockCreatorRiley];
   const devicePairSetupCode = Buffer.from(
     JSON.stringify({
       url: "wss://gateway.example.test",
@@ -1603,6 +1777,7 @@ async function createChatPickerScenario(
         repoRoot: "~/Projects/peekaboo",
       },
     }),
+    ...sessionPeopleMatrix.rows,
     ...buildSessionRows({
       baseTime: baseTime - 400_000,
       count: 3,
@@ -1743,16 +1918,15 @@ async function createChatPickerScenario(
     // ui/src/lib/terminal-availability.ts).
     terminalEnabled: true,
     historyMessages: buildScrollableChatHistory(baseTime),
-    // Peter is the active creator. Colin, Patricia, Ada, and Nils deliberately
-    // watch the same rows to prove participant presence never grows the creator
-    // column. Mira creates pinned rows but never appears here, so her chip is
-    // the away-creator case while her participants stay live.
+    // Existing rows keep their original people mix. The matrix adds isolated
+    // creator and watcher rosters so every displayed count is exact.
     presenceUsers: [
       {
         self: true,
         id: selfProfile.id,
         name: selfProfile.displayName ?? undefined,
         email: selfProfile.emails[0],
+        watchedSessions: sessionPeopleMatrix.creatorSessionKeys.riley,
       },
       {
         id: MOCK_CREATOR_PETER.id,
@@ -1766,7 +1940,13 @@ async function createChatPickerScenario(
           ACTIVE_CATALOG_SESSION_KEY,
           "agent:main:sidebar-zones",
           "agent:main:clawhub-catalog",
+          ...sessionPeopleMatrix.creatorSessionKeys.peter,
         ],
+      },
+      {
+        id: MOCK_CREATOR_MIRA.id,
+        name: MOCK_CREATOR_MIRA.label,
+        watchedSessions: sessionPeopleMatrix.creatorSessionKeys.mira,
       },
       {
         id: "presence-colin",
@@ -1809,6 +1989,12 @@ async function createChatPickerScenario(
         email: "nils@example.com",
         watchedSessions: [PINNED_CREATOR_VIEWERS_SESSION_KEY, PINNED_AWAY_CREATOR_SESSION_KEY],
       },
+      ...PEOPLE_MATRIX_WATCHER_NAMES.map((name, index) => ({
+        id: `presence-matrix-${name.toLowerCase()}`,
+        name,
+        email: `${name.toLowerCase()}@example.com`,
+        watchedSessions: sessionPeopleMatrix.watcherSessionKeys[index] ?? [],
+      })),
     ],
     methodResponses: {
       ...buildBackgroundTasksMock(baseTime),
@@ -2595,7 +2781,7 @@ async function createChatPickerScenario(
             ...searchPrefixes("claude-sonnet-4-6"),
             ...searchPrefixes("anthropic"),
           ]),
-          ...buildSessionListCases([...sessions, ...archivedSessions], {}, MOCK_SESSION_CREATORS),
+          ...buildSessionListCases([...sessions, ...archivedSessions], {}, mockSessionCreators),
         ],
       },
     },

@@ -2180,7 +2180,7 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .sidebar-session-tree__children {
-  margin-left: var(--sidebar-lead);
+  margin-inline-start: var(--sidebar-depth-step, calc(var(--sidebar-lead) + var(--space-2)));
   background: linear-gradient(
       color-mix(in srgb, var(--border-strong) 52%, transparent),
       color-mix(in srgb, var(--border-strong) 52%, transparent)
@@ -2775,8 +2775,8 @@ body.update-dialog-open .sidebar-update-card__status {
   padding-bottom: 3px;
 }
 
-.sidebar-recent-session--child .sidebar-recent-session__link > :not(.sidebar-recent-session__text) {
-  margin-left: 6px;
+.sidebar-recent-session--child .sidebar-recent-session__text {
+  margin-inline-start: var(--space-3);
 }
 
 .sidebar-recent-session--active .sidebar-recent-session__name {
@@ -3734,8 +3734,8 @@ openclaw-sidebar-attention {
 
 .sidebar-issues-button__count {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: 3px;
+  right: 3px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;

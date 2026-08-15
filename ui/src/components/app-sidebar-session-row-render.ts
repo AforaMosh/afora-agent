@@ -365,13 +365,15 @@ export function renderRecentSession(params: {
   const endcap = renderSessionRowEndcap({
     state: primaryState,
     stateId,
-    metadata: session.pinned
-      ? html`<span class="session-row-pinned-people"
-            >${params.lead ? ownerIndicator : nothing}${viewerFacepile}</span
-          ><span class="session-row-pinned-status">${pinnedStatus}</span>`
-      : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
-          displayedPullRequestState,
-        )}`,
+    metadata: session.isChild
+      ? nothing
+      : session.pinned
+        ? html`<span class="session-row-pinned-people"
+              >${params.lead ? ownerIndicator : nothing}${viewerFacepile}</span
+            ><span class="session-row-pinned-status">${pinnedStatus}</span>`
+        : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
+            displayedPullRequestState,
+          )}`,
     legacy: session.isChild,
     actionOnly: !session.pinned && !hasRestSummary,
     actions: session.isChild
@@ -406,7 +408,7 @@ export function renderRecentSession(params: {
           </button>
         </span>`,
   });
-  const nameContent = html`${session.archived
+  const nameContent = html`${session.archived && !session.isChild
     ? html`<span
         class="sidebar-session__archive-glyph"
         aria-label=${t("sessionsView.archived")}
@@ -472,14 +474,16 @@ export function renderRecentSession(params: {
           aria-describedby=${stateId ?? nothing}
           @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}
         >
-          <span class="sidebar-session-indicator"
-            >${params.lead
-              ? html`<span class="nav-item__icon" aria-hidden="true">${params.lead}</span>`
-              : ownerIndicator}</span
-          >
+          ${session.isChild
+            ? nothing
+            : html`<span class="sidebar-session-indicator"
+                >${params.lead
+                  ? html`<span class="nav-item__icon" aria-hidden="true">${params.lead}</span>`
+                  : ownerIndicator}</span
+              >`}
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
-              ${titleMarkers}
+              ${session.isChild ? nothing : titleMarkers}
               ${session.pinned
                 ? html`<span class="sidebar-recent-session__name hover-marquee"
                     >${nameContent}</span
