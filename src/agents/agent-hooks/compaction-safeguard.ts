@@ -83,8 +83,6 @@ const MAX_RECENT_TURNS_PRESERVE = 12;
 const MAX_QUALITY_GUARD_MAX_RETRIES = 3;
 const MAX_RECENT_TURN_TEXT_CHARS = 600;
 const TOOL_CALL_BLOCK_TYPES = new Set(["toolCall", "toolUse", "functionCall"]);
-const TRANSIENT_EXEC_IDENTIFIER_LINE_RE =
-  /^\s*["']?(?:chunk[_-]?id|cache[_-]?path|temp(?:orary)?[_-]?path)["']?\s*[:=]/iu;
 const PREVIOUS_SUMMARY_REDISTILL_PREFIX =
   "Previous compaction summary to re-distill with the current conversation. " +
   "Prune stale, duplicate, or superseded details instead of preserving it verbatim.";
@@ -734,27 +732,6 @@ function extractMessageText(message: AgentMessage): string {
     : "";
 }
 
-function extractIdentifierAuditText(message: AgentMessage): string {
-  const text = extractMessageText(message);
-  if (message.role !== "toolResult") {
-    return text;
-  }
-  const toolNameRaw = (message as { toolName?: unknown }).toolName;
-  const toolName = (typeof toolNameRaw === "string" ? toolNameRaw : "")
-    .replace(/^(?:functions|tools)\./u, "")
-    .trim();
-  if (toolName !== "exec") {
-    return text;
-  }
-  // Exec adapters emit transport-local ids and temp paths that do not carry task continuity.
-  // All other tool output remains strict so deployment, job, and artifact ids survive compaction.
-  return text
-    .split("\n")
-    .filter((line) => !TRANSIENT_EXEC_IDENTIFIER_LINE_RE.test(line))
-    .join("\n")
-    .trim();
-}
-
 function formatNonTextPlaceholder(content: unknown): string | null {
   if (content == null || typeof content === "string") {
     return null;
@@ -1369,7 +1346,7 @@ export default function compactionSafeguardExtension(api: ExtensionAPI): void {
       const oracleMessages = [...messagesToSummarize, ...turnPrefixMessages];
       const latestUserAsk = extractLatestUserAsk(oracleMessages);
       const identifiers = extractOpaqueIdentifiers(
-        oracleMessages.slice(-10).map(extractIdentifierAuditText).filter(Boolean).join("\n"),
+        oracleMessages.slice(-10).map(extractMessageText).filter(Boolean).join("\n"),
       );
       const {
         summarizableMessages: summaryTargetMessages,
