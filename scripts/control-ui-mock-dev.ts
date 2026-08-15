@@ -1255,6 +1255,7 @@ async function createChatPickerScenario(
       status: "running",
       startedAt: baseTime - 200_000,
       runtimeMs: 200_000,
+      unread: true,
     },
   );
   // Two children so the pinned child toggle shows a count above one, and one of
@@ -1428,6 +1429,17 @@ async function createChatPickerScenario(
       status: "failed",
       visibility: "draft",
     }),
+    sessionRow("agent:main:automation-failure", "Nightly archive", baseTime - 82_500, {
+      createdActor: MOCK_CREATOR_PETER,
+      createdVia: "cron",
+      hasAutomation: true,
+      lastRunError: "Archive upload stopped after the retention check",
+      status: "failed",
+    }),
+    sessionRow("agent:main:unowned-draft", "Untitled deployment notes", baseTime - 82_750, {
+      hasComposerDraft: true,
+      visibility: "draft",
+    }),
     sessionRow(INCOGNITO_CREATOR_SESSION_KEY, "Private planning", baseTime - 83_000, {
       createdActor: MOCK_CREATOR_PETER,
       incognito: true,
@@ -1478,11 +1490,13 @@ async function createChatPickerScenario(
     sessionRow("agent:main:whatsapp:group:family", "Family", baseTime - 90_000, {
       kind: "group",
       channel: "whatsapp",
+      createdActor: MOCK_CREATOR_PETER,
       unread: true,
     }),
     sessionRow("agent:main:discord:channel:openclaw-dev", "#openclaw-dev", baseTime - 300_000, {
       kind: "group",
       channel: "discord",
+      createdActor: MOCK_CREATOR_MIRA,
     }),
     // Native Coding rows deliberately share and split repositories: project
     // grouping, branch depth, creator presence, and mixed run states all stay
