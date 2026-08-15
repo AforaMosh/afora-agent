@@ -2643,6 +2643,11 @@ body.update-dialog-open .sidebar-update-card__status {
   font-weight: var(--sidebar-type-session-unread-weight);
 }
 
+.session-row-host--pinned .sidebar-recent-session__link > .nav-item__icon {
+  margin-inline: 0 8px;
+  opacity: 1;
+}
+
 .sidebar-recent-session--child {
   min-height: 30px;
 }
