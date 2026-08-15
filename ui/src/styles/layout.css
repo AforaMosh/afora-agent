@@ -1882,6 +1882,10 @@ body.update-dialog-open .sidebar-update-card__status {
   flex: 0 0 12px;
 }
 
+.sidebar-session-catalog-provider-icon[data-provider-icon="codex"] {
+  color: #111;
+}
+
 .sidebar-session-group-count {
   flex: 0 0 auto;
   color: var(--muted);
