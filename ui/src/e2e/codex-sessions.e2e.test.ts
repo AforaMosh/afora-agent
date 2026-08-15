@@ -453,6 +453,7 @@ suite.define(() => {
       const openclawProject = section.locator(
         '[data-session-catalog-project="/Users/dev/openclaw"]',
       );
+      const openclawProjectToggle = openclawProject.locator(".sidebar-session-group-toggle");
       const openclawProjectItem = openclawProject;
       const openclawProjectList = openclawProjectItem.locator(":scope > [role=list]");
       expect(await openclawProjectItem.getAttribute("role")).toBe("listitem");
@@ -629,8 +630,8 @@ suite.define(() => {
         await page.evaluate((key) => localStorage.getItem(key), catalogGroupingStorageKey),
       ).toBe("project");
 
-      await openclawProject.click();
-      await expect.poll(() => openclawProject.getAttribute("aria-expanded")).toBe("false");
+      await openclawProjectToggle.click();
+      await expect.poll(() => openclawProjectToggle.getAttribute("aria-expanded")).toBe("false");
       expect(await section.getByRole("link", { name: /^Local planning session ·/u }).count()).toBe(
         0,
       );
@@ -647,8 +648,8 @@ suite.define(() => {
         ),
       ).toContain("catalog-project:codex:gateway:local:/Users/dev/openclaw");
 
-      await openclawProject.click();
-      await expect.poll(() => openclawProject.getAttribute("aria-expanded")).toBe("true");
+      await openclawProjectToggle.click();
+      await expect.poll(() => openclawProjectToggle.getAttribute("aria-expanded")).toBe("true");
       expect(await section.getByRole("link", { name: /^Local planning session ·/u }).count()).toBe(
         1,
       );
