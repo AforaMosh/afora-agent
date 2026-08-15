@@ -114,8 +114,8 @@ describe("AppSidebar session indicators", () => {
     // the rest/management swap belongs only to top-level session rows.
     const pinnedRow = sidebar.querySelector(`[data-session-key="${pinnedKey}"]`);
     const runningRow = sidebar.querySelector(`[data-session-key="${runningKey}"]`);
-    expectNoLead(pinnedRow);
-    expectNoLead(runningRow);
+    expectEmptyLead(pinnedRow);
+    expectEmptyLead(runningRow);
     expect(pinnedRow?.querySelector(".session-row-aside")).not.toBeNull();
     expect(runningRow?.querySelector(".session-row-aside")).not.toBeNull();
   });
@@ -231,7 +231,7 @@ describe("AppSidebar session indicators", () => {
 
     // A fork is provenance, not operational state, so it earns no row glyph.
     const forked = sidebar.querySelector(`[data-session-key="${keys.forked}"]`);
-    expectNoLead(forked);
+    expectEmptyLead(forked);
     expect(forked?.querySelector(".session-row-fork-indicator")).toBeNull();
     expect(forked?.querySelector(".session-row-state")).toBeNull();
 
@@ -273,7 +273,7 @@ describe("AppSidebar session indicators", () => {
 
     for (const key of [keys.openPullRequest, keys.mergedPullRequest]) {
       const row = sidebar.querySelector(`[data-session-key="${key}"]`);
-      expectNoLead(row);
+      expectEmptyLead(row);
       expect(row?.querySelector(".session-row-endcap [data-session-pr-state]")).not.toBeNull();
       expect(row?.querySelector("a")?.getAttribute("aria-label")).toContain(
         key === keys.openPullRequest ? "Open PR" : "Merged",

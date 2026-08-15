@@ -145,9 +145,15 @@ export function hasSessionPresenceViewers(
   authenticatedSelfUserId: string | undefined,
   selfInstanceId: string | undefined,
   sessionKey: string,
+  excludeUserId?: string,
 ): boolean {
-  return (
-    sessionPresenceViewers(value, authenticatedSelfUserId, selfInstanceId, sessionKey).length > 0
+  const projection = projectPresencePayload(value, authenticatedSelfUserId, selfInstanceId);
+  const excludedUserId = normalized(excludeUserId);
+  return projection.users.some(
+    (user) =>
+      user.id !== projection.selfUserId &&
+      user.id !== excludedUserId &&
+      user.watchedSessions.includes(sessionKey),
   );
 }
 

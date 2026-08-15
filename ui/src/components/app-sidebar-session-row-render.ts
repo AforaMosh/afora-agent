@@ -317,6 +317,7 @@ export function renderRecentSession(params: {
   const hasRestSummary =
     primaryState.kind !== "none" ||
     sessionHasBoard(session.key) ||
+    hasViewers ||
     pullRequestState !== "none" ||
     rowBadges !== nothing;
   const endcap = renderSessionRowEndcap({
@@ -324,7 +325,9 @@ export function renderRecentSession(params: {
     stateId,
     metadata: session.pinned
       ? renderSessionWorktreePullRequest(pullRequestState)
-      : html`${boardIndicator}${rowBadges}${renderSessionWorktreePullRequest(pullRequestState)}`,
+      : html`${boardIndicator}${viewerFacepile}${rowBadges}${renderSessionWorktreePullRequest(
+          pullRequestState,
+        )}`,
     legacy: session.pinned || session.isChild,
     actionOnly: !hasRestSummary,
     actions: session.isChild
@@ -447,7 +450,7 @@ export function renderRecentSession(params: {
               ? nothing
               : renderSidebarSessionSubtitle(subtitleValue, params.project)}
           </span>
-          ${session.pinned ? html`${boardIndicator}${rowBadges}` : nothing}
+          ${session.pinned ? html`${boardIndicator}${viewerFacepile}${rowBadges}` : nothing}
         </a>
         ${session.childSessionKeys.length > 0
           ? html`<button

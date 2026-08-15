@@ -113,19 +113,6 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
     return result;
   }
 
-  private readonly handleAutomationAttentionChange = (
-    event: CustomEvent<SidebarAutomationAttentionChangeDetail>,
-  ) => {
-    event.stopPropagation();
-    const next = event.detail.automationAttention;
-    if (
-      next.count !== this.automationAttention.count ||
-      next.severity !== this.automationAttention.severity
-    ) {
-      this.automationAttention = next;
-    }
-  };
-
   // Lazy: the controller pulls core token-suppression modules that must stay
   // out of the startup chunk (QA smoke startup-JS budget). It loads on the
   // first update with the preference enabled; earlier events are safely
