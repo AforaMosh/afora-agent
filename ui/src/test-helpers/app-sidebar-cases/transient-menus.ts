@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
-import { createGateway, createSessions, mountSidebar } from "../app-sidebar.ts";
+import {
+  createGateway,
+  createSessions,
+  mountSidebar,
+  openSidebarCustomizerFromMoreMenu,
+} from "../app-sidebar.ts";
 import "../../components/app-sidebar.ts";
 
 describe("AppSidebar transient menus", () => {
@@ -120,15 +125,7 @@ describe("AppSidebar transient menus", () => {
   it("ignores a stale Customize-menu hide after opening its replacement", async () => {
     const gateway = createGateway({} as GatewayBrowserClient);
     const { sidebar } = await mountSidebar(gateway, createSessions("main", ["agent:main:main"]));
-    const nav = sidebar.querySelector<HTMLElement>(".sidebar-nav");
-    if (!nav) {
-      throw new Error("expected sidebar navigation");
-    }
-
-    nav.dispatchEvent(
-      new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 20, clientY: 20 }),
-    );
-    await sidebar.updateComplete;
+    await openSidebarCustomizerFromMoreMenu(sidebar);
     const firstMenu = sidebar.querySelector<HTMLElement>(".sidebar-customize-menu");
     expect(firstMenu).not.toBeNull();
     firstMenu?.dispatchEvent(
@@ -139,10 +136,7 @@ describe("AppSidebar transient menus", () => {
     );
     await sidebar.updateComplete;
 
-    nav.dispatchEvent(
-      new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 24, clientY: 24 }),
-    );
-    await sidebar.updateComplete;
+    await openSidebarCustomizerFromMoreMenu(sidebar);
     const replacement = sidebar.querySelector<HTMLElement>(".sidebar-customize-menu");
     expect(replacement).not.toBe(firstMenu);
 

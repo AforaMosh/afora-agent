@@ -10,6 +10,7 @@ import {
   createGatewayHarness,
   createSessionsHarness,
   mountSidebar,
+  openSidebarCustomizerFromMoreMenu,
   type SidebarLifecycleState,
 } from "../app-sidebar.ts";
 import { waitForFast } from "../wait-for.ts";
@@ -326,16 +327,7 @@ describe("AppSidebar interleaved zone", () => {
     await sidebar.updateComplete;
 
     expect(sidebar.querySelector('[data-sidebar-entry="workboard:ops"]')).toBeNull();
-    const nav = sidebar.querySelector<HTMLElement>(".sidebar-nav");
-    nav?.dispatchEvent(
-      new MouseEvent("contextmenu", {
-        bubbles: true,
-        cancelable: true,
-        clientX: 20,
-        clientY: 20,
-      }),
-    );
-    await sidebar.updateComplete;
+    await openSidebarCustomizerFromMoreMenu(sidebar);
     expect(sidebar.querySelector(".sidebar-customize-menu__group-title")).toBeNull();
     expect(sidebar.querySelector('wa-dropdown-item[value="workboard:ops"]')).toBeNull();
   });
@@ -347,16 +339,7 @@ describe("AppSidebar interleaved zone", () => {
       sidebarBoard("ops", { name: "Operations", icon: "⚙", color: "#22c55e" }),
     ];
     sidebar.workboardBoardsReady = true;
-    const nav = sidebar.querySelector<HTMLElement>(".sidebar-nav");
-    nav?.dispatchEvent(
-      new MouseEvent("contextmenu", {
-        bubbles: true,
-        cancelable: true,
-        clientX: 20,
-        clientY: 20,
-      }),
-    );
-    await sidebar.updateComplete;
+    await openSidebarCustomizerFromMoreMenu(sidebar);
 
     expect(sidebar.querySelector(".sidebar-customize-menu__group-title")?.textContent).toBe(
       "WorkBoard",

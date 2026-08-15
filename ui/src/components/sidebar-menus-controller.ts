@@ -250,11 +250,6 @@ export class SidebarMenusController implements ReactiveController, SidebarMenusC
     return this.host.enabledRouteIds?.includes(routeId) ?? true;
   }
 
-  readonly openSidebarCustomizerFromContext = (event: MouseEvent) => {
-    event.preventDefault();
-    this.host.openSidebarCustomizer(event.currentTarget as HTMLElement);
-  };
-
   toggleMoreMenu(trigger: HTMLElement) {
     if (this.moreMenuPosition) {
       this.closeMoreMenu();

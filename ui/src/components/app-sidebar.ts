@@ -639,10 +639,7 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
                   @scroll=${(event: Event) =>
                     this.handleSidebarScroll(event.currentTarget as HTMLElement)}
                 >
-                  <nav
-                    class="sidebar-nav"
-                    @contextmenu=${this.sidebarMenus.openSidebarCustomizerFromContext}
-                  >
+                  <nav class="sidebar-nav">
                     <div
                       class="nav-section__items"
                       @dragover=${(event: DragEvent) =>

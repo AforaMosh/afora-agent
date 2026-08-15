@@ -528,6 +528,30 @@ export async function mountSidebar(
   return { provider, sidebar, context };
 }
 
+/**
+ * The one route to the sidebar customizer: open More, then Customize sidebar.
+ * The menu reads `item.dataset` before `item.value`, so the stub carries both.
+ */
+export async function openSidebarCustomizerFromMoreMenu(sidebar: SidebarLifecycleState) {
+  const trigger = sidebar.querySelector<HTMLButtonElement>(".sidebar-nav__more");
+  if (!trigger) {
+    throw new Error("expected More menu trigger");
+  }
+  trigger.click();
+  await sidebar.updateComplete;
+  const moreMenu = sidebar.querySelector<HTMLElement>(".sidebar-more-menu");
+  if (!moreMenu) {
+    throw new Error("expected More menu");
+  }
+  moreMenu.dispatchEvent(
+    new CustomEvent("wa-select", {
+      bubbles: true,
+      detail: { item: { value: "customize", dataset: {} } },
+    }),
+  );
+  await sidebar.updateComplete;
+}
+
 export const TWO_AGENTS = {
   defaultId: "main",
   mainKey: "main",
