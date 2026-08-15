@@ -217,7 +217,7 @@ export function renderSessionRowBadges(params: {
           ),
         }
       : null,
-  ].filter((badge): badge is { label: string; content: TemplateResult } => badge !== null);
+  ].filter((badge) => badge !== null);
   const maxVisible = Math.max(0, params.maxVisible ?? badges.length);
   const visible = badges.slice(0, maxVisible);
   const hidden = badges.slice(maxVisible);

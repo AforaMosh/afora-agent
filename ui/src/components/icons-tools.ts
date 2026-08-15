@@ -108,6 +108,8 @@ export const toolIcons = {
     stroke-linecap="round"
     stroke-linejoin="round"
   />`),
+  chevronsUpDown: strokeIcon(svg` <path d="m7 15 5 5 5-5" />
+    <path d="m7 9 5-5 5 5" />`),
   chevronRight: strokeIcon(svg` <path
     d="M9 18l6-6-6-6"
     stroke-linecap="round"
