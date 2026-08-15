@@ -435,6 +435,10 @@ function renderSessionCatalog(params: {
           sessionKey,
         }),
       creatorId: snapshot.creatorId,
+      sessionOwnershipVisible: host.sessionOwnershipVisible,
+      presencePayload: host.sessionData.presencePayload,
+      selfUserId: host.sessionDataContext?.gateway.snapshot.selfUser?.id,
+      selfInstanceId: host.sessionData.presenceInstanceId,
       renderLiveRow: (row, display) =>
         renderRecentSession({
           host,

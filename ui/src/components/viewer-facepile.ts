@@ -122,6 +122,24 @@ export function sessionPresenceViewers(
   );
 }
 
+/** Whether one durable identity is actively watching this session. Unlike the
+ *  viewer list, creator vitality includes the authenticated user. */
+export function isSessionPresenceIdentityWatching(
+  value: unknown,
+  authenticatedSelfUserId: string | undefined,
+  selfInstanceId: string | undefined,
+  sessionKey: string,
+  userId: string | undefined,
+): boolean {
+  const normalizedUserId = normalized(userId);
+  if (!normalizedUserId) {
+    return false;
+  }
+  return projectPresencePayload(value, authenticatedSelfUserId, selfInstanceId).users.some(
+    (user) => user.id === normalizedUserId && user.watchedSessions.includes(sessionKey),
+  );
+}
+
 export function hasSessionPresenceViewers(
   value: unknown,
   authenticatedSelfUserId: string | undefined,
