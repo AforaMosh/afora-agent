@@ -328,11 +328,10 @@ describe("AppSidebar interleaved zone", () => {
 
     expect(sidebar.querySelector('[data-sidebar-entry="workboard:ops"]')).toBeNull();
     await openSidebarCustomizerFromMoreMenu(sidebar);
-    expect(sidebar.querySelector(".sidebar-customize-menu__group-title")).toBeNull();
-    expect(sidebar.querySelector('wa-dropdown-item[value="workboard:ops"]')).toBeNull();
+    expect(sidebar.querySelector('[data-sidebar-customizer-id="workboard:ops"]')).toBeNull();
   });
 
-  it("lists active boards in the WorkBoard pin-editor group", async () => {
+  it("lists active boards in the sidebar customizer", async () => {
     const { sidebar } = await mountZone();
     sidebar.workboardBoards = [
       sidebarBoard("default"),
@@ -341,11 +340,10 @@ describe("AppSidebar interleaved zone", () => {
     sidebar.workboardBoardsReady = true;
     await openSidebarCustomizerFromMoreMenu(sidebar);
 
-    expect(sidebar.querySelector(".sidebar-customize-menu__group-title")?.textContent).toBe(
-      "WorkBoard",
-    );
-    expect(sidebar.querySelector('wa-dropdown-item[value="workboard:default"]')).not.toBeNull();
-    expect(sidebar.querySelector('wa-dropdown-item[value="workboard:ops"]')).not.toBeNull();
+    expect(
+      sidebar.querySelector('[data-sidebar-customizer-id="workboard:default"]'),
+    ).not.toBeNull();
+    expect(sidebar.querySelector('[data-sidebar-customizer-id="workboard:ops"]')).not.toBeNull();
   });
 
   it("writes reordered entries after a route drop", async () => {

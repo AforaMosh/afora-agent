@@ -122,26 +122,15 @@ describe("AppSidebar transient menus", () => {
     expect(sidebar.querySelector(".sidebar-more-menu")).toBe(replacement);
   });
 
-  it("ignores a stale Customize-menu hide after opening its replacement", async () => {
+  it("keeps the sidebar customizer open after its stale More menu hides", async () => {
     const gateway = createGateway({} as GatewayBrowserClient);
     const { sidebar } = await mountSidebar(gateway, createSessions("main", ["agent:main:main"]));
-    await openSidebarCustomizerFromMoreMenu(sidebar);
-    const firstMenu = sidebar.querySelector<HTMLElement>(".sidebar-customize-menu");
-    expect(firstMenu).not.toBeNull();
-    firstMenu?.dispatchEvent(
-      new CustomEvent("wa-select", {
-        bubbles: true,
-        detail: { item: { value: "reset" } },
-      }),
-    );
-    await sidebar.updateComplete;
+    const staleMenu = await openSidebarCustomizerFromMoreMenu(sidebar);
+    const customizer = sidebar.querySelector<HTMLElement>(".sidebar-customizer");
+    expect(customizer).not.toBeNull();
 
-    await openSidebarCustomizerFromMoreMenu(sidebar);
-    const replacement = sidebar.querySelector<HTMLElement>(".sidebar-customize-menu");
-    expect(replacement).not.toBe(firstMenu);
-
-    firstMenu?.dispatchEvent(new CustomEvent("wa-after-hide", { bubbles: true, composed: true }));
+    staleMenu.dispatchEvent(new CustomEvent("wa-after-hide", { bubbles: true, composed: true }));
     await sidebar.updateComplete;
-    expect(sidebar.querySelector(".sidebar-customize-menu")).toBe(replacement);
+    expect(sidebar.querySelector(".sidebar-customizer")).toBe(customizer);
   });
 });

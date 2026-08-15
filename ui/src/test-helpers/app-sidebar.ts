@@ -31,6 +31,7 @@ import {
 import { reconcileSessionHistory } from "../lib/sessions/reconcile.ts";
 import { createApplicationContextProvider } from "./application-context.ts";
 import { createStorageMock } from "./storage.ts";
+import { waitForFast } from "./wait-for.ts";
 
 // The attention widget owns independent health RPC tests. Keep those requests
 // out of sidebar client call-order assertions.
@@ -549,7 +550,12 @@ export async function openSidebarCustomizerFromMoreMenu(sidebar: SidebarLifecycl
       detail: { item: { value: "customize", dataset: {} } },
     }),
   );
-  await sidebar.updateComplete;
+  await waitForFast(() => {
+    if (!sidebar.querySelector(".sidebar-customizer")) {
+      throw new Error("expected sidebar customizer");
+    }
+  });
+  return moreMenu;
 }
 
 export const TWO_AGENTS = {
