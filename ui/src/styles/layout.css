@@ -893,7 +893,6 @@ openclaw-settings-save-indicator {
   --sidebar-type-session-size: calc(13px * var(--control-ui-text-scale));
   --sidebar-type-session-line-height: 20px;
   --sidebar-type-session-weight: 500;
-  --sidebar-type-session-unread-weight: 650;
   --sidebar-type-subtitle-size: var(--control-ui-text-xs);
   --sidebar-type-subtitle-line-height: 16px;
   --sidebar-type-menu-size: calc(13px * var(--control-ui-text-scale));
@@ -2685,10 +2684,6 @@ body.update-dialog-open .sidebar-update-card__status {
     transform: none !important;
     transition: none !important;
   }
-}
-
-.session-row-host--pinned .sidebar-recent-session__name {
-  font-weight: var(--sidebar-type-session-unread-weight);
 }
 
 .session-row-host--pinned .sidebar-recent-session__link > .nav-item__icon {

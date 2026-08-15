@@ -162,8 +162,7 @@ suite.define(() => {
         const pinnedTitleMetrics = await typeMetrics(
           pinnedRow.locator(".sidebar-recent-session__name"),
         );
-        expect({ ...pinnedTitleMetrics, weight: titleContract.weight }).toEqual(titleContract);
-        expect(Number(pinnedTitleMetrics.weight)).toBeGreaterThan(Number(titleContract.weight));
+        expect(pinnedTitleMetrics).toEqual(titleContract);
         await expect
           .poll(() => parentRow.getAttribute("class"))
           .toContain("sidebar-recent-session--active");
