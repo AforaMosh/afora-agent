@@ -1112,7 +1112,11 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
      horizontal scrollbar beside the divider. */
   overflow-x: hidden;
   overflow-y: auto;
-  padding-inline-end: var(--sidebar-scrollbar-gutter);
+  /* The scrollport reaches the column boundary so the thumb does too. Its
+     borrowed shell padding is paid back inside, leaving the content rail at
+     exactly the same width. */
+  margin-inline-end: calc(-1 * var(--sidebar-pad-x));
+  padding-inline-end: calc(var(--sidebar-scrollbar-gutter) + var(--sidebar-pad-x));
   scrollbar-color: transparent transparent;
   scrollbar-gutter: stable;
   scrollbar-width: thin;

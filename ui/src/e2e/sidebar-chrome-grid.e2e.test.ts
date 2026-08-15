@@ -269,6 +269,18 @@ suite.define(() => {
         expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
           true,
         );
+        const expectScrollportAtColumnEdge = async () => {
+          const [bodyBox, sidebarBox] = await Promise.all([
+            body.boundingBox(),
+            sidebarRoot.boundingBox(),
+          ]);
+          expect(bodyBox).not.toBeNull();
+          expect(sidebarBox).not.toBeNull();
+          expect(
+            Math.abs(bodyBox!.x + bodyBox!.width - (sidebarBox!.x + sidebarBox!.width)),
+          ).toBeLessThanOrEqual(1);
+        };
+        await expectScrollportAtColumnEdge();
 
         const sessionSelected = await background(parentRow);
         expect(sessionSelected).not.toBe("rgba(0, 0, 0, 0)");
@@ -374,6 +386,7 @@ suite.define(() => {
           .toBe(280);
         await capture(page, sidebarSurface, `grid-${colorScheme}-resize-drag-280.png`);
         await page.mouse.up();
+        await expectScrollportAtColumnEdge();
         await capture(page, sidebarSurface, `grid-${colorScheme}-width-280.png`);
 
         await resizer.focus();
@@ -390,6 +403,7 @@ suite.define(() => {
         expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
           true,
         );
+        await expectScrollportAtColumnEdge();
         await installGridGuides(page, sidebarRoot, pageText, headControl);
         await capture(page, sidebarSurface, `grid-${colorScheme}-width-400.png`);
 
