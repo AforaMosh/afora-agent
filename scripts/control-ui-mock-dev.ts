@@ -73,6 +73,10 @@ const NARRATION_DEMO_SESSION_KEY = "agent:main:sidebar-narration-demo";
 const NARRATION_DEMO_RUN_ID = "mock-sidebar-narration-run";
 const OBSERVER_DEMO_SESSION_KEY = "agent:main:session-observer-demo";
 const OBSERVER_DEMO_RUN_ID = "mock-session-observer-run";
+const ACTIVE_CREATOR_SESSION_KEY = "agent:main:work-openclaw";
+const PINNED_CREATOR_SESSION_KEY = "agent:main:tax-research";
+const INCOGNITO_CREATOR_SESSION_KEY = "agent:main:private-planning";
+const ACTIVE_CATALOG_SESSION_KEY = "catalog:codex:gateway:codex-thread-1";
 const CUSTODIAN_CHAT_REPLY_DELAY_MS = 600;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -1293,6 +1297,9 @@ async function createChatPickerScenario(
           }),
         ]
       : [];
+  // Keep the evaluation matrix near the top of the default fixture: creator
+  // vitality, inline privacy/draft state, row signals, text density, and native
+  // versus catalog ownership should all be visible without changing fixtures.
   const sessions = [
     sessionRow("agent:main:main", "Molty", baseTime - 1_000, {
       childSessions: ["agent:main:lisbon-trip", ...swarmChildRows.map((row) => row.key)],
@@ -1318,7 +1325,8 @@ async function createChatPickerScenario(
       startedAt: baseTime - 45_000,
       status: "running",
     }),
-    sessionRow("agent:main:tax-research", "Tax filing research", baseTime - 60_000, {
+    sessionRow(PINNED_CREATOR_SESSION_KEY, "Tax filing research", baseTime - 60_000, {
+      createdActor: MOCK_CREATOR_PETER,
       hasActiveRun: true,
       status: "running",
       childSessions: ["agent:main:subagent:tax-receipts"],
@@ -1336,18 +1344,21 @@ async function createChatPickerScenario(
     }),
     sessionRow("agent:main:model-budget", "Model budget review", baseTime - 80_000, {
       category: "Research",
+      createdActor: MOCK_CREATOR_MIRA,
       execCwd: "/Users/peter/Projects/openclaw",
       status: "failed",
       lastRunError: "Model out of credits: openai/gpt-5.6",
     }),
     sessionRow("agent:main:release-draft", "Release notes draft", baseTime - 82_000, {
+      createdActor: MOCK_CREATOR_MIRA,
       hasComposerDraft: true,
       visibility: "draft",
     }),
-    sessionRow("agent:main:private-planning", "Private planning", baseTime - 83_000, {
+    sessionRow(INCOGNITO_CREATOR_SESSION_KEY, "Private planning", baseTime - 83_000, {
+      createdActor: MOCK_CREATOR_PETER,
       incognito: true,
     }),
-    sessionRow("agent:main:work-openclaw", "OpenClaw work checkout", baseTime - 85_000, {
+    sessionRow(ACTIVE_CREATOR_SESSION_KEY, "OpenClaw work checkout", baseTime - 85_000, {
       createdActor: MOCK_CREATOR_PETER,
       execCwd: "/Users/peter/Work/openclaw",
       lastReadAt: baseTime - 120_000,
@@ -1360,6 +1371,14 @@ async function createChatPickerScenario(
       },
       unread: true,
     }),
+    sessionRow(
+      "agent:main:creator-long-title",
+      "Reconcile the sidebar creator column across every narrow workspace layout",
+      baseTime - 87_000,
+      {
+        createdActor: MOCK_CREATOR_MIRA,
+      },
+    ),
     mainChildRow,
     sessionRow("agent:main:home-server", "Home server migration", baseTime - 240_000, {
       execCwd: "/Users/peter/Projects",
@@ -1530,8 +1549,8 @@ async function createChatPickerScenario(
     // ui/src/lib/terminal-availability.ts).
     terminalEnabled: true,
     historyMessages: buildScrollableChatHistory(baseTime),
-    // Lights up the footer facepile and who's-online roster; the email-only
-    // entry keeps the roster's no-display-name row exercised.
+    // Peter is the active creator. Colin and Patricia deliberately watch the
+    // same rows to prove participant presence never grows the creator column.
     presenceUsers: [
       {
         self: true,
@@ -1539,8 +1558,27 @@ async function createChatPickerScenario(
         name: selfProfile.displayName ?? undefined,
         email: selfProfile.emails[0],
       },
-      { id: "presence-colin", name: "Colin", email: "colin@example.com" },
-      { id: "presence-patricia", email: "patricia.erichsen@example.com" },
+      {
+        id: MOCK_CREATOR_PETER.id,
+        name: MOCK_CREATOR_PETER.label,
+        watchedSessions: [
+          ACTIVE_CREATOR_SESSION_KEY,
+          PINNED_CREATOR_SESSION_KEY,
+          INCOGNITO_CREATOR_SESSION_KEY,
+          ACTIVE_CATALOG_SESSION_KEY,
+        ],
+      },
+      {
+        id: "presence-colin",
+        name: "Colin",
+        email: "colin@example.com",
+        watchedSessions: [ACTIVE_CREATOR_SESSION_KEY, ACTIVE_CATALOG_SESSION_KEY],
+      },
+      {
+        id: "presence-patricia",
+        email: "patricia.erichsen@example.com",
+        watchedSessions: [ACTIVE_CREATOR_SESSION_KEY, ACTIVE_CATALOG_SESSION_KEY],
+      },
     ],
     methodResponses: {
       ...buildBackgroundTasksMock(baseTime),
@@ -1629,7 +1667,9 @@ async function createChatPickerScenario(
                   {
                     threadId: "codex-thread-1",
                     name: "Release checklist sweep",
+                    createdActor: MOCK_CREATOR_PETER,
                     cwd: "/Users/demo/projects/openclaw",
+                    gitBranch: "main",
                     status: "idle",
                     updatedAt: baseTime - 10 * 60_000,
                     archived: false,
@@ -1638,8 +1678,10 @@ async function createChatPickerScenario(
                   },
                   {
                     threadId: "codex-thread-2",
-                    name: "Sidebar context-menu proof",
+                    name: "Sidebar context-menu proof with an intentionally long catalog title",
+                    createdActor: MOCK_CREATOR_MIRA,
                     cwd: "/Users/demo/projects/openclaw",
+                    gitBranch: "brzezowski/sidebar-stack-polish",
                     status: "idle",
                     updatedAt: baseTime - 45 * 60_000,
                     archived: false,
@@ -1664,6 +1706,7 @@ async function createChatPickerScenario(
                   {
                     threadId: "claude-thread-1",
                     name: "Docs refresh",
+                    createdActor: MOCK_CREATOR_MIRA,
                     cwd: "/Users/demo/projects/peekaboo",
                     status: "idle",
                     updatedAt: baseTime - 30 * 60_000,
