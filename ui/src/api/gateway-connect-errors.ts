@@ -4,7 +4,6 @@ import {
   MIN_CLIENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
   readConnectErrorDetailCode,
-  shouldPauseGatewayReconnect,
 } from "@openclaw/gateway-client/browser";
 
 export function enrichProtocolMismatchDetails(
@@ -32,14 +31,4 @@ export function isLegacyGatewayBuildIdSchemaError(
   return Boolean(
     clientBuildId && /invalid connect params.*unexpected property.*buildid/iu.test(error.message),
   );
-}
-
-/** Token mismatch stays with its bounded retry owner; static failures pause. */
-export function isNonRecoverableConnectError(error: { details?: unknown } | undefined): boolean {
-  return error
-    ? shouldPauseGatewayReconnect({
-        details: error.details,
-        protocolMismatchIsTerminal: true,
-      })
-    : false;
 }

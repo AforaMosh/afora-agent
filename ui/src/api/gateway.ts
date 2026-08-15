@@ -21,6 +21,7 @@ import {
   type HelloOk,
   resolveGatewayConnectScopes,
   selectGatewayConnectAuth,
+  shouldPauseGatewayReconnect,
   shouldRetryGatewayWithDeviceToken,
   isRetryableGatewayStartupUnavailableError,
   MIN_CLIENT_PROTOCOL_VERSION,
@@ -56,7 +57,6 @@ import { createBrowserGatewaySocket } from "./gateway-browser-socket.ts";
 import {
   enrichProtocolMismatchDetails,
   isLegacyGatewayBuildIdSchemaError,
-  isNonRecoverableConnectError,
 } from "./gateway-connect-errors.ts";
 
 export class GatewayRequestError extends GatewayProtocolRequestError {
@@ -723,7 +723,10 @@ export class GatewayBrowserClient {
     const retry =
       connectErrorCode === ConnectErrorDetailCodes.AUTH_TOKEN_MISMATCH
         ? this.pendingDeviceTokenRetry
-        : !isNonRecoverableConnectError(connectError);
+        : !shouldPauseGatewayReconnect({
+            details: connectError?.details,
+            protocolMismatchIsTerminal: true,
+          });
     return { retry, notify: true, pendingError: error };
   }
 
