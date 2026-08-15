@@ -4928,19 +4928,19 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   color: color-mix(in srgb, var(--danger) 86%, var(--text));
 }
 
-/* A pending approval is a request, not a report, so a narrow themed highlight
-   traverses the glyphs themselves. The failed-state subtitle stays static. */
-.sidebar-recent-session__subtitle--approval {
-  --sidebar-approval-text: color-mix(in srgb, var(--warn) 82%, var(--text));
-  --sidebar-approval-highlight: color-mix(in srgb, var(--text-strong) 82%, var(--warn));
+/* Pending operator responses get a narrow themed highlight through the
+   glyphs. Failed-state subtitles remain static. */
+.sidebar-recent-session__subtitle--waiting {
+  --sidebar-waiting-text: color-mix(in srgb, var(--warn) 82%, var(--text));
+  --sidebar-waiting-highlight: color-mix(in srgb, var(--text-strong) 82%, var(--warn));
 
   background-image: linear-gradient(
     90deg,
-    var(--sidebar-approval-text) 0%,
-    var(--sidebar-approval-text) 45%,
-    var(--sidebar-approval-highlight) 50%,
-    var(--sidebar-approval-text) 55%,
-    var(--sidebar-approval-text) 100%
+    var(--sidebar-waiting-text) 0%,
+    var(--sidebar-waiting-text) 45%,
+    var(--sidebar-waiting-highlight) 50%,
+    var(--sidebar-waiting-text) 55%,
+    var(--sidebar-waiting-text) 100%
   );
   background-size: 200% 100%;
   background-repeat: no-repeat;
@@ -4948,10 +4948,10 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: sidebar-approval-shimmer 2s linear infinite;
+  animation: sidebar-waiting-shimmer 2s linear infinite;
 }
 
-@keyframes sidebar-approval-shimmer {
+@keyframes sidebar-waiting-shimmer {
   from {
     background-position: 100% 0;
   }
@@ -4961,9 +4961,9 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-recent-session__subtitle--approval {
+  .sidebar-recent-session__subtitle--waiting {
     background-image: none;
-    color: var(--sidebar-approval-text);
+    color: var(--sidebar-waiting-text);
     -webkit-text-fill-color: currentColor;
     animation: none;
   }

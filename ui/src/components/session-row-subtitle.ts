@@ -29,12 +29,8 @@ export function sessionAttentionSubtitle(attention: SidebarSessionAttention): st
 type SidebarSessionSubtitle = {
   subtitle: string | undefined;
   narration: string | undefined;
-  /**
-   * The subtitle slot is currently spelling out a pending approval. Recorded
-   * here because only this resolver knows which candidate won the slot; the
-   * renderer would have to compare translated strings to find out.
-   */
-  awaitingApproval: boolean;
+  /** The subtitle slot is currently spelling out a pending operator response. */
+  waitingAttention: boolean;
   /** Set only when the slot is showing the session's Git context, so the
       renderer can mark the branch instead of guessing which words are one. */
   work?: SessionWorkContext;
@@ -100,7 +96,9 @@ export function resolveSidebarSessionSubtitle(params: {
   return {
     subtitle,
     narration,
-    awaitingApproval: session.attention.kind === "approval" && subtitle === attention,
+    waitingAttention:
+      (session.attention.kind === "approval" || session.attention.kind === "question") &&
+      subtitle === attention,
     work,
   };
 }
@@ -131,11 +129,9 @@ export function renderSidebarSessionSubtitle(value: SidebarSessionSubtitle, proj
       >`,
     );
   }
-  // A pending approval is the one subtitle that is also a request: it shimmers
-  // so a waiting session reads as waiting without spending the row's state slot.
-  const approval = value.awaitingApproval ? " sidebar-recent-session__subtitle--approval" : "";
+  const waiting = value.waitingAttention ? " sidebar-recent-session__subtitle--waiting" : "";
   return html`<span
-    class="sidebar-recent-session__subtitle${approval}"
+    class="sidebar-recent-session__subtitle${waiting}"
     ${ref(createOverflowFadeRef())}
     >${value.subtitle}</span
   >`;
