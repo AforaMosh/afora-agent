@@ -34,6 +34,7 @@ const REQUIRED_REVIEWED_PUBLISHABLE_CRITICAL_FINDING_COUNTS = new Map<string, nu
   ["@openclaw/discord:dangerous-exec:src/voice/audio.ts", 1],
   ["@openclaw/google-meet:dangerous-exec:src/node-host.ts", 1],
   ["@openclaw/imessage:dangerous-exec:src/client.ts", 1],
+  ["@openclaw/llama-cpp-provider:dangerous-exec:src/llama-server-install.ts", 1],
   ["@openclaw/mxc-sandbox:dangerous-exec:src/readiness.ts", 2],
   ["@openclaw/opencode-provider:dangerous-exec:session-catalog.ts", 1],
   ["@openclaw/raft:dangerous-exec:src/gateway.ts", 1],
