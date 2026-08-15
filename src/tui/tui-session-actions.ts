@@ -596,7 +596,7 @@ export function createSessionActions(context: SessionActionContext) {
     }
   };
 
-  const setSession = async (rawKey: string, sessionNotice = "session loaded") => {
+  const setSession = async (rawKey: string, sessionNotice: string | false = "session loaded") => {
     const previousSelection = captureSessionSelection();
     const nextSelection = resolveSessionSelection(rawKey);
     const nextKey = nextSelection.key;

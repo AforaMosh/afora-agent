@@ -76,7 +76,7 @@ type CommandHandlerContext = {
   closeOverlay: (handle?: OverlayHandle) => void;
   refreshSessionInfo: () => Promise<void>;
   loadHistory: (options?: { sessionNotice?: string | false }) => Promise<unknown>;
-  setSession: (key: string, sessionNotice?: string) => Promise<void>;
+  setSession: (key: string, sessionNotice?: string | false) => Promise<void>;
   refreshAgents: () => Promise<Result<void, string>>;
   abortActive: (params?: { preferActive?: boolean }) => Promise<void>;
   setActivityStatus: (text: string) => void;
@@ -753,7 +753,8 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         state.sessionInfo.outputTokens = null;
         state.sessionInfo.totalTokens = null;
         tui.requestRender();
-        await setSession(result.key, "new session");
+        await setSession(result.key, false);
+        chatLog.addSystem("new session");
       } catch (err) {
         chatLog.addSystem(`new session failed: ${formatTuiErrorMessage(err)}`);
       } finally {

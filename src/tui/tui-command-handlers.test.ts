@@ -37,7 +37,7 @@ type SelectableOverlay = {
 };
 type SetActivityStatusMock = ReturnType<typeof vi.fn> & ((text: string) => void);
 type SetSessionMock = ReturnType<typeof vi.fn> &
-  ((key: string, sessionNotice?: string) => Promise<void>);
+  ((key: string, sessionNotice?: string | false) => Promise<void>);
 type ConsumeCompletedRunMock = ReturnType<typeof vi.fn> & ((runId: string) => boolean);
 type FlushPendingHistoryRefreshMock = ReturnType<typeof vi.fn> & (() => void);
 type RefreshAgentsMock = ReturnType<typeof vi.fn> & (() => Promise<Result<void, string>>);
@@ -1368,7 +1368,7 @@ describe("tui command handlers", () => {
     const uuidParts: string[] = createOptions.key.slice("tui-".length).split("-");
     expect(uuidParts.map((part) => part.length)).toEqual([8, 4, 4, 4, 12]);
     expect(uuidParts.every((part) => /^[0-9a-f]+$/.test(part))).toBe(true);
-    expect(setSessionMock).toHaveBeenCalledWith("agent:main:tui-canonical", "new session");
+    expect(setSessionMock).toHaveBeenCalledWith("agent:main:tui-canonical", false);
     // /reset still resets the shared session
     expect(resetSession).toHaveBeenCalledTimes(1);
     expect(resetSession).toHaveBeenCalledWith("agent:main:main", "reset", undefined);
@@ -1378,6 +1378,29 @@ describe("tui command handlers", () => {
     });
     expect(refreshSessionInfo).toHaveBeenCalledTimes(1);
     expect(loadHistory).not.toHaveBeenCalled();
+  });
+
+  it("confirms a new session when its history reload fails", async () => {
+    let addSystem: ReturnType<typeof vi.fn>;
+    const setSession = vi.fn(async () => {
+      addSystem("history failed: gateway unavailable");
+    }) as SetSessionMock;
+    const harness = createHarness({
+      createSession: vi.fn().mockResolvedValue({
+        ok: true,
+        key: "agent:main:tui-created",
+      }),
+      setSession,
+    });
+    addSystem = harness.addSystem;
+
+    await harness.handleCommand("/new");
+
+    expect(setSession).toHaveBeenCalledWith("agent:main:tui-created", false);
+    expect(addSystem.mock.calls.map(([message]) => message)).toEqual([
+      "history failed: gateway unavailable",
+      "new session",
+    ]);
   });
 
   it("reports a reset after adopting the backend's replacement session key", async () => {
