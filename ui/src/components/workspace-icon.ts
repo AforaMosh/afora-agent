@@ -19,6 +19,16 @@ export type WorkspaceIconSource = {
   authReady: boolean;
 };
 
+export function renderWorkspaceIcon(source: WorkspaceIconSource | null) {
+  return source
+    ? html`<openclaw-workspace-icon
+        .routeUrl=${source.routeUrl}
+        .authTokens=${source.authTokens}
+        .authReady=${source.authReady}
+      ></openclaw-workspace-icon>`
+    : icons.folder;
+}
+
 /**
  * The icon route is authenticated, so every surface that paints a workspace
  * mark needs the same credential candidates. Resolving that here keeps the

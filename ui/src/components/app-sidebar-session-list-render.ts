@@ -35,7 +35,7 @@ import { icons } from "./icons.ts";
 // has to be registered even when no other sidebar surface pulled it in.
 import "./workspace-icon.ts";
 import { renderPanelRefreshStatus, type PanelRefreshStatus } from "./panel-refresh-status.ts";
-import { resolveWorkspaceIconSource, type WorkspaceIconSource } from "./workspace-icon.ts";
+import { renderWorkspaceIcon, resolveWorkspaceIconSource } from "./workspace-icon.ts";
 
 type RenderableSessionSection = SidebarSessionSection<SidebarRecentSession> & {
   totalRowCount: number;
@@ -165,15 +165,9 @@ function renderWorkProjectGroup(host: SidebarSessionListHost, group: WorkProject
  * answers a missing icon with the folder glyph, so the fallback lives with the
  * asset owner instead of being decided again at every header.
  */
-function renderProjectIdentityLead(source: WorkspaceIconSource | null) {
+function renderProjectIdentityLead(source: ReturnType<typeof resolveWorkspaceIconSource>) {
   return html`<span class="sidebar-session-group-toggle__lead" aria-hidden="true"
-    >${source
-      ? html`<openclaw-workspace-icon
-          .routeUrl=${source.routeUrl}
-          .authTokens=${source.authTokens}
-          .authReady=${source.authReady}
-        ></openclaw-workspace-icon>`
-      : icons.folder}</span
+    >${renderWorkspaceIcon(source)}</span
   >`;
 }
 
@@ -434,6 +428,12 @@ function renderSessionCatalog(params: {
       loadingMoreCatalogIds: snapshot.loadingMoreCatalogIds,
       projectGrouping: snapshot.projectGrouping,
       liveRows: snapshot.liveRows,
+      workspaceIconSourceForSession: (sessionKey) =>
+        resolveWorkspaceIconSource({
+          gateway: host.sessionDataContext?.gateway,
+          basePath: host.basePath,
+          sessionKey,
+        }),
       creatorId: snapshot.creatorId,
       renderLiveRow: (row, display) =>
         renderRecentSession({

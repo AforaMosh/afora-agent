@@ -61,6 +61,7 @@ describe("AppSidebar project session activity", () => {
     const hostList = projectItem?.parentElement;
     const projectList = active?.closest('[role="list"]');
     expect(project).not.toBeNull();
+    expect(project?.querySelector(".sidebar-session-group-toggle__lead svg")).not.toBeNull();
     expect(hostList?.getAttribute("role")).toBe("list");
     expect(hostList?.getAttribute("aria-label")).toBe("Local Codex");
     expect(
