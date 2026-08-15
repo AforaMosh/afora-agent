@@ -1440,6 +1440,46 @@ async function createChatPickerScenario(
       hasComposerDraft: true,
       visibility: "draft",
     }),
+    sessionRow("agent:main:release-candidate", "2026.8.1-beta.2", baseTime - 82_900, {
+      createdActor: MOCK_CREATOR_PETER,
+      lastRunError: "Release candidate verification failed",
+      pinned: true,
+      status: "failed",
+    }),
+    sessionRow("agent:main:declined-preview", "Declined tool result", baseTime - 83_000, {
+      lastMessagePreview: '{ "status": "declined", "exitCode": null, "d…',
+    }),
+    sessionRow("agent:main:release-date-audit", "Release date audit", baseTime - 83_100, {
+      createdActor: MOCK_CREATOR_MIRA,
+      lastMessagePreview: "As of **August 15, 2026**, the exact `P0` …",
+    }),
+    sessionRow("agent:main:fixture-smoke", "Test", baseTime - 83_200, {
+      lastMessagePreview: "Test received.",
+    }),
+    sessionRow("agent:main:visual-concept-slug", "Visual concept handoff", baseTime - 83_300, {
+      createdActor: MOCK_CREATOR_PETER,
+      lastMessagePreview: "openclaw-workflow-visual-concepts---b9…",
+    }),
+    sessionRow("agent:main:missing-sessions", "Where Did Our Sessions Go?", baseTime - 83_400, {
+      lastMessagePreview: "Understood. I'll proceed without asking. H…",
+    }),
+    sessionRow(
+      "agent:main:gateway-session-maintenance",
+      "Gateway session maintenance manager for stale operator workspaces",
+      baseTime - 83_500,
+      {
+        createdActor: MOCK_CREATOR_MIRA,
+        lastMessagePreview: '{ "status": "declined", "exitCode": null, "d…',
+      },
+    ),
+    sessionRow(
+      "agent:main:fourth-issue-worktree",
+      "Implement fourth issue fix in worktree before updating the review",
+      baseTime - 83_600,
+      {
+        lastMessagePreview: "Opened as **ClawSweeper**: [PR #12418…",
+      },
+    ),
     sessionRow(INCOGNITO_CREATOR_SESSION_KEY, "Private planning", baseTime - 83_000, {
       createdActor: MOCK_CREATOR_PETER,
       incognito: true,
@@ -1544,6 +1584,23 @@ async function createChatPickerScenario(
         id: "wt-clawhub-catalog",
         branch: "feat/catalog-sync",
         repoRoot: "~/Projects/clawhub",
+      },
+    }),
+    sessionRow("agent:main:coding-declined-preview", "tool response triage", baseTime - 176_000, {
+      createdActor: MOCK_CREATOR_MIRA,
+      lastMessagePreview: '{ "status": "declined", "exitCode": null, "d…',
+      worktree: {
+        id: "wt-coding-declined-preview",
+        branch: "fix/tool-response-preview",
+        repoRoot: "~/Projects/openclaw",
+      },
+    }),
+    sessionRow("agent:main:coding-payload-replay", "payload replay", baseTime - 180_000, {
+      lastMessagePreview: '{ "status": "declined", "exitCode": null, "d…',
+      worktree: {
+        id: "wt-coding-payload-replay",
+        branch: "chore/payload-replay",
+        repoRoot: "~/Projects/peekaboo",
       },
     }),
     ...buildSessionRows({
