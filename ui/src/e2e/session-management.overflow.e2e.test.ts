@@ -97,7 +97,7 @@ suite.define(() => {
       for (const key of [SHORT_KEY, RUNNING_KEY]) {
         const row = page.locator(`[data-session-key="${key}"]`);
         const link = row.locator(".sidebar-recent-session__link");
-        const aside = row.locator(".sidebar-recent-session__aside");
+        const aside = row.locator(".session-row-endcap");
 
         const restLink = requireBox(await link.boundingBox());
         const restAside = requireBox(await aside.boundingBox());

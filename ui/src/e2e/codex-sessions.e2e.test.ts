@@ -287,7 +287,7 @@ suite.define(() => {
       } satisfies SessionsCatalogHostEvent);
 
       await expandCodingSection(page);
-      await page.getByText("Progressive node result", { exact: true }).waitFor();
+      await page.getByRole("link", { name: /^Progressive node result/u }).waitFor();
       expect((await gateway.getRequests("sessions.catalog.list")).length).toBe(1);
       if (captureUiProofEnabled) {
         await mkdir(uiProofArtifactDir, { recursive: true });
@@ -453,7 +453,7 @@ suite.define(() => {
       const openclawProject = section.locator(
         '[data-session-catalog-project="/Users/dev/openclaw"]',
       );
-      const openclawProjectItem = openclawProject.locator("..");
+      const openclawProjectItem = openclawProject;
       const openclawProjectList = openclawProjectItem.locator(":scope > [role=list]");
       expect(await openclawProjectItem.getAttribute("role")).toBe("listitem");
       expect(await openclawProjectList.getAttribute("aria-label")).toBe("Local Codex: openclaw");
@@ -907,7 +907,7 @@ suite.define(() => {
       const section = page.locator('[data-session-section="catalog:codex"]');
       await section.locator('[data-section-status="error"]').waitFor({ state: "visible" });
       await expect
-        .poll(() => section.locator(".sidebar-session-group-toggle").getAttribute("aria-label"))
+        .poll(() => section.locator('[data-section-status="error"]').getAttribute("aria-label"))
         .toContain("Second catalog page unavailable");
       await expect.poll(() => loadMore.getAttribute("aria-busy")).toBe("false");
       expect(await loadMore.isEnabled()).toBe(true);
@@ -962,7 +962,7 @@ suite.define(() => {
     });
     await page.goto(`${suite.server.baseUrl}chat`);
     await expandCodingSection(page);
-    await page.getByText("Release checklist", { exact: true }).click();
+    await page.getByRole("link", { name: /^Release checklist/u }).click();
     const catalogPane = page
       .locator("openclaw-chat-pane.chat-pane-cache__pane--visible")
       .filter({ hasText: "prepare release" });

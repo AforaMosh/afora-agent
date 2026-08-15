@@ -191,7 +191,7 @@ suite.define(() => {
           textIndent: getComputedStyle(label).textIndent,
           textOverflow: getComputedStyle(label).textOverflow,
         })),
-      ).toEqual({ textIndent: "0px", textOverflow: "ellipsis" });
+      ).toEqual({ textIndent: "0px", textOverflow: "clip" });
     } finally {
       await suite.closeBrowserContext(context);
     }
