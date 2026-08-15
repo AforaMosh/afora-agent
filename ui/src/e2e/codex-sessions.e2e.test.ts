@@ -629,6 +629,7 @@ suite.define(() => {
       expect(
         await page.evaluate((key) => localStorage.getItem(key), catalogGroupingStorageKey),
       ).toBe("project");
+      await expect.poll(() => openclawProject.count()).toBe(1);
 
       await openclawProjectToggle.click();
       await expect.poll(() => openclawProjectToggle.getAttribute("aria-expanded")).toBe("false");
