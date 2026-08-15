@@ -2610,8 +2610,8 @@ body.update-dialog-open .sidebar-update-card__status {
   background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-/* Origin metadata and the title share one line so an absent creator or
-   qualifier costs no width at all; the name keeps its own clipping box. */
+/* Privacy and draft state share the title line; creator identity lives in the
+   optional column outside this box. */
 .sidebar-recent-session__title {
   display: flex;
   align-items: center;
@@ -2619,19 +2619,19 @@ body.update-dialog-open .sidebar-update-card__status {
   min-width: 0;
 }
 
-.session-row-origin {
+.session-row-markers {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
 }
 
-.session-row-origin__qualifier {
+.session-row-marker--incognito {
   display: inline-flex;
   color: var(--muted);
 }
 
-.session-row-origin__qualifier svg {
+.session-row-marker--incognito svg {
   width: 13px;
   height: 13px;
   fill: none;
@@ -2641,7 +2641,7 @@ body.update-dialog-open .sidebar-update-card__status {
   stroke-linejoin: round;
 }
 
-.session-row-origin__draft {
+.session-row-marker--draft {
   color: var(--muted);
   font-size: var(--control-ui-text-xs);
   font-variant-numeric: tabular-nums;
