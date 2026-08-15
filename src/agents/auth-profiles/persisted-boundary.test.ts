@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, assert, describe, expect, it } from "vitest";
 import { AUTH_STORE_VERSION } from "./constants.js";
 import { resolveAuthProfileOrder } from "./order.js";
 import {
@@ -17,6 +17,7 @@ import {
 } from "./persisted.js";
 import { getRuntimeExternalCliProfileIds } from "./runtime-external-profile-references.js";
 import type { AuthProfileStore, RuntimeAuthProfileStore } from "./types.js";
+import { isSameAuthProfileRequestGeneration } from "./usage-state.js";
 
 describe("persisted auth profile boundary", () => {
   it("normalizes malformed persisted credentials and state before runtime use", () => {
@@ -75,6 +76,7 @@ describe("persisted auth profile boundary", () => {
       },
       usageStats: {
         "openai:default": {
+          credentialGeneration: 7,
           cooldownUntil: "later",
           disabledUntil: 123,
           disabledReason: "billing",
@@ -128,6 +130,7 @@ describe("persisted auth profile boundary", () => {
       },
       usageStats: {
         "openai:default": {
+          credentialGeneration: 7,
           disabledUntil: 123,
           disabledReason: "billing",
           failureCounts: { billing: 2 },
@@ -137,6 +140,37 @@ describe("persisted auth profile boundary", () => {
     expect(store?.profiles["broken:array"]).toBeUndefined();
     expect(store?.profiles["openai:default"]).not.toHaveProperty("copyToAgents");
     expect(store?.profiles["openai:oauth"]).not.toHaveProperty("oauthRef");
+  });
+
+  it("treats a generation discarded by an older reader as legacy generation zero", () => {
+    const profileId = "fixture:default";
+    const stored = coercePersistedAuthProfileStore({
+      version: AUTH_STORE_VERSION,
+      profiles: {
+        [profileId]: { type: "api_key", provider: "fixture", key: "same-key" },
+      },
+      usageStats: {
+        [profileId]: { credentialGeneration: 7, errorCount: 0 },
+      },
+    });
+    assert(stored);
+    expect(stored.usageStats?.[profileId]?.credentialGeneration).toBe(7);
+
+    const oldReaderStats = { ...stored.usageStats?.[profileId] };
+    delete oldReaderStats.credentialGeneration;
+    const projected = coercePersistedAuthProfileStore({
+      ...stored,
+      usageStats: { [profileId]: oldReaderStats },
+    });
+    const explicitLegacyZero = coercePersistedAuthProfileStore({
+      ...projected,
+      usageStats: { [profileId]: { ...oldReaderStats, credentialGeneration: 0 } },
+    });
+    assert(projected);
+    assert(explicitLegacyZero);
+
+    expect(projected.usageStats?.[profileId]?.credentialGeneration).toBeUndefined();
+    expect(isSameAuthProfileRequestGeneration(projected, explicitLegacyZero, profileId)).toBe(true);
   });
 
   it("lets authoritative runtime external metadata remove stale base profiles", () => {

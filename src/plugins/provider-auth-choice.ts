@@ -5,7 +5,7 @@ import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
 } from "../agents/agent-scope.js";
-import { upsertAuthProfileWithLockOrThrow } from "../agents/auth-profiles.js";
+import { upsertAuthProfileAfterLoginWithLockOrThrow } from "../agents/auth-profiles.js";
 import { formatLiteralProviderPrefixedModelRef } from "../agents/model-ref-shared.js";
 import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
 import { normalizeAgentModelRefForConfig } from "../config/model-input.js";
@@ -357,7 +357,7 @@ export async function runProviderPluginAuthMethod(params: {
 
   await params.beforePersistentEffect?.();
   for (const profile of result.profiles) {
-    await upsertAuthProfileWithLockOrThrow({
+    await upsertAuthProfileAfterLoginWithLockOrThrow({
       profileId: profile.profileId,
       credential: profile.credential,
       agentDir,
@@ -428,7 +428,7 @@ async function prepareProviderPluginAuthMethod(
     await params.beforePersistentEffect?.();
     for (const profile of profiles) {
       const { profileId, credential } = profile;
-      await upsertAuthProfileWithLockOrThrow({
+      await upsertAuthProfileAfterLoginWithLockOrThrow({
         profileId,
         credential,
         agentDir,
