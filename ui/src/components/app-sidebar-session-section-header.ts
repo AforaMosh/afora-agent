@@ -57,19 +57,22 @@ export function renderSidebarSessionSectionToggle(params: {
     title=${params.title ?? nothing}
     @click=${() => params.onToggle()}
   >
-    ${params.lead ??
-    html`<span class="sidebar-session-group-toggle__lead" aria-hidden="true"></span>`}
+    <span
+      class="sidebar-session-group-toggle__lead sidebar-session-group-toggle__lead--disclosure"
+      aria-hidden="true"
+    >
+      <span
+        class="sidebar-session-group-toggle__icon ${params.collapsed
+          ? "sidebar-session-group-toggle__icon--collapsed"
+          : ""}"
+        >${params.collapsed ? icons.chevronRight : icons.chevronDown}</span
+      >
+    </span>
+    ${params.lead ?? nothing}
     <span
       class=${params.labelClassName ?? "sidebar-recent-sessions__label-text"}
       ${ref(createOverflowFadeRef())}
       >${params.label}</span
-    >
-    <span
-      class="sidebar-session-group-toggle__icon ${params.collapsed
-        ? "sidebar-session-group-toggle__icon--collapsed"
-        : ""}"
-      aria-hidden="true"
-      >${params.collapsed ? icons.chevronRight : icons.chevronDown}</span
     >
     ${showCount
       ? html`<span class="sidebar-session-group-count" aria-hidden="true">${params.count}</span>`

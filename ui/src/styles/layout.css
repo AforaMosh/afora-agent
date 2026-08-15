@@ -1845,8 +1845,8 @@ body.update-dialog-open .sidebar-update-card__status {
   text-align: left;
 }
 
-/* The lead slot and the label own the two rails the whole sidebar reads on, so
-   only what trails the label — chevron, count, status — may take spacing. A
+/* The lead slots and the label own the rails the whole sidebar reads on, so
+   only what trails the label — count and status — may take spacing. A
    flex gap would push every headed label one gap past --sidebar-text-start and
    the ladder would step by a different amount at each level. */
 .sidebar-session-group-toggle
@@ -1865,10 +1865,9 @@ body.update-dialog-open .sidebar-update-card__status {
   place-items: center;
 }
 
-/* Disclosure belongs to the label, not to a left rail. A collapsed section has
-   to advertise the rows it hides; an expanded one already shows them, so its
-   chevron returns only on hover, keyboard focus, or a coarse pointer that has
-   no hover to offer. Losing this makes collapsing undiscoverable on touch. */
+/* Disclosure leads the label. A collapsed section has to advertise the rows it
+   hides; an expanded one already shows them, so its chevron returns only on
+   hover, keyboard focus, or a coarse pointer that has no hover to offer. */
 .sidebar-session-group-toggle__icon {
   display: inline-flex;
   flex: 0 0 auto;
