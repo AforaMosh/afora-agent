@@ -1326,6 +1326,11 @@ async function createChatPickerScenario(
       status: "running",
     }),
     sessionRow(PINNED_CREATOR_SESSION_KEY, "Tax filing research", baseTime - 60_000, {
+      agentStatus: {
+        note: "Receipts need review",
+        attention: "hand",
+        expiresAt: ATTENTION_FIXTURE_EXPIRES_AT,
+      },
       createdActor: MOCK_CREATOR_PETER,
       hasActiveRun: true,
       status: "running",
@@ -1352,11 +1357,15 @@ async function createChatPickerScenario(
     sessionRow("agent:main:release-draft", "Release notes draft", baseTime - 82_000, {
       createdActor: MOCK_CREATOR_MIRA,
       hasComposerDraft: true,
+      lastRunError: "The changelog source changed during generation",
+      status: "failed",
       visibility: "draft",
     }),
     sessionRow(INCOGNITO_CREATOR_SESSION_KEY, "Private planning", baseTime - 83_000, {
       createdActor: MOCK_CREATOR_PETER,
       incognito: true,
+      lastReadAt: baseTime - 180_000,
+      unread: true,
     }),
     sessionRow(ACTIVE_CREATOR_SESSION_KEY, "OpenClaw work checkout", baseTime - 85_000, {
       createdActor: MOCK_CREATOR_PETER,
@@ -1377,6 +1386,10 @@ async function createChatPickerScenario(
       baseTime - 87_000,
       {
         createdActor: MOCK_CREATOR_MIRA,
+        createdVia: "cron",
+        hasAutomation: true,
+        hasComposerDraft: true,
+        incognito: true,
       },
     ),
     mainChildRow,
@@ -1395,18 +1408,52 @@ async function createChatPickerScenario(
       kind: "group",
       channel: "discord",
     }),
+    // Native Coding rows deliberately share and split repositories: project
+    // grouping, branch depth, creator presence, and mixed run states all stay
+    // visible together instead of requiring separate mock modes.
     sessionRow("agent:main:sidebar-zones", "sidebar zones", baseTime - 150_000, {
+      createdActor: MOCK_CREATOR_PETER,
+      hasActiveRun: true,
+      startedAt: baseTime - 210_000,
+      status: "running",
       worktree: {
         id: "wt-sidebar-zones",
         branch: "claude/sidebar-agent-zones",
         repoRoot: "~/Projects/openclaw",
       },
     }),
+    sessionRow("agent:main:issues-panel", "issues panel recovery", baseTime - 158_000, {
+      createdActor: MOCK_CREATOR_MIRA,
+      lastRunError: "Gateway authentication expired during reconnect",
+      status: "failed",
+      worktree: {
+        id: "wt-issues-panel",
+        branch: "brzezowski/sidebar-issues-panel",
+        repoRoot: "~/Projects/openclaw",
+      },
+    }),
     sessionRow("agent:main:peekaboo-audit", "permission audit", baseTime - 165_000, {
+      agentStatus: {
+        note: "Waiting for Accessibility approval",
+        attention: "alert",
+        expiresAt: ATTENTION_FIXTURE_EXPIRES_AT,
+      },
+      createdActor: MOCK_CREATOR_MIRA,
       worktree: {
         id: "wt-peekaboo-audit",
         branch: "main",
         repoRoot: "~/Projects/peekaboo",
+      },
+    }),
+    sessionRow("agent:main:clawhub-catalog", "catalog sync", baseTime - 172_000, {
+      createdActor: MOCK_CREATOR_PETER,
+      hasActiveRun: true,
+      startedAt: baseTime - 260_000,
+      status: "running",
+      worktree: {
+        id: "wt-clawhub-catalog",
+        branch: "feat/catalog-sync",
+        repoRoot: "~/Projects/clawhub",
       },
     }),
     ...buildSessionRows({
@@ -1566,13 +1613,19 @@ async function createChatPickerScenario(
           PINNED_CREATOR_SESSION_KEY,
           INCOGNITO_CREATOR_SESSION_KEY,
           ACTIVE_CATALOG_SESSION_KEY,
+          "agent:main:sidebar-zones",
+          "agent:main:clawhub-catalog",
         ],
       },
       {
         id: "presence-colin",
         name: "Colin",
         email: "colin@example.com",
-        watchedSessions: [ACTIVE_CREATOR_SESSION_KEY, ACTIVE_CATALOG_SESSION_KEY],
+        watchedSessions: [
+          ACTIVE_CREATOR_SESSION_KEY,
+          INCOGNITO_CREATOR_SESSION_KEY,
+          ACTIVE_CATALOG_SESSION_KEY,
+        ],
       },
       {
         id: "presence-patricia",
@@ -1670,7 +1723,8 @@ async function createChatPickerScenario(
                     createdActor: MOCK_CREATOR_PETER,
                     cwd: "/Users/demo/projects/openclaw",
                     gitBranch: "main",
-                    status: "idle",
+                    pullRequest: { numbers: [123_935], state: "open" },
+                    status: "running",
                     updatedAt: baseTime - 10 * 60_000,
                     archived: false,
                     canContinue: true,
@@ -1682,6 +1736,7 @@ async function createChatPickerScenario(
                     createdActor: MOCK_CREATOR_MIRA,
                     cwd: "/Users/demo/projects/openclaw",
                     gitBranch: "brzezowski/sidebar-stack-polish",
+                    pullRequest: { numbers: [123_935], state: "draft" },
                     status: "idle",
                     updatedAt: baseTime - 45 * 60_000,
                     archived: false,
@@ -1708,6 +1763,7 @@ async function createChatPickerScenario(
                     name: "Docs refresh",
                     createdActor: MOCK_CREATOR_MIRA,
                     cwd: "/Users/demo/projects/peekaboo",
+                    gitBranch: "docs/control-ui-refresh",
                     status: "idle",
                     updatedAt: baseTime - 30 * 60_000,
                     archived: false,
