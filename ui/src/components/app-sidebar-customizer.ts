@@ -283,11 +283,11 @@ function renderCustomizerItem(
         ? html`<button
             type="button"
             class="sidebar-customizer__visibility sidebar-customizer__remove"
-            aria-label=${t("nav.customizeRemove", { item: item.label })}
+            aria-label=${`${t("sessionsView.unpinSession")}: ${item.label}`}
             @mousedown=${(event: MouseEvent) => event.stopPropagation()}
             @click=${() => params.onRemove(item)}
           >
-            ${icons.x}
+            ${icons.pinOff}
           </button>`
         : showVisibilityControl
           ? html`<button
