@@ -1458,6 +1458,7 @@ async function createChatPickerScenario(
         hasAutomation: true,
         hasComposerDraft: true,
         incognito: true,
+        unread: true,
         placement: {
           state: "requested",
           generation: 1,
