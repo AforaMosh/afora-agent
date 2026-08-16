@@ -2237,7 +2237,7 @@ body.update-dialog-open .sidebar-update-card__status {
 .sidebar-session-catalog-project__sessions {
   display: flex;
   flex-direction: column;
-  gap: var(--sidebar-list-row-gap);
+  gap: var(--sidebar-list-row-gap, 1px);
   min-width: 0;
 }
 
