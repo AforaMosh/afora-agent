@@ -169,11 +169,8 @@ describe("prepared reply dispatch runtime", () => {
     const dynamicLease = await acquireAgentRunPreparedModelRuntime(dynamicInput);
     const dynamicSelectedBefore = dynamicLease.snapshot.pluginRegistry;
     dynamicLease.release();
-    expect(mocks.loadAgentRuntimePluginRegistryHandle).toHaveBeenCalledTimes(3);
-    expect(mocks.loadAgentRuntimePluginRegistryHandle.mock.calls[2]?.[0]).toMatchObject({
-      workspaceDir: "/tmp/dynamic-auth-workspace",
-      selections: [{ provider: "openai", modelId: "gpt-5.5", runtime: "codex" }],
-    });
+    expect(mocks.loadAgentRuntimePluginRegistryHandle).toHaveBeenCalledTimes(2);
+    expect(dynamicSelectedBefore).toBe(configuredSelectedBefore);
     const registryCallsBeforeAuth = mocks.loadAgentRuntimePluginRegistryHandle.mock.calls.length;
     const authStorageCallsBeforeAuth = mocks.discoverAuthStorage.mock.calls.length;
     const modelCallsBeforeAuth = mocks.discoverModels.mock.calls.length;
