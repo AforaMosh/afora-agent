@@ -7,13 +7,14 @@ import { createScopedVitestConfig } from "./vitest.scoped-config.ts";
 export function createCliProcessVitestConfig(
   env?: Record<string, string | undefined>,
 ): ViteUserConfig {
+  const runLoopShard = env?.OPENCLAW_VITEST_SHARD_NAME === "agentic-cli-process-run-loop";
   const config = createScopedVitestConfig(cliProcessTestFiles, {
     env,
     fileParallelism: false,
     isolate: true,
     name: "cli-process",
     passWithNoTests: true,
-    pool: "forks",
+    pool: runLoopShard ? "threads" : "forks",
     useNonIsolatedRunner: false,
   });
   return {
