@@ -26,7 +26,9 @@ export async function disposeActiveTuiFixtures(): Promise<void> {
   }
 }
 
-export async function startTuiFixture(opts: { env?: NodeJS.ProcessEnv } = {}) {
+export async function startTuiFixture(
+  opts: { env?: NodeJS.ProcessEnv; rememberedSessionKey?: string } = {},
+) {
   const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-tui-pty-"));
   const scriptPath = await writeTuiPtyFixtureScript(tempDir);
   const logPath = path.join(tempDir, "fixture-log.jsonl");
@@ -36,6 +38,12 @@ export async function startTuiFixture(opts: { env?: NodeJS.ProcessEnv } = {}) {
     env: {
       OPENCLAW_THEME: "dark",
       OPENCLAW_TUI_PTY_LOG_PATH: logPath,
+      ...(opts.rememberedSessionKey
+        ? {
+            OPENCLAW_STATE_DIR: tempDir,
+            OPENCLAW_TUI_PTY_REMEMBERED_SESSION_KEY: opts.rememberedSessionKey,
+          }
+        : {}),
       NO_COLOR: undefined,
       ...opts.env,
     },
@@ -68,6 +76,9 @@ export async function writeTuiPtyFixtureScript(dir: string) {
   const outboundPayloadsModuleUrl = pathToFileURL(
     path.join(process.cwd(), "src/infra/outbound/payloads.ts"),
   ).href;
+  const lastSessionModuleUrl = pathToFileURL(
+    path.join(process.cwd(), "src/tui/tui-last-session.ts"),
+  ).href;
   await writeFile(
     scriptPath,
     `
@@ -76,12 +87,15 @@ export async function writeTuiPtyFixtureScript(dir: string) {
       import { buildEmbeddedRunPayloads } from ${JSON.stringify(payloadsModuleUrl)};
       import { getReplyPayloadMetadata } from ${JSON.stringify(replyPayloadModuleUrl)};
       import { normalizeReplyPayloadsForDelivery } from ${JSON.stringify(outboundPayloadsModuleUrl)};
+      import { buildTuiLastSessionScopeKey, writeTuiLastSessionKey } from ${JSON.stringify(lastSessionModuleUrl)};
       import type { TuiBackend } from ${JSON.stringify(tuiModuleUrl.replace("/tui.ts", "/tui-backend.ts"))};
       import { runTui } from ${JSON.stringify(tuiModuleUrl)};
 
       const actionLogPath = process.env.OPENCLAW_TUI_PTY_LOG_PATH;
       const gatewayStatus = process.env.OPENCLAW_TUI_PTY_GATEWAY_STATUS ?? "fixture gateway ok";
       const startupDelayMs = Number(process.env.OPENCLAW_TUI_PTY_STARTUP_DELAY_MS ?? 0);
+      const rememberedSessionKey = process.env.OPENCLAW_TUI_PTY_REMEMBERED_SESSION_KEY;
+      const preRestoreOverlay = process.env.OPENCLAW_TUI_PTY_PRE_RESTORE_OVERLAY;
       const footerModel = process.env.OPENCLAW_TUI_PTY_MODEL;
       const footerThinkingLevel = process.env.OPENCLAW_TUI_PTY_THINKING_LEVEL;
       let verboseLevel = process.env.OPENCLAW_TUI_PTY_VERBOSE_LEVEL;
@@ -504,7 +518,9 @@ export async function writeTuiPtyFixtureScript(dir: string) {
           record("listSessions", {
             purpose: opts?.includeDerivedTitles ? "picker" : "refresh",
           });
-          const sessions = enablePickerFixture
+          const sessions = rememberedSessionKey
+            ? [sessionEntry(rememberedSessionKey)]
+            : enablePickerFixture
             ? [
                 sessionEntry("main"),
                 {
@@ -659,6 +675,16 @@ export async function writeTuiPtyFixtureScript(dir: string) {
       }
 
       async function main() {
+        if (rememberedSessionKey) {
+          await writeTuiLastSessionKey({
+            scopeKey: buildTuiLastSessionScopeKey({
+              connectionUrl: "pty-fixture://local",
+              agentId: "main",
+              sessionScope: "per-sender",
+            }),
+            sessionKey: rememberedSessionKey,
+          });
+        }
         await runTui({
           backend: new FixtureBackend(),
           config: {

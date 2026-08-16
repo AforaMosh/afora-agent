@@ -311,6 +311,39 @@ describe.sequential("TUI PTY harness", () => {
     expect(taskRefreshIndex).toBeLessThan(historyLoadIndex);
   });
 
+  it.each([
+    ["plugin approval", "plugin-approval", "workspace skill approval: Default session approval"],
+    ["task suggestion", "task-suggestion", "Suggested follow-up: Default session task"],
+  ] as const)(
+    "closes a pre-restore %s after adopting the remembered session",
+    async (_label, preRestoreOverlay, stalePrompt) => {
+      const rememberedSessionKey = "agent:main:remembered";
+      const restoreFixture = await startTuiFixture({
+        rememberedSessionKey,
+        env: { OPENCLAW_TUI_PTY_PRE_RESTORE_OVERLAY: preRestoreOverlay },
+      });
+      try {
+        await restoreFixture.waitForLogEntry(
+          (entry) =>
+            entry.method === "loadHistory" &&
+            objectFieldEquals(entry, "sessionKey", rememberedSessionKey),
+          STARTUP_TIMEOUT_MS,
+        );
+        const rows = await waitForSynchronizedFrameRows(
+          restoreFixture.run,
+          (frameRows) =>
+            frameRows.some((row) => row.includes("session remembered")) &&
+            frameRows.some((row) => row.includes("local ready | idle")),
+          STARTUP_TIMEOUT_MS,
+        );
+        expect(rows.join("\n")).not.toContain(stalePrompt);
+      } finally {
+        await restoreFixture.cleanup();
+      }
+    },
+    STARTUP_TEST_TIMEOUT_MS,
+  );
+
   it(
     "drives the real TUI terminal loop through typed and fragmented Unicode input",
     async () => {
