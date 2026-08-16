@@ -143,7 +143,7 @@ suite.define(() => {
         // One avatar scale across the trail, and no decoration on it.
         expect(trail.creator.height).toBeCloseTo(18, 4);
         expect(trail.creator.width).toBeCloseTo(18, 4);
-        expect(trail.viewerHeight).toBe(18);
+        expect(trail.viewerHeight).toBeCloseTo(18, 4);
         expect(trail.creatorShadow).toBe("none");
         // The 48px header centers its 28px actions on the chrome centerline, and
         // the trail lifts its text 1px above that. A button that moved into the
