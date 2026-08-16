@@ -13,6 +13,7 @@ const MARQUEE_HOVER_DELAY_MS = 500;
 // its last characters would arrive already dimmed.
 const MARQUEE_FADE_PX = 10;
 const ACTION_COVER_PROPERTY = "--session-row-action-cover";
+const ACTION_OVERLAP_ATTRIBUTE = "data-session-actions-overlap";
 // Set by the row renderer on the same element that carries the cover.
 const MENU_OPEN_CLASS = "session-row-host--menu-open";
 // Published on a container whose hover-driven surfaces must stay still -- the
@@ -26,6 +27,10 @@ function findMarqueeLabel(host: HTMLElement): HTMLElement | null {
   return host.classList.contains("hover-marquee")
     ? host
     : host.querySelector<HTMLElement>(".hover-marquee");
+}
+
+function findTitleLabel(host: HTMLElement): HTMLElement | null {
+  return findMarqueeLabel(host) ?? host.querySelector<HTMLElement>(".sidebar-recent-session__name");
 }
 
 function clearPendingMarquee(label: HTMLElement): void {
@@ -83,13 +88,14 @@ export function revealSessionRow(host: HTMLElement): void {
   const label = findMarqueeLabel(host);
   // Measure at hover time: labels resize with the sidebar and with hover-only
   // row actions, so a cached width would drift.
-  const { cover, hidden } = measureRowReveal(host, label);
+  const { cover, hidden } = measureRowReveal(host, findTitleLabel(host));
   // The fade is not part of the reveal: CSS shows the actions on :hover on its
   // own, and the mask in layout.css ramps at this measurement. Skipping it while
   // a menu is open would leave those actions sitting on unfaded title text, so
   // the cover is published for every hovered row and only the traversal below
   // is suppressed.
   host.style.setProperty(ACTION_COVER_PROPERTY, `${Math.round(cover)}px`);
+  host.toggleAttribute(ACTION_OVERLAP_ATTRIBUTE, hidden > 1);
   if (!label || label.classList.contains("hover-marquee--scrolling")) {
     return;
   }
@@ -144,6 +150,7 @@ export function restSessionRow(host: HTMLElement, next: Node | null): void {
     return;
   }
   host.style.removeProperty(ACTION_COVER_PROPERTY);
+  host.removeAttribute(ACTION_OVERLAP_ATTRIBUTE);
   const label = findMarqueeLabel(host);
   if (!label) {
     return;

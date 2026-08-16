@@ -2887,11 +2887,16 @@ body.update-dialog-open .sidebar-update-card__status {
    real action edge because lib/session-row-reveal.ts measures the overlap on entry
    instead of reserving a guessed width. Menu-open holds the reveal so the row
    a menu belongs to stays legible behind it. */
-.session-row-host.sidebar-recent-session:not(.sidebar-recent-session--child):hover
+.session-row-host.sidebar-recent-session[data-session-actions-overlap]:not(
+    .sidebar-recent-session--child
+  ):hover
   > .sidebar-recent-session__link,
-.session-row-host.sidebar-recent-session:not(.sidebar-recent-session--child):focus-within
+.session-row-host.sidebar-recent-session[data-session-actions-overlap]:not(
+    .sidebar-recent-session--child
+  ):focus-within
   > .sidebar-recent-session__link,
-.session-row-host.session-row-host--menu-open > .sidebar-recent-session__link {
+.session-row-host.session-row-host--menu-open[data-session-actions-overlap]
+  > .sidebar-recent-session__link {
   mask-image: linear-gradient(
     to right,
     black calc(100% - var(--session-row-action-cover, 0px) - 10px),
