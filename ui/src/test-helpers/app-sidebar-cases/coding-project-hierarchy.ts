@@ -129,7 +129,7 @@ describe("AppSidebar coding project hierarchy", () => {
     ).toBeNull();
   });
 
-  it("names a project by its workspace mark and hangs its sessions off the label", async () => {
+  it("names a project with a folder mark and hangs its sessions off the label", async () => {
     const sidebar = await mountWithRows([
       {
         key: "agent:main:openclaw",
@@ -141,11 +141,7 @@ describe("AppSidebar coding project hierarchy", () => {
     ]);
 
     const project = sidebar.querySelector('[data-session-work-project="/Users/ada/code/openclaw"]');
-    // The mark is the workspace's own asset route; the element itself decides
-    // when to fall back to the folder glyph, so the header must not pre-empt it.
-    expect(
-      project?.querySelector(".sidebar-session-group-toggle__lead openclaw-workspace-icon"),
-    ).not.toBeNull();
+    expect(project?.querySelector(".sidebar-session-group-toggle__lead svg")).not.toBeNull();
     // Rows sit on the project's text axis: without this they share the header's
     // left edge and the group reads as a flat list with a label on top.
     const sessions = project?.querySelector(".sidebar-session-catalog-project__sessions");

@@ -32,7 +32,7 @@ describe("AppSidebar update card wiring", () => {
     expect(sidebar.querySelector('.nav-item[href="/settings/secrets"]')).toBeNull();
   });
 
-  it("renders updates above the footer bar and forwards its action", async () => {
+  it("renders updates in the content overlay and forwards its action", async () => {
     const gateway = createGateway({} as GatewayBrowserClient);
     const { sidebar } = await mountSidebar(gateway, createSessions("main", ["agent:main:main"]));
     const onUpdate = vi.fn();
@@ -47,12 +47,13 @@ describe("AppSidebar update card wiring", () => {
     sidebar.onRefresh = onRefresh;
     await sidebar.updateComplete;
 
+    const updateOverlay = sidebar.querySelector(".sidebar-shell__update-overlay");
+    expect(updateOverlay?.firstElementChild?.localName).toBe("openclaw-sidebar-update-card");
     const footer = sidebar.querySelector(".sidebar-shell__footer");
-    expect(footer?.firstElementChild?.localName).toBe("openclaw-sidebar-update-card");
     expect(
       footer?.querySelector(".sidebar-footer-bar > openclaw-sidebar-attention"),
     ).not.toBeNull();
-    const card = footer?.querySelector("openclaw-sidebar-update-card");
+    const card = updateOverlay?.querySelector("openclaw-sidebar-update-card");
     expect(card).not.toBeNull();
     const restoreDialogPolyfill = installDialogPolyfill();
     card?.querySelector<HTMLButtonElement>(".sidebar-update-card__cta")?.click();
@@ -66,9 +67,9 @@ describe("AppSidebar update card wiring", () => {
 
     sidebar.refreshRequired = true;
     await sidebar.updateComplete;
-    const refreshCard = footer?.querySelector<HTMLElement & { updateComplete: Promise<boolean> }>(
-      "openclaw-sidebar-update-card",
-    );
+    const refreshCard = updateOverlay?.querySelector<
+      HTMLElement & { updateComplete: Promise<boolean> }
+    >("openclaw-sidebar-update-card");
     await refreshCard?.updateComplete;
     expect(refreshCard?.textContent).toContain("Server updated");
     refreshCard?.querySelector<HTMLButtonElement>(".sidebar-update-card__action")?.click();

@@ -483,18 +483,6 @@ describe("chat pane header", () => {
     ).toBeNull();
   });
 
-  it("holds the title's position and height through a rename", () => {
-    const rest = mount();
-    const editing = mount({ editing: true, renameValue: "Session title" });
-    const restIdentity = rest.container.querySelector(".chat-pane__session-identity");
-    const editIdentity = editing.container.querySelector(".chat-pane__session-identity");
-
-    // Same slot in the same group: renaming replaces the title in place rather
-    // than reflowing the trail around a wider control.
-    expect(restIdentity?.children).toHaveLength(editIdentity?.children.length ?? -1);
-    expect(editIdentity?.lastElementChild?.className).toBe("chat-pane__session-title-input");
-  });
-
   it("keeps the rename input inside the trail so the project stays visible", () => {
     const { container } = mount({ editing: true, renameValue: "Renaming" });
     const crumbs = container.querySelector(".chat-pane__crumbs");

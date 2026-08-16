@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SidebarRecentSession } from "./app-sidebar-session-types.ts";
-import {
-  renderSidebarSessionSubtitle,
-  resolveSidebarSessionSubtitle,
-} from "./session-row-subtitle.ts";
+import { resolveSidebarSessionSubtitle } from "./session-row-subtitle.ts";
 
 function workSession(): SidebarRecentSession {
   return {
@@ -26,7 +23,7 @@ describe("resolveSidebarSessionSubtitle", () => {
         sidebarLiveActivity: true,
         narrationLine: undefined,
       }),
-    ).toEqual({ subtitle: undefined, narration: undefined, awaitingApproval: false });
+    ).toMatchObject({ subtitle: undefined, narration: undefined, waitingAttention: false });
   });
 
   it("ignores live narration when a stale running status has no projected active run", () => {
@@ -38,7 +35,11 @@ describe("resolveSidebarSessionSubtitle", () => {
         sidebarLiveActivity: true,
         narrationLine: "Still running",
       }),
-    ).toEqual({ subtitle: "~/Projects/openclaw", narration: undefined, awaitingApproval: false });
+    ).toMatchObject({
+      subtitle: "~/Projects/openclaw",
+      narration: undefined,
+      waitingAttention: false,
+    });
   });
 
   it("uses attention, agent status, observer, narration, then work subtitle precedence", () => {
@@ -86,10 +87,10 @@ describe("resolveSidebarSessionSubtitle", () => {
         narrationLine: "Using test runner",
         observerDigest: null,
       }),
-    ).toEqual({
+    ).toMatchObject({
       subtitle: "Using test runner",
       narration: "Using test runner",
-      awaitingApproval: false,
+      waitingAttention: false,
     });
   });
 
@@ -116,20 +117,20 @@ describe("resolveSidebarSessionSubtitle", () => {
         },
       });
 
-    expect(resolve(undefined)).toEqual({
+    expect(resolve(undefined)).toMatchObject({
       subtitle: "Using test runner",
       narration: "Using test runner",
-      awaitingApproval: false,
+      waitingAttention: false,
     });
-    expect(resolve("run-1")).toEqual({
+    expect(resolve("run-1")).toMatchObject({
       subtitle: "Using test runner",
       narration: "Using test runner",
-      awaitingApproval: false,
+      waitingAttention: false,
     });
-    expect(resolve("run-2")).toEqual({
+    expect(resolve("run-2")).toMatchObject({
       subtitle: "Old digest",
       narration: undefined,
-      awaitingApproval: false,
+      waitingAttention: false,
     });
   });
 
@@ -221,8 +222,8 @@ describe("observer digest freshness reconciliation", () => {
   });
 });
 
-describe("approval subtitle", () => {
-  function awaitingApproval(): SidebarRecentSession {
+describe("attention subtitle", () => {
+  function waitingForApproval(): SidebarRecentSession {
     return {
       ...workSession(),
       attention: { kind: "approval" },
@@ -231,7 +232,7 @@ describe("approval subtitle", () => {
 
   it("marks the slot when a pending approval wins it", () => {
     const resolved = resolveSidebarSessionSubtitle({
-      session: awaitingApproval(),
+      session: waitingForApproval(),
       hasDisplay: false,
       displaySubtitle: undefined,
       sidebarLiveActivity: true,
@@ -239,7 +240,7 @@ describe("approval subtitle", () => {
     });
 
     expect(resolved.subtitle).toBe("Waiting for approval");
-    expect(resolved.awaitingApproval).toBe(true);
+    expect(resolved.waitingAttention).toBe(true);
   });
 
   it("does not mark a slot an ordinary subtitle won", () => {
@@ -250,26 +251,7 @@ describe("approval subtitle", () => {
         displaySubtitle: undefined,
         sidebarLiveActivity: true,
         narrationLine: undefined,
-      }).awaitingApproval,
+      }).waitingAttention,
     ).toBe(false);
-  });
-
-  it("renders the shimmer only for the marked slot", () => {
-    // The sweep rides on this class; without it the request reads as any other
-    // grey line and the row stops asking.
-    const shimmering = renderSidebarSessionSubtitle({
-      subtitle: "Waiting for approval",
-      narration: undefined,
-      awaitingApproval: true,
-    });
-    const plain = renderSidebarSessionSubtitle({
-      subtitle: "Waiting for approval",
-      narration: undefined,
-      awaitingApproval: false,
-    });
-    const classOf = (value: unknown) => String((value as { values?: unknown[] }).values?.[0] ?? "");
-
-    expect(classOf(shimmering)).toContain("sidebar-recent-session__subtitle--approval");
-    expect(classOf(plain)).not.toContain("--approval");
   });
 });

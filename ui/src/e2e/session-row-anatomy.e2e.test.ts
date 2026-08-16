@@ -316,7 +316,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
       try {
         const target = row(page, APPROVAL_KEY);
-        const asking = target.locator(".sidebar-recent-session__subtitle--approval");
+        const asking = target.locator(".sidebar-recent-session__subtitle.pending-text-shimmer");
         await expect.poll(() => asking.count()).toBe(1);
         await expect.poll(() => asking.textContent()).toBe("Waiting for approval");
         // The subtitle already says it, so the key glyph would be the same fact
@@ -325,9 +325,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         // The marking belongs to the request, not to subtitles in general.
         const ordinary = row(page, ORDINARY_KEY);
         expect(await ordinary.locator(".sidebar-recent-session__subtitle").count()).toBe(1);
-        expect(await ordinary.locator(".sidebar-recent-session__subtitle--approval").count()).toBe(
-          0,
-        );
+        expect(await ordinary.locator(".pending-text-shimmer").count()).toBe(0);
 
         // A still of an endless sweep has to choose a moment. Hold the shipped
         // animation at 900ms of its 1800ms travel, where the band is crossing

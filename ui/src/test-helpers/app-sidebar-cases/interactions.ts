@@ -596,7 +596,12 @@ describe("AppSidebar catalog session rows", () => {
         "catalog:codex:gateway%3Alocal:thread-1",
       );
       expect(active[0]?.closest('[role="listitem"]')).not.toBeNull();
-      expect(active[0]?.closest('[role="list"]')?.getAttribute("aria-label")).toBe("Local Codex");
+      expect(
+        active[0]
+          ?.closest(".sidebar-session-catalog-host")
+          ?.querySelector('[role="list"]')
+          ?.getAttribute("aria-label"),
+      ).toBe("Local Codex");
       expect(active[0]?.querySelector("a")?.getAttribute("aria-current")).toBe("page");
       // The card describes every row; only a row with state adds a state id.
       expect(active[0]?.querySelector("a")?.getAttribute("aria-describedby") ?? "").not.toContain(

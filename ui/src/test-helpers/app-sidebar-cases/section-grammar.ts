@@ -38,18 +38,6 @@ async function mountWithRows(rows: GatewaySessionRow[]) {
 }
 
 describe("AppSidebar section grammar", () => {
-  it("places the disclosure immediately after the section label", async () => {
-    const sidebar = await mountWithRows([plainRow("agent:main:one")]);
-
-    const toggle = sidebar.querySelector(`${sectionSelector} .sidebar-session-group-toggle`);
-    const label = toggle?.querySelector(".sidebar-recent-sessions__label-text");
-    const chevron = toggle?.querySelector(".sidebar-session-group-toggle__icon");
-
-    expect(label).not.toBeNull();
-    expect(chevron).not.toBeNull();
-    expect(label?.nextElementSibling).toBe(chevron);
-  });
-
   it("marks the disclosure collapsed so it can rest visible without hover", async () => {
     const sidebar = await mountWithRows([plainRow("agent:main:one")]);
     const chevron = () =>

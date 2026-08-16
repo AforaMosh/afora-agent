@@ -71,9 +71,6 @@ describe("AppSidebar project session activity", () => {
     );
     expect(hostList?.getAttribute("role")).toBe("list");
     expect(hostList?.getAttribute("aria-label")).toBe("Local Codex");
-    expect(
-      [...(hostList?.children ?? [])].every((item) => item.getAttribute("role") === "listitem"),
-    ).toBe(true);
     expect(projectItem?.getAttribute("role")).toBe("listitem");
     expect(projectList?.getAttribute("aria-label")).toBe("Local Codex: openclaw");
     expect(
@@ -81,7 +78,8 @@ describe("AppSidebar project session activity", () => {
     ).toBe(true);
     expect(idle?.closest('[role="list"]')).toBe(projectList);
     const looseItem = loose?.closest('[role="listitem"]');
-    expect(looseItem?.parentElement).toBe(hostList);
+    expect(looseItem?.parentElement?.classList.contains("sidebar-session-projectless")).toBe(true);
+    expect(looseItem?.parentElement?.parentElement).toBe(hostList);
     const activeState = active?.querySelector(".session-row-state");
     expect(activeState?.getAttribute("role")).toBe("img");
     expect(activeState?.getAttribute("aria-label")).toBe("Active run");

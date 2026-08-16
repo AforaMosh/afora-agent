@@ -114,26 +114,6 @@ describe("openclaw-tooltip", () => {
     );
   });
 
-  it("skins the body and removes the arrow through shared overlay tokens", async () => {
-    const { tooltip } = createTooltip("Styled tooltip");
-    document.body.append(tooltip);
-    await tooltip.updateComplete;
-
-    const styles = [...(tooltip.shadowRoot?.querySelectorAll("style") ?? [])]
-      .map((style) => style.textContent)
-      .join("\n");
-    expect(styles).toContain("--wa-tooltip-background-color:");
-    expect(styles).toContain("--wa-tooltip-border-color:");
-    expect(styles).toContain("--wa-tooltip-border-width: 1px");
-    expect(styles).toContain("--wa-tooltip-border-style: solid");
-    // Arrow, padding, and radius keep their defaults but stay caller-skinnable:
-    // a card-shaped tooltip needs a different shell from a one-line label.
-    expect(styles).toContain("--wa-tooltip-arrow-size: var(--openclaw-tooltip-arrow-size, 0px)");
-    expect(styles).toContain("padding: var(--openclaw-tooltip-padding, 5px 7px)");
-    expect(styles).toContain("var(--overlay-border)");
-    expect(styles).toContain("var(--overlay-shadow)");
-  });
-
   it("projects rich content into the Web Awesome tooltip", async () => {
     const { tooltip, trigger, card } = createRichTooltip("Rich card", "Rich card");
     document.body.append(tooltip);

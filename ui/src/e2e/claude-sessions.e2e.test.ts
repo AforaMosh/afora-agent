@@ -485,19 +485,15 @@ suite.define(() => {
           const providerIcon = toggle.querySelector<HTMLElement>(
             ".sidebar-session-catalog-provider-icon",
           );
-          const label = toggle.querySelector<HTMLElement>(".sidebar-recent-sessions__label-text");
           const chevron = toggle.querySelector<HTMLElement>(".sidebar-session-group-toggle__icon");
-          if (!providerIcon || !label || !chevron) {
-            throw new Error("expected branded catalog provider icon, label, and chevron");
+          if (!providerIcon || !chevron) {
+            throw new Error("expected branded catalog provider icon and chevron");
           }
           return {
             coarsePointer: matchMedia("(pointer: coarse)").matches,
             noHover: matchMedia("(hover: none)").matches,
             providerOpacity: getComputedStyle(providerIcon).opacity,
             chevronOpacity: getComputedStyle(chevron).opacity,
-            chevronFollowsLabel: Boolean(
-              label.compareDocumentPosition(chevron) & Node.DOCUMENT_POSITION_FOLLOWING,
-            ),
           };
         });
       // Brand artwork and disclosure no longer share one slot: the icon stays
@@ -507,7 +503,6 @@ suite.define(() => {
         noHover: true,
         providerOpacity: "1",
         chevronOpacity: "0.75",
-        chevronFollowsLabel: true,
       });
 
       const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();

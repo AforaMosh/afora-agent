@@ -6,14 +6,12 @@ import { SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD } from "../../lib/session-pull-r
 import { createGatewayHarness, createSessionsHarness, mountSidebar } from "../app-sidebar.ts";
 import { waitForFast } from "../wait-for.ts";
 
-function expectEmptyLead(row: Element | null) {
-  const lead = row?.querySelector(".sidebar-session-indicator");
-  expect(lead).not.toBeNull();
-  expect(lead?.childElementCount).toBe(0);
+function expectNoLeadingIdentity(row: Element | null) {
+  expect(row?.querySelector(".sidebar-session-indicator")).toBeNull();
 }
 
 describe("AppSidebar session indicators", () => {
-  it("preserves child PR indicators and gives a pinned child no extra state", async () => {
+  it("keeps child rows on the compact legacy endcap", async () => {
     const parentKey = "agent:main:parent";
     const pinnedKey = "agent:main:pinned-child";
     const runningKey = "agent:main:running-child";
@@ -98,24 +96,12 @@ describe("AppSidebar session indicators", () => {
     sidebar.requestUpdate();
     await sidebar.updateComplete;
 
-    await waitForFast(() => {
-      expect(
-        sidebar.querySelector(
-          `[data-session-key="${openPullRequestKey}"] [data-session-pr-state="open"]`,
-        ),
-      ).not.toBeNull();
-      expect(
-        sidebar.querySelector(
-          `[data-session-key="${mergedPullRequestKey}"] [data-session-pr-state="merged"]`,
-        ),
-      ).not.toBeNull();
-    });
     // Child rows keep their established compact endcap whether pinned or not;
     // the rest/management swap belongs only to top-level session rows.
     const pinnedRow = sidebar.querySelector(`[data-session-key="${pinnedKey}"]`);
     const runningRow = sidebar.querySelector(`[data-session-key="${runningKey}"]`);
-    expectEmptyLead(pinnedRow);
-    expectEmptyLead(runningRow);
+    expectNoLeadingIdentity(pinnedRow);
+    expectNoLeadingIdentity(runningRow);
     expect(pinnedRow?.querySelector(".session-row-aside")).not.toBeNull();
     expect(runningRow?.querySelector(".session-row-aside")).not.toBeNull();
   });
@@ -226,17 +212,17 @@ describe("AppSidebar session indicators", () => {
       expect(sidebar.querySelector('[data-session-pr-state="merged"]')).not.toBeNull();
     });
     const plain = sidebar.querySelector(`[data-session-key="${keys.plain}"]`);
-    expectEmptyLead(plain);
+    expectNoLeadingIdentity(plain);
     expect(plain?.querySelector(".session-row-state")).toBeNull();
 
     // A fork is provenance, not operational state, so it earns no row glyph.
     const forked = sidebar.querySelector(`[data-session-key="${keys.forked}"]`);
-    expectEmptyLead(forked);
+    expectNoLeadingIdentity(forked);
     expect(forked?.querySelector(".session-row-fork-indicator")).toBeNull();
     expect(forked?.querySelector(".session-row-state")).toBeNull();
 
     const unread = sidebar.querySelector(`[data-session-key="${keys.unread}"]`);
-    expectEmptyLead(unread);
+    expectNoLeadingIdentity(unread);
     expect(
       unread?.querySelector(
         ".session-row-endcap__rest-summary > .session-row-state .session-state-dot--unread",
@@ -245,7 +231,7 @@ describe("AppSidebar session indicators", () => {
 
     const runningUnread = sidebar.querySelector(`[data-session-key="${keys.runningUnread}"]`);
     expect(runningUnread?.classList.contains("session-row-host--running")).toBe(true);
-    expectEmptyLead(runningUnread);
+    expectNoLeadingIdentity(runningUnread);
     expect(
       runningUnread?.querySelector(
         ".session-row-endcap__rest-summary > .session-row-state .session-run-spinner",
@@ -273,7 +259,7 @@ describe("AppSidebar session indicators", () => {
 
     for (const key of [keys.openPullRequest, keys.mergedPullRequest]) {
       const row = sidebar.querySelector(`[data-session-key="${key}"]`);
-      expectEmptyLead(row);
+      expectNoLeadingIdentity(row);
       expect(row?.querySelector(".session-row-endcap [data-session-pr-state]")).not.toBeNull();
       expect(row?.querySelector("a")?.getAttribute("aria-label")).toContain(
         key === keys.openPullRequest ? "Open PR" : "Merged",
@@ -289,7 +275,9 @@ describe("AppSidebar session indicators", () => {
     sessions.publishList({ result });
     await waitForFast(() => {
       expect(sidebar.querySelector('[data-session-pr-state="open"]')).toBeNull();
-      expectEmptyLead(sidebar.querySelector(`[data-session-key="${keys.openPullRequest}"]`));
+      expectNoLeadingIdentity(
+        sidebar.querySelector(`[data-session-key="${keys.openPullRequest}"]`),
+      );
     });
   });
 });

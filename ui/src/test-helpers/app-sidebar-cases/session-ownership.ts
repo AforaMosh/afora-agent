@@ -614,8 +614,10 @@ describe("AppSidebar session ownership", () => {
     await sidebar.updateComplete;
 
     const row = sidebar.querySelector(`[data-session-key="${key}"]`);
-    expect(row?.querySelector(".session-row-origin openclaw-session-owner-chip")).not.toBeNull();
-    expect(row?.querySelector(".session-row-origin [data-session-pr-state]")).toBeNull();
+    expect(
+      row?.querySelector(".session-row-leading-identity openclaw-session-owner-chip"),
+    ).not.toBeNull();
+    expect(row?.querySelector(".session-row-leading-identity [data-session-pr-state]")).toBeNull();
     expect(row?.querySelector(".session-row-state .session-state-dot--unread")).not.toBeNull();
   });
 

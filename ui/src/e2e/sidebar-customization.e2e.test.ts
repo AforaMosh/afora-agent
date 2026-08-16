@@ -616,7 +616,7 @@ suite.define(() => {
         expect(Math.max(...rail) - Math.min(...rail)).toBeLessThanOrEqual(0.5);
       }
       await pinnedSessionRow
-        .getByRole("button", { name: "Remove Tax filing research from sidebar" })
+        .getByRole("button", { name: "Unpin session: Tax filing research" })
         .click();
       await expect.poll(() => pinnedSessionRow.count()).toBe(0);
       await customizer.getByRole("button", { name: "Discard changes" }).click();

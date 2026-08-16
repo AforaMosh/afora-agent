@@ -147,12 +147,11 @@ describe("AppSidebar interleaved zone", () => {
     const gateway = createGateway({} as GatewayBrowserClient);
     const { sidebar } = await mountSidebar(gateway, sessions.sessions);
 
-    // Pinning is not a status, and no row reserves a leading slot at all.
+    // The pinned row carries its compact bot marker while activity stays in the endcap.
     const row = sidebar.querySelector('[data-session-key="agent:main:page"]');
     const plain = sidebar.querySelector('[data-session-key="agent:main:plain"]');
-    expect(row?.querySelector(".sidebar-session-indicator")?.innerHTML).toBe(
-      plain?.querySelector(".sidebar-session-indicator")?.innerHTML,
-    );
+    expect(row?.querySelector(".sidebar-session-indicator .nav-item__icon")).not.toBeNull();
+    expect(plain?.querySelector(".sidebar-session-indicator")).toBeNull();
     expect(row?.querySelector(".nav-item__state")).toBeNull();
     expect(row?.querySelector(".session-row-state .session-run-spinner")).not.toBeNull();
   });
@@ -181,7 +180,7 @@ describe("AppSidebar interleaved zone", () => {
 
     const row = sidebar.querySelector('[data-session-key="agent:main:page"]');
     expect(row?.getAttribute("data-session-attention")).toBe("error");
-    expect(row?.querySelector(".sidebar-session-indicator")).toBeNull();
+    expect(row?.querySelector(".sidebar-session-indicator .nav-item__icon")).not.toBeNull();
     // A blocked run outranks unread: one dot, not two competing ones.
     expect(row?.querySelector(".session-row-state .session-state-dot--blocked")).not.toBeNull();
     expect(row?.querySelector(".session-state-dot--unread")).toBeNull();
