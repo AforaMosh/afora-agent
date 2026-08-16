@@ -308,7 +308,8 @@ describe("MemoryIndexManager.readFile", () => {
       relPath: "extra/oversized.md",
     });
     expect(oversized.truncated).toBe(true);
-    expect(oversized.text).not.toContain("use read on the source file");
+    expect(oversized.nextFrom).toBeUndefined();
+    expect(oversized.text).toContain("use read on the source file");
 
     const linkPath = path.join(extraDir, "linked.md");
     let symlinkOk = true;
