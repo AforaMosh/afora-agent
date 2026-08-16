@@ -3319,6 +3319,10 @@ button.chat-pr__diff {
   overflow-wrap: anywhere;
 }
 
+:root[data-theme-mode="light"] .agent-chat__composer-error {
+  background: color-mix(in srgb, var(--danger) 14%, var(--chat-composer-surface));
+}
+
 .agent-chat__composer-shell > .agent-chat__composer-error {
   border-radius: calc(20px * var(--openclaw-corner-radius-scale))
     calc(20px * var(--openclaw-corner-radius-scale)) 0 0;
