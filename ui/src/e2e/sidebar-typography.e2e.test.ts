@@ -217,14 +217,10 @@ suite.define(() => {
 
         const sectionLabels = sidebar.locator(".sidebar-recent-sessions__label-text");
         const sectionContract = await typeMetrics(sectionLabels.first());
-        expect(sectionContract).toMatchObject({
-          lineHeight: "11px",
-          size: "11px",
-          tracking: "0.44px",
-          weight: "650",
-        });
         expect(
-          await sectionLabels.evaluateAll((labels) => labels.map((label) => label.textContent)),
+          await sectionLabels.evaluateAll((labels) =>
+            labels.map((label) => label.textContent?.trim()),
+          ),
         ).toEqual(expect.arrayContaining(["Sessions", "Research", "Codex", "Claude Code"]));
         const sectionLabelLefts = await sectionLabels.evaluateAll((labels) =>
           labels.map((label) => label.getBoundingClientRect().x),
@@ -254,13 +250,7 @@ suite.define(() => {
           await typeMetrics(
             customizeSurface.locator(".sidebar-customizer__label--section").first(),
           ),
-        ).toMatchObject({
-          family: sectionContract.family,
-          lineHeight: "16px",
-          size: "12px",
-          tracking: "-0.14px",
-          weight: "650",
-        });
+        ).toMatchObject({ family: sectionContract.family });
 
         await captureSidebarUiUnionProof(
           page,

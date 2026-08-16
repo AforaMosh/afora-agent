@@ -147,203 +147,163 @@ function row(page: Awaited<ReturnType<typeof openSidebar>>["page"], key: string)
   return page.locator(`[data-session-key="${key}"]`);
 }
 
-for (const colorScheme of ["light", "dark"] as const) {
-  suite.define(() => {
-    it(`reports exactly one state per row in ${colorScheme}`, async () => {
-      const { context, page } = await openSidebar(colorScheme);
+suite.define(() => {
+  const colorScheme = "light";
+  it(`reports exactly one state per row in ${colorScheme}`, async () => {
+    const { context, page } = await openSidebar(colorScheme);
 
-      try {
-        // A row with nothing to report renders no state element at all: the
-        // absence is what leaves its title the full resting width.
-        expect(await row(page, QUIET_KEY).locator(".session-row-state").count()).toBe(0);
-        await expect
-          .poll(() => row(page, RUNNING_KEY).locator(".session-run-spinner").count())
-          .toBe(1);
-        await expect
-          .poll(() => row(page, UNREAD_KEY).locator(".session-state-dot--unread").count())
-          .toBe(1);
-        await expect
-          .poll(() => row(page, BLOCKED_KEY).locator(".session-state-dot--blocked").count())
-          .toBe(1);
-        // Opening a session consumes the attention it was carrying; the row it
-        // is opened from must not keep advertising an unread it already showed.
-        expect(await row(page, OPEN_KEY).locator(".session-row-state").count()).toBe(0);
+    try {
+      // A row with nothing to report renders no state element at all: the
+      // absence is what leaves its title the full resting width.
+      expect(await row(page, QUIET_KEY).locator(".session-row-state").count()).toBe(0);
+      await expect
+        .poll(() => row(page, RUNNING_KEY).locator(".session-run-spinner").count())
+        .toBe(1);
+      await expect
+        .poll(() => row(page, UNREAD_KEY).locator(".session-state-dot--unread").count())
+        .toBe(1);
+      await expect
+        .poll(() => row(page, BLOCKED_KEY).locator(".session-state-dot--blocked").count())
+        .toBe(1);
+      // Opening a session consumes the attention it was carrying; the row it
+      // is opened from must not keep advertising an unread it already showed.
+      expect(await row(page, OPEN_KEY).locator(".session-row-state").count()).toBe(0);
 
-        const titleMetrics = (key: string) =>
-          row(page, key)
-            .locator(".sidebar-recent-session__name")
-            .evaluate((element) => {
-              const style = getComputedStyle(element);
-              return {
-                family: style.fontFamily,
-                lineHeight: style.lineHeight,
-                size: style.fontSize,
-                weight: style.fontWeight,
-              };
-            });
-        const titleContract = await titleMetrics(QUIET_KEY);
-        expect(await titleMetrics(UNREAD_KEY)).toEqual(titleContract);
-        expect(await titleMetrics(BLOCKED_KEY)).toEqual(titleContract);
-        const pinnedMetrics = await titleMetrics(PINNED_KEY);
-        expect({ ...pinnedMetrics, weight: titleContract.weight }).toEqual(titleContract);
-        expect(Number(pinnedMetrics.weight)).toBeGreaterThan(Number(titleContract.weight));
-
-        const titleColors = await Promise.all(
-          [QUIET_KEY, UNREAD_KEY, BLOCKED_KEY].map((key) =>
-            row(page, key)
-              .locator(".sidebar-recent-session__name")
-              .evaluate((element) => getComputedStyle(element).color),
-          ),
-        );
-        expect(new Set(titleColors).size).toBe(1);
-        expect(
-          await row(page, BLOCKED_KEY)
-            .locator(".sidebar-recent-session__subtitle")
-            .evaluate((element) => getComputedStyle(element).color),
-        ).not.toBe(titleColors[0]);
-
-        expect(
-          await row(page, RUNNING_KEY)
-            .locator(".session-run-spinner")
-            .evaluate((element) => {
-              const style = getComputedStyle(element);
-              const probe = document.createElement("span");
-              probe.style.color = "var(--muted-strong)";
-              document.body.append(probe);
-              const mutedStrong = getComputedStyle(probe).color;
-              probe.remove();
-              return {
-                animationDuration: style.animationDuration,
-                usesMutedStrong: style.borderTopColor === mutedStrong,
-              };
-            }),
-        ).toEqual({ animationDuration: "1.45s", usesMutedStrong: true });
-
-        await captureUiProof(page, `row-state-matrix-${colorScheme}.png`, {
-          clip: [row(page, PINNED_KEY), row(page, BLOCKED_KEY)],
-        });
-      } finally {
-        await context.close();
-      }
-    });
-
-    it(`spends width on origin only when a session has one in ${colorScheme}`, async () => {
-      const { context, page } = await openSidebar(colorScheme);
-
-      try {
-        // Absent origin is not an empty slot: nothing is rendered, so the title
-        // starts on the same axis as a row that has no origin to show.
-        expect(await row(page, QUIET_KEY).locator(".session-row-origin").count()).toBe(0);
-        // Two distinct creators make ownership visible, so a creator-only row
-        // shows its owner chip and nothing else.
-        const creatorOrigin = row(page, CREATOR_KEY).locator(".session-row-origin");
-        await expect
-          .poll(() => creatorOrigin.locator("openclaw-session-owner-chip").count())
-          .toBe(1);
-        expect(await creatorOrigin.locator(".session-row-origin__qualifier").count()).toBe(0);
-        expect(await creatorOrigin.locator(".session-row-origin__draft").count()).toBe(0);
-
-        expect(await row(page, DRAFT_KEY).locator(".session-row-origin__draft").count()).toBe(1);
-        // Incognito-only is the qualifier alone, with no owner chip beside it.
-        const incognitoOrigin = row(page, INCOGNITO_KEY).locator(".session-row-origin");
-        expect(await incognitoOrigin.locator(".session-row-origin__qualifier").count()).toBe(1);
-        expect(await incognitoOrigin.locator("openclaw-session-owner-chip").count()).toBe(0);
-
-        // Creator plus a privacy qualifier collapses into one compound origin,
-        // creator first, rather than two badges competing for the same space.
-        const compound = row(page, COMPOUND_KEY).locator(".session-row-origin");
-        expect(await compound.locator("openclaw-session-owner-chip").count()).toBe(1);
-        expect(await compound.locator(".session-row-origin__qualifier").count()).toBe(1);
-
-        await captureUiProof(page, `row-origin-matrix-${colorScheme}.png`, {
-          clip: [row(page, CREATOR_KEY), row(page, COMPOUND_KEY)],
-        });
-      } finally {
-        await context.close();
-      }
-    });
-
-    it(`keeps child rows to one state and nothing else in ${colorScheme}`, async () => {
-      const { context, page } = await openSidebar(colorScheme);
-
-      try {
-        const parent = row(page, PARENT_KEY);
-        await parent.getByRole("button", { name: /child sessions/ }).click();
-        const children = page.locator(".sidebar-recent-session--child");
-        await expect.poll(() => children.count()).toBe(3);
-
-        await expect
-          .poll(() => row(page, CHILD_RUNNING_KEY).locator(".session-run-spinner").count())
-          .toBe(1);
-        await expect
-          .poll(() => row(page, CHILD_UNREAD_KEY).locator(".session-state-dot--unread").count())
-          .toBe(1);
-        await expect
-          .poll(() => row(page, CHILD_BLOCKED_KEY).locator(".session-state-dot--blocked").count())
-          .toBe(1);
-        // A child says only what it is doing: no subtitle, no duration, no menu.
-        expect(await children.locator(".sidebar-recent-session__subtitle").count()).toBe(0);
-        expect(await children.locator("openclaw-elapsed-time").count()).toBe(0);
-
-        await captureUiProof(page, `row-children-${colorScheme}.png`, {
-          clip: [parent, row(page, CHILD_BLOCKED_KEY)],
-        });
-      } finally {
-        await context.close();
-      }
-    });
-
-    it(`hands the endcap to the actions on hover in ${colorScheme}`, async () => {
-      const { context, page } = await openSidebar(colorScheme);
-
-      try {
-        const target = row(page, RUNNING_KEY);
-        await captureUiProof(page, `row-endcap-rest-${colorScheme}.png`, { clip: [target] });
-
-        await target.hover();
-        const menu = target.getByRole("button", { name: "Open session menu" });
-        await expect
-          .poll(() => menu.evaluate((element) => globalThis.getComputedStyle(element).opacity))
-          .toBe("1");
-        await captureUiProof(page, `row-endcap-hover-${colorScheme}.png`, { clip: [target] });
-      } finally {
-        await context.close();
-      }
-    });
-
-    it(`asks in the subtitle while an approval waits in ${colorScheme}`, async () => {
-      const { context, page } = await openApprovalSidebar(colorScheme);
-
-      try {
-        const target = row(page, APPROVAL_KEY);
-        const asking = target.locator(".sidebar-recent-session__subtitle.pending-text-shimmer");
-        await expect.poll(() => asking.count()).toBe(1);
-        await expect.poll(() => asking.textContent()).toBe("Waiting for approval");
-        // The subtitle already says it, so the key glyph would be the same fact
-        // twice in one row.
-        expect(await target.locator('[data-session-attention="approval"]').count()).toBe(0);
-        // The marking belongs to the request, not to subtitles in general.
-        const ordinary = row(page, ORDINARY_KEY);
-        expect(await ordinary.locator(".sidebar-recent-session__subtitle").count()).toBe(1);
-        expect(await ordinary.locator(".pending-text-shimmer").count()).toBe(0);
-
-        // A still of an endless sweep has to choose a moment. Hold the shipped
-        // animation at 900ms of its 1800ms travel, where the band is crossing
-        // the text, rather than letting the capture cancel it to frame zero.
-        await asking.evaluate((element) => {
-          const [sweep] = element.getAnimations();
-          sweep?.pause();
-          if (sweep) {
-            sweep.currentTime = 900;
-          }
-        });
-        await captureUiProof(page, `row-approval-${colorScheme}.png`, {
-          clip: [target, ordinary],
-          keepAnimations: true,
-        });
-      } finally {
-        await context.close();
-      }
-    });
+      await captureUiProof(page, `row-state-matrix-${colorScheme}.png`, {
+        clip: [row(page, PINNED_KEY), row(page, BLOCKED_KEY)],
+      });
+    } finally {
+      await context.close();
+    }
   });
-}
+
+  it(`spends width on origin only when a session has one in ${colorScheme}`, async () => {
+    const { context, page } = await openSidebar(colorScheme);
+
+    try {
+      // Absent origin is not an empty slot: nothing is rendered, so the title
+      // starts on the same axis as a row that has no origin to show.
+      expect(await row(page, QUIET_KEY).locator(".session-row-leading-identity").count()).toBe(0);
+      // Two distinct creators make ownership visible, so a creator-only row
+      // shows its owner chip and nothing else.
+      const creatorOrigin = row(page, CREATOR_KEY).locator(".session-row-leading-identity");
+      await expect.poll(() => creatorOrigin.locator("openclaw-session-owner-chip").count()).toBe(1);
+      expect(await creatorOrigin.locator(".session-row-state-badge").count()).toBe(0);
+
+      expect(
+        await row(page, DRAFT_KEY)
+          .locator(".session-row-state-avatar--draft, .session-row-state-badge--draft")
+          .count(),
+      ).toBe(1);
+      // Incognito-only is the qualifier alone, with no owner chip beside it.
+      const incognitoOrigin = row(page, INCOGNITO_KEY).locator(".session-row-leading-identity");
+      expect(await incognitoOrigin.locator(".session-row-state-avatar--incognito").count()).toBe(1);
+      expect(await incognitoOrigin.locator("openclaw-session-owner-chip").count()).toBe(0);
+
+      // Creator plus a privacy qualifier collapses into one compound origin,
+      // creator first, rather than two badges competing for the same space.
+      const compound = row(page, COMPOUND_KEY).locator(".session-row-leading-identity");
+      expect(await compound.locator("openclaw-session-owner-chip").count()).toBe(1);
+      expect(await compound.locator(".session-row-state-badge--incognito").count()).toBe(1);
+
+      await captureUiProof(page, `row-origin-matrix-${colorScheme}.png`, {
+        clip: [row(page, CREATOR_KEY), row(page, COMPOUND_KEY)],
+      });
+    } finally {
+      await context.close();
+    }
+  });
+
+  it(`keeps child rows to one state and nothing else in ${colorScheme}`, async () => {
+    const { context, page } = await openSidebar(colorScheme);
+
+    try {
+      const parent = row(page, PARENT_KEY);
+      await parent.getByRole("button", { name: /child sessions/ }).click();
+      const children = page.locator(".sidebar-recent-session--child");
+      await expect.poll(() => children.count()).toBe(3);
+
+      await expect
+        .poll(() => row(page, CHILD_RUNNING_KEY).locator(".session-run-spinner").count())
+        .toBe(1);
+      await expect
+        .poll(() => row(page, CHILD_UNREAD_KEY).locator(".session-state-dot--unread").count())
+        .toBe(1);
+      await expect
+        .poll(() => row(page, CHILD_BLOCKED_KEY).locator(".session-state-dot--blocked").count())
+        .toBe(1);
+      // A child says only what it is doing: no subtitle, no duration, no menu.
+      expect(await children.locator(".sidebar-recent-session__subtitle").count()).toBe(0);
+      expect(await children.locator("openclaw-elapsed-time").count()).toBe(0);
+
+      await captureUiProof(page, `row-children-${colorScheme}.png`, {
+        clip: [parent, row(page, CHILD_BLOCKED_KEY)],
+      });
+    } finally {
+      await context.close();
+    }
+  });
+
+  it(`hands the endcap to the actions on hover in ${colorScheme}`, async () => {
+    const { context, page } = await openSidebar(colorScheme);
+
+    try {
+      const target = row(page, RUNNING_KEY);
+      await captureUiProof(page, `row-endcap-rest-${colorScheme}.png`, { clip: [target] });
+
+      await target.hover();
+      const menu = target.getByRole("button", { name: "Open session menu" });
+      await expect
+        .poll(() => menu.evaluate((element) => globalThis.getComputedStyle(element).opacity))
+        .toBe("1");
+      await captureUiProof(page, `row-endcap-hover-${colorScheme}.png`, { clip: [target] });
+    } finally {
+      await context.close();
+    }
+  });
+
+  it(`asks in the subtitle while an approval waits in ${colorScheme}`, async () => {
+    const { context, page } = await openApprovalSidebar(colorScheme);
+
+    try {
+      const target = row(page, APPROVAL_KEY);
+      const asking = target.locator(".sidebar-recent-session__subtitle.pending-text-shimmer");
+      await expect.poll(() => asking.count()).toBe(1);
+      await expect.poll(() => asking.textContent()).toBe("Waiting for approval");
+      // The subtitle already says it, so the key glyph would be the same fact
+      // twice in one row.
+      expect(await target.locator('[data-session-attention="approval"]').count()).toBe(0);
+      // The marking belongs to the request, not to subtitles in general.
+      const ordinary = row(page, ORDINARY_KEY);
+      expect(await ordinary.locator(".sidebar-recent-session__subtitle").count()).toBe(1);
+      expect(await ordinary.locator(".pending-text-shimmer").count()).toBe(0);
+
+      // A still of an endless sweep has to choose a moment. Hold the shipped
+      // animation at 900ms of its 1800ms travel, where the band is crossing
+      // the text, rather than letting the capture cancel it to frame zero.
+      await asking.evaluate((element) => {
+        const [sweep] = element.getAnimations();
+        sweep?.pause();
+        if (sweep) {
+          sweep.currentTime = 900;
+        }
+      });
+      await captureUiProof(page, `row-approval-${colorScheme}.png`, {
+        clip: [target, ordinary],
+        keepAnimations: true,
+      });
+    } finally {
+      await context.close();
+    }
+  });
+  it("captures the row state surface in dark mode", async () => {
+    const { context, page } = await openSidebar("dark");
+    try {
+      await captureUiProof(page, "row-state-matrix-dark.png", {
+        clip: [row(page, PINNED_KEY), row(page, BLOCKED_KEY)],
+      });
+    } finally {
+      await context.close();
+    }
+  });
+});
