@@ -197,6 +197,7 @@ function renderSessionIdentity(props: ChatPaneHeaderProps) {
       props.showOwnerChip ? props.session?.createdActor : undefined,
       "header",
       "created",
+      props.ownerViewing,
     )}${props.session?.incognito
       ? html`<span
           class="chat-pane__incognito"
@@ -478,14 +479,7 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
           </openclaw-tooltip>`
         : nothing}
       ${renderIdentityCrumbs(props, copied, copyPathLabel, copyBranchLabel)}
-      ${renderSessionOwnerChip(
-        props.showOwnerChip ? props.session?.createdActor : undefined,
-        "header",
-        "created",
-        props.ownerViewing,
-      )}
-      ${renderChatPanePlacement(props)} ${props.presence ?? nothing} ${props.faceControl ?? nothing}
-      ${props.sharingControl ?? nothing}
+      ${renderChatPanePlacement(props)} ${props.faceControl ?? nothing}
       ${!props.catalog && props.branches.length > 1
         ? html`
             <openclaw-tooltip

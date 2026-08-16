@@ -565,6 +565,12 @@ describe("chat pane header", () => {
     );
 
     await Promise.all([ownerChip?.updateComplete, facepile?.updateComplete]);
+    expect(container.querySelectorAll("openclaw-session-owner-chip")).toHaveLength(
+      expectedChip ? 1 : 0,
+    );
+    expect(container.querySelectorAll("openclaw-viewer-facepile")).toHaveLength(
+      expectedViewers.length > 0 ? 1 : 0,
+    );
     expect(ownerChip !== null).toBe(expectedChip);
     expect(
       [...container.querySelectorAll(".viewer-facepile [data-viewer-id]")].map((avatar) =>
