@@ -390,7 +390,7 @@ export function renderRecentSession(params: {
             ?disabled=${!pinAccess.allowed}
             @click=${() => host.toggleSessionPin(session)}
           >
-            ${icons.pin}
+            ${session.pinned ? icons.sessionUnpin : icons.sessionPin}
           </button>
           <button
             class="session-action"
