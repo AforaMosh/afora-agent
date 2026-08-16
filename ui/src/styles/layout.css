@@ -119,6 +119,35 @@
   opacity: 0.42;
 }
 
+.shell[data-sidebar-update]
+  :is(
+    .shell-chrome-controls__nav-toggle,
+    .topbar-nav-toggle,
+    .chat-pane__nav-toggle,
+    .macos-titlebar-controls__sidebar-toggle
+  ) {
+  position: relative;
+}
+
+.shell[data-sidebar-update]
+  :is(
+    .shell-chrome-controls__nav-toggle,
+    .topbar-nav-toggle,
+    .chat-pane__nav-toggle,
+    .macos-titlebar-controls__sidebar-toggle
+  )::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--bg);
+  content: "";
+  pointer-events: none;
+}
+
 .shell-chrome-controls__button svg {
   width: 17px;
   height: 17px;

@@ -17,6 +17,22 @@ import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
 import { PollController } from "../lit/poll-controller.ts";
 import { icons } from "./icons.ts";
 
+export function hasActionableSidebarUpdate(params: {
+  updateAvailable: UpdateAvailable | null;
+  updateSchedule: UpdateScheduleState | null;
+  updateBusy: boolean;
+}): boolean {
+  const update = params.updateAvailable;
+  const hasGitUpdate =
+    params.updateSchedule?.target?.kind === "git" && params.updateSchedule.target.commitsBehind > 0;
+  const hasVersionUpdate = Boolean(update && update.latestVersion !== update.currentVersion);
+  return Boolean(
+    params.updateSchedule?.campaign ||
+    params.updateBusy ||
+    (update && (hasVersionUpdate || hasGitUpdate)),
+  );
+}
+
 class SidebarUpdateCard extends OpenClawLightDomContentsElement {
   @property({ attribute: false }) updateAvailable: UpdateAvailable | null = null;
   @property({ attribute: false }) updateSchedule: UpdateScheduleState | null = null;
@@ -189,7 +205,11 @@ class SidebarUpdateCard extends OpenClawLightDomContentsElement {
     );
     // An outcome with nothing left to act on is the whole card: re-offering an
     // update the operator just ran would bury the reason it failed.
-    const actionable = Boolean(campaign || busy || (update && (hasVersionUpdate || hasGitUpdate)));
+    const actionable = hasActionableSidebarUpdate({
+      updateAvailable: update,
+      updateSchedule: this.updateSchedule,
+      updateBusy: busy,
+    });
     return html`
       <div
         class="sidebar-update-card"

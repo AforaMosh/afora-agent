@@ -387,7 +387,7 @@ describe("OpenClaw native shell", () => {
 });
 
 describe("OpenClaw shell update affordance", () => {
-  it("renders a capable floating card only while desktop navigation is collapsed", async () => {
+  it("keeps update availability inside the sidebar and floats only refresh recovery", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     const shared = {
@@ -410,6 +410,16 @@ describe("OpenClaw shell update affordance", () => {
       mobileNavLayout: false,
     });
     render(renderFloatingUpdateCard({ ...shared, navigationSurfaceHidden: collapsed }), container);
+    expect(container.querySelector("openclaw-sidebar-update-card")).toBeNull();
+    render(
+      renderFloatingUpdateCard({
+        ...shared,
+        navigationSurfaceHidden: collapsed,
+        updateAvailable: null,
+        refreshRequired: true,
+      }),
+      container,
+    );
     const card = container.querySelector<
       HTMLElement & {
         canUpdate: boolean;
@@ -420,28 +430,6 @@ describe("OpenClaw shell update affordance", () => {
     >("openclaw-sidebar-update-card");
     expect(card).not.toBeNull();
     await card?.updateComplete;
-    expect(card?.canUpdate).toBe(true);
-    const restoreDialogPolyfill = installDialogPolyfill();
-    const updateButton = card?.querySelector<HTMLButtonElement>(".sidebar-update-card__cta");
-    expect(updateButton?.textContent?.trim()).toBe("Update");
-    updateButton?.click();
-    const { modal } = await waitForRenderedModalDialog(document.body);
-    [...modal.querySelectorAll("button")]
-      .find((button) => button.textContent?.trim() === "Update and restart")
-      ?.click();
-    await nextFrame();
-    restoreDialogPolyfill();
-    expect(shared.onUpdate).toHaveBeenCalledOnce();
-
-    render(
-      renderFloatingUpdateCard({
-        ...shared,
-        navigationSurfaceHidden: collapsed,
-        updateAvailable: null,
-        refreshRequired: true,
-      }),
-      container,
-    );
     expect(card?.refreshRequired).toBe(true);
     card?.onRefresh();
     expect(shared.onRefresh).toHaveBeenCalledOnce();
