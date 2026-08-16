@@ -57,6 +57,7 @@ function createWorkspaceActions(
 
 describe("worker workspace command transport retry", () => {
   it("runs never commands once without changing the selected port", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_000);
     const run = vi.fn(async (argv: string[], _options: CommandOptions) =>
       argv.at(-1)?.includes("never-command") ? result(255) : result(),
     );
