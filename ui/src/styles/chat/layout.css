@@ -3302,7 +3302,7 @@ button.chat-pr__diff {
 }
 
 .agent-chat__composer-error {
-  --chat-composer-alert-underlap: 16px;
+  --chat-composer-alert-underlap: 28px;
 
   position: relative;
   z-index: 0;
