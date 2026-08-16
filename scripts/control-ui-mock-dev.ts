@@ -1917,6 +1917,7 @@ async function createChatPickerScenario(
     // Terminal has a second gate beyond the advertised method (see
     // ui/src/lib/terminal-availability.ts).
     terminalEnabled: true,
+    sessionGroups: ["Research"],
     historyMessages: buildScrollableChatHistory(baseTime),
     // Existing rows keep their original people mix. The matrix adds isolated
     // creator and watcher rosters so every displayed count is exact.
@@ -2060,9 +2061,6 @@ async function createChatPickerScenario(
           ],
         },
       },
-      // Custom session group catalog so the sidebar's category zone (and its
-      // drag-reordering against built-in sections) is exercised in the mock.
-      "sessions.groups.list": { groups: [{ name: "Research", position: 0 }] },
       // Coding session catalogs so the sidebar's catalog sections (header
       // right-click menu, hide/restore preference) are exercised in the mock.
       // Ids must match registered plugin catalogs (`claude`, `codex`) or the
