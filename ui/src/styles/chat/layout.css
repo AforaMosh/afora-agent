@@ -3296,12 +3296,12 @@ button.chat-pr__diff {
 }
 
 .agent-chat__composer-error {
-  position: absolute;
-  inset: auto -1px calc(100% - 1px);
-  z-index: 2;
+  position: relative;
+  z-index: 0;
   box-sizing: border-box;
-  min-height: 36px;
-  padding: 8px 10px 8px 14px;
+  min-height: 48px;
+  margin: 0 -1px -18px;
+  padding: 8px 10px 20px 14px;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 8%, var(--chat-composer-surface));
   color: color-mix(in srgb, var(--danger) 78%, var(--text));
@@ -3310,15 +3310,19 @@ button.chat-pr__diff {
   overflow-wrap: anywhere;
 }
 
-.agent-chat__composer-lede > .agent-chat__composer-error:first-child {
+.agent-chat__composer-shell > .agent-chat__composer-error {
   border-radius: calc(20px * var(--openclaw-corner-radius-scale))
-    calc(20px * var(--openclaw-corner-radius-scale)) var(--radius-sm) var(--radius-sm);
+    calc(20px * var(--openclaw-corner-radius-scale)) 0 0;
 }
 
 @supports (corner-shape: superellipse(1.5)) {
-  .agent-chat__composer-lede > .agent-chat__composer-error:first-child {
+  .agent-chat__composer-shell > .agent-chat__composer-error {
     corner-shape: superellipse(1.5);
   }
+}
+
+.agent-chat__composer-error + .agent-chat__input {
+  z-index: 1;
 }
 
 .agent-chat__composer-error-icon {
