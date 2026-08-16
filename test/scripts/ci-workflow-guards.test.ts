@@ -3388,6 +3388,149 @@ NODE
     });
   });
 
+  it("shares one verified git metadata artifact only with attempt-1 Blacksmith checkouts", () => {
+    const ciSource = readFileSync(".github/workflows/ci.yml", "utf8");
+    const workflow = parse(ciSource);
+    const preflight = workflow.jobs.preflight;
+    const pack = expectDefined(
+      preflight.steps.find((step: WorkflowStep) => step.name === "Pack git metadata"),
+      "git metadata pack step",
+    );
+    const publish = expectDefined(
+      preflight.steps.find((step: WorkflowStep) => step.name === "Publish git metadata"),
+      "git metadata publish step",
+    );
+
+    expect(preflight.outputs.git_artifact_id).toBe("${{ steps.git_artifact.outputs.artifact-id }}");
+    expect(preflight.outputs.git_artifact_digest).toBe(
+      "${{ steps.git_artifact.outputs.artifact-digest }}",
+    );
+    for (const clause of [
+      "github.run_attempt == 1",
+      "github.repository == 'openclaw/openclaw'",
+      "vars.OPENCLAW_CI_RUNNER_BACKEND != 'github'",
+      "github.event_name == 'push' || github.event_name == 'pull_request'",
+      "github.event.pull_request.author_association",
+      "vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid'",
+      "steps.manifest.outputs.run_check == 'true'",
+      "steps.manifest.outputs.run_ui_tests == 'true'",
+      "steps.manifest.outputs.run_node == 'true'",
+      "steps.manifest.outputs.run_check_docs == 'true'",
+    ]) {
+      expect(pack.if).toContain(clause);
+    }
+    expect(pack.if).toContain('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]');
+    expect(pack.env).toEqual({ CHECKOUT_BASE_SHA: "${{ steps.diff_base.outputs.sha }}" });
+    expect(pack.run).toContain(
+      'git update-ref refs/remotes/origin/ci-ratchet-base "$CHECKOUT_BASE_SHA"',
+    );
+    expect(pack.run).toContain(
+      'GIT_NO_REPLACE_OBJECTS=1 git diff --binary "$CHECKOUT_BASE_SHA" HEAD -- >/dev/null',
+    );
+    expect(pack.run).toContain("GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 git repack -ad");
+    expect(pack.run).toContain('tar -cf "$archive_path" .git');
+    expect(pack.run).toContain('stat --format=%s "$archive_path"');
+    expect(pack.run).not.toContain("zstd");
+    expect(publish).toMatchObject({
+      "continue-on-error": true,
+      id: "git_artifact",
+      if: "steps.git_archive.outcome == 'success'",
+      uses: UPLOAD_ARTIFACT_V7,
+      with: {
+        archive: false,
+        "if-no-files-found": "error",
+        path: "${{ runner.temp }}/openclaw-ci-git.tar",
+        "retention-days": 1,
+      },
+    });
+    expect(publish.with).not.toHaveProperty("name");
+    expect(pack).toMatchObject({ "continue-on-error": true });
+    expect(preflight.steps.indexOf(pack)).toBeLessThan(preflight.steps.indexOf(publish));
+    expect(preflight.steps.indexOf(publish)).toBeLessThan(
+      preflight.steps.findIndex(
+        (step: WorkflowStep) => step.name === "Publish exact dependency cache",
+      ),
+    );
+
+    expect(ciSource.match(/&linux_node_checkout_step/gu)).toHaveLength(1);
+    expect(ciSource.match(/\*linux_node_checkout_step/gu)).toHaveLength(17);
+    const checkoutJobs = Object.entries(workflow.jobs).flatMap(([jobName, job]) => {
+      const checkout = ((job as { steps?: WorkflowStep[] }).steps ?? []).find(
+        (step) => step.name === "Checkout" && step.run?.includes("restore_git_artifact"),
+      );
+      return checkout ? [{ checkout, jobName }] : [];
+    });
+    expect(checkoutJobs.map(({ jobName }) => jobName)).toEqual([
+      "pnpm-store-warmup",
+      "build-artifacts",
+      "sqlite-session-lifecycle",
+      "checks-ui",
+      "checks-ui-e2e",
+      "checks-ui-e2e-real-gateway",
+      "control-ui-i18n",
+      "checks-fast-core",
+      "qa-smoke-ci-profile",
+      "checks-fast-plugin-contracts-shard",
+      "checks-fast-channel-contracts-shard",
+      "checks-node-compat",
+      "checks-node-core-test-nondist-shard",
+      "check-shard",
+      "check-lint-hosted-core-shard",
+      "check-test-types-hosted-core-shard",
+      "check-additional-shard",
+      "check-docs",
+    ]);
+    const checkout = expectDefined(checkoutJobs[0]?.checkout, "shared Linux Node checkout");
+    expect(checkout.env).toMatchObject({
+      GIT_ARTIFACT_DIGEST: expect.stringContaining("github.run_attempt == 1"),
+      GIT_ARTIFACT_ID: expect.stringContaining("needs.preflight.outputs.git_artifact_id"),
+      GITHUB_TOKEN: expect.stringContaining("runner.environment != 'github-hosted'"),
+    });
+    expect(checkout.run).toContain(
+      "${GITHUB_API_URL}/repos/${CHECKOUT_REPO}/actions/artifacts/${GIT_ARTIFACT_ID}/zip",
+    );
+    expect(checkout.run).toContain('actual_digest="$(sha256sum "$archive_path"');
+    expect(checkout.run).toContain('tar -xf "$archive_path" -C "$workdir" .git');
+    expect(checkout.run).toContain('test -d "$workdir/.git" && test ! -L "$workdir/.git"');
+    expect(checkout.run.indexOf("unset GITHUB_TOKEN")).toBeLessThan(
+      checkout.run.indexOf('tar -xf "$archive_path"'),
+    );
+    expect(checkout.run).toContain('cat >"$workdir/.git/config"');
+    expect(checkout.run).toContain("hooksPath = $RUNNER_TEMP/openclaw-ci-empty-hooks");
+    expect(checkout.run).toContain('"$workdir/.git/config.worktree"');
+    expect(checkout.run).toContain('"$workdir/.git/HEAD" "$workdir/.git/index"');
+    expect(checkout.run).toContain('"$workdir/.git/refs/replace"');
+    expect(checkout.run).toContain('"$workdir/.git/objects/info/alternates"');
+    expect(checkout.run).toContain('printf \'%s\\n\' "$CHECKOUT_SHA" >"$workdir/.git/HEAD"');
+    expect(checkout.run).toContain(
+      'GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 git -C "$workdir" checkout',
+    );
+    expect(checkout.run).toContain('--force --detach "$CHECKOUT_SHA"');
+    expect(checkout.run).not.toContain("zstd");
+    expect(checkout.run).toContain('[ "$(git -C "$workdir" rev-parse HEAD)" = "$CHECKOUT_SHA" ]');
+    expect(checkout.run).toContain('test -f "$workdir/.github/actions/setup-node-env/action.yml"');
+    expect(checkout.run).toContain('cat-file -e "${CHECKOUT_BASE_SHA}^{commit}"');
+    expect(checkout.run).toContain(
+      'GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 git -C "$workdir" diff --binary',
+    );
+    expect(checkout.run).toContain(
+      "git metadata artifact restore failed; falling back to git checkout",
+    );
+    expect(checkout.run.indexOf("restore_git_artifact")).toBeLessThan(
+      checkout.run.indexOf("checkout_attempt"),
+    );
+    expect(checkout.run).toContain("for attempt in 1 2 3 4 5; do");
+    for (const { checkout: candidate } of checkoutJobs) {
+      expect(candidate).toBe(checkout);
+    }
+    for (const { jobName } of checkoutJobs) {
+      if (jobName === "checks-node-compat" || jobName === "check-lint-hosted-core-shard") {
+        continue;
+      }
+      expect(workflow.jobs[jobName].permissions?.actions, jobName).toBe("read");
+    }
+  });
+
   it("owns one exact immutable semantic dependency cache", () => {
     const actionSource = readFileSync(".github/actions/setup-node-env/action.yml", "utf8");
     const ciSource = readFileSync(".github/workflows/ci.yml", "utf8");
@@ -5735,6 +5878,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     ).toBe(false);
 
     expect(workflow.jobs["checks-fast-core"].permissions).toEqual({
+      actions: "read",
       contents: "read",
       "pull-requests": "read",
     });
@@ -6343,7 +6487,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     const uiE2e = workflow.jobs["checks-ui-e2e"];
     const uiE2eRealGateway = workflow.jobs["checks-ui-e2e-real-gateway"];
 
-    expect(uiE2e.permissions).toEqual({ contents: "read" });
+    expect(uiE2e.permissions).toEqual({ actions: "read", contents: "read" });
     expect(uiE2e.needs).toEqual(["preflight"]);
     expect(uiE2e.if).toBe(
       "needs.preflight.outputs.run_ui_tests == 'true' && needs.preflight.outputs.compatibility_target != 'true'",

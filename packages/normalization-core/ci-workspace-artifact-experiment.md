@@ -1,0 +1,1 @@
+Temporary CI experiment marker. This forces the metadata-complete compact pull-request graph so the Blacksmith workspace-artifact checkout can be measured across the real fanout. Remove before review.

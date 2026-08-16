@@ -128,6 +128,8 @@ jobs:
       use_compatible_android_ci: ${{ steps.manifest.outputs.use_compatible_android_ci }}
       run_protocol_event_coverage: ${{ steps.manifest.outputs.run_protocol_event_coverage }}
       android_matrix: ${{ steps.manifest.outputs.android_matrix }}
+      git_artifact_id: ${{ steps.git_artifact.outputs.artifact-id }}
+      git_artifact_digest: ${{ steps.git_artifact.outputs.artifact-digest }}
     steps:
       - name: Validate release-gate dispatch
         if: github.event_name == 'workflow_dispatch' && inputs.release_gate
@@ -939,6 +941,45 @@ jobs:
             node scripts/check-protocol-event-coverage.mts
           fi
 
+      # This is a per-run transport optimization, not a cross-run cache. Keep
+      # the pack and upload separate so both serial-prefix costs are measurable.
+      - name: Pack git metadata
+        id: git_archive
+        continue-on-error: true
+        if: >-
+          github.run_attempt == 1 &&
+          github.repository == 'openclaw/openclaw' &&
+          vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' &&
+          (github.event_name == 'push' || github.event_name == 'pull_request') &&
+          (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) &&
+          ((vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && (steps.manifest.outputs.run_check == 'true' || steps.manifest.outputs.run_ui_tests == 'true')) ||
+          (vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && (steps.manifest.outputs.run_node == 'true' || steps.manifest.outputs.run_check_docs == 'true')))
+        env:
+          CHECKOUT_BASE_SHA: ${{ steps.diff_base.outputs.sha }}
+        run: |
+          set -euo pipefail
+
+          # The parent metadata fetch is blob-less. Materialize the exact base
+          # delta, then deduplicate packs without fetching promised objects.
+          git update-ref refs/remotes/origin/ci-ratchet-base "$CHECKOUT_BASE_SHA"
+          GIT_NO_REPLACE_OBJECTS=1 git diff --binary "$CHECKOUT_BASE_SHA" HEAD -- >/dev/null
+          GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 git repack -ad
+
+          archive_path="$RUNNER_TEMP/openclaw-ci-git.tar"
+          tar -cf "$archive_path" .git
+          echo "git metadata archive bytes: $(stat --format=%s "$archive_path")"
+
+      - name: Publish git metadata
+        id: git_artifact
+        continue-on-error: true
+        if: steps.git_archive.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          path: ${{ runner.temp }}/openclaw-ci-git.tar
+          archive: false
+          if-no-files-found: error
+          retention-days: 1
+
       # Publish one immutable semantic dependency archive before same-repo
       # Blacksmith jobs fan out. The GitHub backend uses the pnpm-store cache.
       # Pull-request archives remain merge-ref scoped;
@@ -1161,7 +1202,8 @@ jobs:
   # the GitHub backend, and docs-only same-repo PRs. Node-relevant Blacksmith
   # runs already publish it through the exact dependency-cache writer in preflight.
   pnpm-store-warmup:
-    permissions:
+    permissions: &linux_node_artifact_permissions
+      actions: read
       contents: read
     needs: [preflight]
     if: ${{ (needs.preflight.outputs.run_node == 'true' || needs.preflight.outputs.run_check_docs == 'true') && (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || (!(github.repository == 'openclaw/openclaw' && github.event_name == 'push' && github.ref == 'refs/heads/main') && !(github.repository == 'openclaw/openclaw' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && needs.preflight.outputs.run_node == 'true'))) }}
@@ -1174,6 +1216,9 @@ jobs:
         env:
           CHECKOUT_REPO: ${{ github.repository }}
           CHECKOUT_SHA: ${{ needs.preflight.outputs.checkout_revision }}
+          GIT_ARTIFACT_DIGEST: ${{ runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_digest || '' }}
+          GIT_ARTIFACT_ID: ${{ runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_id || '' }}
+          GITHUB_TOKEN: ${{ runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_id != '' && github.token || '' }}
         run: |
           set -euo pipefail
 
@@ -1182,6 +1227,77 @@ jobs:
             mkdir -p "$workdir"
             find "$workdir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
           }
+
+          restore_git_artifact() {
+            local archive_path="$RUNNER_TEMP/openclaw-ci-git.tar"
+            local actual_digest
+            local expected_digest="${GIT_ARTIFACT_DIGEST#sha256:}"
+
+            reset_checkout_dir
+            # download-artifact v8 uses this same REST redirect for v7 raw
+            # artifacts; the redirected blob bytes are the upload digest input.
+            curl --fail --silent --show-error --location \
+              --connect-timeout 10 --max-time 90 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${CHECKOUT_REPO}/actions/artifacts/${GIT_ARTIFACT_ID}/zip" \
+              --output "$archive_path" || return 1
+
+            actual_digest="$(sha256sum "$archive_path" | cut -d ' ' -f 1)"
+            if [ -z "$expected_digest" ] || [ "$actual_digest" != "$expected_digest" ]; then
+              return 1
+            fi
+            unset GITHUB_TOKEN
+
+            tar -xf "$archive_path" -C "$workdir" .git || return 1
+            rm -f "$archive_path"
+            test -d "$workdir/.git" && test ! -L "$workdir/.git" || return 1
+
+            # Preflight runs candidate-owned planners before packing. Retain
+            # objects and refs, but never execute candidate-written Git config.
+            mkdir -p "$RUNNER_TEMP/openclaw-ci-empty-hooks"
+            rm -rf "$workdir/.git/refs/replace"
+            rm -f "$workdir/.git/config" "$workdir/.git/config.worktree" \
+              "$workdir/.git/HEAD" "$workdir/.git/index" \
+              "$workdir/.git/info/grafts" "$workdir/.git/objects/info/alternates" \
+              "$workdir/.git/objects/info/http-alternates"
+            cat >"$workdir/.git/config" <<EOF
+          [core]
+              repositoryformatversion = 0
+              filemode = true
+              bare = false
+              logallrefupdates = true
+              hooksPath = $RUNNER_TEMP/openclaw-ci-empty-hooks
+          [remote "origin"]
+              url = https://github.com/${CHECKOUT_REPO}.git
+              fetch = +refs/heads/*:refs/remotes/origin/*
+          EOF
+            printf '%s\n' "$CHECKOUT_SHA" >"$workdir/.git/HEAD"
+            git config --global --add safe.directory "$workdir"
+            GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 git -C "$workdir" checkout \
+              --force --detach "$CHECKOUT_SHA" || return 1
+            [ "$(git -C "$workdir" rev-parse HEAD)" = "$CHECKOUT_SHA" ] || return 1
+            test -f "$workdir/.github/actions/setup-node-env/action.yml" || return 1
+            git -C "$workdir" update-ref refs/remotes/origin/ci-target "$CHECKOUT_SHA"
+
+            if [ -n "${CHECKOUT_BASE_SHA:-}" ]; then
+              GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 git -C "$workdir" \
+                cat-file -e "${CHECKOUT_BASE_SHA}^{commit}" || return 1
+              GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 git -C "$workdir" diff --binary \
+                "$CHECKOUT_BASE_SHA" "$CHECKOUT_SHA" -- >/dev/null || return 1
+              git -C "$workdir" update-ref \
+                refs/remotes/origin/ci-ratchet-base "$CHECKOUT_BASE_SHA"
+            fi
+          }
+
+          if [ -n "$GIT_ARTIFACT_ID" ]; then
+            if restore_git_artifact; then
+              echo "git metadata artifact restore succeeded"
+              exit 0
+            fi
+            echo "::warning::git metadata artifact restore failed; falling back to git checkout"
+          fi
 
           checkout_attempt() {
             local attempt="$1"
@@ -1228,8 +1344,7 @@ jobs:
   # Keep this overlapping with the fast correctness lanes so green PRs get heavy
   # test/build feedback sooner instead of waiting behind a full `check` pass.
   build-artifacts:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     needs: [preflight]
     if: needs.preflight.outputs.run_build_artifacts == 'true'
     # 32 vCPU: the dist build sits on the light-run critical path alongside
@@ -1524,8 +1639,7 @@ jobs:
           retention-days: 7
 
   sqlite-session-lifecycle:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: check-sqlite-session-lifecycle
     needs: [preflight, build-artifacts]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_sqlite_session_lifecycle == 'true' && needs.build-artifacts.result == 'success' }}
@@ -1600,8 +1714,7 @@ jobs:
           fi
 
   checks-ui:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: checks-ui
     needs: [preflight]
     if: needs.preflight.outputs.run_ui_tests == 'true'
@@ -1668,8 +1781,7 @@ jobs:
           fi
 
   checks-ui-e2e:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: checks-ui-e2e (${{ matrix.shard }}/${{ matrix.shard_count }})
     needs: [preflight]
     # Compatibility targets pin a frozen Control UI whose e2e expectations track
@@ -1728,8 +1840,7 @@ jobs:
         run: pnpm test:e2e:browser-extension
 
   checks-ui-e2e-real-gateway:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: checks-ui-e2e-real-gateway
     needs: [preflight]
     # Compatibility targets pin a frozen Control UI whose e2e expectations track
@@ -1778,8 +1889,7 @@ jobs:
           ui/src/e2e/logs-lifecycle.e2e.test.ts
 
   control-ui-i18n:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: control-ui-i18n
     needs: [preflight]
     if: needs.preflight.outputs.run_control_ui_i18n == 'true'
@@ -1818,6 +1928,7 @@ jobs:
 
   checks-fast-core:
     permissions:
+      actions: read
       contents: read
       pull-requests: read
     name: ${{ matrix.check_name }}
@@ -1960,8 +2071,7 @@ jobs:
           esac
 
   qa-smoke-ci-profile:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: QA Smoke CI (${{ matrix.name }})
     needs: [preflight]
     if: needs.preflight.outputs.run_qa_smoke_ci == 'true'
@@ -2144,8 +2254,7 @@ jobs:
           retention-days: 7
 
   checks-fast-plugin-contracts-shard:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: ${{ matrix.checkName }}
     needs: [preflight]
     if: needs.preflight.outputs.run_plugin_contracts_shards == 'true'
@@ -2187,8 +2296,7 @@ jobs:
           OPENCLAW_VITEST_INCLUDE_FILE="$include_file" pnpm test:contracts:plugins
 
   checks-fast-channel-contracts-shard:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: ${{ matrix.checkName }}
     needs: [preflight]
     if: needs.preflight.outputs.run_channel_contracts_shards == 'true'
@@ -2261,8 +2369,7 @@ jobs:
           pnpm test:build:singleton
 
   checks-node-core-test-nondist-shard:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: needs.preflight.outputs.run_checks_node_core_nondist == 'true'
@@ -2374,8 +2481,7 @@ jobs:
 
   # Types, lint, and format check shards.
   check-shard:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_check == 'true' }}
@@ -2749,8 +2855,7 @@ jobs:
   # extensions/root/scripts tail. All-Blacksmith mode keeps the single
   # 16-vCPU test-types job.
   check-test-types-hosted-core-shard:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: check-test-types-core-${{ matrix.stripe }}
     needs: [preflight]
     if: ${{ needs.preflight.outputs.run_check == 'true' && (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') }}
@@ -2785,8 +2890,7 @@ jobs:
           node scripts/run-tsgo-core-test-shards.mjs --stripe "${{ matrix.stripe }}/5" --concurrency 2
 
   check-additional-shard:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_check_additional == 'true' }}
@@ -3141,8 +3245,7 @@ jobs:
 
   # Validate docs (format, lint, broken links) only when docs files changed.
   check-docs:
-    permissions:
-      contents: read
+    permissions: *linux_node_artifact_permissions
     needs: [preflight]
     if: needs.preflight.outputs.run_check_docs == 'true'
     runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
