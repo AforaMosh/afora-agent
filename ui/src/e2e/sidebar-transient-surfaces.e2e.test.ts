@@ -71,6 +71,21 @@ async function computedShadowFromToken(root: Locator, token: "--overlay-shadow" 
   }, token);
 }
 
+// Menu panel geometry is a token contract, not two literals: the radius is the
+// shared 10px base times whatever corner scale the engine opted into, and the
+// padding is the same --menu-padding every transient menu reads. Restating them
+// as numbers pins the test to one engine's superellipse support.
+async function menuPanelContract(root: Locator) {
+  return root.evaluate(() => {
+    const style = getComputedStyle(document.documentElement);
+    const scale = Number.parseFloat(style.getPropertyValue("--openclaw-corner-radius-scale")) || 1;
+    return {
+      borderRadius: `${10 * scale}px`,
+      padding: style.getPropertyValue("--menu-padding").trim(),
+    };
+  });
+}
+
 suite.define(() => {
   it.each(visualVariants)(
     "keeps sidebar transient surfaces on one contract in $theme $colorScheme",
@@ -156,12 +171,13 @@ suite.define(() => {
           .poll(async () => (await sessionMenuSurface.boundingBox())?.width ?? 0)
           .toBeGreaterThanOrEqual(224);
         await waitForAnimations(sessionMenuSurface);
+        const panelContract = await menuPanelContract(root);
         const menuContract = await surfaceMetrics(sessionMenuSurface);
         expect(menuContract).toMatchObject({
           borderColor: tooltipContract.borderColor,
-          borderRadius: "12px",
+          borderRadius: panelContract.borderRadius,
           boxShadow: tooltipContract.boxShadow,
-          padding: "6px",
+          padding: panelContract.padding,
         });
         expect(menuContract.width).toBeGreaterThanOrEqual(224);
         expect(menuContract.width).toBeLessThanOrEqual(232);
@@ -277,9 +293,9 @@ suite.define(() => {
         await waitForAnimations(moreMenuSurface);
         expect(await surfaceMetrics(moreMenuSurface)).toMatchObject({
           borderColor: tooltipContract.borderColor,
-          borderRadius: "12px",
+          borderRadius: panelContract.borderRadius,
           boxShadow: tooltipContract.boxShadow,
-          padding: "6px",
+          padding: panelContract.padding,
         });
         expect(await moreMenu.locator(".session-menu__shortcut").count()).toBe(0);
         await captureSidebarUiUnionProof(
