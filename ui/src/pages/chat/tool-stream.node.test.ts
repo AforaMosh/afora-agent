@@ -293,7 +293,7 @@ describe("app-tool-stream approval lifecycle", () => {
 });
 
 describe("app-tool-stream throttled projections", () => {
-  it.each(["input_delta", "update", "result", "unknown"])(
+  it.each(["input_delta", "update", "unknown"])(
     "drops an orphaned %s without creating a projected row",
     (phase) => {
       const host = createHost();
@@ -307,7 +307,6 @@ describe("app-tool-stream throttled projections", () => {
             toolCallId: "missing-call",
             name: "read",
             partialResult: "partial",
-            result: "complete",
           }),
         ),
       ).toBe(false);
@@ -318,6 +317,30 @@ describe("app-tool-stream throttled projections", () => {
       warn.mockRestore();
     },
   );
+
+  it("keeps an orphaned result visible instead of losing the call's outcome", () => {
+    const host = createHost();
+
+    expect(
+      handleAgentEvent(
+        host,
+        agentEvent("run-1", 1, "tool", {
+          phase: "result",
+          toolCallId: "trimmed-call",
+          name: "read",
+          result: "complete",
+        }),
+      ),
+    ).toBe(true);
+    expect(host.toolStreamById.get(buildToolStreamIdentity("run-1", "trimmed-call"))).toMatchObject(
+      {
+        name: "read",
+        output: "complete",
+        resultReceived: true,
+      },
+    );
+    expect(host.chatToolMessages).toHaveLength(1);
+  });
 
   it("marks only open calls from the interrupted run", () => {
     useToolStreamFakeTimers();

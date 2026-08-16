@@ -551,7 +551,7 @@
   right: 6px;
   z-index: 1;
   opacity: 0;
-  transition: opacity 1s ease;
+  transition: opacity 120ms ease;
 }
 
 .chat-tool-card--flush:has(> .chat-tool-card__actions) .chat-tool-term__cmd {
@@ -1024,10 +1024,6 @@
     color 150ms ease;
 }
 
-.chat-activity-group__summary:disabled {
-  cursor: default;
-}
-
 .chat-activity-group__summary:hover,
 .chat-activity-group__summary:focus-visible {
   background: color-mix(in srgb, var(--bg-hover) 60%, transparent);
@@ -1096,7 +1092,9 @@
 }
 
 /* Rows form a flat indented list below the summary. The rail marks the group
-   extent while shared row hover pills remain free of per-row chrome. */
+   extent while shared row hover pills remain free of per-row chrome. The body
+   stays mounted so the disclosure can animate, so `visibility` (delayed until
+   the close finishes) keeps collapsed rows out of the tab order and a11y tree. */
 .chat-activity-group__body {
   display: flex;
   flex-direction: column;
@@ -1105,19 +1103,23 @@
   margin: 0 0 0 10px;
   padding-left: 10px;
   border-left: 2px solid color-mix(in srgb, var(--border) 82%, transparent);
+  visibility: hidden;
   opacity: 0;
   overflow: hidden;
   transition:
     max-height 220ms ease,
     margin-top 220ms ease,
-    opacity 150ms ease;
+    opacity 150ms ease,
+    visibility 0s linear 220ms;
 }
 
 .chat-activity-group.is-open .chat-activity-group__body {
   max-height: 14rem;
   margin-top: 4px;
+  visibility: visible;
   opacity: 1;
   overflow-y: auto;
+  transition-delay: 0s;
   overscroll-behavior: contain;
   mask-image: linear-gradient(
     to bottom,

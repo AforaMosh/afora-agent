@@ -48,11 +48,13 @@ async function captureFactrowProof(
   });
 }
 
-async function expandCompletedWorkGroups(page: import("playwright").Page) {
-  const workSummaries = page.locator(".chat-work-group > .chat-activity-group__summary");
-  await workSummaries.first().waitFor();
-  for (let index = 0; index < (await workSummaries.count()); index += 1) {
-    const summary = workSummaries.nth(index);
+/** Historical activity disclosures start collapsed; open them all so the
+ * per-call rows underneath become assertable. */
+async function expandActivityGroups(page: import("playwright").Page) {
+  const summaries = page.locator("button.chat-activity-group__summary");
+  await summaries.first().waitFor();
+  for (let index = 0; index < (await summaries.count()); index += 1) {
+    const summary = summaries.nth(index);
     if ((await summary.getAttribute("aria-expanded")) !== "true") {
       await summary.click();
     }
@@ -86,7 +88,7 @@ suite.define(() => {
 
     await page.goto(controlUiSessionUrl(suite.server.baseUrl, sessionKey));
     await page.getByText("Recovered on the next autonomous turn.", { exact: true }).waitFor();
-    await expandCompletedWorkGroups(page);
+    await expandActivityGroups(page);
 
     expect(await page.locator(".chat-tool-msg-summary__label").allTextContents()).toEqual([
       "Tool output",
@@ -100,10 +102,13 @@ suite.define(() => {
     expect(summaryClasses).toHaveLength(2);
     expect(summaryClasses[0]).not.toContain("chat-tool-msg-summary--error");
     expect(summaryClasses[1]).not.toContain("chat-tool-msg-summary--error");
-    expect(await page.locator(".chat-tool-row__badge").allTextContents()).toEqual([
-      "failed",
-      "failed",
-    ]);
+    expect(
+      await page.locator(".chat-tool-msg-summary .chat-tool-row__badge").allTextContents(),
+    ).toEqual(["failed", "failed"]);
+    // The owning disclosure surfaces the same failure while collapsed.
+    expect(
+      await page.locator(".chat-activity-group__summary .chat-tool-row__badge").allTextContents(),
+    ).toEqual(["failed", "failed"]);
     await context.close();
   });
 
@@ -164,7 +169,9 @@ suite.define(() => {
     await page.goto(`${suite.server.baseUrl}chat`);
     const activity = page.locator(".chat-group--activity .chat-activity-group__summary");
     await activity.waitFor();
-    expect(await activity.textContent()).toContain("Read a file, edited a file, created a file");
+    expect(await activity.textContent()).toContain(
+      "Edited a file, created a file, and read a file",
+    );
     if ((await activity.getAttribute("aria-expanded")) !== "true") {
       await activity.click();
     }
@@ -312,7 +319,7 @@ suite.define(() => {
       .toBe("dark");
     await captureFactrowProof(page, activity, "dark");
     expect(await summary.textContent()).toContain(
-      "Ran a command, edited a file, created a file, deleted a file",
+      "Edited a file, created a file, deleted a file, and ran a command",
     );
     expect(await patchRow.locator(".chat-tool-row__verb").textContent()).toBe("Changed");
     await context.close();
@@ -346,6 +353,7 @@ suite.define(() => {
     });
 
     await page.goto(`${suite.server.baseUrl}chat`);
+    await expandActivityGroups(page);
     const row = page.locator(".chat-tool-msg-summary");
     await row.waitFor();
     expect(await row.count()).toBe(1);
@@ -395,10 +403,10 @@ suite.define(() => {
     });
 
     await page.goto(`${suite.server.baseUrl}chat`);
+    await expandActivityGroups(page);
     const row = page.locator(".chat-tool-msg-summary", { hasText: message });
     await row.waitFor();
 
-    expect(await page.locator(".chat-work-group").count()).toBe(0);
     expect(await row.locator(".chat-tool-msg-summary__label").textContent()).toBe("Message");
     expect(await row.locator(".chat-tool-msg-summary__names").textContent()).toBe(message);
     await captureToolActivityProof(page, "message-only-turn-visible");

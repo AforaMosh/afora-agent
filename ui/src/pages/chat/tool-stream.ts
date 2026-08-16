@@ -1066,8 +1066,11 @@ export function handleAgentEvent(host: ToolStreamHost, payload?: AgentEventPaylo
     });
     return false;
   }
-  if (!entry && phase !== "start") {
-    console.warn("[control-ui] Dropped orphaned tool activity", {
+  // Progress phases carry no standalone outcome, so an orphan (a trimmed or
+  // never-started call) would open a card that can never resolve. A `result`
+  // still adopts an entry: dropping it would erase a finished call's outcome.
+  if (!entry && (phase === "input_delta" || phase === "update")) {
+    console.warn("[control-ui] Dropped orphaned tool progress", {
       phase,
       runId: payload.runId,
       toolCallId,

@@ -704,6 +704,87 @@ describe("coalesceActivityRuns", () => {
     expect(requireActivityRun(projected[2]).groups).toEqual([reasoning, groups[2]]);
   });
 
+  it.each([
+    [
+      "text shipped beside its own tool call",
+      [
+        { type: "text", text: "Reading the plan first." },
+        { type: "tool_use", id: "call-mixed", name: "read", input: { path: "PLAN.md" } },
+      ],
+    ],
+    [
+      "an attachment-only reply beside a tool call",
+      [
+        { type: "image", source: { type: "base64", data: "AAA" } },
+        { type: "tool_use", id: "call-media", name: "read", input: { path: "shot.png" } },
+      ],
+    ],
+  ])("keeps a group carrying %s out of the collapsed disclosure", (_label, content) => {
+    const groups = projectedToolGroups();
+    const visibleWithTool: MessageGroup = {
+      kind: "group",
+      key: "group:assistant:mixed",
+      role: "assistant",
+      messages: [{ key: "assistant:mixed", message: assistantMessage(content, 3_500) }],
+      timestamp: 3_500,
+      isStreaming: false,
+    };
+
+    const projected = coalesceActivityRuns([groups[0]!, visibleWithTool, groups[1]!]);
+
+    expect(projected.map((item) => item.kind)).toEqual(["activity-run", "group", "activity-run"]);
+    expect(projected[1]).toBe(visibleWithTool);
+  });
+
+  it("lifts a reply that ships its own tool call out of the surrounding run", () => {
+    const groups = messageGroups({
+      messages: [
+        toolUseMessage("call-a", "read", { path: "a.ts" }, 1_000),
+        toolResultMessage("call-a", "read", [{ type: "toolResult", text: "a" }], 1_001),
+        assistantMessage(
+          [
+            { type: "text", text: "Now editing." },
+            { type: "tool_use", id: "call-b", name: "edit", input: { path: "b.ts" } },
+          ],
+          1_002,
+        ),
+        toolResultMessage("call-b", "edit", [{ type: "toolResult", text: "done" }], 1_003),
+        toolUseMessage("call-c", "read", { path: "c.ts" }, 1_004),
+        toolResultMessage("call-c", "read", [{ type: "toolResult", text: "c" }], 1_005),
+      ],
+    });
+
+    // The reply must not drag its neighbours out of the disclosure with it.
+    expect(groups).toHaveLength(3);
+    expect(coalesceActivityRuns(groups).map((item) => item.kind)).toEqual([
+      "activity-run",
+      "group",
+      "activity-run",
+    ]);
+  });
+
+  it("keeps a tool result whose payload is a plain text block inside the run", () => {
+    const groups = projectedToolGroups();
+    const textPayloadResult: MessageGroup = {
+      kind: "group",
+      key: "group:tool:text-payload",
+      role: "tool",
+      messages: [
+        {
+          key: "tool:text-payload",
+          message: toolResult("call-text", 3_500, { content: [{ type: "text", text: "ok" }] }),
+        },
+      ],
+      timestamp: 3_500,
+      isStreaming: false,
+    };
+
+    const projected = coalesceActivityRuns([groups[0]!, textPayloadResult]);
+
+    expect(projected).toHaveLength(1);
+    expect(requireActivityRun(projected[0]).groups).toEqual([groups[0], textPayloadResult]);
+  });
+
   it("uses the canonical group for a single tool and disables projection during search", () => {
     const groups = projectedToolGroups();
     const singleton = coalesceActivityRuns([groups[0]!]);

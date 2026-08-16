@@ -7,12 +7,10 @@ import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts"
 
 const suite = createControlUiE2eSuite({
   name: "Control UI tool activity group",
-  browserLaunchOptions: { headless: false },
   startServerBeforeBrowser: true,
 });
 
 const artifactDir = process.env.OPENCLAW_CONTROL_UI_E2E_ARTIFACT_DIR?.trim();
-const proofState = process.env.OPENCLAW_TOOL_ACTIVITY_PROOF_STATE?.trim() || "after";
 
 async function capture(page: import("playwright").Page, name: string, theme: "light" | "dark") {
   if (!artifactDir) {
@@ -24,7 +22,7 @@ async function capture(page: import("playwright").Page, name: string, theme: "li
     .toBe(theme);
   await fs.mkdir(artifactDir, { recursive: true });
   await page.locator(".chat-main").screenshot({
-    path: path.join(artifactDir, `${proofState}-${name}-${theme}.png`),
+    path: path.join(artifactDir, `${name}-${theme}.png`),
   });
 }
 
@@ -45,6 +43,8 @@ function toolResult(id: string, name: string, text: string, timestamp: number) {
     timestamp,
   };
 }
+
+const mixedNote = "Checking the release plan before I touch it.";
 
 suite.define(() => {
   it("keeps a rich streamed turn in one inspectable activity trace", async () => {
@@ -67,6 +67,21 @@ suite.define(() => {
           content: "Inspect the existing release workflow.",
           timestamp,
         },
+        // Words shipped in the same transcript message as their tool call.
+        {
+          role: "assistant",
+          content: [
+            { type: "text", text: mixedNote },
+            {
+              type: "toolCall",
+              id: "historical-mixed",
+              name: "read",
+              arguments: { path: "/workspace/docs/release.md" },
+            },
+          ],
+          timestamp: timestamp + 500,
+        },
+        toolResult("historical-mixed", "read", "# Release", timestamp + 600),
         toolCall(
           "historical-read",
           "read",
@@ -115,11 +130,9 @@ suite.define(() => {
     }
 
     await page.getByText(prompt, { exact: true }).waitFor();
-    if (proofState !== "before") {
-      const thinkingGroup = page.locator(".chat-activity-group").last();
-      await expect.poll(() => thinkingGroup.locator(".chat-reading-indicator").count()).toBe(1);
-      await expect.poll(() => thinkingGroup.locator(".claw-icon__jaw").count()).toBe(1);
-    }
+    const thinkingGroup = page.locator(".chat-activity-group").last();
+    await expect.poll(() => thinkingGroup.locator(".chat-reading-indicator").count()).toBe(1);
+    await expect.poll(() => thinkingGroup.locator(".claw-icon__jaw").count()).toBe(1);
     await capture(page, "thinking", "light");
     await capture(page, "thinking", "dark");
 
@@ -202,18 +215,12 @@ suite.define(() => {
       },
     });
 
-    if (proofState === "before") {
-      await expect
-        .poll(() => page.locator(".chat-activity-group__summary").count())
-        .toBeGreaterThan(0);
-    } else {
-      await expect
-        .poll(() => page.locator(".chat-activity-group__label").last().textContent())
-        .toBe("Editing files");
-      await expect
-        .poll(() => page.locator(".chat-activity-group").last().getAttribute("class"))
-        .toContain("is-open");
-    }
+    await expect
+      .poll(() => page.locator(".chat-activity-group__label").last().textContent())
+      .toBe("Editing files");
+    await expect
+      .poll(() => page.locator(".chat-activity-group").last().getAttribute("class"))
+      .toContain("is-open");
     await capture(page, "active", "light");
     await capture(page, "active", "dark");
 
@@ -236,15 +243,18 @@ suite.define(() => {
     await capture(page, "summary-collapsed", "light");
     await capture(page, "summary-collapsed", "dark");
 
-    if (proofState !== "before") {
-      expect(await page.locator(".chat-work-group").count()).toBe(0);
-      expect(await page.locator(".chat-activity-group").count()).toBe(2);
-      const summaryLabel = await page.locator(".chat-activity-group__label").last().textContent();
-      expect(summaryLabel).toBe(
-        "Edited a file, created a file, read a file, ran commands, and searched the web",
-      );
-      expect(summaryLabel).not.toMatch(/\d/);
-    }
+    expect(await page.locator(".chat-activity-group").count()).toBe(2);
+    const summaryLabel = await page.locator(".chat-activity-group__label").last().textContent();
+    expect(summaryLabel).toBe(
+      "Edited a file, created a file, read a file, ran commands, and searched the web",
+    );
+    expect(summaryLabel).not.toMatch(/\d/);
+
+    // Those words stay readable in the default collapsed transcript.
+    await page.getByText(mixedNote, { exact: true }).waitFor();
+    expect(
+      await page.locator(".chat-activity-group").getByText(mixedNote, { exact: true }).count(),
+    ).toBe(0);
 
     const latestSummary = page.locator(".chat-activity-group__summary").last();
     if ((await latestSummary.getAttribute("aria-expanded")) !== "true") {

@@ -4,9 +4,18 @@ import {
   isToolCallContentType,
   isToolResultContentType,
 } from "../../../../src/chat/tool-content.js";
-import type { ChatItem, MessageGroup, ToolCard } from "../../lib/chat/chat-types.ts";
+import type {
+  ChatItem,
+  MessageGroup,
+  NormalizedMessage,
+  ToolCard,
+} from "../../lib/chat/chat-types.ts";
 import { extractTextCached, extractThinkingCached } from "../../lib/chat/message-extract.ts";
-import { normalizeMessage, normalizeRoleForGrouping } from "../../lib/chat/message-normalizer.ts";
+import {
+  isStandaloneToolMessageForDisplay,
+  normalizeMessage,
+  normalizeRoleForGrouping,
+} from "../../lib/chat/message-normalizer.ts";
 import { senderIdentityKey } from "../../lib/chat/sender-label.ts";
 import { extractToolCardsCached } from "../../lib/chat/tool-cards.ts";
 import { resolveMessageToolUseId, resolveToolBlockId } from "./chat-thread-items.ts";
@@ -53,9 +62,40 @@ function stampReplyAttribution(
   }
   return items;
 }
+// Attachment/canvas/media-only replies carry no text but are still the turn's
+// visible outcome, so anything that is not a tool block counts.
+function hasVisibleReplyBlocks(
+  message: unknown,
+  normalized: NormalizedMessage | null = safeNormalizeMessage(message),
+): boolean {
+  if (extractTextCached(message)?.trim()) {
+    return true;
+  }
+  return (normalized?.content ?? []).some((block) =>
+    block.type === "text"
+      ? Boolean(block.text?.trim())
+      : !isToolCallContentType(block.type) && !isToolResultContentType(block.type),
+  );
+}
+
+// The raw role is the gate: `normalizeMessage` rewrites every message carrying
+// tool blocks to `toolResult`, so the normalized role cannot tell the model's
+// own words from a tool payload that merely arrived as a text block.
+function messageCarriesAssistantReply(
+  message: unknown,
+  normalized: NormalizedMessage | null = safeNormalizeMessage(message),
+): boolean {
+  return (
+    normalizeLowercaseStringOrEmpty(asRecord(message)?.role) === "assistant" &&
+    !isStandaloneToolMessageForDisplay(message) &&
+    hasVisibleReplyBlocks(message, normalized)
+  );
+}
+
 export function groupMessages(items: ChatItem[]): Array<ChatItem | MessageGroup> {
   const result: Array<ChatItem | MessageGroup> = [];
   let currentGroup: MessageGroup | null = null;
+  let groupCarriesVisibleReply = false;
 
   for (const item of items) {
     if (item.kind !== "message") {
@@ -81,16 +121,28 @@ export function groupMessages(items: ChatItem[]): Array<ChatItem | MessageGroup>
       currentGroup?.role === "assistant" &&
       isKeyedAssistantStreamFallbackMessage(currentGroup.messages[0]?.message) !==
         isKeyedAssistantStreamFallbackMessage(item.message);
+    // A reply that ships its own tool call normalizes to the tool role, so it
+    // would otherwise share a group with the surrounding pure tool work and drag
+    // that whole run out of the collapsed activity disclosure. Keep the two
+    // apart so the words render as a bubble and the tool work still folds.
+    const carriesVisibleReply =
+      role === "tool" && messageCarriesAssistantReply(item.message, normalized);
+    const splitsVisibleReplyFromToolWork =
+      role === "tool" &&
+      currentGroup?.role === "tool" &&
+      groupCarriesVisibleReply !== carriesVisibleReply;
 
     if (
       !currentGroup ||
       startsProjectedTurn ||
       currentGroup.role !== role ||
       splitsAssistantCommentary ||
+      splitsVisibleReplyFromToolWork ||
       (shouldSplitBySender &&
         (currentGroup.senderLabel !== senderLabel ||
           senderIdentityKey(currentGroup.sender) !== senderIdentityKey(sender)))
     ) {
+      groupCarriesVisibleReply = carriesVisibleReply;
       if (currentGroup) {
         result.push(currentGroup);
       }
@@ -501,31 +553,26 @@ type ActivityRunRenderItem = {
 };
 
 type TurnRenderItem = RenderChatItem | StreamRunRenderItem;
-function assistantGroupHasVisibleReplyContent(group: MessageGroup): boolean {
-  return group.messages.some(({ message }) => {
-    if (extractTextCached(message)?.trim()) {
-      return true;
-    }
-    const content = safeNormalizeMessage(message)?.content ?? [];
-    return content.some((block) => {
-      if (block.type === "text") {
-        return Boolean(block.text?.trim());
-      }
-      return !isToolCallContentType(block.type) && !isToolResultContentType(block.type);
-    });
-  });
-}
-
 export function assistantGroupCanOwnActiveRunStatus(group: MessageGroup): boolean {
+  // The group is already an assistant turn, so the role gate in
+  // `messageCarriesAssistantReply` would be redundant; only content matters.
   return (
     group.role.toLowerCase() === "assistant" &&
     !assistantGroupIsForwardedBoundary(group) &&
-    assistantGroupHasVisibleReplyContent(group)
+    group.messages.some(({ message }) => hasVisibleReplyBlocks(message))
   );
 }
 
-function groupContainsToolCards(group: MessageGroup): boolean {
-  return group.messages.some((item) => extractToolCardsCached(item.message, item.key).length > 0);
+/**
+ * Canonical activity-disclosure eligibility, shared by the transcript
+ * projection and the per-group renderer. Historical disclosures start closed,
+ * so only pure tool work may fold; anything readable stays in the transcript.
+ */
+export function groupFoldsIntoActivity(group: MessageGroup): boolean {
+  return (
+    group.messages.some((item) => extractToolCardsCached(item.message, item.key).length > 0) &&
+    !group.messages.some(({ message }) => messageCarriesAssistantReply(message))
+  );
 }
 
 function groupContainsOnlyReasoning(group: MessageGroup): boolean {
@@ -570,7 +617,7 @@ export function coalesceActivityRuns(
     pendingReasoning = [];
   };
   for (const item of items) {
-    if (item.kind === "group" && groupContainsToolCards(item)) {
+    if (item.kind === "group" && groupFoldsIntoActivity(item)) {
       groups.push(...pendingReasoning);
       pendingReasoning = [];
       groups.push(item);

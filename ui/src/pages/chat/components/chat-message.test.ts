@@ -711,6 +711,36 @@ describe("grouped chat rendering", () => {
     expect(container.querySelector(".collapse-chevron")).toBeNull();
   });
 
+  it("keeps a reply that carries its own tool call out of the collapsed disclosure", () => {
+    const container = document.createElement("div");
+
+    renderAssistantMessages(container, [
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "Reading the plan first." },
+          { type: "tool_use", id: "call-mixed", name: "read", input: { path: "PLAN.md" } },
+        ],
+      },
+    ]);
+
+    expect(container.querySelector(".chat-activity-group")).toBeNull();
+    expect(container.textContent).toContain("Reading the plan first.");
+  });
+
+  it("folds a tool-only message into the collapsed disclosure", () => {
+    const container = document.createElement("div");
+
+    renderAssistantMessages(container, [
+      {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "call-only", name: "read", input: { path: "PLAN.md" } }],
+      },
+    ]);
+
+    expect(container.querySelector(".chat-activity-group")).not.toBeNull();
+  });
+
   it.each([
     ["text/plain MIME", { label: "note.bin", mimeType: "text/plain" }, true],
     ["JSON MIME", { label: "data.bin", mimeType: "application/json" }, true],

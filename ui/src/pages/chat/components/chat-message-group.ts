@@ -14,6 +14,7 @@ import { fnv1aUtf16 } from "../../../lib/fnv1a.ts";
 import { resolveIdentityHue } from "../../../lib/identity-avatar.ts";
 import { renderChatAvatar } from "../chat-avatar.ts";
 import type { TurnRecap } from "../chat-progress.ts";
+import { groupFoldsIntoActivity } from "../chat-thread-grouping.ts";
 import {
   isPendingSendMessage,
   persistedMessageEntryId,
@@ -396,11 +397,12 @@ export function renderMessageGroup(group: MessageGroup, opts: RenderMessageGroup
     return nothing;
   }
 
-  const groupedToolCards = group.messages.flatMap((item) =>
-    extractToolCardsCached(item.message, item.key),
-  );
-
-  if (groupedToolCards.length > 0) {
+  // Groups arriving outside an activity run (search results, single-group
+  // panes) fold on the projection's rule so both owners stay in agreement.
+  if (groupFoldsIntoActivity(group)) {
+    const groupedToolCards = group.messages.flatMap((item) =>
+      extractToolCardsCached(item.message, item.key),
+    );
     return renderActivityGroup([group], opts, {
       key: `activity:${group.key}`,
       state:
