@@ -438,10 +438,9 @@ suite.define(() => {
     it(`class G — a published catalog command owns its raw tail (${theme})`, async () => {
       await mkdir(ARTIFACT_DIR, { recursive: true });
       await suite.withPage({ colorScheme: theme, viewport: VIEWPORT }, async ({ page }) => {
-        // The catalog advertises two arguments with choices but cannot say how
-        // the command parses its tail: CommandEntrySchema carries no
-        // argsParsing/captureRemaining. Staging these would space-join text the
-        // real parser may reject, so the operator gets the tail instead.
+        // The catalog advertises two arguments with choices but carries no
+        // argsParsing/captureRemaining, so staging them would space-join text
+        // the real parser may reject. The operator owns the tail instead.
         const f = await openChat(page, theme, `cmdargs-g-${theme}`, [
           {
             name: "deploy",

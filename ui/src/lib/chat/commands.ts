@@ -469,10 +469,9 @@ function normalizeCommandEntry(
     );
   const description = clampText(entry.description, MAX_REMOTE_DESCRIPTION_LENGTH);
   return {
-    // The catalog carries argument names and choices but no `argsParsing` or
-    // `captureRemaining`: it says what a command takes, never how it splits the
-    // tail. Staging it would invent positional rules and could space-join text
-    // the real parser rejects; the args still drive the hint and option badge.
+    // The catalog says what a command takes, never how it splits the tail: no
+    // `argsParsing`, no `captureRemaining`. Staging it positionally would invent
+    // rules the parser never agreed to; the args still drive hint and badge.
     definition: defineChatCommand({
       key: primaryName,
       description,

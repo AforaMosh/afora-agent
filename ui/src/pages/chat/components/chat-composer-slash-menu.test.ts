@@ -497,7 +497,7 @@ describe("Tab completes without executing", () => {
 
     expect(handled).toBe(true);
     expect(event.defaultPrevented).toBe(true);
-    // The whole point: the final argument is filled in, but nothing was sent.
+    // Tab fills the final argument in; nothing leaves the composer.
     expect(harness.sent).toEqual([]);
     expect(harness.draft()).toBe("/deploy staging");
     expect(harness.stage()).toBeNull();

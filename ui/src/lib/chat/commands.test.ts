@@ -701,7 +701,7 @@ describe("parseSlashCommand", () => {
       },
     ]);
 
-    const deploy = requireCommandByName("deploy");
+    const deploy = requireTypedCommand("deploy");
     // CommandEntrySchema carries no argsParsing/captureRemaining, so staging
     // these positionally would space-join text the real parser may reject.
     expect(ownsRawArgumentTail(deploy)).toBe(true);
@@ -722,6 +722,6 @@ describe("parseSlashCommand", () => {
       },
     ]);
 
-    expect(acceptsSlashCommandArgs(requireCommandByName("ping"))).toBe(false);
+    expect(acceptsSlashCommandArgs(requireTypedCommand("ping"))).toBe(false);
   });
 });
