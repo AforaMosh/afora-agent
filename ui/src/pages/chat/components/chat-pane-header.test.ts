@@ -13,7 +13,7 @@ import {
   SHELL_NAV_DRAWER_TOGGLE_EVENT,
   type ShellNavDrawerToggleDetail,
 } from "../../../components/command-palette-contract.ts";
-import { renderSessionRowBadges } from "../../../components/session-row-badges.ts";
+import { renderSessionRowOrigin } from "../../../components/session-row-origin.ts";
 import type { SessionCapability } from "../../../lib/sessions/index.ts";
 import { createTestChatPane } from "../chat-pane.test-support.ts";
 import type { ChatPageHost } from "../chat-state-host.ts";
@@ -718,13 +718,10 @@ describe("chat pane header", () => {
     const rowContainer = document.createElement("div");
     document.body.append(rowContainer);
     containers.push(rowContainer);
-    render(
-      html`${renderSessionRowBadges({ hasAutomation: false, incognito: true })}`,
-      rowContainer,
-    );
+    render(html`${renderSessionRowOrigin({ draft: false, incognito: true })}`, rowContainer);
 
     const headerGlyph = header.container.querySelector(".chat-pane__incognito svg")?.innerHTML;
-    const rowGlyph = rowContainer.querySelector(".session-row-badge--incognito svg")?.innerHTML;
+    const rowGlyph = rowContainer.querySelector(".session-row-origin__qualifier svg")?.innerHTML;
     expect(headerGlyph).toBeTruthy();
     expect(rowGlyph).toBe(headerGlyph);
   });
