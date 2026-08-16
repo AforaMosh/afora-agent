@@ -511,19 +511,15 @@ export function renderApplicationShell(host: ShellViewHost) {
       ${navCollapsed && !onboarding && !settingsTakeover && !mobileNavLayout
         ? html`
             <div class="shell-chrome-controls">
-              <openclaw-tooltip
-                .content=${`${t(navCollapsed ? "nav.expand" : "nav.collapse")} (⌘B)`}
+              <button
+                type="button"
+                class="shell-chrome-controls__button shell-chrome-controls__nav-toggle"
+                aria-label=${t("nav.expand")}
+                aria-expanded="false"
+                @click=${() => host.toggleNavigationSurface()}
               >
-                <button
-                  type="button"
-                  class="shell-chrome-controls__button shell-chrome-controls__nav-toggle"
-                  aria-label=${t(navCollapsed ? "nav.expand" : "nav.collapse")}
-                  aria-expanded=${navCollapsed ? "false" : "true"}
-                  @click=${() => host.toggleNavigationSurface()}
-                >
-                  ${icons.panelLeftOpen}
-                </button>
-              </openclaw-tooltip>
+                ${icons.panelLeftOpen}
+              </button>
               <span class="shell-chrome-controls__separator" aria-hidden="true"></span>
             </div>
           `
