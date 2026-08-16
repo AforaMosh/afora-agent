@@ -3303,7 +3303,7 @@ button.chat-pr__diff {
   min-height: 36px;
   padding: 8px 10px 8px 14px;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, var(--chat-composer-surface));
   color: color-mix(in srgb, var(--danger) 78%, var(--text));
   font-size: var(--control-ui-text-sm);
   line-height: 1.35;
