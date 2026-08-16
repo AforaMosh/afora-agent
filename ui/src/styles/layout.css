@@ -1072,7 +1072,7 @@ html.openclaw-native-macos .shell:not(.shell--mobile-nav) .sidebar-brand {
 .sidebar-brand__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   flex: 0 0 auto;
 }
 
@@ -3649,7 +3649,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 .sidebar-agent-card__main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
   flex: 0 1 auto;
   width: fit-content;
   max-width: 100%;
@@ -5161,7 +5161,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 }
 
 .sidebar-recent-session.sidebar-recent-session--attention-amber .sidebar-recent-session__subtitle {
-  color: color-mix(in srgb, var(--warn) 82%, var(--text));
+  color: var(--sidebar-attention-text);
 }
 
 .sidebar-recent-session.sidebar-recent-session--attention-danger .sidebar-recent-session__subtitle {
@@ -5171,7 +5171,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 /* Pending operator responses get one soft themed highlight through the
    glyphs. The background stays under every glyph throughout the cycle. */
 .pending-text-shimmer {
-  --pending-text-base: color-mix(in srgb, var(--warn) 82%, var(--text));
+  --pending-text-base: var(--sidebar-attention-text);
   --pending-text-highlight: color-mix(in srgb, var(--pending-text-base) 72%, var(--text-strong));
 
   background-image: linear-gradient(
