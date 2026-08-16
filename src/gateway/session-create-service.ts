@@ -236,7 +236,7 @@ const FORK_LABEL_MAX_COPIES = 99;
  * either session were renamed. An unnamed parent stays unnamed - a generated
  * display name is not a name to copy.
  */
-export function forkedSessionLabel(
+function forkedSessionLabel(
   parentLabel: string | undefined,
   isLabelInUse: (label: string) => boolean,
 ): string | undefined {
@@ -249,10 +249,10 @@ export function forkedSessionLabel(
   // A parent may legally use the whole label budget, and the suffix still has to
   // fit: appending to a full-length name would make the fork fail validation
   // over a name the operator never typed.
-  const suffixBudget = ` (${FORK_LABEL_MAX_COPIES})`.length;
-  const base = inherited.slice(0, SESSION_LABEL_MAX_LENGTH - suffixBudget).trimEnd();
   for (let copy = 2; copy <= FORK_LABEL_MAX_COPIES; copy += 1) {
-    const candidate = `${base} (${copy})`;
+    const suffix = ` (${copy})`;
+    const base = inherited.slice(0, SESSION_LABEL_MAX_LENGTH - suffix.length).trimEnd();
+    const candidate = `${base}${suffix}`;
     if (!isLabelInUse(candidate)) {
       return candidate;
     }

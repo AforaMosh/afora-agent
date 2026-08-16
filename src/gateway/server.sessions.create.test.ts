@@ -25,6 +25,7 @@ import {
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
+import { SESSION_LABEL_MAX_LENGTH } from "../sessions/session-label.js";
 import { isSessionLifecycleMutationActive } from "../sessions/session-lifecycle-admission.js";
 import { listSessionStateEventsSince } from "../sessions/session-state-events.js";
 import {
@@ -3755,6 +3756,7 @@ test("sessions.create forks the parent transcript into the new session", async (
   await writeSessionStore({
     entries: {
       main: sessionStoreEntry(parent.sessionId, {
+        label: "n".repeat(SESSION_LABEL_MAX_LENGTH),
         sessionFile: parent.sessionFile,
         totalTokens: 123,
         totalTokensFresh: true,
@@ -3780,6 +3782,7 @@ test("sessions.create forks the parent transcript into the new session", async (
       parentSessionKey?: string;
       forkSource?: { sessionKey: string; sessionId: string };
       forkedFromParent?: boolean;
+      label?: string;
       totalTokens?: number;
       totalTokensFresh?: boolean;
     };
@@ -3796,6 +3799,9 @@ test("sessions.create forks the parent transcript into the new session", async (
     sessionId: parent.sessionId,
   });
   expect(created.payload?.entry?.forkedFromParent).toBe(true);
+  expect(created.payload?.entry?.label).toBe(
+    `${"n".repeat(SESSION_LABEL_MAX_LENGTH - " (2)".length)} (2)`,
+  );
   expect(created.payload?.entry?.totalTokens).toBeUndefined();
   expect(created.payload?.entry?.totalTokensFresh).toBe(false);
   expect(created.payload?.sessionId).not.toBe(parent.sessionId);
