@@ -322,7 +322,13 @@ function renderSessionSection(params: {
                             )}
                           </div>`
                         : nothing}`
-                    : section.rows.map((session) => renderSessionTree({ host, session }))}
+                    : section.rows.map((session) =>
+                        renderSessionTree({
+                          host,
+                          session,
+                          hideLeadingIdentity: section.groups,
+                        }),
+                      )}
                 </div>`
               : nothing}
             ${renderSessionPagination({

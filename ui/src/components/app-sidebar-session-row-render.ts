@@ -180,6 +180,8 @@ export function renderRecentSession(params: {
   showCodingSubtitle?: boolean;
   /** Project heading this row already sits under, if any. */
   project?: string;
+  /** Group conversations keep the shared rail but do not display a creator. */
+  hideLeadingIdentity?: boolean;
 }) {
   const { host, session, display, listItem = true, showCodingSubtitle = false } = params;
   const pinAccess = host.readSessionMutationAccess({
@@ -203,7 +205,7 @@ export function renderRecentSession(params: {
   const ownerAttribution = host.sessionsStatusFilter === "archived" ? "archived" : "created";
   const showLeadingIdentity = display?.showLeadingIdentity !== false;
   const ownerActor =
-    showLeadingIdentity && host.sessionOwnershipVisible
+    showLeadingIdentity && !params.hideLeadingIdentity && host.sessionOwnershipVisible
       ? host.sessionsStatusFilter === "archived"
         ? session.archivedBy
         : session.createdActor
@@ -526,6 +528,7 @@ export function renderSessionTree(params: {
   listItem?: boolean;
   showCodingSubtitle?: boolean;
   project?: string;
+  hideLeadingIdentity?: boolean;
 }): TemplateResult {
   const { host, session, listItem = true } = params;
   const expanded = host.isSessionChildrenExpanded(session);
@@ -545,6 +548,7 @@ export function renderSessionTree(params: {
       listItem: false,
       project: params.project,
       showCodingSubtitle: params.showCodingSubtitle,
+      hideLeadingIdentity: params.hideLeadingIdentity,
     })}
     ${expanded
       ? html`<div class="sidebar-session-tree__children">
@@ -560,6 +564,7 @@ export function renderSessionTree(params: {
                     session: child,
                     listItem,
                     showCodingSubtitle: params.showCodingSubtitle,
+                    hideLeadingIdentity: params.hideLeadingIdentity,
                   }),
                 )}
               </div>`
