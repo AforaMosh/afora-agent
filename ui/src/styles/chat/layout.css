@@ -3308,7 +3308,7 @@ button.chat-pr__diff {
   z-index: 0;
   box-sizing: border-box;
   min-height: calc(36px + var(--chat-composer-alert-underlap));
-  margin: 0 -1px
+  margin: 0 0
     calc(0px - var(--chat-composer-shell-gap) - var(--chat-composer-alert-underlap));
   padding: 8px 10px calc(8px + var(--chat-composer-alert-underlap)) 14px;
   border-radius: var(--radius-sm);
