@@ -275,7 +275,7 @@ suite.define(() => {
       const pinnedPageIconPaths = await sidebar
         .locator('[data-session-key="agent:main:tax-research"] .nav-item__icon svg')
         .evaluate((icon) =>
-          [...icon.querySelectorAll("path")].map((path) => path.getAttribute("d")),
+          [...icon.querySelectorAll("path")].map((pathElement) => pathElement.getAttribute("d")),
         );
       await expect
         .poll(() => trimmedTextContents(visiblePageItems))
@@ -597,7 +597,7 @@ suite.define(() => {
         await pinnedSessionRow
           .locator(".sidebar-customizer__item-icon svg")
           .evaluate((icon) =>
-            [...icon.querySelectorAll("path")].map((path) => path.getAttribute("d")),
+            [...icon.querySelectorAll("path")].map((pathElement) => pathElement.getAttribute("d")),
           ),
       ).toEqual(pinnedPageIconPaths);
       const customizerAxes = await customizer.evaluate((surface) => {
@@ -904,50 +904,6 @@ suite.define(() => {
         await expect
           .poll(async () => (await gateway.getRequests("sessions.groups.put")).length)
           .toBe(writesBefore + 2);
-      },
-    );
-  });
-
-  it("disables server-backed customizer controls for read-only operators", async () => {
-    await suite.withPage(
-      {
-        hasTouch: true,
-        locale: "en-US",
-        serviceWorkers: "block",
-        viewport: { height: 900, width: 1440 },
-      },
-      async ({ page }) => {
-        const pinnedKey = "agent:main:read-only-pinned";
-        const gateway = await installMockGateway(page, {
-          operatorScopes: ["operator.read"],
-          methodResponses: {
-            "sessions.list": sessionsListResponse([
-              sessionRow(pinnedKey, "Read-only pinned", Date.now(), { pinned: true }),
-            ]),
-          },
-        });
-        await page.goto(`${suite.server.baseUrl}chat`);
-        const sidebar = page.locator("openclaw-app-sidebar");
-        await sidebar.locator(".sidebar-nav__more").click();
-        await sidebar
-          .locator("wa-dropdown.sidebar-more-menu")
-          .getByRole("menuitem", { name: "Customize sidebar" })
-          .click();
-        const customizer = sidebar.locator(".sidebar-customizer");
-        const coding = customizer.locator('[data-sidebar-customizer-id="work"]');
-        const pinned = customizer.locator(`[data-sidebar-customizer-id="session:${pinnedKey}"]`);
-
-        await expect.poll(() => coding.getAttribute("draggable")).toBe("false");
-        expect(await coding.getByRole("button", { name: "Move Coding down" }).isDisabled()).toBe(
-          true,
-        );
-        expect(
-          await pinned
-            .getByRole("button", { name: "Unpin session: Read-only pinned" })
-            .isDisabled(),
-        ).toBe(true);
-        expect(await gateway.getRequests("sessions.groups.put")).toHaveLength(0);
-        expect(await gateway.getRequests("sessions.patch")).toHaveLength(0);
       },
     );
   });

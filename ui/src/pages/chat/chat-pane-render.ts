@@ -694,7 +694,7 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
         this.commitSidebarColumnResize(sidebarLayout, columnId, width);
       },
     };
-    const content = renderSidebarRegion({
+    return html`${renderSidebarRegion({
       availableWidth: this.paneWidth,
       callbacks: sidebarCallbacks,
       discussionOpenUrl: discussion?.openUrl ?? null,
@@ -706,8 +706,7 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
       panelTemplates,
       primary,
       sessionKey: state.sessionKey,
-    });
-    return html`${content}${renderChatImageLightbox(
+    })}${renderChatImageLightbox(
       state.imageLightbox,
       state.handleCloseImage,
     )}${this.renderResetConfirmation()}`;

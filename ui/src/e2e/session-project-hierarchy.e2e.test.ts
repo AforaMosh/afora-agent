@@ -89,9 +89,9 @@ suite.define(() => {
       const project = page.locator(`[data-session-work-project="${OPENCLAW_ROOT}"]`);
       const projectMark = project.locator(".sidebar-session-group-toggle__lead").first();
       const projectLabel = project.locator(".sidebar-session-catalog-project__label");
-      const sessionRow = project.locator('[data-session-key="agent:main:oc-branch"]');
-      const sessionName = sessionRow.locator(".sidebar-recent-session__name").first();
-      const branchText = sessionRow.locator(".sidebar-recent-session__subtitle-text");
+      const branchRow = project.locator('[data-session-key="agent:main:oc-branch"]');
+      const sessionName = branchRow.locator(".sidebar-recent-session__name").first();
+      const branchText = branchRow.locator(".sidebar-recent-session__subtitle-text");
       const sectionLabel = page.locator(
         '[data-session-section="work"] > .sidebar-recent-sessions__head .sidebar-recent-sessions__label-text',
       );
@@ -114,10 +114,11 @@ suite.define(() => {
       expect(labelStart - markStart).toBe(
         await project.evaluate(
           (element) =>
-            Number.parseInt(getComputedStyle(element).getPropertyValue("--sidebar-lead"), 10) + 6,
+            Number.parseInt(getComputedStyle(element).getPropertyValue("--sidebar-lead"), 10) +
+            Number.parseInt(getComputedStyle(element).getPropertyValue("--sidebar-row-gap"), 10),
         ),
       );
-      expect(nameStart).toBeGreaterThan(labelStart);
+      expect(nameStart).toBe(markStart);
       expect(branchStart).toBeGreaterThan(nameStart);
     } finally {
       await context.close();

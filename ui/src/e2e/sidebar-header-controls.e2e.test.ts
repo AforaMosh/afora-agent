@@ -165,11 +165,11 @@ suite.define(() => {
             }),
           ),
         ).toEqual(
-          Array(await topBandGlyphs.count()).fill({
+          Array.from({ length: await topBandGlyphs.count() }, () => ({
             height: "16px",
             strokeWidth: "1.5px",
             width: "16px",
-          }),
+          })),
         );
 
         await capture(page, `after-open-${colorScheme}-context.png`);
@@ -255,7 +255,9 @@ suite.define(() => {
         viewport: { height: 900, width: 1440 },
       });
       const page = await context.newPage();
-      await installMockGateway(page, { assistantName: "Roboclaw Research Workspace" });
+      await installMockGateway(page, {
+        assistantName: "Roboclaw Research Workspace With An Intentionally Long Display Name",
+      });
       try {
         await page.goto(`${suite.server.baseUrl}chat`);
         if (captureBaseline) {
@@ -266,11 +268,13 @@ suite.define(() => {
         await expect
           .poll(() =>
             sidebarHeader.locator(".sidebar-agent-card").evaluate((element) => {
-              const label = element.querySelector(".sidebar-agent-card__name");
+              const label = element.querySelector(".sidebar-agent-card__name-content");
               if (!label) {
                 return false;
               }
-              return label.scrollWidth > label.clientWidth;
+              return (
+                label.scrollWidth > label.clientWidth && label.hasAttribute("data-overflow-fade")
+              );
             }),
           )
           .toBe(true);

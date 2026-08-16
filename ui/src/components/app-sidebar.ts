@@ -375,7 +375,7 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
   }
 
   sectionDrop(event: DragEvent, sectionId: string, group?: string): void {
-    this.sessionOrganizer.sectionDrop(event, sectionId, group);
+    void this.sessionOrganizer.sectionDrop(event, sectionId, group);
   }
 
   toggleSection(sectionId: string): void {

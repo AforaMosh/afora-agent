@@ -119,7 +119,7 @@ export class SidebarCustomizerController {
     }
     this.restoring = true;
     this.host.requestUpdate();
-    await Promise.allSettled([...this.pendingMutations]);
+    await Promise.allSettled(this.pendingMutations);
     let failureCount = 0;
     try {
       if (this.host.onUpdateSidebarEntries) {

@@ -277,14 +277,14 @@ suite.define(() => {
       const actions = target.locator(".session-row-actions");
       await expect.poll(() => title.getAttribute("data-overflow-reveal")).not.toBeNull();
       const geometry = await target.evaluate((element) => {
-        const title = element.querySelector<HTMLElement>(".sidebar-recent-session__name");
-        const actions = element.querySelector<HTMLElement>(".session-row-actions");
+        const titleElement = element.querySelector<HTMLElement>(".sidebar-recent-session__name");
+        const actionElement = element.querySelector<HTMLElement>(".session-row-actions");
         const link = element.querySelector<HTMLElement>(".sidebar-recent-session__link");
-        if (!title || !actions || !link) {
+        if (!titleElement || !actionElement || !link) {
           return null;
         }
-        const titleBox = title.getBoundingClientRect();
-        const actionsBox = actions.getBoundingClientRect();
+        const titleBox = titleElement.getBoundingClientRect();
+        const actionsBox = actionElement.getBoundingClientRect();
         return {
           actionCover: Number.parseFloat(
             element.style.getPropertyValue("--session-row-action-cover"),
@@ -292,7 +292,7 @@ suite.define(() => {
           actionsBeforeTitle: actionsBox.right <= titleBox.right,
           linkMask: getComputedStyle(link).maskImage,
           titleShift: Number.parseFloat(
-            title.style.getPropertyValue("--overflow-reveal-translate"),
+            titleElement.style.getPropertyValue("--overflow-reveal-translate"),
           ),
         };
       });

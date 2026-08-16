@@ -585,8 +585,8 @@ export class SessionOrganizerController {
   }
 
   async reorderSidebarSection(
-    sourceSectionId: string,
-    targetSectionId: string,
+    sourceId: string,
+    targetId: string,
     position: "before" | "after",
   ): Promise<SidebarSessionMutationResult> {
     const scope = this.host.sessionData.beginSessionMutation();
@@ -594,16 +594,11 @@ export class SessionOrganizerController {
       return "stale";
     }
     const operations = await this.loadOperations(scope);
-    if (!operations) {
-      return this.host.sessionData.isSessionMutationScopeCurrent(scope) ? "failed" : "stale";
-    }
-    return operations.reorderSidebarSection(
-      this.host,
-      sourceSectionId,
-      targetSectionId,
-      position,
-      scope,
-    );
+    return operations
+      ? operations.reorderSidebarSection(this.host, sourceId, targetId, position, scope)
+      : this.host.sessionData.isSessionMutationScopeCurrent(scope)
+        ? "failed"
+        : "stale";
   }
 
   async assignSessionCategory(
@@ -693,11 +688,7 @@ export class SessionOrganizerController {
     }
   }
 
-  sectionDrop(
-    event: DragEvent,
-    sectionId: string,
-    category?: string,
-  ): Promise<SidebarSessionMutationResult> | null {
+  sectionDrop(event: DragEvent, sectionId: string, category?: string) {
     const sourceSectionId = readSidebarSectionDragData(event.dataTransfer);
     const sessionKey = readSessionDragData(event.dataTransfer);
     if (!sourceSectionId && !sessionKey) {
@@ -737,7 +728,6 @@ export class SessionOrganizerController {
     this.draggingSidebarSection = null;
     this.host.requestUpdate();
     this.sessionDropTarget = null;
-    this.host.requestUpdate();
     this.sidebarSectionDropTarget = null;
     this.host.requestUpdate();
     return reorder;

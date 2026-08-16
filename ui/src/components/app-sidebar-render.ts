@@ -414,8 +414,8 @@ export function renderAppSidebarPluginTabEntry(
   host: AppSidebarRenderHost,
   tab: GatewayControlUiPluginTab,
 ) {
-  const ref = { pluginId: tab.pluginId, id: tab.id };
-  const key = pluginTabKey(ref);
+  const pluginRef = { pluginId: tab.pluginId, id: tab.id };
+  const key = pluginTabKey(pluginRef);
   return html`
     <div class="sidebar-zone-entry" data-sidebar-entry=${`plugin:${key}`}>
       ${renderSidebarPluginTab({
