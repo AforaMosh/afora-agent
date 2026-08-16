@@ -1058,7 +1058,7 @@ openclaw-settings-save-indicator {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
   height: 48px;
   min-height: 48px;
@@ -3563,6 +3563,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   min-width: 0;
   padding: 4px var(--sidebar-row-inset, 10px);
   padding-inline-start: calc(var(--sidebar-row-inset, 10px) - 3px);
+  padding-inline-end: 0;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -3606,6 +3607,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 
 .sidebar-agent-card__text {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
   gap: 1px;
@@ -3615,6 +3617,9 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   display: flex;
   align-items: center;
   gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   color: var(--text-strong);
   font-size: var(--control-ui-text-md);
@@ -3625,21 +3630,23 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 }
 
 .sidebar-agent-card__name-content {
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: clip;
+  white-space: nowrap;
 }
 
-/* The agent name uses a shorter dissolve than sidebar content rows: it should
-   soften only the final clipped glyph, while short names stay fully opaque. */
-.sidebar-agent-card__name[data-overflow-fade] {
-  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 6px), transparent 100%);
-  mask-image: linear-gradient(to right, black 0, black calc(100% - 6px), transparent 100%);
+/* Fade only the clipped label; the switcher chevron remains crisp at the end
+   of the available name width. Short labels never receive this attribute. */
+.sidebar-agent-card__name-content[data-overflow-fade] {
+  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to right, black 0, black calc(100% - 20px), transparent 100%);
 }
 
-.sidebar-agent-card__name[data-overflow-fade]:dir(rtl) {
-  -webkit-mask-image: linear-gradient(to left, black 0, black calc(100% - 6px), transparent 100%);
-  mask-image: linear-gradient(to left, black 0, black calc(100% - 6px), transparent 100%);
+.sidebar-agent-card__name-content[data-overflow-fade]:dir(rtl) {
+  -webkit-mask-image: linear-gradient(to left, black 0, black calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to left, black 0, black calc(100% - 20px), transparent 100%);
 }
 
 .sidebar-agent-card__chevron {

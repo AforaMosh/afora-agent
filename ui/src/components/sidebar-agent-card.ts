@@ -79,8 +79,10 @@ class SidebarAgentCard extends OpenClawLightDomContentsElement {
                 >`}
           </span>
           <span class="sidebar-agent-card__text">
-            <span class="sidebar-agent-card__name" ${ref(createOverflowFadeRef())}>
-              <span class="sidebar-agent-card__name-content">${this.agentName}</span>
+            <span class="sidebar-agent-card__name">
+              <span class="sidebar-agent-card__name-content" ${ref(createOverflowFadeRef())}
+                >${this.agentName}</span
+              >
               <span class="sidebar-agent-card__chevron" aria-hidden="true"
                 >${icons.chevronsUpDown}</span
               >
