@@ -102,7 +102,7 @@ describe("AppSidebar new group dialog", () => {
     }
   });
 
-  it("names the group and the sessions that could not join it", async () => {
+  it("silently closes when the target sessions are gone", async () => {
     const restoreDialogPolyfill = installDialogPolyfill();
     const toastHost = document.createElement("openclaw-toast-host");
     document.body.append(toastHost);
@@ -148,15 +148,16 @@ describe("AppSidebar new group dialog", () => {
       await submitInputDialog("Projects");
       await waitForFast(() => expect(harness.patchMany).toHaveBeenCalledOnce());
 
-      // The group landed and is on screen; only its members are missing. The dialog
-      // closes like any success and one quiet line accounts for them.
+      // The group landed and is on screen; the missing members are a terminal local
+      // no-op, so the dialog closes without a notice or a replacement mutation.
       await waitForFast(() =>
         expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull(),
       );
-      expect(toastHost.querySelector(".app-toast__message")?.textContent).toBe(
-        "“Projects” created. Some sessions weren’t added — they no longer exist.",
-      );
+      expect(toastHost.querySelector(".app-toast")).toBeNull();
       expect(sidebar.querySelector("[data-sidebar-session-error]")).toBeNull();
+      expect(harness.create).not.toHaveBeenCalled();
+      expect(harness.patch).not.toHaveBeenCalled();
+      expect(harness.patchMany).toHaveBeenCalledOnce();
     } finally {
       toastHost.remove();
       restoreDialogPolyfill();

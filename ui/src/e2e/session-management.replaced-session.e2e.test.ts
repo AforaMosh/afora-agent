@@ -1,4 +1,4 @@
-// Control UI E2E: a rotated session identity is invisible, a vanished row is named once.
+// Control UI E2E: rotated and vanished session identities stay invisible.
 import type { BrowserContext, Page } from "playwright";
 import { expect, it } from "vitest";
 import type { MockGatewayControls } from "../test-helpers/control-ui-e2e.ts";
@@ -98,7 +98,7 @@ suite.define(() => {
   });
 
   for (const colorScheme of ["dark", "light"] as const) {
-    it(`names the group and the session that could not join it (${colorScheme})`, async () => {
+    it(`silently ignores a vanished session without recreating it (${colorScheme})`, async () => {
       const { context, gateway, page } = await startNewGroupMove(colorScheme);
 
       try {
@@ -111,16 +111,15 @@ suite.define(() => {
           message: "Session agent:main:move-me changed before patch. Retry.",
         });
 
-        // The group still landed, so this closes like a success and accounts for the
-        // member in one quiet line that names both objects.
-        const toast = page.locator(".app-toast__message");
-        await toast.waitFor({ state: "visible", timeout: 10_000 });
-        await expect
-          .poll(() => toast.textContent())
-          .toBe("“Client work” created. “Work chat” wasn’t added — it no longer exists.");
-        expect(await page.locator("openclaw-modal-dialog").count()).toBe(0);
+        // The group still landed, while the missing member is a terminal local
+        // no-op: no notice, no error artifact, and no second patch that could
+        // recreate the vanished session key.
+        await expect.poll(() => page.locator("openclaw-modal-dialog").count()).toBe(0);
+        expect(await page.locator(".app-toast").count()).toBe(0);
         expect(await page.locator("[data-sidebar-session-error]").count()).toBe(0);
-        await captureUiProof(page, `session-gone-toast-${colorScheme}.png`);
+        await expect.poll(async () => (await gateway.getRequests("sessions.patch")).length).toBe(1);
+        expect(await gateway.getRequests("sessions.create")).toHaveLength(0);
+        await captureUiProof(page, `session-gone-silent-${colorScheme}.png`);
       } finally {
         await context.close();
       }

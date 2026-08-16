@@ -212,7 +212,7 @@ describe("sessions page new group", () => {
     expect(page.error).toBeNull();
   });
 
-  it("names the group and the session that could not join it", async () => {
+  it("silently closes when the target session is gone", async () => {
     const { page, sessions, submitMessages } = await mountGroupsPage(async () => "completed");
     vi.mocked(sessions.patch).mockRejectedValue(
       new GatewayRequestError({
@@ -224,15 +224,11 @@ describe("sessions page new group", () => {
 
     await page.requestNewCategory(SESSION_KEY);
 
-    // The group landed and is on screen; only its member is missing, so the dialog
-    // closes and one quiet line names both objects.
+    // The group landed and is on screen; the missing member is a terminal local
+    // no-op, so the dialog closes without an error or notification.
     expect(submitMessages).toEqual([null]);
     expect(page.error).toBeNull();
-    expect(showToast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "“Client work” created. “Move me” wasn’t added — it no longer exists.",
-      }),
-    );
+    expect(showToast).not.toHaveBeenCalled();
   });
 
   it("skips the assignment when the catalog itself reports the write stale", async () => {

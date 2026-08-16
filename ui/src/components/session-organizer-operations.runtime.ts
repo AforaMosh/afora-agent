@@ -431,21 +431,8 @@ export async function createSessionGroup(
       sessions.length === 1
         ? await patchSession(host, sessions[0]!, { category: name }, scope)
         : await patchSessions(host, sessions, { category: name }, scope);
-    // The group itself landed and is on screen; only a member could not join it.
-    // One quiet line naming both, then nothing further to do.
-    if (moved === "session-gone" && host.sessionData.isSessionMutationScopeCurrent(scope)) {
-      showToast({
-        message:
-          sessions.length === 1
-            ? t("sessionsView.newGroupSessionGone", {
-                group: name,
-                session: sessions[0]!.label,
-              })
-            : t("sessionsView.newGroupSessionsGone", { group: name }),
-        durationMs: 12_000,
-      });
-      return "completed";
-    }
+    // `session-gone` is terminal here: the identity-aware patch already accounted
+    // for it, and retrying the key would recreate the deleted session.
     return moved;
   }
   if (!host.sessionData.isSessionMutationScopeCurrent(scope)) {

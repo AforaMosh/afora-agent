@@ -1122,15 +1122,9 @@ class SessionsPage extends OpenClawLightDomElement {
       { category: name, ...(target?.sessionId ? { expectedSessionId: target.sessionId } : {}) },
       scope,
     );
-    // The group is created and on screen; only the member could not join it.
+    // The identity-aware patch already accounted for a vanished member. Close the
+    // dialog as a terminal local no-op instead of recreating the session key.
     if (assigned === "session-gone") {
-      showToast({
-        message: t("sessionsView.newGroupSessionGone", {
-          group: name,
-          session: normalizeOptionalString(target?.label) ?? sessionKey,
-        }),
-        durationMs: 12_000,
-      });
       return null;
     }
     if (assigned === "failed") {

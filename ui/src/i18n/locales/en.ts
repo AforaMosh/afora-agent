@@ -934,8 +934,6 @@ export const en: TranslationMap = {
     newGroupCreate: "Create group",
     newGroupFailed: "Could not create the group.",
     newGroupStale: "Gateway connection replaced before the group was saved. Try again.",
-    newGroupSessionGone: "“{group}” created. “{session}” wasn’t added — it no longer exists.",
-    newGroupSessionsGone: "“{group}” created. Some sessions weren’t added — they no longer exist.",
     moveToGroup: "Move session to a group",
     moveToGroupMenu: "Move to group",
     moveToGroupMenuCount: "Move {count} to group",
