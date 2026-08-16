@@ -176,10 +176,12 @@ export function renderRecentSession(params: {
   session: SidebarRecentSession;
   display?: CatalogBackingSessionDisplay;
   listItem?: boolean;
+  /** Only native Coding rows retain their second line. */
+  showCodingSubtitle?: boolean;
   /** Project heading this row already sits under, if any. */
   project?: string;
 }) {
-  const { host, session, display, listItem = true } = params;
+  const { host, session, display, listItem = true, showCodingSubtitle = false } = params;
   const pinAccess = host.readSessionMutationAccess({
     method: "sessions.patch",
     params: { key: session.key, pinned: !session.pinned },
@@ -493,7 +495,7 @@ export function renderRecentSession(params: {
                     ><span class="sidebar-recent-session__name-content">${nameContent}</span></span
                   >`}
             </span>
-            ${session.isChild
+            ${session.isChild || !showCodingSubtitle
               ? nothing
               : renderSidebarSessionSubtitle(subtitleValue, params.project)}
           </span>
@@ -519,6 +521,7 @@ export function renderSessionTree(params: {
   host: SessionListHost;
   session: SidebarRecentSession;
   listItem?: boolean;
+  showCodingSubtitle?: boolean;
   project?: string;
 }): TemplateResult {
   const { host, session, listItem = true } = params;
@@ -538,6 +541,7 @@ export function renderSessionTree(params: {
       session,
       listItem: false,
       project: params.project,
+      showCodingSubtitle: params.showCodingSubtitle,
     })}
     ${expanded
       ? html`<div class="sidebar-session-tree__children">
@@ -548,7 +552,12 @@ export function renderSessionTree(params: {
                 aria-label=${ifDefined(listItem ? t("sessionsView.childSessions") : undefined)}
               >
                 ${visibleChildren.map((child) =>
-                  renderSessionTree({ host, session: child, listItem }),
+                  renderSessionTree({
+                    host,
+                    session: child,
+                    listItem,
+                    showCodingSubtitle: params.showCodingSubtitle,
+                  }),
                 )}
               </div>`
             : nothing}

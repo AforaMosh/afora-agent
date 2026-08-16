@@ -45,7 +45,6 @@ import {
   renderCatalogSessionInformationCard,
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
-import { renderSidebarSessionWorkContext } from "./session-row-subtitle.ts";
 import { isSessionPresenceIdentityWatching } from "./viewer-facepile.ts";
 import { renderWorkspaceIcon, type WorkspaceIconSource } from "./workspace-icon.ts";
 
@@ -550,7 +549,6 @@ function renderCatalogSessionRow(
                 ><span class="sidebar-recent-session__name-content">${label}</span></span
               >
             </span>
-            ${renderSidebarSessionWorkContext(work, project)}
           </span>
         </a>
         ${renderSessionRowEndcap({

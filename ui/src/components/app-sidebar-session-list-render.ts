@@ -155,7 +155,9 @@ function renderWorkProjectGroup(host: SidebarSessionListHost, group: WorkProject
           role="list"
           aria-label=${group.label}
         >
-          ${group.rows.map((session) => renderSessionTree({ host, session, project: group.label }))}
+          ${group.rows.map((session) =>
+            renderSessionTree({ host, session, project: group.label, showCodingSubtitle: true }),
+          )}
         </div>`}
   </div>`;
 }
@@ -342,7 +344,7 @@ function renderSessionSection(params: {
                       ${workProjects.ungrouped.length > 0
                         ? html`<div class="sidebar-session-projectless" role="list">
                             ${workProjects.ungrouped.map((session) =>
-                              renderSessionTree({ host, session }),
+                              renderSessionTree({ host, session, showCodingSubtitle: true }),
                             )}
                           </div>`
                         : nothing}`
