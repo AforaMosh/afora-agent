@@ -1003,6 +1003,7 @@ export async function loadCompactHooksHarness(): Promise<{
     resolveAgentIdFromSessionKey: vi.fn(
       (sessionKey: string) => sessionKey.match(/^agent:([^:]+)/)?.[1] ?? "main",
     ),
+    resolveAgentEffectiveModelPrimary: vi.fn(() => undefined),
     resolveRunModelFallbacksOverride: vi.fn(() => undefined),
     resolveSessionAgentId: resolveSessionAgentIdMock,
     resolveSessionAgentIds: resolveSessionAgentIdsMock,
