@@ -2458,12 +2458,6 @@ button.chat-reply-preview--message:disabled {
   }
 }
 
-.agent-chat__input--offline,
-.agent-chat__input--offline:focus-within {
-  border-color: color-mix(in srgb, var(--warn) 38%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 10%, transparent);
-}
-
 .agent-chat__offline-hint {
   padding: 5px var(--chat-box-inset);
   border-bottom: 1px solid color-mix(in srgb, var(--warn) 22%, transparent);
@@ -2481,6 +2475,14 @@ button.chat-reply-preview--message:disabled {
 .agent-chat__input--incognito:focus-within {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--muted) 58%, var(--border));
+}
+
+/* Offline is the more urgent state, so its warning color wins when a session
+   is also incognito while the dashed retention boundary remains. */
+.agent-chat__input--offline,
+.agent-chat__input--offline:focus-within {
+  border-color: color-mix(in srgb, var(--warn) 38%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 10%, transparent);
 }
 
 .agent-chat__incognito-note {

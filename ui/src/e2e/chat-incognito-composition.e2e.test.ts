@@ -84,7 +84,7 @@ suite.define(() => {
         // Still discoverable: the sidebar lists the thread and qualifies it.
         const sidebarRow = page.locator(`[data-session-key="${INCOGNITO_KEY}"]`).first();
         await sidebarRow.waitFor();
-        expect(await sidebarRow.locator(".session-row-badge--incognito").count()).toBe(1);
+        expect(await sidebarRow.locator(".session-row-state-avatar--incognito").count()).toBe(1);
         await capture("sidebar-row", `[data-session-key="${INCOGNITO_KEY}"]`);
 
         // The qualifier belongs to the session name, not to the project or the

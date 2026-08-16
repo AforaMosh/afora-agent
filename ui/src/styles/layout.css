@@ -3600,7 +3600,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   margin-left: 0;
 }
 
-.sidebar-shell :is(.session-owner-chip, .viewer-avatar__fallback) {
+:is(.sidebar-shell, .sidebar-identity-menu) :is(.session-owner-chip, .viewer-avatar__fallback) {
   border-color: color-mix(in srgb, var(--border-strong) 64%, transparent);
   background: color-mix(in srgb, var(--muted) 24%, var(--bg-elevated));
   color: color-mix(in srgb, var(--text) 72%, var(--muted));
