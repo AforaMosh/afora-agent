@@ -112,9 +112,15 @@ suite.define(() => {
     );
     expect(piIconResponse.ok()).toBe(true);
 
-    await page.getByText("OpenCode release review", { exact: true }).click();
+    await page
+      .locator('[data-session-section="catalog:opencode"] .sidebar-recent-session__link')
+      .filter({ hasText: "OpenCode release review" })
+      .click();
     await expect.poll(() => page.getByText("OpenCode transcript loaded").count()).toBe(1);
-    await page.getByText("Pi architecture notes", { exact: true }).click();
+    await page
+      .locator('[data-session-section="catalog:pi"] .sidebar-recent-session__link')
+      .filter({ hasText: "Pi architecture notes" })
+      .click();
     const piPane = page
       .locator("openclaw-chat-pane.chat-pane-cache__pane--visible")
       .filter({ hasText: "Pi transcript loaded" });

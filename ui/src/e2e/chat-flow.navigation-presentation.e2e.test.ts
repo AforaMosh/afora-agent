@@ -867,8 +867,8 @@ suite.define(() => {
         .toContainEqual(expect.objectContaining({ includeDerivedTitles: true }));
       const label = row.locator(".sidebar-recent-session__name");
       const link = row.locator("a.sidebar-recent-session__link");
-      const tree = row.locator("..");
-      const list = tree.locator("..");
+      const tree = row.locator("xpath=ancestor::*[@role='listitem'][1]");
+      const list = row.locator("xpath=ancestor::*[@role='list'][1]");
       await expect.poll(() => label.textContent()).toBe(readableTitle);
       expect(await list.getAttribute("role")).toBe("list");
       expect(await tree.getAttribute("role")).toBe("listitem");
@@ -877,7 +877,9 @@ suite.define(() => {
       expect(await link.getAttribute("aria-label")).toContain(readableTitle);
       expect(await link.getAttribute("title")).toBeNull();
       expect(await link.getAttribute("aria-current")).toBe("page");
-      expect(await link.getAttribute("aria-describedby")).toBeNull();
+      const descriptionId = await link.getAttribute("aria-describedby");
+      expect(descriptionId).toBeTruthy();
+      expect(await page.locator(`#${descriptionId}`).count()).toBe(1);
       expect(await link.ariaSnapshot()).toContain(`link "${readableTitle}`);
       await captureSessionAccessibilityProof(page, "after-derived-title");
 

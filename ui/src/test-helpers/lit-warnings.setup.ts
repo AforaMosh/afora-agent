@@ -51,6 +51,14 @@ if (typeof Element !== "undefined" && !("moveBefore" in Element.prototype)) {
   });
 }
 
+// JSDOM reports empty element geometry but omits the matching Range API.
+if (typeof Range !== "undefined" && !("getBoundingClientRect" in Range.prototype)) {
+  Object.defineProperty(Range.prototype, "getBoundingClientRect", {
+    configurable: true,
+    value: () => new DOMRect(),
+  });
+}
+
 // JSDOM exposes partial ElementInternals. Web Awesome form controls require
 // the form-associated methods even when tests do not mount them in a form.
 if (typeof HTMLElement !== "undefined") {

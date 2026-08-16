@@ -42,6 +42,10 @@ describe("session row reveal", () => {
     vi.useFakeTimers();
     // jsdom lays nothing out, so the range that measures the rendered title
     // span answers from the width the case asked for.
+    Object.defineProperty(Range.prototype, "getBoundingClientRect", {
+      configurable: true,
+      value: () => rect(0, 0),
+    });
     vi.spyOn(Range.prototype, "getBoundingClientRect").mockImplementation(function (this: Range) {
       const label = this.startContainer as HTMLElement;
       return rect(label.getBoundingClientRect().left, renderedTextWidths.get(label) ?? 0);

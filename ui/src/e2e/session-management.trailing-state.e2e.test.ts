@@ -278,11 +278,11 @@ suite.define(() => {
       const row = page.locator('[data-session-key="agent:main:combined-state"]');
       await row.waitFor({ state: "visible", timeout: 10_000 });
       const state = row.locator(".session-row-state");
-      // Passive metadata is the state's sibling in the endcap, never its child:
-      // a pull request outlives whichever operational state the row is showing.
-      await expect
-        .poll(() => row.locator(".session-row-endcap [data-session-pr-state='open']").isVisible())
-        .toBe(true);
+      // The active run owns the compact endcap; passive pull-request metadata
+      // returns after the run finishes instead of competing with the spinner.
+      expect(await row.locator(".session-row-endcap [data-session-pr-state='open']").count()).toBe(
+        0,
+      );
       await expect.poll(() => state.locator(".session-run-spinner").isVisible()).toBe(true);
       // This session is running and unread at once. The live run outranks the
       // unread, so no dot may accompany the spinner.

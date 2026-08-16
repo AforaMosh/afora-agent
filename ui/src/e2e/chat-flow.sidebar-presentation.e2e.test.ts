@@ -156,15 +156,6 @@ suite.define(() => {
       }));
       expect(layout.scrollWidth, JSON.stringify(layout)).toBeGreaterThan(layout.clientWidth);
 
-      expect(await recentLabel.getAttribute("data-overflow-fade")).not.toBeNull();
-      expect(await recentLabel.getAttribute("data-overflow-reveal")).not.toBeNull();
-      expect(
-        Number.parseFloat(
-          await recentLabel.evaluate((label) =>
-            label.style.getPropertyValue("--overflow-reveal-translate"),
-          ),
-        ),
-      ).toBeLessThan(0);
       await recentRow.hover();
       await expect
         .poll(

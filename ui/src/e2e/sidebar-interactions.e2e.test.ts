@@ -128,7 +128,7 @@ suite.define(() => {
       expect(menuGap).toBeLessThanOrEqual(7);
       await moreMenu.getByRole("menuitem", { name: "Customize sidebar" }).click();
       const customizer = sidebar.locator(".sidebar-customizer");
-      const customizerButtons = customizer.getByRole("button");
+      const customizerButtons = customizer.locator("button:not([disabled])");
       await expect
         .poll(() =>
           customizerButtons.first().evaluate((element) => element === document.activeElement),
@@ -248,7 +248,7 @@ suite.define(() => {
         .toBe(true);
       await page.keyboard.press("Enter");
       const customizer = sidebar.locator(".sidebar-customizer");
-      const buttons = customizer.getByRole("button");
+      const buttons = customizer.locator("button:not([disabled])");
       await expect
         .poll(() => buttons.first().evaluate((element) => element === document.activeElement))
         .toBe(true);

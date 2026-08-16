@@ -235,7 +235,10 @@ describeStandaloneMockServer("standalone Control UI mock server", () => {
     const page = await browser.newPage();
     try {
       await page.goto(new URL("/chat", fixtureServer.url).toString(), { waitUntil: "networkidle" });
-      await page.getByText("Release checklist sweep", { exact: true }).click();
+      await page
+        .locator(".sidebar-recent-session__link")
+        .filter({ hasText: "Release checklist sweep" })
+        .click();
 
       const transcript = [
         "Please sweep the release checklist for anything we missed.",

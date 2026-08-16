@@ -118,11 +118,11 @@ suite.define(() => {
         .locator("wa-dropdown.sidebar-more-menu")
         .getByRole("menuitem", { name: "Customize sidebar" })
         .click();
-      const customize = sidebar.locator(
-        "wa-dropdown.sidebar-customize-menu:not(.sidebar-more-menu)",
-      );
-      await customize.getByText("WorkBoard", { exact: true }).waitFor();
-      await customize.getByRole("menuitemcheckbox", { name: /Operations/u }).click();
+      const customize = sidebar.locator(".sidebar-customizer");
+      const operations = customize.locator('[data-sidebar-customizer-id="workboard:ops"]');
+      await operations.waitFor();
+      await operations.getByRole("button", { name: "Show Operations in sidebar" }).click();
+      await customize.locator(".sidebar-customizer__done").click();
       const pinnedBoard = sidebar.locator('[data-sidebar-entry="workboard:ops"] a');
       await pinnedBoard.waitFor();
       expect(await pinnedBoard.getAttribute("href")).toBe("/workboard/ops");
@@ -281,11 +281,9 @@ suite.define(() => {
       await moreMenu.waitFor();
       expect(await moreMenu.getByText("Workboard", { exact: true }).count()).toBe(0);
       await moreMenu.getByRole("menuitem", { name: "Customize sidebar" }).click();
-      const customize = sidebar.locator(
-        "wa-dropdown.sidebar-customize-menu:not(.sidebar-more-menu)",
-      );
+      const customize = sidebar.locator(".sidebar-customizer");
       expect(await customize.getByText("WorkBoard", { exact: true }).count()).toBe(0);
-      expect(await customize.locator('[value^="workboard:"]').count()).toBe(0);
+      expect(await customize.locator('[data-sidebar-customizer-id^="workboard:"]').count()).toBe(0);
     });
   });
 });

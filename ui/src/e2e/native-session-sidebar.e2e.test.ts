@@ -98,8 +98,14 @@ suite.define(() => {
       const sessionGroups = page.locator(".sidebar-recent-sessions");
       const section = sessionGroups.locator(':scope > [data-session-section="catalog:codex"]');
       await section.waitFor({ state: "visible" });
-      await section.getByText("Shared gateway session", { exact: true }).waitFor();
-      await section.getByText("Remote-only session", { exact: true }).waitFor();
+      const sharedSession = section
+        .locator(".sidebar-recent-session__link")
+        .filter({ hasText: "Shared gateway session" });
+      const remoteSession = section
+        .locator(".sidebar-recent-session__link")
+        .filter({ hasText: "Remote-only session" });
+      await sharedSession.waitFor();
+      await remoteSession.waitFor();
       if (captureUiProofEnabled) {
         await mkdir(uiProofArtifactDir, { recursive: true });
         await sessionGroups.screenshot({
@@ -109,7 +115,7 @@ suite.define(() => {
       }
 
       expect(await sessionGroups.locator(':scope > [data-session-section="work"]').count()).toBe(0);
-      expect(await section.getByText("Shared gateway session", { exact: true }).count()).toBe(1);
+      expect(await sharedSession.count()).toBe(1);
       expect(await section.locator('[data-session-catalog-host="node:remote"]').count()).toBe(1);
       expect(await section.locator('[data-session-catalog-host="node:empty"]').count()).toBe(0);
     } finally {

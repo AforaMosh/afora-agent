@@ -548,7 +548,9 @@ suite.define(() => {
       await expect.poll(() => reasoning.getAttribute("aria-checked")).toBe("false");
 
       const sidebar = page.locator("openclaw-app-sidebar");
-      await sidebar.locator(".sidebar-nav__more").click();
+      const more = sidebar.locator(".sidebar-nav__more");
+      await more.focus();
+      await more.press("Enter");
       await sidebar
         .locator("wa-dropdown.sidebar-more-menu")
         .getByRole("menuitem", { name: "Customize sidebar" })
@@ -574,7 +576,8 @@ suite.define(() => {
         )
         .toBe("false");
 
-      await sidebar.locator(".sidebar-nav__more").click();
+      await more.focus();
+      await more.press("Enter");
       await sidebar
         .locator("wa-dropdown.sidebar-more-menu")
         .getByRole("menuitem", { name: "Customize sidebar" })

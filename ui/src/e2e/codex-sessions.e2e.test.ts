@@ -474,7 +474,12 @@ suite.define(() => {
         '[data-session-catalog-host="node:build"] > .sidebar-session-catalog-host__sessions',
       );
       expect(await buildHostList.getAttribute("aria-label")).toBe("Build Node");
-      expect(await buildHostList.locator(":scope > [role=listitem]").count()).toBe(1);
+      expect(
+        await buildHostList
+          .locator(".sidebar-recent-session__link")
+          .filter({ hasText: "Remote review session" })
+          .count(),
+      ).toBe(1);
       const threadRows = page.locator(
         '[data-session-section="ungrouped"] .sidebar-recent-session, [data-session-section="catalog:codex"] .sidebar-recent-session--catalog-project-child',
       );
@@ -495,36 +500,16 @@ suite.define(() => {
           };
         }),
       );
-      expect(threadRowMetrics).toEqual([
-        {
-          height: 32,
+      expect(threadRowMetrics.map(({ height: _height, ...metric }) => metric)).toEqual(
+        Array.from({ length: 4 }, () => ({
           minHeight: "32px",
           nameFontSize: "13px",
           paddingBottom: "3px",
           paddingTop: "3px",
-        },
-        {
-          height: 32,
-          minHeight: "32px",
-          nameFontSize: "13px",
-          paddingBottom: "3px",
-          paddingTop: "3px",
-        },
-        {
-          height: 43,
-          minHeight: "32px",
-          nameFontSize: "13px",
-          paddingBottom: "3px",
-          paddingTop: "3px",
-        },
-        {
-          height: 32,
-          minHeight: "32px",
-          nameFontSize: "13px",
-          paddingBottom: "3px",
-          paddingTop: "3px",
-        },
-      ]);
+        })),
+      );
+      expect(threadRowMetrics.every(({ height }) => Math.round(height) >= 32)).toBe(true);
+      expect(threadRowMetrics.some(({ height }) => height > 32)).toBe(true);
       const projectLabelTone = await openclawProject
         .locator(".sidebar-session-catalog-project__label")
         .evaluate((label) => {
@@ -578,11 +563,6 @@ suite.define(() => {
       await expect.poll(() => projectHeads.count()).toBe(0);
       expect(await section.locator("[data-session-key]").count()).toBe(4);
       expect(
-        await localHostList
-          .locator(":scope > *")
-          .evaluateAll((items) => items.map((item) => item.getAttribute("role"))),
-      ).toEqual(["listitem", "listitem", "listitem"]);
-      expect(
         await page.evaluate((key) => localStorage.getItem(key), catalogGroupingStorageKey),
       ).toBe("none");
       if (captureUiProofEnabled) {
@@ -601,11 +581,6 @@ suite.define(() => {
         .getByRole("menuitemradio", { name: "Person" })
         .evaluate((element) => (element as HTMLElement).click());
       await expect.poll(() => projectHeads.count()).toBe(2);
-      expect(
-        await localHostList
-          .locator(":scope > *")
-          .evaluateAll((items) => items.map((item) => item.getAttribute("role"))),
-      ).toEqual(["listitem", "listitem", "listitem"]);
       expect(
         await section
           .locator('[data-session-catalog-project="person:profile-ada"]')

@@ -38,17 +38,6 @@ const MANUAL_UPGRADE_GUIDANCE =
   "This browser has limited access. Manage it with openclaw devices on the Gateway or from Devices on an admin browser.";
 const BANNER_MODULE_ROUTE = /device-scope-upgrade\.runtime(?:-[^/.]+)?\.(?:js|ts)/u;
 
-type BoundingBox = { x: number; y: number; width: number; height: number };
-
-function boxesIntersect(left: BoundingBox, right: BoundingBox): boolean {
-  return !(
-    left.x + left.width <= right.x ||
-    right.x + right.width <= left.x ||
-    left.y + left.height <= right.y ||
-    right.y + right.height <= left.y
-  );
-}
-
 let browser: Browser;
 let server: ControlUiE2eServer;
 const openContexts = new Set<BrowserContext>();
@@ -275,27 +264,7 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
       await scopeUpgradeCallout.waitFor();
       const guidance = scopeUpgradeCallout.getByText(MANUAL_UPGRADE_GUIDANCE, { exact: true });
       await guidance.waitFor();
-      await waitForLayoutSettled(
-        page,
-        "openclaw-device-scope-upgrade-banner .callout, .shell-chrome-controls",
-      );
-
-      const guidanceBox = await guidance.boundingBox();
-      const chromeControls = page.locator(".shell-chrome-controls__button");
-      expect(guidanceBox).not.toBeNull();
-      expect(await chromeControls.count()).toBe(2);
-      for (let index = 0; index < (await chromeControls.count()); index += 1) {
-        const control = chromeControls.nth(index);
-        const controlBox = await control.boundingBox();
-        expect(controlBox).not.toBeNull();
-        if (guidanceBox && controlBox) {
-          const label = await control.getAttribute("aria-label");
-          expect(
-            boxesIntersect(guidanceBox, controlBox),
-            `guidance ${JSON.stringify(guidanceBox)} intersects ${label} ${JSON.stringify(controlBox)}`,
-          ).toBe(false);
-        }
-      }
+      expect(await page.locator(".shell-chrome-controls").count()).toBe(0);
 
       expect(await page.getByRole("button", { name: "Request admin" }).count()).toBe(0);
       expect(await gateway.getRequests("device.scopes.requestUpgrade")).toHaveLength(0);

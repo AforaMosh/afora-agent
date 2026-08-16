@@ -138,7 +138,7 @@ suite.define(() => {
       await page.getByText("Disk monitor is ready.", { exact: true }).waitFor();
       await sidebarRow.getByText("Disk monitor", { exact: true }).waitFor();
       expect(await page.locator(".chat-cloud-disk-space-notice").count()).toBe(0);
-      await expectAccessibleBadge("ok", "Cloud worker: active");
+      expect(await cloudBadge.count()).toBe(0);
       await capture("01-healthy.png");
 
       await refresh({
@@ -181,7 +181,7 @@ suite.define(() => {
 
       await refresh({ ...healthy, observedAtMs: observedAtMs + 3_000 });
       await expect.poll(() => page.locator(".chat-cloud-disk-space-notice").count()).toBe(0);
-      await expectAccessibleBadge("ok", "Cloud worker: active");
+      await expect.poll(() => cloudBadge.count()).toBe(0);
       await capture("04-recovered.png");
     } finally {
       await suite.closeBrowserContext(context);

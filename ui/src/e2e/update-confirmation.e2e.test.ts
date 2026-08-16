@@ -85,12 +85,13 @@ suite.define(() => {
           colorScheme: variant.colorScheme,
           locale: "en-US",
           serviceWorkers: "block",
-          viewport: variant.viewport,
+          viewport: { height: 720, width: 1280 },
         },
         async ({ page }) => {
           const { gateway, updateButton } = await openUpdateCard(page, suite.server.baseUrl);
           await updateButton.click();
           await page.getByRole("dialog").waitFor();
+          await page.setViewportSize(variant.viewport);
           expect(
             await page.getByRole("button", { name: "Update and restart", exact: true }).isVisible(),
           ).toBe(true);

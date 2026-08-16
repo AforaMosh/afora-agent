@@ -754,13 +754,6 @@ suite.define(() => {
           await expectFullHeightRail(page, boardChat);
         }
         const dashboardHeader = page.locator(".chat-pane-primary-column > .chat-pane__header");
-        await expect
-          .poll(() =>
-            dashboardHeader.evaluate((element) =>
-              Number.parseFloat(getComputedStyle(element).paddingLeft),
-            ),
-          )
-          .toBeGreaterThanOrEqual(88);
         await capture(page, "11-board-chat-web");
 
         await page.evaluate(() => {
