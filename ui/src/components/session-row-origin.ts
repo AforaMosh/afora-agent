@@ -5,20 +5,26 @@ import { icons } from "./icons.ts";
 export function renderSessionLeadingIdentity(params: {
   owner: TemplateResult | typeof nothing;
   incognito: boolean;
+  draft: boolean;
 }): TemplateResult | typeof nothing {
   const hasOwner = params.owner !== nothing;
-  if (!hasOwner && !params.incognito) {
+  if (!hasOwner && !params.incognito && !params.draft) {
     return nothing;
   }
+  const fallbackKind = params.incognito ? "incognito" : "draft";
   return html`<span class="session-row-leading-identity">
     ${hasOwner
       ? params.owner
       : html`<span
-          class="session-row-state-avatar session-row-state-avatar--incognito"
+          class="session-row-state-avatar session-row-state-avatar--${fallbackKind}"
           role="img"
-          aria-label=${t("sessionsView.incognito")}
-          title=${t("sessionsView.incognito")}
-          >${icons.hatGlasses}</span
+          aria-label=${t(
+            fallbackKind === "incognito" ? "sessionsView.incognito" : "chat.sessionSharing.draft",
+          )}
+          title=${t(
+            fallbackKind === "incognito" ? "sessionsView.incognito" : "chat.sessionSharing.draft",
+          )}
+          >${fallbackKind === "incognito" ? icons.hatGlasses : icons.messageCircleDashed}</span
         >`}
     ${hasOwner && params.incognito
       ? html`<span
@@ -29,18 +35,14 @@ export function renderSessionLeadingIdentity(params: {
           >${icons.hatGlasses}</span
         >`
       : nothing}
-  </span>`;
-}
-
-export function renderSessionRowMarkers(params: {
-  draft: boolean;
-}): TemplateResult | typeof nothing {
-  if (!params.draft) {
-    return nothing;
-  }
-  return html`<span class="session-row-markers">
-    <span class="session-row-marker session-row-marker--draft"
-      >${t("chat.sessionSharing.draft")}</span
-    >
+    ${(hasOwner || params.incognito) && params.draft
+      ? html`<span
+          class="session-row-state-badge session-row-state-badge--draft"
+          role="img"
+          aria-label=${t("chat.sessionSharing.draft")}
+          title=${t("chat.sessionSharing.draft")}
+          >${icons.messageCircleDashed}</span
+        >`
+      : nothing}
   </span>`;
 }

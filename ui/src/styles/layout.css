@@ -2723,32 +2723,10 @@ body.update-dialog-open .sidebar-update-card__status {
   background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-/* Session identity markers share the title baseline. */
 .sidebar-recent-session__title {
   display: flex;
   align-items: center;
-  gap: 6px;
   min-width: 0;
-}
-
-.session-row-markers {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-
-.session-row-marker--draft {
-  color: var(--muted);
-  font-size: var(--control-ui-text-xs);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--sidebar-type-session-line-height);
-  white-space: nowrap;
-}
-
-.sidebar-recent-session__title:has(.session-row-marker--draft),
-.session-row-markers:has(.session-row-marker--draft) {
-  align-items: baseline;
 }
 
 .session-row-leading-identity {
@@ -2769,6 +2747,10 @@ body.update-dialog-open .sidebar-update-card__status {
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   color: var(--text);
+}
+
+.session-row-state-badge--incognito:has(+ .session-row-state-badge--draft) {
+  right: 4px;
 }
 
 .session-row-state-avatar {

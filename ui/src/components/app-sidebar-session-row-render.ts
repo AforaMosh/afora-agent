@@ -45,7 +45,7 @@ import {
   renderSessionInformationCard,
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
-import { renderSessionLeadingIdentity, renderSessionRowMarkers } from "./session-row-origin.ts";
+import { renderSessionLeadingIdentity } from "./session-row-origin.ts";
 import {
   renderSidebarSessionSubtitle,
   resolveSidebarSessionSubtitle,
@@ -218,6 +218,7 @@ export function renderRecentSession(params: {
   const leadingIdentity = renderSessionLeadingIdentity({
     owner: ownerIndicator,
     incognito: session.incognito === true,
+    draft: session.visibility === "draft",
   });
   const soloPinnedIndicator =
     session.pinned && !host.sessionOwnershipVisible
@@ -230,11 +231,6 @@ export function renderRecentSession(params: {
   const meta = display?.meta ?? formatSidebarTimestamp(session.updatedAt);
   const rowMeta = session.pinned ? "" : meta;
   const stateId = primaryState.kind === "none" ? undefined : sidebarSessionStateId(session.key);
-  const titleMarkers = session.isChild
-    ? nothing
-    : renderSessionRowMarkers({
-        draft: session.visibility === "draft",
-      });
   const openMenuFromEvent = session.isChild
     ? undefined
     : (event: MouseEvent | KeyboardEvent) =>
@@ -488,7 +484,6 @@ export function renderRecentSession(params: {
               >`}
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
-              ${session.isChild ? nothing : titleMarkers}
               ${session.pinned
                 ? html`<span class="sidebar-recent-session__name hover-marquee"
                     >${nameContent}</span

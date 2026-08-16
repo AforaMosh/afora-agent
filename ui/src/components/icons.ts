@@ -10,6 +10,14 @@ export const icons = {
   messageSquare: strokeIcon(svg` <path
     d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
   />`),
+  messageCircleDashed: strokeIcon(svg` <path d="M10.1 2.182a10 10 0 0 1 3.8 0" />
+    <path d="M13.9 21.818a10 10 0 0 1-3.8 0" />
+    <path d="M17.609 3.72a10 10 0 0 1 2.69 2.7" />
+    <path d="M2.182 13.9a10 10 0 0 1 0-3.8" />
+    <path d="M20.28 17.61a10 10 0 0 1-2.7 2.69" />
+    <path d="M21.818 10.1a10 10 0 0 1 0 3.8" />
+    <path d="M3.721 6.391a10 10 0 0 1 2.7-2.69" />
+    <path d="m6.163 21.117-2.906.85a1 1 0 0 1-1.236-1.169l.965-2.98" />`),
   botMessageSquare: strokeIcon(svg` <path d="M12 6V2H8" />
     <path d="m8 18-4 4V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2Z" />
     <path d="M2 12h2" />
