@@ -453,9 +453,10 @@ suite.define(() => {
       const openclawProject = section.locator(
         '[data-session-catalog-project="/Users/dev/openclaw"]',
       );
-      const openclawProjectItem = openclawProject.locator("..");
-      const openclawProjectList = openclawProjectItem.locator(":scope > [role=list]");
-      expect(await openclawProjectItem.getAttribute("role")).toBe("listitem");
+      // The project group marker moved onto the listitem itself, so the element
+      // matched here is the list entry rather than its heading button.
+      const openclawProjectList = openclawProject.locator(":scope > [role=list]");
+      expect(await openclawProject.getAttribute("role")).toBe("listitem");
       expect(await openclawProjectList.getAttribute("aria-label")).toBe("Local Codex: openclaw");
       expect(
         await openclawProject.locator(".sidebar-session-catalog-project__label").textContent(),
@@ -906,8 +907,10 @@ suite.define(() => {
 
       const section = page.locator('[data-session-section="catalog:codex"]');
       await section.locator('[data-section-status="error"]').waitFor({ state: "visible" });
+      // The status dot owns the failure as its accessible name; the heading
+      // deliberately stays the plain catalog label so it is announced once.
       await expect
-        .poll(() => section.locator(".sidebar-session-group-toggle").getAttribute("aria-label"))
+        .poll(() => section.locator('[data-section-status="error"]').getAttribute("aria-label"))
         .toContain("Second catalog page unavailable");
       await expect.poll(() => loadMore.getAttribute("aria-busy")).toBe("false");
       expect(await loadMore.isEnabled()).toBe(true);

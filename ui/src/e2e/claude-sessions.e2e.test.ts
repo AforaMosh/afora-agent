@@ -382,7 +382,7 @@ suite.define(() => {
             gripOpacity: "0.55",
             hoverCapable: true,
             hovered: true,
-            providerOpacity: "0",
+            providerOpacity: "1",
           });
 
         await toggle.click();
@@ -443,7 +443,7 @@ suite.define(() => {
             focusWithin: true,
             gripOpacity: "0.55",
             hovered: false,
-            providerOpacity: "0",
+            providerOpacity: "1",
           });
       },
     );
