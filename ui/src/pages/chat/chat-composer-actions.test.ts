@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { t } from "../../i18n/index.ts";
 import {
   findComposerButton as button,
-  findPrimaryButton as primaryButton,
   renderComposerFixture as renderComposer,
   resetComposerFixture,
 } from "./chat-composer.test-support.ts";
@@ -36,7 +35,7 @@ describe("renderChatComposer controls", () => {
     {
       name: "empty idle",
       overrides: {},
-      label: "Write a message to send.",
+      label: t("chat.runControls.sendMessage"),
       disabled: true,
       stop: false,
     },
@@ -57,7 +56,7 @@ describe("renderChatComposer controls", () => {
       },
       label: t("chat.runControls.queueMessage"),
       disabled: false,
-      stop: false,
+      stop: true,
     },
     {
       name: "steered follow-up",
@@ -69,7 +68,7 @@ describe("renderChatComposer controls", () => {
       },
       label: t("chat.followUpModeSteer"),
       disabled: false,
-      stop: false,
+      stop: true,
     },
     {
       name: "draft idle",
@@ -79,16 +78,14 @@ describe("renderChatComposer controls", () => {
       stop: false,
     },
   ])(
-    "renders one primary action with a separate mic for $name",
+    "renders the available turn actions with a separate mic for $name",
     ({ overrides, label, disabled, stop }) => {
       const view = renderComposer({ ...overrides, onToggleRealtimeTalk: vi.fn() });
-      const primary = primaryButton(view.container);
+      const action = button(view.container, label);
 
-      expect(primary.getAttribute("aria-label")).toBe(label);
-      expect(primary.disabled).toBe(disabled);
-      expect(primary.classList.contains("chat-send-btn--stop")).toBe(stop);
+      expect(action.disabled).toBe(disabled);
       expect(view.container.querySelectorAll(".chat-send-btn--stop")).toHaveLength(stop ? 1 : 0);
-      expect(button(view.container, t("chat.composer.startVoiceInput"))).not.toBe(primary);
+      expect(button(view.container, t("chat.composer.startVoiceInput"))).not.toBe(action);
     },
   );
 
@@ -338,7 +335,7 @@ describe("renderChatComposer controls", () => {
       onAbort: vi.fn(),
       sendShortcut: "enter",
     });
-    const availablePrimary = primaryButton(available.container);
+    const availablePrimary = button(available.container, t("chat.runControls.queueMessage"));
     const availableTooltip = availablePrimary.closest("openclaw-tooltip") as
       | (HTMLElement & { content?: string })
       | null;
@@ -354,6 +351,7 @@ describe("renderChatComposer controls", () => {
           onAbort: vi.fn(),
           sendShortcut: "modifier-enter" as const,
         },
+        label: t("chat.runControls.queueMessage"),
         tooltip: t("chat.runControls.queue"),
       },
       {
@@ -362,6 +360,7 @@ describe("renderChatComposer controls", () => {
           followUpMode: "queue" as const,
           sendShortcut: "enter" as const,
         },
+        label: t("chat.runControls.sendMessage"),
         tooltip: t("chat.runControls.send"),
       },
       {
@@ -372,12 +371,13 @@ describe("renderChatComposer controls", () => {
           onAbort: vi.fn(),
           sendShortcut: "enter" as const,
         },
+        label: t("chat.followUpModeSteer"),
         tooltip: t("chat.queue.steer"),
       },
     ];
     for (const testCase of unavailable) {
       const view = renderComposer(testCase.overrides);
-      const tooltip = primaryButton(view.container).closest("openclaw-tooltip") as
+      const tooltip = button(view.container, testCase.label).closest("openclaw-tooltip") as
         | (HTMLElement & { content?: string })
         | null;
       expect(tooltip?.content).toBe(testCase.tooltip);

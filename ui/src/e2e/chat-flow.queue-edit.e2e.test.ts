@@ -12,11 +12,10 @@ const suite = createChatFlowE2eSuite();
 
 const QUEUED = ["review the migration", "then update the docs", "finally run the smoke"] as const;
 
-/** Vertical centre of each control on the composer's input row, in page pixels. */
-const COMPOSER_ROW_CONTROLS = [
+/** Vertical centre of each control on the composer's footer, in page pixels. */
+const COMPOSER_FOOTER_CONTROLS = [
   ".agent-chat__input-btn--attach",
   ".agent-chat__composer-edit",
-  ".agent-chat__composer-combobox textarea",
   ".agent-chat__composer-actions",
 ] as const;
 
@@ -58,20 +57,29 @@ suite.define(() => {
         await page.locator(".chat-queue__item").nth(1).locator(".chat-queue__badge").textContent(),
       ).toBe("Editing");
 
-      // The marker is a new child of a bottom-aligned row, so prove the row still
-      // resolves to one axis instead of trusting that it looks right.
-      const centres = await page.evaluate(
+      const layout = await page.evaluate(
         (selectors) => {
-          const row = document.querySelector(".agent-chat__composer-input-row");
-          return selectors.map((selector) => {
-            const box = row?.querySelector(selector)?.getBoundingClientRect();
+          const footer = document.querySelector(".agent-chat__composer-footer");
+          const editor = document
+            .querySelector(".agent-chat__composer-input-row")
+            ?.getBoundingClientRect();
+          const centres = selectors.map((selector) => {
+            const box = footer?.querySelector(selector)?.getBoundingClientRect();
             return box ? box.top + box.height / 2 : Number.NaN;
           });
+          return {
+            centres,
+            editorBottom: editor?.bottom ?? Number.NaN,
+            footerTop: footer?.getBoundingClientRect().top ?? Number.NaN,
+          };
         },
-        COMPOSER_ROW_CONTROLS as unknown as string[],
+        [...COMPOSER_FOOTER_CONTROLS],
       );
-      expect(centres.some(Number.isNaN)).toBe(false);
-      expect(Math.max(...centres) - Math.min(...centres)).toBeLessThanOrEqual(1);
+      expect([...layout.centres, layout.editorBottom, layout.footerTop].some(Number.isNaN)).toBe(
+        false,
+      );
+      expect(Math.max(...layout.centres) - Math.min(...layout.centres)).toBeLessThanOrEqual(1);
+      expect(layout.editorBottom).toBeLessThanOrEqual(layout.footerTop);
 
       await composer.fill("then update the docs and the changelog");
       await composer.press("Enter");

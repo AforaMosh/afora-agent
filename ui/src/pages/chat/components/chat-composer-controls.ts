@@ -56,6 +56,25 @@ type MicrophonePickerProps = {
   onSelect: (deviceId: string) => void;
 };
 
+/** Lets pointer selection collapse the hover affordance without breaking keyboard focus order. */
+function releaseMicrophonePickerPointerFocus(
+  dropdown: EventTarget | null,
+  item: HTMLElement,
+): void {
+  if (item.matches(":focus-visible")) {
+    return;
+  }
+  if (!(dropdown instanceof HTMLElement)) {
+    return;
+  }
+  queueMicrotask(() => {
+    const trigger = dropdown.querySelector<HTMLElement>(".chat-talk-input-picker__trigger");
+    if (trigger && document.activeElement === trigger) {
+      trigger.blur();
+    }
+  });
+}
+
 export function renderMicrophonePicker(props: MicrophonePickerProps) {
   // Discovery reporting an issue with nothing enumerated is the browser stating
   // there is no capture route at all: a "System default" row would claim a
@@ -83,8 +102,10 @@ export function renderMicrophonePicker(props: MicrophonePickerProps) {
       .open=${props.open}
       @wa-show=${props.onOpen}
       @wa-hide=${props.onClose}
-      @wa-select=${(event: CustomEvent<{ item: { value?: string } }>) =>
-        props.onSelect(event.detail.item.value ?? "")}
+      @wa-select=${(event: CustomEvent<{ item: HTMLElement & { value?: string } }>) => {
+        props.onSelect(event.detail.item.value ?? "");
+        releaseMicrophonePickerPointerFocus(event.currentTarget, event.detail.item);
+      }}
     >
       <button
         slot="trigger"
@@ -163,6 +184,7 @@ function renderComposerVoiceButton(props: ChatRunControlsProps) {
   // or replacing the button releases capture and cancels the active hold.
   return html`
     <span class="chat-talk-control">
+      ${holding ? nothing : props.microphonePicker}
       <openclaw-tooltip .content=${tooltip}>
         <button
           class=${active
@@ -193,7 +215,6 @@ function renderComposerVoiceButton(props: ChatRunControlsProps) {
                 `}
         </button>
       </openclaw-tooltip>
-      ${holding ? nothing : props.microphonePicker}
     </span>
   `;
 }
@@ -257,54 +278,50 @@ export function renderChatPrimaryActions(props: ChatRunControlsProps) {
   // duplicate announcement.
   const voiceErrored = props.voiceStatus === "error";
   const voiceButton = renderComposerVoiceButton(props);
-  const sendAction = html`
-    <openclaw-tooltip .content=${activeRunActionTooltip}>
+  // Dictation and Talk are one affordance to the operator — a microphone — so
+  // the control shows whenever either route exists, and it always sits ahead of
+  // the primary action rather than standing in for it.
+  const voiceControl = props.dictation || props.onToggleVoice ? voiceButton : nothing;
+  // Send holds the trailing edge whatever the draft is. An empty draft disables
+  // it instead of removing it: a primary action that vanishes reads as a broken
+  // composer, and it takes with it the one place the surface says how a turn is
+  // committed. Only an abortable run replaces it, with stop.
+  const renderSendAction = (tooltip: string, description: string, label: string) => html`
+    <openclaw-tooltip .content=${tooltip}>
       <button
         class="chat-send-btn"
         @pointerdown=${props.onPrimaryActionPointerDown}
         @click=${storeDraftAndSend}
-        ?disabled=${!props.canSend || props.sending}
-        aria-label=${activeRunActionDescription}
+        ?disabled=${!props.canSend || props.sending || !hasComposedContent}
+        aria-label=${description}
       >
         ${icons.arrowUp}
-        <span class="agent-chat__control-label">${activeRunActionLabel}</span>
+        <span class="agent-chat__control-label">${label}</span>
       </button>
     </openclaw-tooltip>
   `;
-  const emptySendDescription = props.canSend
-    ? t("chat.composer.emptyHint")
-    : t("chat.runControls.sendMessage");
-  const idleAction = html`
-    <openclaw-tooltip .content=${props.canSend ? emptySendDescription : t("chat.runControls.send")}>
-      <button
-        class="chat-send-btn"
-        @pointerdown=${props.onPrimaryActionPointerDown}
-        @click=${storeDraftAndSend}
-        disabled
-        aria-label=${emptySendDescription}
-      >
-        ${icons.arrowUp}
-        <span class="agent-chat__control-label">${t("chat.runControls.send")}</span>
-      </button>
-    </openclaw-tooltip>
-  `;
-  const stopAction = html`
-    <openclaw-tooltip .content=${t("chat.runControls.stopWithShortcut")}>
-      <button
-        class="chat-send-btn chat-send-btn--stop"
-        @pointerdown=${props.onPrimaryActionPointerDown}
-        @click=${props.onAbort}
-        aria-label=${t("chat.runControls.stopGenerating")}
-      >
-        ${icons.stop}
-        <span class="agent-chat__control-label">${t("chat.runControls.stop")}</span>
-      </button>
-    </openclaw-tooltip>
-  `;
+  const sendAction = renderSendAction(
+    props.suggestionComposer
+      ? t("chat.sessionSuggestions.suggestMessage")
+      : props.isBusy
+        ? t("chat.runControls.queue")
+        : t("chat.runControls.send"),
+    props.suggestionComposer
+      ? t("chat.sessionSuggestions.suggestMessage")
+      : props.isBusy
+        ? t("chat.runControls.queueMessage")
+        : t("chat.runControls.sendMessage"),
+    props.suggestionComposer
+      ? t("chat.sessionSuggestions.suggest")
+      : props.isBusy
+        ? t("chat.runControls.queue")
+        : t("chat.runControls.send"),
+  );
   return html`
     ${props.voiceActive && props.onToggleVoice
       ? html`
           <span class="chat-talk-control chat-talk-control--active">
+            ${props.microphonePicker}
             <openclaw-tooltip .content=${t("chat.composer.stopVoiceInput")}>
               <button
                 class="chat-send-btn chat-send-btn--voice-live${voiceErrored
@@ -322,7 +339,6 @@ export function renderChatPrimaryActions(props: ChatRunControlsProps) {
                 <span class="chat-send-btn__voice-stop-glyph">${icons.stop}</span>
               </button>
             </openclaw-tooltip>
-            ${props.microphonePicker}
           </span>
           ${voiceErrored
             ? nothing
@@ -366,14 +382,19 @@ export function renderChatPrimaryActions(props: ChatRunControlsProps) {
           ${abortAction}
         `
       : html`
-          ${props.dictation || props.onToggleVoice ? voiceButton : nothing}
-          ${props.dictation?.active
-            ? nothing
-            : hasComposedContent
-              ? sendAction
-              : props.canAbort
-                ? stopAction
-                : idleAction}
+          ${voiceControl}
+          ${props.canAbort
+            ? html`
+                ${hasComposedContent
+                  ? renderSendAction(
+                      activeRunActionTooltip,
+                      activeRunActionDescription,
+                      activeRunActionLabel,
+                    )
+                  : nothing}
+                ${abortAction}
+              `
+            : sendAction}
         `}
   `;
 }

@@ -192,6 +192,7 @@ suite.define(() => {
         .boundingBox();
       const attachmentButton = page.getByRole("button", { name: "Add attachment" });
       const attachmentBox = await attachmentButton.boundingBox();
+      const startBox = await page.getByRole("button", { name: "Start" }).boundingBox();
       expect(heroBox).not.toBeNull();
       expect(triggersBox).not.toBeNull();
       expect(composerBox).not.toBeNull();
@@ -199,6 +200,7 @@ suite.define(() => {
       expect(modelWrapperBox).not.toBeNull();
       expect(footerBox).not.toBeNull();
       expect(attachmentBox).not.toBeNull();
+      expect(startBox).not.toBeNull();
       expect((heroBox?.y ?? 0) + (heroBox?.height ?? 0)).toBeLessThanOrEqual(
         (triggersBox?.y ?? 0) + 1,
       );
@@ -223,14 +225,16 @@ suite.define(() => {
           (element) => element.closest(".agent-chat__composer-input-row") == null,
         ),
       ).toBe(true);
-      expect(attachmentBox?.x ?? 0).toBeLessThan(modelWrapperBox?.x ?? 0);
-      expect(modelWrapperBox?.x ?? 0).toBeGreaterThan(
-        (footerBox?.x ?? 0) + (footerBox?.width ?? 0) / 2,
+      expect((attachmentBox?.x ?? 0) + (attachmentBox?.width ?? 0)).toBeLessThanOrEqual(
+        modelWrapperBox?.x ?? 0,
+      );
+      expect((modelWrapperBox?.x ?? 0) + (modelWrapperBox?.width ?? 0)).toBeLessThanOrEqual(
+        startBox?.x ?? 0,
       );
       expect(
         (footerBox?.x ?? 0) +
           (footerBox?.width ?? 0) -
-          ((modelWrapperBox?.x ?? 0) + (modelWrapperBox?.width ?? 0)),
+          ((startBox?.x ?? 0) + (startBox?.width ?? 0)),
       ).toBeLessThanOrEqual(12);
       expect(triggersBox?.x).toBeCloseTo(composerBox?.x ?? 0, 0);
       expect(triggersBox?.width).toBeCloseTo(composerBox?.width ?? 0, 0);

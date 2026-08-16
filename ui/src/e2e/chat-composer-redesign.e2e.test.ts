@@ -83,7 +83,7 @@ suite.define(() => {
     });
   });
 
-  it("keeps the model in the bottom bar, session settings in the header, and switches the primary action with input state", async () => {
+  it("keeps the model in the bottom bar, session settings in the header, and holds send beside the microphone in every input state", async () => {
     await suite.withPage({ viewport: { width: 1920, height: 1080 } }, async ({ page }) => {
       const gateway = await installMockGateway(page, {
         assistantName: "Rosita",
@@ -200,23 +200,26 @@ suite.define(() => {
       await expect.poll(() => attach.isVisible()).toBe(true);
       await expect.poll(() => camera.isVisible()).toBe(false);
       await expect.poll(() => voice.isVisible()).toBe(true);
-      const emptySend = page.getByRole("button", { name: "Write a message to send." });
-      await expect.poll(() => emptySend.isVisible()).toBe(true);
-      await expect.poll(() => emptySend.isDisabled()).toBe(true);
+      const send = page.getByRole("button", { name: "Send message" });
+      await expect.poll(() => send.isVisible()).toBe(true);
+      await expect.poll(() => send.isDisabled()).toBe(true);
       await captureUiProof(page, "01-empty-idle-disabled-send.png");
       await expect
         .poll(() => page.getByRole("button", { name: "Start video talk" }).count())
         .toBe(0);
       await expect
-        .poll(() =>
-          attach.evaluate((node) => node.closest(".agent-chat__composer-input-row") != null),
-        )
+        .poll(() => attach.evaluate((node) => node.closest(".agent-chat__composer-lead") != null))
         .toBe(true);
       await expect
-        .poll(() =>
-          voice.evaluate((node) => node.closest(".agent-chat__composer-input-row") != null),
-        )
+        .poll(() => voice.evaluate((node) => node.closest(".agent-chat__composer-trail") != null))
         .toBe(true);
+      const pickerWidth = () =>
+        microphonePicker.evaluate((node) => node.getBoundingClientRect().width);
+      await expect.poll(pickerWidth).toBe(0);
+      await voice.hover();
+      await expect.poll(pickerWidth).toBeGreaterThanOrEqual(12);
+      await page.mouse.move(0, 0);
+      await expect.poll(pickerWidth).toBe(0);
       await expect
         .poll(() => model.evaluate((node) => node.closest(".agent-chat__composer-footer") != null))
         .toBe(true);
@@ -433,6 +436,19 @@ suite.define(() => {
       await expect
         .poll(() => page.getByRole("button", { name: "Start voice input" }).isVisible())
         .toBe(true);
+      const brandFill = await page.evaluate(() => {
+        const probe = document.createElement("span");
+        probe.style.color = getComputedStyle(document.documentElement)
+          .getPropertyValue("--primary")
+          .trim();
+        document.body.append(probe);
+        const resolved = getComputedStyle(probe).color;
+        probe.remove();
+        return resolved;
+      });
+      await expect
+        .poll(() => send.evaluate((node) => getComputedStyle(node).backgroundColor))
+        .toBe(brandFill);
       await captureUiProof(page, "02-draft-single-send.png");
 
       await page.getByRole("button", { name: "Send message" }).click();
@@ -495,12 +511,15 @@ suite.define(() => {
         name: /^(Queue message|Steer into the active run)$/,
       });
       await expect.poll(() => followUp.isVisible()).toBe(true);
-      await expect.poll(() => page.locator(".chat-send-btn--stop").count()).toBe(0);
+      await expect.poll(() => page.locator(".chat-send-btn--stop").count()).toBe(1);
       await captureUiProof(page, "03-active-run-draft-single-follow-up.png");
 
       await textarea.fill("");
       const stop = page.getByRole("button", { name: "Stop generating" });
       await expect.poll(() => stop.isVisible()).toBe(true);
+      await expect
+        .poll(() => stop.evaluate((node) => getComputedStyle(node).backgroundColor))
+        .not.toBe(brandFill);
       await captureUiProof(page, "04-active-run-empty-stop.png");
       await textarea.press("Escape");
       const abortRequest = await gateway.waitForRequest("chat.abort");
@@ -514,8 +533,8 @@ suite.define(() => {
       await expect
         .poll(() => page.getByRole("button", { name: "Start voice input" }).isVisible())
         .toBe(true);
-      await expect.poll(() => emptySend.isVisible()).toBe(true);
-      await expect.poll(() => emptySend.isDisabled()).toBe(true);
+      await expect.poll(() => send.isVisible()).toBe(true);
+      await expect.poll(() => send.isDisabled()).toBe(true);
 
       await page.setViewportSize({ width: 393, height: 852 });
       await expect.poll(() => camera.count()).toBe(0);
@@ -618,19 +637,12 @@ suite.define(() => {
       await expect
         .poll(() => microphonePickerShell.evaluate((node) => node.getBoundingClientRect().width))
         .toBe(0);
-      await expect.poll(() => voice.evaluate((node) => getComputedStyle(node).opacity)).toBe("0.4");
-
-      await voice.hover();
       await expect
-        .poll(() => microphonePickerShell.evaluate((node) => node.getBoundingClientRect().width))
-        .toBe(20);
+        .poll(() => microphonePicker.evaluate((node) => getComputedStyle(node).backgroundColor))
+        .toBe("rgba(0, 0, 0, 0)");
       await expect
-        .poll(() => microphonePickerShell.evaluate((node) => getComputedStyle(node).opacity))
-        .toBe("1");
-      await captureUiProof(page, "05-mic-hover-reveals-picker.png");
-      await microphonePicker.click();
-      await expect.poll(() => microphonePicker.getAttribute("aria-expanded")).toBe("true");
-      await expect.poll(() => page.locator(".chat-talk-input-picker[open]").count()).toBe(1);
+        .poll(() => microphonePicker.evaluate((node) => getComputedStyle(node).borderLeftWidth))
+        .toBe("0px");
     });
   });
 });

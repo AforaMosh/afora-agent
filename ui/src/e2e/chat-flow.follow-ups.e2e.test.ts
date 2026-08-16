@@ -358,7 +358,8 @@ suite.define(() => {
       const composer = page.locator(".agent-chat__composer-combobox textarea");
       const sendButton = page.getByRole("button", { name: "Send message" });
       await composer.waitFor({ state: "visible", timeout: 10_000 });
-      await expect.poll(() => sendButton.count()).toBe(0);
+      await expect.poll(() => sendButton.count()).toBe(1);
+      await expect.poll(() => sendButton.isDisabled()).toBe(true);
       expect(await gateway.getRequests("chat.send")).toHaveLength(0);
 
       await gateway.resolveDeferred("chat.startup", {
