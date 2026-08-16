@@ -56,6 +56,17 @@ export function shouldForwardModelCommandToServer(rawArgs: string): boolean {
   return normalized === "list" || normalized === "status" || /\s/u.test(args);
 }
 
+/**
+ * Resolved accepts-args for a definition. The field stays optional on the type
+ * for plugin authors, so readers must not treat an absent flag as "takes
+ * nothing": a command that declares arguments accepts them.
+ */
+export function commandAcceptsArgs(
+  command: Pick<ChatCommandDefinition, "acceptsArgs" | "args">,
+): boolean {
+  return command.acceptsArgs ?? Boolean(command.args?.length);
+}
+
 /** Defines one command with normalized aliases, scope, and argument parsing defaults. */
 export function defineChatCommand(command: DefineChatCommandInput): ChatCommandDefinition {
   const aliases = (command.textAliases ?? (command.textAlias ? [command.textAlias] : []))
@@ -63,7 +74,7 @@ export function defineChatCommand(command: DefineChatCommandInput): ChatCommandD
     .filter(Boolean);
   const scope =
     command.scope ?? (command.nativeName ? (aliases.length ? "both" : "native") : "text");
-  const acceptsArgs = command.acceptsArgs ?? Boolean(command.args?.length);
+  const acceptsArgs = commandAcceptsArgs(command);
   const argsParsing = command.argsParsing ?? (command.args?.length ? "positional" : "none");
   return {
     key: command.key,
@@ -574,8 +585,15 @@ export function buildBuiltinChatCommands(
     defineBuiltinCommand("think", "Set thinking level.", "options", "essential", {
       args: [
         defineCommandArgument("level", "Thinking level", {
-          choices: ({ provider, model, catalog, agentRuntime }) =>
-            listThinkingLevelChoices(provider, model, catalog, agentRuntime),
+          choices: ({ thinkingLevels, provider, model, catalog, agentRuntime }) =>
+            thinkingLevels?.length
+              ? [
+                  "default",
+                  ...thinkingLevels
+                    .filter((level) => level.id !== "default")
+                    .map(({ id, label }) => ({ value: id, label })),
+                ]
+              : listThinkingLevelChoices(provider, model, catalog, agentRuntime),
         }),
       ],
       argsMenu: "auto",
@@ -590,13 +608,14 @@ export function buildBuiltinChatCommands(
     defineBuiltinCommand("fast", "Toggle fast mode.", "options", "standard", {
       args: [
         defineCommandArgument("mode", "on, off, auto, default, or status", {
-          choices: ({ cfg, provider, model }) => [
+          choices: ({ cfg, provider, model, fastAutoOnSeconds }) => [
             "on",
             "off",
             {
               value: "auto",
               label: formatFastModeAutoLabel({
-                fastAutoOnSeconds: resolveFastModeModelAutoOnSeconds({ cfg, provider, model }),
+                fastAutoOnSeconds:
+                  fastAutoOnSeconds ?? resolveFastModeModelAutoOnSeconds({ cfg, provider, model }),
               }),
             },
             "default",

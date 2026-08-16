@@ -16,6 +16,7 @@ import type { ExecApprovalRequest } from "../../app/exec-approval.ts";
 import type { UiSettings } from "../../app/settings.ts";
 import { i18n, t } from "../../i18n/index.ts";
 import type { ChatAttachment, ChatQueueItem } from "../../lib/chat/chat-types.ts";
+import { makeSlashCommand } from "../../lib/chat/commands.test-support.ts";
 import {
   buildFallbackSlashCommands,
   replaceSlashCommands,
@@ -3593,14 +3594,14 @@ describe("chat slash menu accessibility", () => {
   ) {
     replaceSlashCommands([
       ...buildFallbackSlashCommands(),
-      ...skills.map(({ key, name = key, skillDisplayName, description }) => ({
-        key,
-        name,
-        skillDisplayName,
-        description,
-        source: "skill" as const,
-        skillModelVisible: true,
-      })),
+      ...skills.map(({ key, name = key, skillDisplayName, description }) =>
+        Object.assign(makeSlashCommand(name, { description }), {
+          key,
+          skillDisplayName,
+          source: "skill" as const,
+          skillModelVisible: true,
+        }),
+      ),
     ]);
   }
 
@@ -4021,6 +4022,84 @@ describe("chat slash menu accessibility", () => {
     expect(draft).toBe("/tools ");
   });
 
+  it("re-derives an open slash stage after history recall before Enter sends", () => {
+    const container = document.createElement("div");
+    let draft = "";
+    const onSend = vi.fn((messageOverride?: string) => messageOverride ?? draft);
+    const onDraftChange = vi.fn((next: string) => {
+      draft = next;
+    });
+    const onHistoryKeydown = vi.fn(() => {
+      draft = "/name recalled from history";
+      return {
+        handled: true,
+        preventDefault: true,
+        restoreCaret: "up" as const,
+        decision: "handled:history-up" as const,
+        historyNavigationActiveBefore: false,
+        historyNavigationActiveAfter: true,
+        selectionStart: 0,
+        selectionEnd: 0,
+        valueLength: 0,
+      };
+    });
+    const renderCurrent = () => {
+      renderChatInto(container, {
+        draft,
+        getDraft: () => draft,
+        onDraftChange,
+        onHistoryKeydown,
+        onRequestUpdate: renderCurrent,
+        onSend,
+      });
+    };
+    renderCurrent();
+
+    inputDraft(container, "/name ");
+    keydownComposer(container, "ArrowUp");
+    expect(getComposerTextarea(container).value).toBe("/name recalled from history");
+
+    keydownComposer(container, "Enter");
+
+    expect(onSend).toHaveBeenCalledOnce();
+    expect(onSend.mock.calls[0]).toEqual([]);
+    expect(draft).toBe("/name recalled from history");
+  });
+
+  it("refuses a required slash argument through the Send button", () => {
+    const onSend = vi.fn();
+    const { container } = createReactiveDraftHarness({ onSend });
+
+    inputDraft(container, "/redirect ");
+    container.querySelector<HTMLButtonElement>('button[aria-label="Send message"]')?.click();
+
+    expect(onSend).not.toHaveBeenCalled();
+    expect(container.querySelector(".slash-menu-group__hint--needed")).not.toBeNull();
+  });
+
+  it("refuses a required slash argument after Escape closes its stage", () => {
+    const onSend = vi.fn();
+    const { container } = createReactiveDraftHarness({ onSend });
+
+    inputDraft(container, "/redirect ");
+    keydownComposer(container, "Escape");
+    keydownComposer(container, "Enter");
+
+    expect(onSend).not.toHaveBeenCalled();
+    expect(container.querySelector(".slash-menu-group__hint--needed")).not.toBeNull();
+  });
+
+  it("refuses an invalid committed enum instead of sending the visible draft", () => {
+    const onSend = vi.fn();
+    const { container } = createReactiveDraftHarness({ onSend });
+
+    inputDraft(container, "/session bogus 24h");
+    keydownComposer(container, "Enter");
+
+    expect(onSend).not.toHaveBeenCalled();
+    expect(container.querySelector(".slash-menu-group__hint--needed")).not.toBeNull();
+  });
+
   it("clears the visible local draft immediately when send clears the host draft", () => {
     const { container, onDraftChange, onSend } = createDraftHarness();
     inputDraft(container, "submitted message");
@@ -4238,20 +4317,16 @@ describe("chat slash menu accessibility", () => {
 
   it("shows every command directly without an expander or keyboard footer", () => {
     replaceSlashCommands([
-      {
-        key: "standard-command",
-        name: "standard-command",
+      makeSlashCommand("standard-command", {
         description: "Standard command.",
         tier: "standard",
         category: "session",
-      },
-      {
-        key: "power-command",
-        name: "power-command",
+      }),
+      makeSlashCommand("power-command", {
         description: "Power command.",
         tier: "power",
         category: "tools",
-      },
+      }),
     ]);
     const harness = createSlashRerenderHarness();
     const container = harness.inputAndRender(harness.container, "/");
@@ -4267,27 +4342,21 @@ describe("chat slash menu accessibility", () => {
 
   it("keeps filtered command DOM and keyboard order aligned with relevance", () => {
     replaceSlashCommands([
-      {
-        key: "pair",
-        name: "pair",
+      makeSlashCommand("pair", {
         description: "Pair a device.",
         tier: "power",
         category: "tools",
-      },
-      {
-        key: "pair-device",
-        name: "pair-device",
+      }),
+      makeSlashCommand("pair-device", {
         description: "Pair a specific device.",
         tier: "standard",
         category: "session",
-      },
-      {
-        key: "openclaw",
-        name: "openclaw",
+      }),
+      makeSlashCommand("openclaw", {
         description: "Run the setup and repair helper.",
         tier: "essential",
         category: "tools",
-      },
+      }),
     ]);
     const harness = createSlashRerenderHarness();
     let container = harness.inputAndRender(harness.container, "/pair");
@@ -4314,7 +4383,9 @@ describe("chat slash menu accessibility", () => {
 
     keydownComposer(container, "Enter");
     container = harness.renderCurrent();
-    expect(container.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("/pair-device ");
+    // No trailing space: this command declares no arguments, and a trailing
+    // space is the composer's signal that something still has to be typed.
+    expect(container.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("/pair-device");
     expect(container.querySelector(".slash-menu")).toBeNull();
   });
 
