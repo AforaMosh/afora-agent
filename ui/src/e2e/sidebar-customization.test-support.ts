@@ -3,6 +3,7 @@ import path from "node:path";
 import type { Locator, Page } from "playwright";
 import { installMockGateway } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
+import { captureUnionUiProof } from "./ui-proof.test-support.ts";
 
 const sidebarProofArtifactDir = path.join(
   process.cwd(),
@@ -54,35 +55,14 @@ export async function captureSidebarUiUnionProof(
   fileName: string,
   options: { animations?: "allow" | "disabled" } = {},
 ): Promise<void> {
-  if (process.env.OPENCLAW_CAPTURE_UI_PROOF !== "1") {
-    return;
-  }
-  const boxes = (await Promise.all(locators.map((locator) => locator.boundingBox()))).filter(
-    (box): box is NonNullable<typeof box> => box !== null,
-  );
-  if (boxes.length === 0) {
-    throw new Error("Cannot capture sidebar proof without a visible surface");
-  }
-  const viewport = page.viewportSize();
-  if (!viewport) {
-    throw new Error("Cannot capture sidebar proof without a fixed viewport");
-  }
-  const padding = 16;
-  const left = Math.max(0, Math.min(...boxes.map((box) => box.x)) - padding);
-  const top = Math.max(0, Math.min(...boxes.map((box) => box.y)) - padding);
-  const right = Math.min(
-    viewport.width,
-    Math.max(...boxes.map((box) => box.x + box.width)) + padding,
-  );
-  const bottom = Math.min(
-    viewport.height,
-    Math.max(...boxes.map((box) => box.y + box.height)) + padding,
-  );
-  await mkdir(sidebarProofArtifactDir, { recursive: true });
-  await page.screenshot({
+  await captureUnionUiProof({
+    page,
+    artifactDir: sidebarProofArtifactDir,
+    fileName,
+    locators,
     animations: options.animations ?? "disabled",
-    clip: { x: left, y: top, width: right - left, height: bottom - top },
-    path: path.join(sidebarProofArtifactDir, fileName),
+    clampToViewport: true,
+    margin: 16,
   });
 }
 

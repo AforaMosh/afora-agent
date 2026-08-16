@@ -1,4 +1,3 @@
-import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import type { Locator, Page } from "playwright";
@@ -12,11 +11,12 @@ import {
   type MockGatewayRequest,
 } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
+import { captureUiProofEnabled, captureUnionUiProof } from "./ui-proof.test-support.ts";
 
 export { controlUiSessionPath, controlUiSessionUrl, installMockGateway, waitForConfirmModal };
 
 export const collapsedSessionSectionsStorageKey = "openclaw:sidebar:sessions:collapsed-sections";
-export const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+export { captureUiProofEnabled };
 export const uiProofArtifactDir = path.join(
   process.cwd(),
   ".artifacts",
@@ -235,8 +235,6 @@ export async function submitInputDialog(page: Page, value: string): Promise<void
   await field.waitFor({ state: "detached" });
 }
 
-const PROOF_CLIP_MARGIN = 12;
-
 /**
  * Screenshots the state the caller just built. Pass `clip` to frame the union of
  * those locators: hover cards and row menus are absolutely positioned, so a
@@ -248,31 +246,16 @@ export async function captureUiProof(
   fileName: string,
   options: { clip?: readonly Locator[]; keepAnimations?: boolean } = {},
 ) {
-  if (!captureUiProofEnabled) {
-    return;
-  }
-  await mkdir(uiProofArtifactDir, { recursive: true });
-  const boxes = await Promise.all((options.clip ?? []).map((locator) => locator.boundingBox()));
-  const present = boxes.filter((box) => box !== null);
-  const left = Math.min(...present.map((box) => box.x)) - PROOF_CLIP_MARGIN;
-  const top = Math.min(...present.map((box) => box.y)) - PROOF_CLIP_MARGIN;
-  const clip =
-    present.length === 0
-      ? undefined
-      : {
-          x: Math.max(0, left),
-          y: Math.max(0, top),
-          width: Math.max(...present.map((box) => box.x + box.width)) + PROOF_CLIP_MARGIN - left,
-          height: Math.max(...present.map((box) => box.y + box.height)) + PROOF_CLIP_MARGIN - top,
-        };
   // Dialogs and menus fade in, so an undisabled capture can land mid-transition
   // and prove nothing about the state it was taken for. `keepAnimations` is for
   // the opposite case: an endless animation is cancelled to its first frame, so
   // a caller proving one must hold it at a phase itself and keep it there.
-  await page.screenshot({
+  await captureUnionUiProof({
+    page,
+    artifactDir: uiProofArtifactDir,
+    fileName,
+    locators: options.clip ?? [],
     animations: options.keepAnimations ? "allow" : "disabled",
-    clip,
-    fullPage: clip === undefined,
-    path: path.join(uiProofArtifactDir, fileName),
+    empty: "full-page",
   });
 }

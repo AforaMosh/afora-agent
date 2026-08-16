@@ -1,10 +1,10 @@
-import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import type { Locator, Page } from "playwright";
 import { expect } from "vitest";
 import type { ControlUiBuildInfo } from "../build-info.ts";
 import { installMockGateway, startControlUiE2eServer } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
+import { captureUnionUiProof } from "./ui-proof.test-support.ts";
 
 const proofArtifactRoot = path.join(process.cwd(), ".artifacts", "control-ui-e2e");
 
@@ -68,43 +68,15 @@ export async function captureUnionProof(
   fileName: string,
   locators: readonly Locator[],
 ) {
-  if (process.env.OPENCLAW_CAPTURE_UI_PROOF !== "1") {
-    return;
-  }
-  const boxes: Array<{ x: number; y: number; width: number; height: number }> = [];
-  for (const locator of locators) {
-    await locator.waitFor({ state: "visible" });
-    await locator.evaluate(async (element) => {
-      const running = element
-        .getAnimations({ subtree: true })
-        .filter((animation) => animation.playState === "running");
-      await Promise.all(running.map((animation) => animation.finished.catch(() => undefined)));
-    });
-    const box = await locator.boundingBox();
-    if (!box) {
-      throw new Error(`Cannot capture ${fileName}: a proof surface has no bounding box`);
-    }
-    boxes.push(box);
-  }
-  const viewport = page.viewportSize();
-  if (!viewport) {
-    throw new Error(`Cannot capture ${fileName}: viewport is unavailable`);
-  }
-  const margin = 12;
-  const x = Math.max(0, Math.min(...boxes.map((box) => box.x)) - margin);
-  const y = Math.max(0, Math.min(...boxes.map((box) => box.y)) - margin);
-  const right = Math.min(
-    viewport.width,
-    Math.max(...boxes.map((box) => box.x + box.width)) + margin,
-  );
-  const bottom = Math.min(
-    viewport.height,
-    Math.max(...boxes.map((box) => box.y + box.height)) + margin,
-  );
   const artifactDir = path.join(proofArtifactRoot, directory);
-  await mkdir(artifactDir, { recursive: true });
-  await page.screenshot({
-    clip: { x, y, width: right - x, height: bottom - y },
-    path: path.join(artifactDir, fileName),
+  await captureUnionUiProof({
+    page,
+    artifactDir,
+    fileName,
+    locators,
+    animations: "allow",
+    clampToViewport: true,
+    requireAllLocators: true,
+    settleLocators: true,
   });
 }
