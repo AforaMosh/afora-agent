@@ -264,7 +264,7 @@
   --menu-radius: var(--radius-md);
   --menu-item-radius: var(--radius-sm);
   --menu-item-height: 36px;
-  --menu-padding: 6px;
+  --menu-padding: 4px;
 
   /* Transitions - Crisp and responsive */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
