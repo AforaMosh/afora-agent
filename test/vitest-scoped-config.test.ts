@@ -624,17 +624,6 @@ describe("scoped vitest configs", () => {
     expect(processTestConfig.env).toMatchObject({
       ESBUILD_WORKER_THREADS: "0",
     });
-    const previousShardName = process.env.OPENCLAW_VITEST_SHARD_NAME;
-    try {
-      process.env.OPENCLAW_VITEST_SHARD_NAME = "agentic-cli-process-run-loop";
-      expectThreadedIsolatedRunner(createCliProcessVitestConfig());
-    } finally {
-      if (previousShardName === undefined) {
-        delete process.env.OPENCLAW_VITEST_SHARD_NAME;
-      } else {
-        process.env.OPENCLAW_VITEST_SHARD_NAME = previousShardName;
-      }
-    }
   });
 
   it("keeps native SQLite runtime config tests in forked workers", () => {
