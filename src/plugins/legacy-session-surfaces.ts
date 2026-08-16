@@ -168,6 +168,7 @@ export function prepareLegacySessionSurfaces(params: {
     resolvePluginRuntimeLoadContext({
       config: params.config,
       env: params.env,
+      publishCurrentMetadataSnapshot: false,
     });
   const manifestRecords = context.manifestRegistry?.plugins ?? [];
   const selectedPluginIds = new Set(

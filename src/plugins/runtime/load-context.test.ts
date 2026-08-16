@@ -193,6 +193,21 @@ describe("resolvePluginRuntimeLoadContext", () => {
     expect(loadPluginMetadataSnapshotMock).not.toHaveBeenCalled();
   });
 
+  it("keeps owner-prepared workspace metadata out of the process snapshot", () => {
+    const config = { plugins: {} };
+    const env = { HOME: "/tmp/openclaw-home" } as NodeJS.ProcessEnv;
+
+    resolvePluginRuntimeLoadContext({
+      config,
+      env,
+      metadataSnapshot: metadataSnapshot as never,
+      publishCurrentMetadataSnapshot: false,
+      workspaceDir: "/resolved-workspace",
+    });
+
+    expect(setCurrentPluginMetadataSnapshotMock).not.toHaveBeenCalled();
+  });
+
   it("stores derived metadata as the reusable runtime snapshot", () => {
     const derivedSnapshot = { ...metadataSnapshot } as typeof metadataSnapshot & {
       registrySource: "derived";

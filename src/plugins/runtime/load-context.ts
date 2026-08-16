@@ -163,6 +163,7 @@ type PluginRuntimeLoadContextOptions = {
   logger?: PluginLogger;
   manifestRegistry?: PluginManifestRegistry;
   metadataSnapshot?: PluginMetadataSnapshot;
+  publishCurrentMetadataSnapshot?: boolean;
 };
 
 /** Creates the default plugin runtime loader logger. */
@@ -252,7 +253,11 @@ export function resolvePluginRuntimeLoadContext(
   const installRecords = metadataSnapshot
     ? extractPluginInstallRecordsFromInstalledPluginIndex(metadataSnapshot.index)
     : undefined;
-  if (metadataSnapshot && metadataSnapshot.pluginIds === undefined) {
+  if (
+    options?.publishCurrentMetadataSnapshot !== false &&
+    metadataSnapshot &&
+    metadataSnapshot.pluginIds === undefined
+  ) {
     // Scoped graphs are request-local; publishing one would hide other installed
     // providers from process-wide model normalization and later runtime loads.
     setCurrentPluginMetadataSnapshot(metadataSnapshot, {
