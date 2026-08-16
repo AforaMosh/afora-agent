@@ -3675,12 +3675,10 @@ button.chat-pr__diff {
   opacity: 1;
 }
 
-/* Stop keeps the neutral disc it already renders here. Its own soft-danger rule
-   is a single class and loses to the composer-scoped selector above, so the fill
-   has to be restated: pulling stop into the brand fill would make the two states
-   of one slot — commit and interrupt — read identically at a glance. */
-.agent-chat__input .chat-send-btn--stop,
-.agent-chat__input .chat-send-btn--stop:hover:not(:disabled) {
+/* Stop stays neutral at rest and on hover. Include the shared button class so
+   this composer-specific state wins over theme-level primary hover rules. */
+.agent-chat__input .chat-send-btn.chat-send-btn--stop,
+.agent-chat__input .chat-send-btn.chat-send-btn--stop:hover:not(:disabled) {
   background: var(--text-strong);
   color: var(--chat-composer-surface);
   box-shadow: none;
