@@ -1210,15 +1210,26 @@ jobs:
     runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
+      - &linux_node_git_artifact_download_step
+        name: Download git metadata
+        id: git_artifact_download
+        if: runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ needs.preflight.outputs.git_artifact_id }}
+          path: ${{ runner.temp }}/openclaw-ci-git-download
+          skip-decompress: true
+          digest-mismatch: error
+
       - &linux_node_checkout_step
         name: Checkout
         shell: bash
         env:
           CHECKOUT_REPO: ${{ github.repository }}
           CHECKOUT_SHA: ${{ needs.preflight.outputs.checkout_revision }}
-          GIT_ARTIFACT_DIGEST: ${{ runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_digest || '' }}
-          GIT_ARTIFACT_ID: ${{ runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_id || '' }}
-          GITHUB_TOKEN: ${{ runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_id != '' && github.token || '' }}
+          GIT_ARTIFACT_DIGEST: ${{ needs.preflight.outputs.git_artifact_digest }}
+          GIT_ARTIFACT_DOWNLOADED: ${{ steps.git_artifact_download.outcome == 'success' && 'true' || 'false' }}
         run: |
           set -euo pipefail
 
@@ -1229,26 +1240,15 @@ jobs:
           }
 
           restore_git_artifact() {
-            local archive_path="$RUNNER_TEMP/openclaw-ci-git.tar"
+            local archive_path="$RUNNER_TEMP/openclaw-ci-git-download/openclaw-ci-git.tar"
             local actual_digest
             local expected_digest="${GIT_ARTIFACT_DIGEST#sha256:}"
 
             reset_checkout_dir
-            # download-artifact v8 uses this same REST redirect for v7 raw
-            # artifacts; the redirected blob bytes are the upload digest input.
-            curl --fail --silent --show-error --location \
-              --connect-timeout 10 --max-time 90 \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "${GITHUB_API_URL}/repos/${CHECKOUT_REPO}/actions/artifacts/${GIT_ARTIFACT_ID}/zip" \
-              --output "$archive_path" || return 1
-
             actual_digest="$(sha256sum "$archive_path" | cut -d ' ' -f 1)"
             if [ -z "$expected_digest" ] || [ "$actual_digest" != "$expected_digest" ]; then
               return 1
             fi
-            unset GITHUB_TOKEN
 
             tar -xf "$archive_path" -C "$workdir" .git || return 1
             rm -f "$archive_path"
@@ -1291,7 +1291,7 @@ jobs:
             fi
           }
 
-          if [ -n "$GIT_ARTIFACT_ID" ]; then
+          if [ "$GIT_ARTIFACT_DOWNLOADED" = "true" ]; then
             if restore_git_artifact; then
               echo "git metadata artifact restore succeeded"
               exit 0
@@ -1353,6 +1353,7 @@ jobs:
     runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-32vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) && 35 || 20 }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Ensure secrets base commit (PR fast path)
         if: github.event_name == 'pull_request'
@@ -1646,6 +1647,7 @@ jobs:
     runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -1725,6 +1727,7 @@ jobs:
     env:
       COMPATIBILITY_TARGET: ${{ needs.preflight.outputs.compatibility_target }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -1799,6 +1802,7 @@ jobs:
       max-parallel: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 12 || 4 }}
       matrix: ${{ fromJson(needs.preflight.outputs.ui_e2e_matrix) }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -1853,6 +1857,7 @@ jobs:
     runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-16vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -1898,6 +1903,7 @@ jobs:
     env:
       COMPATIBILITY_TARGET: ${{ needs.preflight.outputs.compatibility_target }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -1943,6 +1949,7 @@ jobs:
     env:
       CHECKOUT_BASE_SHA: ${{ matrix.task == 'baseline-ratchets' && needs.preflight.outputs.diff_base_revision || '' }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Prepare release-gate ratchet merge tree
         if: matrix.task == 'baseline-ratchets' && github.event_name == 'workflow_dispatch' && inputs.release_gate
@@ -2082,6 +2089,7 @@ jobs:
       max-parallel: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 6 || 4 }}
       matrix: ${{ fromJson(needs.preflight.outputs.qa_smoke_ci_matrix) }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2265,6 +2273,7 @@ jobs:
       max-parallel: 12
       matrix: ${{ fromJson(needs.preflight.outputs.plugin_contracts_matrix) }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2307,6 +2316,7 @@ jobs:
       max-parallel: 12
       matrix: ${{ fromJson(needs.preflight.outputs.channel_contracts_matrix) }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2347,6 +2357,7 @@ jobs:
     runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 60
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2382,6 +2393,7 @@ jobs:
       max-parallel: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 96 || 28 }}
       matrix: ${{ fromJson(needs.preflight.outputs.checks_node_core_nondist_matrix) }}
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2520,6 +2532,7 @@ jobs:
             # PR critical path for roughly the same billed core-minutes.
             runner: blacksmith-16vcpu-ubuntu-2404
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2833,6 +2846,7 @@ jobs:
       matrix:
         stripe: [1, 2, 3, 4, 5]
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2869,6 +2883,7 @@ jobs:
       matrix:
         stripe: [1, 2, 3, 4, 5]
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
@@ -2945,6 +2960,7 @@ jobs:
             # class keeps this off the hybrid critical path.
             runner: blacksmith-8vcpu-ubuntu-2404
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Ensure Plugin SDK API diff base commit
         if: matrix.group == 'plugin-sdk-api-diff'
@@ -3251,6 +3267,7 @@ jobs:
     runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
+      - *linux_node_git_artifact_download_step
       - *linux_node_checkout_step
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env

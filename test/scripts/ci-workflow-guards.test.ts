@@ -3452,13 +3452,18 @@ NODE
       ),
     );
 
+    expect(ciSource.match(/&linux_node_git_artifact_download_step/gu)).toHaveLength(1);
+    expect(ciSource.match(/\*linux_node_git_artifact_download_step/gu)).toHaveLength(17);
     expect(ciSource.match(/&linux_node_checkout_step/gu)).toHaveLength(1);
     expect(ciSource.match(/\*linux_node_checkout_step/gu)).toHaveLength(17);
     const checkoutJobs = Object.entries(workflow.jobs).flatMap(([jobName, job]) => {
-      const checkout = ((job as { steps?: WorkflowStep[] }).steps ?? []).find(
+      const steps = (job as { steps?: WorkflowStep[] }).steps ?? [];
+      const checkoutIndex = steps.findIndex(
         (step) => step.name === "Checkout" && step.run?.includes("restore_git_artifact"),
       );
-      return checkout ? [{ checkout, jobName }] : [];
+      return checkoutIndex >= 0
+        ? [{ checkout: steps[checkoutIndex], download: steps[checkoutIndex - 1], jobName }]
+        : [];
     });
     expect(checkoutJobs.map(({ jobName }) => jobName)).toEqual([
       "pnpm-store-warmup",
@@ -3480,21 +3485,41 @@ NODE
       "check-additional-shard",
       "check-docs",
     ]);
-    const checkout = expectDefined(checkoutJobs[0]?.checkout, "shared Linux Node checkout");
-    expect(checkout.env).toMatchObject({
-      GIT_ARTIFACT_DIGEST: expect.stringContaining("github.run_attempt == 1"),
-      GIT_ARTIFACT_ID: expect.stringContaining("needs.preflight.outputs.git_artifact_id"),
-      GITHUB_TOKEN: expect.stringContaining("runner.environment != 'github-hosted'"),
+    const download = expectDefined(
+      checkoutJobs[0]?.download,
+      "shared Linux Node git artifact download",
+    );
+    expect(download).toMatchObject({
+      "continue-on-error": true,
+      id: "git_artifact_download",
+      if: "runner.environment != 'github-hosted' && github.run_attempt == 1 && needs.preflight.outputs.git_artifact_id != ''",
+      name: "Download git metadata",
+      uses: DOWNLOAD_ARTIFACT_V8,
+      with: {
+        "artifact-ids": "${{ needs.preflight.outputs.git_artifact_id }}",
+        "digest-mismatch": "error",
+        path: "${{ runner.temp }}/openclaw-ci-git-download",
+        "skip-decompress": true,
+      },
     });
+    const checkout = expectDefined(checkoutJobs[0]?.checkout, "shared Linux Node checkout");
+    const checkoutRun = expectDefined(checkout.run, "shared Linux Node checkout script");
+    expect(checkout.env).toMatchObject({
+      GIT_ARTIFACT_DIGEST: "${{ needs.preflight.outputs.git_artifact_digest }}",
+      GIT_ARTIFACT_DOWNLOADED:
+        "${{ steps.git_artifact_download.outcome == 'success' && 'true' || 'false' }}",
+    });
+    expect(checkout.env).not.toHaveProperty("GITHUB_TOKEN");
+    expect(checkout.env).not.toHaveProperty("GIT_ARTIFACT_ID");
+    expect(checkout.run).not.toContain("curl");
+    expect(checkout.run).not.toContain("GITHUB_API_URL");
+    expect(checkout.run).not.toContain("GITHUB_TOKEN");
     expect(checkout.run).toContain(
-      "${GITHUB_API_URL}/repos/${CHECKOUT_REPO}/actions/artifacts/${GIT_ARTIFACT_ID}/zip",
+      'local archive_path="$RUNNER_TEMP/openclaw-ci-git-download/openclaw-ci-git.tar"',
     );
     expect(checkout.run).toContain('actual_digest="$(sha256sum "$archive_path"');
     expect(checkout.run).toContain('tar -xf "$archive_path" -C "$workdir" .git');
     expect(checkout.run).toContain('test -d "$workdir/.git" && test ! -L "$workdir/.git"');
-    expect(checkout.run.indexOf("unset GITHUB_TOKEN")).toBeLessThan(
-      checkout.run.indexOf('tar -xf "$archive_path"'),
-    );
     expect(checkout.run).toContain('cat >"$workdir/.git/config"');
     expect(checkout.run).toContain("hooksPath = $RUNNER_TEMP/openclaw-ci-empty-hooks");
     expect(checkout.run).toContain('"$workdir/.git/config.worktree"');
@@ -3516,12 +3541,14 @@ NODE
     expect(checkout.run).toContain(
       "git metadata artifact restore failed; falling back to git checkout",
     );
-    expect(checkout.run.indexOf("restore_git_artifact")).toBeLessThan(
-      checkout.run.indexOf("checkout_attempt"),
+    expect(checkout.run).toContain('if [ "$GIT_ARTIFACT_DOWNLOADED" = "true" ]; then');
+    expect(checkoutRun.indexOf("restore_git_artifact")).toBeLessThan(
+      checkoutRun.indexOf("checkout_attempt"),
     );
     expect(checkout.run).toContain("for attempt in 1 2 3 4 5; do");
-    for (const { checkout: candidate } of checkoutJobs) {
-      expect(candidate).toBe(checkout);
+    for (const { checkout: checkoutCandidate, download: downloadCandidate } of checkoutJobs) {
+      expect(downloadCandidate).toBe(download);
+      expect(checkoutCandidate).toBe(checkout);
     }
     for (const { jobName } of checkoutJobs) {
       if (jobName === "checks-node-compat" || jobName === "check-lint-hosted-core-shard") {
