@@ -44,6 +44,7 @@ import {
   renderCatalogSessionInformationCard,
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
+import { renderSidebarSessionWorkContext } from "./session-row-subtitle.ts";
 
 type SessionCatalogGroupsParams = {
   catalogs: readonly SessionCatalog[];
@@ -516,6 +517,7 @@ function renderCatalogSessionRow(
                 ><span class="sidebar-recent-session__name-content">${label}</span></span
               >
             </span>
+            ${renderSidebarSessionWorkContext(work, project)}
           </span>
         </a>
         ${renderSessionRowEndcap({

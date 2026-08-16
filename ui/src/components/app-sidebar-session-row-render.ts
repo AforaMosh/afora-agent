@@ -176,14 +176,12 @@ export function renderRecentSession(params: {
   session: SidebarRecentSession;
   display?: CatalogBackingSessionDisplay;
   listItem?: boolean;
-  /** Only native Coding rows retain their second line. */
-  showCodingSubtitle?: boolean;
   /** Project heading this row already sits under, if any. */
   project?: string;
   /** Group conversations keep the shared rail but do not display a creator. */
   hideLeadingIdentity?: boolean;
 }) {
-  const { host, session, display, listItem = true, showCodingSubtitle = false } = params;
+  const { host, session, display, listItem = true } = params;
   const pinAccess = host.readSessionMutationAccess({
     method: "sessions.patch",
     params: { key: session.key, pinned: !session.pinned },
@@ -501,7 +499,7 @@ export function renderRecentSession(params: {
                     ><span class="sidebar-recent-session__name-content">${nameContent}</span></span
                   >`}
             </span>
-            ${session.isChild || !showCodingSubtitle
+            ${session.isChild
               ? nothing
               : renderSidebarSessionSubtitle(subtitleValue, params.project)}
           </span>
@@ -527,7 +525,6 @@ export function renderSessionTree(params: {
   host: SessionListHost;
   session: SidebarRecentSession;
   listItem?: boolean;
-  showCodingSubtitle?: boolean;
   project?: string;
   hideLeadingIdentity?: boolean;
 }): TemplateResult {
@@ -548,7 +545,6 @@ export function renderSessionTree(params: {
       session,
       listItem: false,
       project: params.project,
-      showCodingSubtitle: params.showCodingSubtitle,
       hideLeadingIdentity: params.hideLeadingIdentity,
     })}
     ${expanded
@@ -564,7 +560,6 @@ export function renderSessionTree(params: {
                     host,
                     session: child,
                     listItem,
-                    showCodingSubtitle: params.showCodingSubtitle,
                     hideLeadingIdentity: params.hideLeadingIdentity,
                   }),
                 )}
