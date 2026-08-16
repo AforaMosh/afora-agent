@@ -429,6 +429,7 @@ export const updateHandlers: GatewayRequestHandlers = {
               managedHandoffRestart = scheduleGatewaySigusr1Restart({
                 delayMs: managedRestartDelayMs,
                 reason: "update.run",
+                successorOwner: "managed-update-handoff",
                 skipDeferral: true,
                 skipCooldown: true,
                 audit: {
