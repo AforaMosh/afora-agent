@@ -3684,6 +3684,11 @@ button.chat-pr__diff {
   color: var(--chat-composer-surface);
 }
 
+.agent-chat__input .chat-send-btn--stop:hover:not(:disabled) {
+  background: var(--danger-solid-hover);
+  color: var(--destructive-foreground);
+}
+
 /* Voice keeps the quiet chrome treatment: it is a mode toggle beside send, not
    a second primary action. */
 .agent-chat__input .chat-send-btn--voice {
