@@ -2266,8 +2266,8 @@ body.update-dialog-open .sidebar-update-card__status {
     calc(var(--sidebar-inset) + 10px) 0 / 1px 100% no-repeat;
 }
 
-/* The project list advances one level, placing the creator rail on the project
-   icon axis. The standard row gap then keeps its text close to that identity. */
+/* Project children advance one level; their creator rail and the project
+   disclosure share that depth while the two labels share the next text axis. */
 .sidebar-session-catalog-project__sessions {
   margin-inline-start: var(--sidebar-depth-step);
 }
@@ -2280,15 +2280,6 @@ body.update-dialog-open .sidebar-update-card__status {
   gap: var(--sidebar-list-row-gap);
   min-width: 0;
   margin-inline-start: var(--sidebar-depth-step);
-}
-
-/* Project marks are product artwork, not sidebar glyphs, so they fill the lead
-   slot at its own scale instead of inheriting the Lucide stroke treatment. */
-.sidebar-session-group-toggle__lead .workspace-icon {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  object-fit: contain;
 }
 
 .sidebar-session-tree__loading {
@@ -2352,8 +2343,7 @@ body.update-dialog-open .sidebar-update-card__status {
   text-align: center;
 }
 
-/* Disclosure and project artwork each occupy one lead step. Starting at the
-   section inset keeps the resulting label on the next rung of the same ladder. */
+/* Project disclosure occupies the same nested rail as its sessions' creator. */
 .sidebar-session-catalog-project__head {
   display: flex;
   align-items: center;
@@ -2361,7 +2351,7 @@ body.update-dialog-open .sidebar-update-card__status {
   width: 100%;
   min-height: 24px;
   padding-block: 2px;
-  padding-inline: var(--sidebar-inset) 12px;
+  padding-inline: calc(var(--sidebar-inset) + var(--sidebar-depth-step)) 12px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -2372,15 +2362,6 @@ body.update-dialog-open .sidebar-update-card__status {
   transition:
     background var(--duration-fast) ease,
     color var(--duration-fast) ease;
-}
-
-/* The project artwork begins on its parent label axis. Its text, the child
-   identity, the child title, and the Git glyph/value then repeat one depth step. */
-.sidebar-session-catalog-project__head
-  > .sidebar-session-group-toggle__lead
-  + .sidebar-session-group-toggle__lead {
-  margin-inline-start: var(--sidebar-row-gap);
-  color: color-mix(in srgb, var(--muted) 72%, transparent);
 }
 
 .sidebar-session-catalog-project__head:hover,

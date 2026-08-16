@@ -46,7 +46,6 @@ import {
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
 import { isSessionPresenceIdentityWatching } from "./viewer-facepile.ts";
-import { renderWorkspaceIcon, type WorkspaceIconSource } from "./workspace-icon.ts";
 
 type SessionCatalogGroupsParams = {
   catalogs: readonly SessionCatalog[];
@@ -59,7 +58,6 @@ type SessionCatalogGroupsParams = {
   loadingMoreCatalogIds: ReadonlySet<string>;
   projectGrouping: CatalogProjectGrouping;
   liveRows: readonly GatewaySessionRow[];
-  workspaceIconSourceForSession: (sessionKey: string) => WorkspaceIconSource | null;
   creatorId?: string | null;
   sessionOwnershipVisible: boolean;
   presencePayload?: unknown;
@@ -340,12 +338,6 @@ function renderCatalogHostGroup(
           ? html`${projectGroups.groups.map((group) => {
               const sectionId = `catalog-project:${catalog.id}:${host.hostId}:${group.key}`;
               const collapsed = params.collapsedSections.has(sectionId);
-              const projectSessionKey = group.sessions.find(
-                (session) => session.sessionKey,
-              )?.sessionKey;
-              const iconSource = projectSessionKey
-                ? params.workspaceIconSourceForSession(projectSessionKey)
-                : null;
               return html`
                 <div
                   class="sidebar-session-catalog-project"
@@ -360,9 +352,6 @@ function renderCatalogHostGroup(
                     labelClassName: "sidebar-session-catalog-project__label",
                     title: group.title,
                     count: collapsed ? group.sessions.length : undefined,
-                    lead: html`<span class="sidebar-session-group-toggle__lead" aria-hidden="true"
-                      >${renderWorkspaceIcon(iconSource)}</span
-                    >`,
                     onToggle: () => params.onToggleSection(sectionId),
                   })}
                   ${collapsed
