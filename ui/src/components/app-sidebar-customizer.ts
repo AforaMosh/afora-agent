@@ -8,6 +8,7 @@ import {
   type NavigationRouteId,
 } from "../app-navigation.ts";
 import { t } from "../i18n/index.ts";
+import type { SessionMethodAccess } from "../lib/session-method-access.ts";
 import { writeSidebarSectionDragData } from "../lib/sessions/drag.ts";
 import type { SidebarVisibleSections } from "./app-sidebar-session-navigation-logic.ts";
 import type { SidebarWorkboardBoard } from "./app-sidebar-workboard.ts";
@@ -191,6 +192,11 @@ type SidebarCustomizerParams = {
   error: string | null;
   onToggle: (item: SidebarCustomizerItem) => void;
   onRemove: (item: SidebarCustomizerItem) => void;
+  onMove: (
+    item: SidebarCustomizerItem,
+    items: readonly SidebarCustomizerItem[],
+    direction: "up" | "down",
+  ) => void;
   onDone: () => void;
   onBack: () => void;
   onEntryDragStart: (event: DragEvent, item: SidebarCustomizerItem) => void;
@@ -202,6 +208,8 @@ type SidebarCustomizerParams = {
   onSectionDragLeave: (event: DragEvent, sectionId: string, category?: string) => void;
   onSectionDrop: (event: DragEvent, sectionId: string, category?: string) => void;
   onDragEnd: (kind: SidebarCustomizerItem["kind"]) => void;
+  sectionReorderAccess: SessionMethodAccess;
+  sessionPatchAccess: SessionMethodAccess;
 };
 
 function renderCustomizerItem(
@@ -210,8 +218,19 @@ function renderCustomizerItem(
   index: number,
 ) {
   const toggleable = item.toggleable !== false;
-  const draggable =
+  const reorderable =
     item.reorderable !== false && (item.kind === "section" || (toggleable && item.visible));
+  const reorderAccess =
+    item.kind === "section" ? params.sectionReorderAccess : ({ allowed: true } as const);
+  const draggable = reorderable && reorderAccess.allowed;
+  const siblings = item.kind === "section" ? params.sections : params.entries;
+  const movable = siblings.filter(
+    (candidate) =>
+      candidate.reorderable !== false &&
+      (candidate.kind === "section" || candidate.visible) &&
+      candidate.kind === item.kind,
+  );
+  const movableIndex = movable.findIndex((candidate) => candidate.id === item.id);
   const showVisibilityControl = toggleable;
   const removable = item.sessionKey !== undefined;
   const dropPosition =
@@ -241,6 +260,7 @@ function renderCustomizerItem(
       style=${`--sidebar-customizer-index: ${index}`}
       data-sidebar-customizer-id=${item.id}
       data-session-section=${item.kind === "section" ? item.id : ""}
+      title=${!reorderAccess.allowed ? reorderAccess.reason : ""}
       @dragstart=${(event: DragEvent) => {
         if (!draggable || !event.dataTransfer) {
           event.preventDefault();
@@ -254,21 +274,21 @@ function renderCustomizerItem(
         params.onEntryDragStart(event, item);
       }}
       @dragover=${(event: DragEvent) => {
-        if (item.kind === "section" && item.reorderable !== false) {
+        if (item.kind === "section" && draggable) {
           params.onSectionDragOver(event, item.id, item.category);
         } else if (item.entry) {
           params.onEntryDragOver(event, item.entry);
         }
       }}
       @dragleave=${(event: DragEvent) => {
-        if (item.kind === "section" && item.reorderable !== false) {
+        if (item.kind === "section" && draggable) {
           params.onSectionDragLeave(event, item.id, item.category);
         } else {
           params.onEntryDragLeave(event);
         }
       }}
       @drop=${(event: DragEvent) => {
-        if (item.kind === "section" && item.reorderable !== false) {
+        if (item.kind === "section" && draggable) {
           params.onSectionDrop(event, item.id, item.category);
         } else if (item.entry) {
           params.onEntryDrop(event, item.entry);
@@ -290,11 +310,37 @@ function renderCustomizerItem(
           : ""}"
         >${item.label}</span
       >
+      ${reorderable
+        ? html`<span class="sidebar-customizer__move-actions">
+            ${(["up", "down"] as const).map((direction) => {
+              const atBoundary =
+                direction === "up" ? movableIndex <= 0 : movableIndex === movable.length - 1;
+              const label = t(
+                direction === "up" ? "nav.customizeMoveUp" : "nav.customizeMoveDown",
+                { item: item.label },
+              );
+              return html`<button
+                type="button"
+                class="sidebar-customizer__move"
+                aria-label=${label}
+                title=${reorderAccess.allowed ? label : reorderAccess.reason}
+                ?disabled=${atBoundary || !reorderAccess.allowed}
+                @click=${() => params.onMove(item, siblings, direction)}
+              >
+                ${direction === "up" ? icons.chevronUp : icons.chevronDown}
+              </button>`;
+            })}
+          </span>`
+        : nothing}
       ${removable
         ? html`<button
             type="button"
             class="sidebar-customizer__visibility sidebar-customizer__remove"
             aria-label=${`${t("sessionsView.unpinSession")}: ${item.label}`}
+            title=${params.sessionPatchAccess.allowed
+              ? `${t("sessionsView.unpinSession")}: ${item.label}`
+              : params.sessionPatchAccess.reason}
+            ?disabled=${!params.sessionPatchAccess.allowed}
             @mousedown=${(event: MouseEvent) => event.stopPropagation()}
             @click=${() => params.onRemove(item)}
           >

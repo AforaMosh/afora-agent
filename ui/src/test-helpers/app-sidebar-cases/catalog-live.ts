@@ -288,6 +288,8 @@ describe("AppSidebar session catalog pagination", () => {
               {
                 threadId: "claude-thread",
                 name: "Claude session",
+                cwd: "/work/openclaw",
+                source: "worktree",
                 status: "stored",
                 pullRequest: { numbers: [107302], state: "draft" },
                 archived: false,
@@ -301,7 +303,16 @@ describe("AppSidebar session catalog pagination", () => {
       },
     ];
     const backingRows = (sidebar.sessionData.sessionsResult?.sessions ?? []).map((row) =>
-      row.key === backingSessionKey ? Object.assign({}, row, { unread: true }) : row,
+      row.key === backingSessionKey
+        ? Object.assign({}, row, {
+            unread: true,
+            worktree: {
+              id: "wt-adopted",
+              branch: "feature/live-context",
+              repoRoot: "/work/openclaw",
+            },
+          })
+        : row,
     );
     sidebar.sessionData.sessionsResult = {
       ...sidebar.sessionData.sessionsResult!,
@@ -335,6 +346,10 @@ describe("AppSidebar session catalog pagination", () => {
     ).toBe("#107302 · Draft");
     expect(linkedRow?.querySelector('[data-sidebar-session-pin="true"]')).not.toBeNull();
     expect(linkedRow?.querySelector('[data-session-menu="true"]')).not.toBeNull();
+    expect(linkedRow?.querySelector(".sidebar-recent-session__subtitle-text")?.textContent).toBe(
+      "feature/live-context",
+    );
+    expect(linkedRow?.querySelector(".session-row-worktree-glyph")).not.toBeNull();
     linkedRow?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     await sidebar.updateComplete;
     const linkedMenu = sidebar.querySelector<TestSessionMenu>("openclaw-session-menu");

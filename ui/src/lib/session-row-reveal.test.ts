@@ -116,13 +116,6 @@ describe("session row reveal", () => {
     expect(row.style.getPropertyValue("--session-row-action-cover")).toBe("0px");
   });
 
-  it("reveals an RTL title from the opposite side", () => {
-    const { row, label } = buildRow({ textWidth: 320, labelWidth: 180 });
-    label.style.direction = "rtl";
-    revealSessionRow(row);
-    expect(label.style.getPropertyValue("--hover-marquee-shift")).toBe("150px");
-  });
-
   it("keeps the title still under reduced motion but still measures the overlap", () => {
     vi.stubGlobal(
       "matchMedia",

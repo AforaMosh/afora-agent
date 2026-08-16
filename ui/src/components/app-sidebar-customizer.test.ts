@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { SidebarCustomizerController } from "./app-sidebar-customizer-controller.ts";
 import {
   buildSidebarCustomizerEntries,
   buildSidebarCustomizerSections,
@@ -151,5 +152,113 @@ describe("sidebar customizer model", () => {
         visible: false,
       },
     ]);
+  });
+});
+
+describe("sidebar customizer transaction", () => {
+  it("waits for an in-flight unpin before restoring the snapshot", async () => {
+    let resolveUnpin!: () => void;
+    const unpin = new Promise<void>((resolve) => {
+      resolveUnpin = resolve;
+    });
+    const session = { key: "agent:main:pinned", label: "Pinned", pinned: true };
+    const item = {
+      id: "session:agent:main:pinned",
+      entry: "session:agent:main:pinned",
+      kind: "entry" as const,
+      label: "Pinned",
+      sessionKey: session.key,
+      visible: true,
+    };
+    const patchSession = vi.fn(async (_session, patch: { pinned?: boolean }) => {
+      if (patch.pinned === false) {
+        await unpin;
+      }
+      session.pinned = patch.pinned ?? session.pinned;
+      return "completed" as const;
+    });
+    const sessions = {
+      state: { groups: [] },
+      groupsLoad: vi.fn(async () => []),
+      groupsPut: vi.fn(async () => "completed" as const),
+    };
+    const element = document.createElement("div");
+    const host = Object.assign(element, {
+      addController: vi.fn(),
+      removeController: vi.fn(),
+      hiddenSessionCatalogIds: new Set<string>(),
+      onUpdateSidebarEntries: vi.fn(),
+      sessionOrganizer: { patchSession },
+      sidebarMenus: { dismissTransientMenus: vi.fn() },
+      updateComplete: Promise.resolve(true),
+      findSidebarSessionByKey: () => session,
+      knownSectionOrder: () => [],
+      reconciledSidebarZone: () => ({ sidebarEntries: [item.entry] }),
+      requestUpdate: vi.fn(),
+      sidebarCustomizerContext: () => ({ sessions }),
+      sidebarCustomizerEntries: () => [item],
+    }) as ConstructorParameters<typeof SidebarCustomizerController>[0];
+    const controller = new SidebarCustomizerController(host);
+    controller.open();
+    await vi.waitFor(() => expect(controller.isOpen).toBe(true));
+
+    controller.remove(item);
+    const discard = controller.discard();
+
+    expect(controller.isOpen).toBe(true);
+    resolveUnpin();
+    await discard;
+    expect(patchSession.mock.calls.map(([, patch]) => patch)).toEqual([
+      { pinned: false },
+      { pinned: true },
+    ]);
+    expect(controller.isOpen).toBe(false);
+  });
+
+  it("waits for an in-flight section reorder before restoring the snapshot", async () => {
+    let resolveReorder!: () => void;
+    let sectionOrder = ["work", "ungrouped"];
+    const reorder = new Promise<"completed">((resolve) => {
+      resolveReorder = () => {
+        sectionOrder = ["ungrouped", "work"];
+        resolve("completed");
+      };
+    });
+    const sessions = {
+      state: { groups: [] },
+      groupsLoad: vi.fn(async () => []),
+      groupsPut: vi.fn(async () => "completed" as const),
+    };
+    const element = document.createElement("div");
+    const host = Object.assign(element, {
+      addController: vi.fn(),
+      removeController: vi.fn(),
+      hiddenSessionCatalogIds: new Set<string>(),
+      onUpdateSidebarEntries: vi.fn(),
+      sessionOrganizer: {
+        patchSession: vi.fn(),
+        reorderSidebarSection: vi.fn(),
+      },
+      sidebarMenus: { dismissTransientMenus: vi.fn() },
+      updateComplete: Promise.resolve(true),
+      findSidebarSessionByKey: () => undefined,
+      knownSectionOrder: () => sectionOrder,
+      reconciledSidebarZone: () => ({ sidebarEntries: [] }),
+      requestUpdate: vi.fn(),
+      sidebarCustomizerContext: () => ({ sessions }),
+      sidebarCustomizerEntries: () => [],
+    }) as ConstructorParameters<typeof SidebarCustomizerController>[0];
+    const controller = new SidebarCustomizerController(host);
+    controller.open();
+    await vi.waitFor(() => expect(controller.isOpen).toBe(true));
+
+    controller.trackSectionMutation(reorder);
+    const discard = controller.discard();
+    expect(controller.isOpen).toBe(true);
+
+    resolveReorder();
+    await discard;
+    expect(sessions.groupsPut).toHaveBeenCalledWith([], ["work", "ungrouped"]);
+    expect(controller.isOpen).toBe(false);
   });
 });

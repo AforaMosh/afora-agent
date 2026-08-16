@@ -418,6 +418,7 @@ function renderSessionCatalog(params: {
           host,
           session: snapshot.toSidebarSession(row),
           display,
+          project: display.project,
         }),
       onToggleSection: (sectionId) => host.toggleSection(sectionId),
       draggingSectionId: host.sessionOrganizer.draggingSidebarSection,

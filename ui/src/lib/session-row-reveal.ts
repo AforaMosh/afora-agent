@@ -62,8 +62,13 @@ function measureRowReveal(host: HTMLElement, label: HTMLElement | null): RowReve
   }
   // Coarse pointers keep the actions in flow past the link, where they cover
   // nothing; the same subtraction reports that as zero without a branch.
-  const actionsLeft = actions.getBoundingClientRect().left;
-  const cover = Math.max(0, link.getBoundingClientRect().right - actionsLeft);
+  const actionsRect = actions.getBoundingClientRect();
+  const linkRect = link.getBoundingClientRect();
+  const rtl = getComputedStyle(label ?? host).direction === "rtl";
+  const cover = Math.max(
+    0,
+    rtl ? actionsRect.right - linkRect.left : linkRect.right - actionsRect.left,
+  );
   if (!label) {
     return { cover, hidden: 0 };
   }
@@ -75,8 +80,12 @@ function measureRowReveal(host: HTMLElement, label: HTMLElement | null): RowReve
   range.selectNodeContents(label);
   const textWidth = range.getBoundingClientRect().width;
   const clipped = Math.max(0, textWidth - label.clientWidth);
-  const visibleRight = label.getBoundingClientRect().left + Math.min(textWidth, label.clientWidth);
-  return { cover, hidden: Math.round(clipped + Math.max(0, visibleRight - actionsLeft)) };
+  const labelRect = label.getBoundingClientRect();
+  const visibleTextWidth = Math.min(textWidth, label.clientWidth);
+  const actionOverlap = rtl
+    ? Math.max(0, actionsRect.right - (labelRect.right - visibleTextWidth))
+    : Math.max(0, labelRect.left + visibleTextWidth - actionsRect.left);
+  return { cover, hidden: Math.round(clipped + actionOverlap) };
 }
 
 /**
@@ -86,9 +95,10 @@ function measureRowReveal(host: HTMLElement, label: HTMLElement | null): RowReve
  */
 export function revealSessionRow(host: HTMLElement): void {
   const label = findMarqueeLabel(host);
+  const title = findTitleLabel(host);
   // Measure at hover time: labels resize with the sidebar and with hover-only
   // row actions, so a cached width would drift.
-  const { cover, hidden } = measureRowReveal(host, findTitleLabel(host));
+  const { cover, hidden } = measureRowReveal(host, title);
   // The fade is not part of the reveal: CSS shows the actions on :hover on its
   // own, and the mask in layout.css ramps at this measurement. Skipping it while
   // a menu is open would leave those actions sitting on unfaded title text, so
@@ -96,6 +106,17 @@ export function revealSessionRow(host: HTMLElement): void {
   // is suppressed.
   host.style.setProperty(ACTION_COVER_PROPERTY, `${Math.round(cover)}px`);
   host.toggleAttribute(ACTION_OVERLAP_ATTRIBUTE, hidden > 1);
+  if (!label && title) {
+    title.toggleAttribute("data-overflow-reveal", hidden > 1);
+    if (hidden > 1) {
+      const direction = getComputedStyle(title).direction === "rtl" ? 1 : -1;
+      title.style.setProperty("--overflow-reveal-translate", `${direction * hidden}px`);
+      title.style.setProperty(
+        "--overflow-reveal-duration",
+        `${Math.min(MARQUEE_MAX_DURATION_MS, Math.max(MARQUEE_MIN_DURATION_MS, hidden * MARQUEE_MS_PER_PIXEL))}ms`,
+      );
+    }
+  }
   if (!label || label.classList.contains("hover-marquee--scrolling")) {
     return;
   }
@@ -153,6 +174,10 @@ export function restSessionRow(host: HTMLElement, next: Node | null): void {
   host.removeAttribute(ACTION_OVERLAP_ATTRIBUTE);
   const label = findMarqueeLabel(host);
   if (!label) {
+    const title = findTitleLabel(host);
+    title?.removeAttribute("data-overflow-reveal");
+    title?.style.removeProperty("--overflow-reveal-translate");
+    title?.style.removeProperty("--overflow-reveal-duration");
     return;
   }
   clearPendingMarquee(label);

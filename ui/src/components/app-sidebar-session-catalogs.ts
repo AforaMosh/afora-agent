@@ -76,6 +76,7 @@ export type CatalogBackingSessionDisplay = {
   label: string;
   subtitle?: string;
   work?: SessionWorkContext;
+  project?: string;
   meta: string;
   title: string;
   pullRequest?: SessionCatalogSession["pullRequest"];

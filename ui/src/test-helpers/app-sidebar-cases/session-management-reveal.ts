@@ -80,30 +80,21 @@ describe("AppSidebar session management reveal", () => {
     );
   });
 
-  it("measures only the clipped distance plus action-only management", () => {
-    const host = document.createElement("div");
-    host.className = "session-row-host";
-    host.dataset.sessionActionOnly = "true";
+  it("marks clipped text without owning row-action geometry", () => {
     const name = document.createElement("span");
     name.className = "sidebar-recent-session__name";
     const content = document.createElement("span");
     content.className = "sidebar-recent-session__name-content";
-    const management = document.createElement("span");
-    management.className = "session-row-endcap__management";
     Object.defineProperty(name, "clientWidth", { configurable: true, value: 120 });
     Object.defineProperty(content, "scrollWidth", { configurable: true, value: 180 });
-    Object.defineProperty(management, "offsetWidth", { configurable: true, value: 40 });
     name.append(content);
-    host.append(name, management);
-    document.body.append(host);
+    document.body.append(name);
     try {
-      createOverflowFadeRef({ revealTrailingActions: true })(name);
+      createOverflowFadeRef()(name);
       expect(name.hasAttribute("data-overflow-fade")).toBe(true);
-      expect(name.hasAttribute("data-overflow-reveal")).toBe(true);
-      expect(name.style.getPropertyValue("--overflow-reveal-translate")).toBe("-100px");
-      expect(name.style.getPropertyValue("--overflow-reveal-duration")).toBe("1000ms");
+      expect(name.hasAttribute("data-overflow-reveal")).toBe(false);
     } finally {
-      host.remove();
+      name.remove();
     }
   });
 

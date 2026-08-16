@@ -351,7 +351,7 @@ async function openClaudeCatalogTerminal(page: Page) {
 }
 
 suite.define(() => {
-  it("shows catalog header affordances only for hover or keyboard-visible focus", async () => {
+  it("keeps catalog disclosure visible while gating actions to hover and focus", async () => {
     await suite.withPage(
       { hasTouch: false, viewport: { width: 1440, height: 900 } },
       async ({ page }) => {
@@ -382,7 +382,7 @@ suite.define(() => {
             gripOpacity: "0.55",
             hoverCapable: true,
             hovered: true,
-            providerOpacity: "0",
+            providerOpacity: "1",
           });
 
         await toggle.click();
@@ -422,7 +422,7 @@ suite.define(() => {
           .toMatchObject({
             actionsOpacity: "0",
             actionsPointerEvents: "none",
-            chevronOpacity: "0",
+            chevronOpacity: "0.75",
             focusWithin: true,
             gripOpacity: "0",
             hovered: false,
@@ -443,7 +443,7 @@ suite.define(() => {
             focusWithin: true,
             gripOpacity: "0.55",
             hovered: false,
-            providerOpacity: "0",
+            providerOpacity: "1",
           });
       },
     );
@@ -467,16 +467,20 @@ suite.define(() => {
         const section = page.locator(`[data-session-section="catalog:${catalogId}"]`);
         const gatewayHost = section.locator('[data-session-catalog-host="gateway:local"]');
         const buildHost = section.locator('[data-session-catalog-host="node:build"]');
-        await gatewayHost.getByText(`${catalogLabel} local plan`, { exact: true }).waitFor();
+        const localTitle = gatewayHost
+          .locator(".sidebar-recent-session__name-content")
+          .filter({ hasText: `${catalogLabel} local plan` });
+        const remoteTitle = buildHost
+          .locator(".sidebar-recent-session__name-content")
+          .filter({ hasText: `${catalogLabel} remote review` });
+        await localTitle.waitFor();
         await buildHost.getByText("Build Node", { exact: true }).waitFor();
-        await buildHost.getByText(`${catalogLabel} remote review`, { exact: true }).waitFor();
+        await remoteTitle.waitFor();
         expect(await gatewayHost.locator(".sidebar-session-catalog-host__head").count()).toBe(0);
         expect(await gatewayHost.getByText("Gateway Mac", { exact: true }).count()).toBe(0);
         expect(await gatewayHost.locator(".sidebar-recent-session").count()).toBe(1);
         expect(await buildHost.locator(".sidebar-recent-session").count()).toBe(1);
-        expect(await section.getByText(`${catalogLabel} local plan`, { exact: true }).count()).toBe(
-          1,
-        );
+        expect(await localTitle.count()).toBe(1);
       }
 
       const touchAffordance = await page
@@ -711,7 +715,10 @@ suite.define(() => {
     await page.goto(`${suite.server.baseUrl}chat`);
     await expandCodingSection(page);
     await page.locator('[data-session-catalog-load-more="claude"]').click();
-    await page.getByText("Older remote review", { exact: true }).waitFor();
+    const olderRemoteTitle = page
+      .locator(".sidebar-recent-session__name-content")
+      .filter({ hasText: "Older remote review" });
+    await olderRemoteTitle.waitFor();
     expect((await gateway.getRequests("sessions.catalog.list")).at(-1)?.params).toEqual({
       agentId: "main",
       catalogId: "claude",
@@ -722,8 +729,8 @@ suite.define(() => {
     await expect
       .poll(async () => (await gateway.getRequests("sessions.catalog.list")).length)
       .toBeGreaterThanOrEqual(catalogRequestCount + 2);
-    await page.getByText("Older remote review", { exact: true }).waitFor();
-    await page.getByText("Remote architecture review", { exact: true }).click();
+    await olderRemoteTitle.waitFor();
+    await page.getByRole("link", { name: /^Remote architecture review/ }).click();
     await expect.poll(() => page.getByText("newer answer", { exact: true }).count()).toBe(1);
     const catalogPane = page.locator('openclaw-chat-pane[aria-hidden="false"]');
     const thread = catalogPane.locator(".chat-thread");

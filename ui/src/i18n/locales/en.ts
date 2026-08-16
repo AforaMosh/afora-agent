@@ -1957,6 +1957,8 @@ export const en: TranslationMap = {
     customize: "Customize sidebar",
     customizeDone: "Done",
     customizeDiscard: "Discard changes",
+    customizeMoveUp: "Move {item} up",
+    customizeMoveDown: "Move {item} down",
     customizeMutationError:
       "Couldn't apply this sidebar change. Review the current state and try again.",
     customizeRestoreError:

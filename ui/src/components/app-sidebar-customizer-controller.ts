@@ -25,7 +25,10 @@ type SidebarCustomizerHost = ReactiveControllerHost &
   HTMLElement & {
     readonly hiddenSessionCatalogIds: ReadonlySet<string>;
     readonly onUpdateSidebarEntries?: (entries: string[]) => void;
-    readonly sessionOrganizer: Pick<SessionOrganizerController, "patchSession">;
+    readonly sessionOrganizer: Pick<
+      SessionOrganizerController,
+      "patchSession" | "reorderSidebarSection"
+    >;
     readonly sidebarMenus: Pick<SidebarMenusController, "dismissTransientMenus">;
     readonly updateComplete: Promise<boolean>;
     findSidebarSessionByKey(sessionKey: string): SidebarRecentSession | undefined;
@@ -41,6 +44,8 @@ export class SidebarCustomizerController {
 
   private returnFocus: HTMLElement | null = null;
   private snapshot: SidebarCustomizerSnapshot | null = null;
+  private readonly pendingMutations = new Set<Promise<unknown>>();
+  private restoring = false;
 
   constructor(private readonly host: SidebarCustomizerHost) {}
 
@@ -80,6 +85,7 @@ export class SidebarCustomizerController {
     this.isOpen = false;
     this.error = null;
     this.snapshot = null;
+    this.restoring = false;
     const returnFocus = this.returnFocus;
     this.returnFocus = null;
     this.host.requestUpdate();
@@ -100,10 +106,20 @@ export class SidebarCustomizerController {
 
   async discard(): Promise<void> {
     const snapshot = this.snapshot;
-    if (!snapshot || !this.isDirty()) {
+    if (!snapshot) {
       this.close();
       return;
     }
+    if (this.restoring) {
+      return;
+    }
+    if (this.pendingMutations.size === 0 && !this.isDirty()) {
+      this.close();
+      return;
+    }
+    this.restoring = true;
+    this.host.requestUpdate();
+    await Promise.allSettled([...this.pendingMutations]);
     let failureCount = 0;
     try {
       if (this.host.onUpdateSidebarEntries) {
@@ -157,6 +173,7 @@ export class SidebarCustomizerController {
       failureCount += 1;
     }
     if (failureCount > 0) {
+      this.restoring = false;
       this.reportError("nav.customizeRestoreError");
     } else {
       this.close();
@@ -207,7 +224,7 @@ export class SidebarCustomizerController {
   }
 
   remove(item: SidebarCustomizerItem): void {
-    if (!item.sessionKey) {
+    if (!item.sessionKey || this.restoring) {
       return;
     }
     const session = this.host.findSidebarSessionByKey(item.sessionKey);
@@ -215,13 +232,69 @@ export class SidebarCustomizerController {
       this.reportError("nav.customizeMutationError");
       return;
     }
-    void this.host.sessionOrganizer.patchSession(session, { pinned: false }).then((outcome) => {
+    this.trackMutationOutcome(this.host.sessionOrganizer.patchSession(session, { pinned: false }));
+  }
+
+  move(
+    item: SidebarCustomizerItem,
+    items: readonly SidebarCustomizerItem[],
+    direction: "up" | "down",
+  ): void {
+    if (this.restoring) {
+      return;
+    }
+    const movable = items.filter(
+      (candidate) =>
+        candidate.reorderable !== false &&
+        (candidate.kind === "section" || candidate.visible) &&
+        candidate.kind === item.kind,
+    );
+    const index = movable.findIndex((candidate) => candidate.id === item.id);
+    const target = movable[index + (direction === "up" ? -1 : 1)];
+    if (!target) {
+      return;
+    }
+    if (item.kind === "section") {
+      this.trackSectionMutation(
+        this.host.sessionOrganizer.reorderSidebarSection(
+          item.id,
+          target.id,
+          direction === "up" ? "before" : "after",
+        ),
+      );
+      return;
+    }
+    if (!item.entry || !target.entry || !this.host.onUpdateSidebarEntries) {
+      this.reportError("nav.customizeMutationError");
+      return;
+    }
+    const next = this.host
+      .reconciledSidebarZone()
+      .sidebarEntries.filter((entry) => entry !== item.entry);
+    const targetIndex = next.indexOf(target.entry);
+    next.splice(targetIndex + (direction === "down" ? 1 : 0), 0, item.entry);
+    this.host.onUpdateSidebarEntries(next);
+    this.clearError();
+  }
+
+  trackSectionMutation(mutation: Promise<"completed" | "failed" | "stale">): void {
+    this.trackMutationOutcome(mutation);
+  }
+
+  private trackMutationOutcome(mutation: Promise<"completed" | "failed" | "stale">): void {
+    void this.trackMutation(mutation).then((outcome) => {
       if (outcome === "completed") {
         this.clearError();
       } else if (this.isOpen) {
         this.reportError("nav.customizeMutationError");
       }
     });
+  }
+
+  private trackMutation<T>(mutation: Promise<T>): Promise<T> {
+    const tracked = mutation.finally(() => this.pendingMutations.delete(tracked));
+    this.pendingMutations.add(tracked);
+    return tracked;
   }
 
   clearError(): void {

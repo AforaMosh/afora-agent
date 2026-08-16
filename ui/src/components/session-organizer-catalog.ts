@@ -154,9 +154,9 @@ export async function reorderSidebarSection(
   targetSectionId: string,
   position: "before" | "after",
   scope: SidebarSessionMutationScope,
-): Promise<void> {
+): Promise<SidebarSessionMutationResult> {
   if (!host.sessionData.isSessionMutationScopeCurrent(scope)) {
-    return;
+    return "stale";
   }
   if (
     !requireSessionMutationAccess(host, scope, {
@@ -164,7 +164,7 @@ export async function reorderSidebarSection(
       requiredScope: "operator.write",
     })
   ) {
-    return;
+    return "failed";
   }
   try {
     // knownSessionGroups() is the full discovered set (gateway catalog plus
@@ -182,12 +182,20 @@ export async function reorderSidebarSection(
     );
     // No capability gate: the gateway serves this UI from its own dist, so a
     // newer UI never talks to an older gateway's closed put schema outside dev.
-    await scope.sessions.groupsPut(nextGroups, next);
+    const outcome = await scope.sessions.groupsPut(nextGroups, next);
     if (!host.sessionData.isSessionMutationScopeCurrent(scope)) {
-      return;
+      return "stale";
+    }
+    if (outcome !== "completed") {
+      return outcome;
     }
     host.requestUpdate();
+    return "completed";
   } catch (error) {
+    if (!host.sessionData.isSessionMutationScopeCurrent(scope)) {
+      return "stale";
+    }
     host.sessionData.publishSessionMutationError(scope, error);
+    return "failed";
   }
 }

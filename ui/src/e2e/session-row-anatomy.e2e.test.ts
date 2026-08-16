@@ -37,10 +37,15 @@ function anatomyFixture() {
   return sessionsListResponse([
     { ...sessionRow(OPEN_KEY, "Release notes", 20, { unread: true }), lastReadAt: 0 },
     sessionRow(QUIET_KEY, "Weekly digest", 19),
-    sessionRow(RUNNING_KEY, "Reindexing the archive", 18, {
-      hasActiveRun: true,
-      status: "running",
-    }),
+    sessionRow(
+      RUNNING_KEY,
+      "Reindexing the archive with a deliberately detailed recovery plan",
+      18,
+      {
+        hasActiveRun: true,
+        status: "running",
+      },
+    ),
     sessionRow(UNREAD_KEY, "Nightly export finished", 17, { unread: true }),
     sessionRow(BLOCKED_KEY, "Deploy check", 16, { status: "failed" }),
     sessionRow(PINNED_KEY, "Runbook", 15, { pinned: true, pinnedAt: 1 }),
@@ -257,6 +262,47 @@ suite.define(() => {
         .poll(() => menu.evaluate((element) => globalThis.getComputedStyle(element).opacity))
         .toBe("1");
       await captureUiProof(page, `row-endcap-hover-${colorScheme}.png`, { clip: [target] });
+    } finally {
+      await context.close();
+    }
+  });
+
+  it("reveals stateful row actions on the physical trailing edge in RTL", async () => {
+    const { context, page } = await openSidebar("light");
+    try {
+      await page.locator("html").evaluate((element) => element.setAttribute("dir", "rtl"));
+      const target = row(page, RUNNING_KEY);
+      await target.hover();
+      const title = target.locator(".sidebar-recent-session__name");
+      const actions = target.locator(".session-row-actions");
+      await expect.poll(() => title.getAttribute("data-overflow-reveal")).not.toBeNull();
+      const geometry = await target.evaluate((element) => {
+        const title = element.querySelector<HTMLElement>(".sidebar-recent-session__name");
+        const actions = element.querySelector<HTMLElement>(".session-row-actions");
+        const link = element.querySelector<HTMLElement>(".sidebar-recent-session__link");
+        if (!title || !actions || !link) {
+          return null;
+        }
+        const titleBox = title.getBoundingClientRect();
+        const actionsBox = actions.getBoundingClientRect();
+        return {
+          actionCover: Number.parseFloat(
+            element.style.getPropertyValue("--session-row-action-cover"),
+          ),
+          actionsBeforeTitle: actionsBox.right <= titleBox.right,
+          linkMask: getComputedStyle(link).maskImage,
+          titleShift: Number.parseFloat(
+            title.style.getPropertyValue("--overflow-reveal-translate"),
+          ),
+        };
+      });
+      expect(geometry).toMatchObject({
+        actionsBeforeTitle: true,
+        linkMask: expect.stringContaining("to left"),
+      });
+      expect(geometry?.actionCover).toBeGreaterThan(0);
+      expect(geometry?.titleShift).toBeGreaterThan(0);
+      await expect.poll(() => actions.isVisible()).toBe(true);
     } finally {
       await context.close();
     }

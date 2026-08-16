@@ -485,9 +485,7 @@ export function renderRecentSession(params: {
                 ? html`<span class="sidebar-recent-session__name hover-marquee"
                     >${nameContent}</span
                   >`
-                : html`<span
-                    class="sidebar-recent-session__name"
-                    ${ref(createOverflowFadeRef({ revealTrailingActions: !session.isChild }))}
+                : html`<span class="sidebar-recent-session__name" ${ref(createOverflowFadeRef())}
                     ><span class="sidebar-recent-session__name-content">${nameContent}</span></span
                   >`}
             </span>

@@ -9,8 +9,9 @@ import {
 
 const suite = createSidebarCustomizationSuite("Control UI sidebar iconography mocked Gateway E2E");
 
+const baselineVariant = { colorScheme: "light" as const, deviceScaleFactor: 1 };
 const visualVariants = [
-  { colorScheme: "light" as const, deviceScaleFactor: 1 },
+  baselineVariant,
   { colorScheme: "light" as const, deviceScaleFactor: 2 },
   { colorScheme: "dark" as const, deviceScaleFactor: 1 },
   { colorScheme: "dark" as const, deviceScaleFactor: 2 },
@@ -85,7 +86,7 @@ async function expectLucideContract(root: Locator, minimumIconCount = 1) {
 
 suite.define(() => {
   it("keeps sidebar icons on the shared optical scale", async () => {
-    const { context, page, sidebar } = await openIconographyPage(visualVariants[0]);
+    const { context, page, sidebar } = await openIconographyPage(baselineVariant);
 
     try {
       const sidebarSurface = sidebar.locator(".sidebar-shell");

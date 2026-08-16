@@ -484,6 +484,11 @@ export function renderApplicationShell(host: ShellViewHost) {
       @theme-change=${(event: CustomEvent<ThemeModeChangeDetail>) => host.handleThemeChange(event)}
     >
       <a class="shell-skip-link" href="#control-ui-main"> ${t("common.skipToMainContent")} </a>
+      ${sidebarUpdateBadgeVisible
+        ? html`<span class="sr-only" role="status" aria-live="polite"
+            >${updateBusy ? t("updates.sidebar.updating") : t("updates.sidebar.available")}</span
+          >`
+        : nothing}
       ${isNativeWebChromeHost() && !onboarding
         ? html`
             <openclaw-macos-titlebar-controls

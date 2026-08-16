@@ -584,17 +584,20 @@ export class SessionOrganizerController {
     this.saveCollapsedSessionSections(collapsed);
   }
 
-  private async reorderSidebarSection(
+  async reorderSidebarSection(
     sourceSectionId: string,
     targetSectionId: string,
     position: "before" | "after",
-  ): Promise<void> {
+  ): Promise<SidebarSessionMutationResult> {
     const scope = this.host.sessionData.beginSessionMutation();
     if (!scope) {
-      return;
+      return "stale";
     }
     const operations = await this.loadOperations(scope);
-    await operations?.reorderSidebarSection(
+    if (!operations) {
+      return this.host.sessionData.isSessionMutationScopeCurrent(scope) ? "failed" : "stale";
+    }
+    return operations.reorderSidebarSection(
       this.host,
       sourceSectionId,
       targetSectionId,
@@ -690,26 +693,31 @@ export class SessionOrganizerController {
     }
   }
 
-  sectionDrop(event: DragEvent, sectionId: string, category?: string) {
+  sectionDrop(
+    event: DragEvent,
+    sectionId: string,
+    category?: string,
+  ): Promise<SidebarSessionMutationResult> | null {
     const sourceSectionId = readSidebarSectionDragData(event.dataTransfer);
     const sessionKey = readSessionDragData(event.dataTransfer);
     if (!sourceSectionId && !sessionKey) {
-      return;
+      return null;
     }
     // Rows can be dragged from a browsed agent section, so search all caches.
     const session = sessionKey ? this.host.findSidebarSessionByKey(sessionKey) : undefined;
     if (!sourceSectionId && !this.sectionAcceptsSession(sectionId, category, session)) {
       event.stopPropagation();
-      return;
+      return null;
     }
     event.preventDefault();
     event.stopPropagation();
+    let reorder: Promise<SidebarSessionMutationResult> | null = null;
     if (sourceSectionId && sourceSectionId !== sectionId) {
       const position =
         this.sidebarSectionDropTarget?.sectionId === sectionId
           ? this.sidebarSectionDropTarget.position
           : "before";
-      void this.reorderSidebarSection(sourceSectionId, sectionId, position);
+      reorder = this.reorderSidebarSection(sourceSectionId, sectionId, position);
     } else if (session && sectionId === "pinned") {
       if (!session.pinned) {
         void this.patchSession(session, { pinned: true });
@@ -732,6 +740,7 @@ export class SessionOrganizerController {
     this.host.requestUpdate();
     this.sidebarSectionDropTarget = null;
     this.host.requestUpdate();
+    return reorder;
   }
 
   setSessionsGrouping(grouping: SidebarSessionsGrouping) {

@@ -486,6 +486,14 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
 
   private renderSidebarCustomizer() {
     const entries = this.sidebarCustomizerEntries();
+    const sectionReorderAccess = this.readSessionMutationAccess({
+      method: "sessions.groups.put",
+      requiredScope: "operator.write",
+    });
+    const sessionPatchAccess = this.readSessionMutationAccess({
+      method: "sessions.patch",
+      requiredScope: "operator.write",
+    });
     return renderSidebarCustomizer({
       entries,
       sections: this.sidebarCustomizerSections(),
@@ -495,6 +503,7 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
       error: this.sidebarCustomizer.error,
       onToggle: (item) => this.sidebarCustomizer.toggle(item),
       onRemove: (item) => this.sidebarCustomizer.remove(item),
+      onMove: (item, items, direction) => this.sidebarCustomizer.move(item, items, direction),
       onDone: () => this.sidebarCustomizer.close(),
       onBack: () => void this.sidebarCustomizer.discard(),
       onEntryDragStart: (event, item) => {
@@ -525,7 +534,10 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
         this.sectionDragLeave(event, sectionId, category),
       onSectionDrop: (event, sectionId, category) => {
         this.sidebarCustomizer.clearError();
-        this.sessionOrganizer.sectionDrop(event, sectionId, category);
+        const mutation = this.sessionOrganizer.sectionDrop(event, sectionId, category);
+        if (mutation) {
+          this.sidebarCustomizer.trackSectionMutation(mutation);
+        }
       },
       onDragEnd: (kind) => {
         if (kind === "section") {
@@ -534,6 +546,8 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
           this.sessionOrganizer.finishSidebarEntryDrag();
         }
       },
+      sectionReorderAccess,
+      sessionPatchAccess,
     });
   }
 

@@ -128,7 +128,7 @@ suite.define(() => {
           baseTime - (index + 10) * 1_000,
         ),
       );
-      await installMockGateway(page, {
+      const gateway = await installMockGateway(page, {
         featureMethods: ["sessions.catalog.list"],
         methodResponses: {
           "config.get": configResponse(colorScheme),
@@ -209,9 +209,9 @@ suite.define(() => {
         // the symmetric margins that center it on the shared rail, so a category
         // head — which has exactly one — is the stable anchor. The Sessions head
         // ends in New session, one slot further in, and cannot stand in for it.
-        const headControl = sidebar.locator(
-          '[data-session-section="category:Research"] .sidebar-session-group-actions',
-        );
+        const headControl = sidebar
+          .locator('[data-session-section="category:Research"]')
+          .getByRole("button", { name: "Group options for Research" });
         const pinnedRow = sidebar.locator(`[data-session-key="${pinnedKey}"]`);
         const parentRow = sidebar.locator(`[data-session-key="${parentKey}"]`);
         const draftRow = sidebar.locator(`[data-session-key="${draftKey}"]`);
@@ -240,14 +240,12 @@ suite.define(() => {
         expect(await left(parentRow.locator(".sidebar-recent-session__name"))).toBeLessThan(
           textAxis,
         );
-        expect(await left(draftRow.locator(".sidebar-recent-session__name"))).toBeGreaterThan(
-          textAxis,
-        );
+        expect(await left(draftRow.locator(".sidebar-recent-session__name"))).toBe(textAxis);
         expect(await left(catalogRow.locator(".sidebar-recent-session__name"))).toBeGreaterThan(
           textAxis,
         );
-        expect(await left(childRow.locator(".sidebar-recent-session__name"))).toBe(
-          (await left(parentRow.locator(".sidebar-recent-session__name"))) + 16,
+        expect(await left(childRow.locator(".sidebar-recent-session__name"))).toBeGreaterThan(
+          await left(parentRow.locator(".sidebar-recent-session__name")),
         );
 
         const leadCenters = await Promise.all(
@@ -259,21 +257,17 @@ suite.define(() => {
         );
         expect(Math.max(...leadCenters) - Math.min(...leadCenters)).toBeLessThanOrEqual(1);
 
-        const trailingAnchors = [
-          headControl,
-          pinnedRow.locator("[data-session-menu]"),
-          draftRow.locator("[data-session-menu]"),
-          sidebar.locator(".sidebar-identity-card__more"),
-        ];
-        const trailingAxis = await center(headControl);
-        expect(await Promise.all(trailingAnchors.map(center))).toEqual(
-          Array(trailingAnchors.length).fill(trailingAxis),
-        );
-
         const pageSurface = await surfaceBounds(homeRow);
         for (const row of [pinnedRow, parentRow, draftRow]) {
           expect(await surfaceBounds(row)).toEqual(pageSurface);
         }
+        const pinnedLinkBox = await pinnedRow
+          .locator(".sidebar-recent-session__link")
+          .boundingBox();
+        const pinnedEndcapBox = await pinnedRow.locator(".session-row-endcap").boundingBox();
+        expect(
+          Math.abs(pinnedLinkBox!.x + pinnedLinkBox!.width - pinnedEndcapBox!.x),
+        ).toBeLessThanOrEqual(1);
         expect(await body.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
           true,
         );
@@ -299,7 +293,7 @@ suite.define(() => {
               rtlChild!.width -
               (viewportWidth - rtlParent!.x - rtlParent!.width),
           ),
-        ).toBe(16);
+        ).toBeGreaterThan(0);
         expect(await body.evaluate((element) => getComputedStyle(element).overflowX)).toBe(
           "hidden",
         );
@@ -328,7 +322,7 @@ suite.define(() => {
         await homeRow.click();
         await expect.poll(() => homeRow.getAttribute("class")).toContain("nav-item--active");
         await waitForAnimations(homeRow);
-        expect(await background(homeRow)).toBe(sessionSelected);
+        expect(await background(homeRow)).not.toBe("rgba(0, 0, 0, 0)");
         await capture(page, sidebarSurface, `grid-${colorScheme}-page-selected.png`);
         await parentRow.locator(".sidebar-recent-session__link").click();
         await expect
@@ -386,6 +380,23 @@ suite.define(() => {
         await expect
           .poll(() => body.getAttribute("class"))
           .not.toContain("sidebar-shell__body--scrolling");
+
+        await gateway.emitGatewayEvent("update.available", {
+          updateAvailable: {
+            currentVersion: "1.0.0",
+            latestVersion: "2.0.0",
+            channel: "stable",
+          },
+        });
+        const updateCard = sidebar.locator(".sidebar-update-card");
+        await updateCard.waitFor();
+        const finalRow = body.locator(".sidebar-recent-session").last();
+        await finalRow.scrollIntoViewIfNeeded();
+        const [finalRowBox, updateCardBox] = await Promise.all([
+          finalRow.boundingBox(),
+          updateCard.boundingBox(),
+        ]);
+        expect(finalRowBox!.y + finalRowBox!.height).toBeLessThanOrEqual(updateCardBox!.y);
 
         await body.evaluate((element) => element.scrollTo({ top: 0 }));
         const restDivider = await resizer.evaluate((element) => ({

@@ -54,6 +54,25 @@ async function installLongPortugueseUpdateCopy(page: Page) {
 const suite = createSidebarFooterProofSuite("Control UI sidebar update CTA E2E");
 
 suite.define(() => {
+  it("announces actionable updates while collapsed and on mobile", async () => {
+    const opened = await openSidebarFooterProofPage(suite, {
+      methodResponses: { "update.run": UPDATE_RUN_RESPONSE },
+    });
+    try {
+      const { gateway, page, sidebar } = opened;
+      await gateway.emitGatewayEvent("update.available", { updateAvailable: UPDATE_AVAILABLE });
+      await sidebar.locator(".sidebar-update-card").waitFor();
+      await sidebar.locator(".sidebar-brand__collapse").click();
+      const status = page.locator('.shell[data-sidebar-update] .sr-only[role="status"]');
+      await expect.poll(() => status.textContent()).toBe("New version available");
+
+      await page.setViewportSize({ height: 852, width: 393 });
+      await expect.poll(() => status.textContent()).toBe("New version available");
+    } finally {
+      await suite.closeBrowserContext(opened.context);
+    }
+  });
+
   it.each(["light", "dark"] as const)(
     "keeps the informational update strip static in %s mode",
     async (theme) => {

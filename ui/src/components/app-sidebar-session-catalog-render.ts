@@ -12,7 +12,11 @@ import { t } from "../i18n/index.ts";
 import { handleContextMenuEvent } from "../lib/keyboard-shortcuts.ts";
 import { shouldHandleNavigationClick } from "../lib/navigation-click.ts";
 import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
-import { repoName, type SessionWorkContext } from "../lib/session-display.ts";
+import {
+  repoName,
+  resolveSessionWorkContext,
+  type SessionWorkContext,
+} from "../lib/session-display.ts";
 import { restSessionRow, revealSessionRow } from "../lib/session-row-reveal.ts";
 import type { CatalogSessionKey } from "../lib/sessions/catalog-key.ts";
 import { buildCatalogSessionKey } from "../lib/sessions/catalog-key.ts";
@@ -400,22 +404,34 @@ function renderCatalogSessionRow(
       : rawTimestamp;
   const adoptedRow = session.sessionKey ? liveRowsByKey.get(session.sessionKey) : undefined;
   const branch = session.gitBranch?.trim() || undefined;
-  const work = {
-    repo: session.cwd ? repoName(session.cwd) : undefined,
-    branch,
-    worktree: session.source === "worktree",
-  } satisfies SessionWorkContext;
   if (adoptedRow) {
     const label = session.name || session.threadId;
+    const adoptedWork = resolveSessionWorkContext(adoptedRow);
+    const work = {
+      repo: session.cwd ? repoName(session.cwd) : adoptedWork?.repo,
+      branch: branch ?? adoptedWork?.branch,
+      node: adoptedWork?.node,
+      worktree:
+        session.source === undefined
+          ? (adoptedWork?.worktree ?? false)
+          : session.source === "worktree",
+    } satisfies SessionWorkContext;
+    const workSubtitle = work.branch ?? work.repo ?? work.node;
     return params.renderLiveRow(adoptedRow, {
       label,
       meta: formatSidebarTimestamp(timestamp),
-      ...(branch ? { subtitle: branch, work } : {}),
+      ...(workSubtitle ? { subtitle: workSubtitle, work } : {}),
+      project,
       title: `${label} · ${host.label}`,
       ...(session.pullRequest ? { pullRequest: session.pullRequest } : {}),
       showLeadingIdentity: false,
     });
   }
+  const work = {
+    repo: session.cwd ? repoName(session.cwd) : undefined,
+    branch,
+    worktree: session.source === "worktree",
+  } satisfies SessionWorkContext;
   const catalogKey = {
     catalogId: catalog.id,
     hostId: host.hostId,
@@ -511,9 +527,7 @@ function renderCatalogSessionRow(
         >
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
-              <span
-                class="sidebar-recent-session__name"
-                ${ref(createOverflowFadeRef({ revealTrailingActions: true }))}
+              <span class="sidebar-recent-session__name" ${ref(createOverflowFadeRef())}
                 ><span class="sidebar-recent-session__name-content">${label}</span></span
               >
             </span>
