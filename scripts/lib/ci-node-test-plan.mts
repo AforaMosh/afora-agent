@@ -4,6 +4,7 @@ import {
   agentVitestProjectOwners,
   embeddedAgentVitestProjectOwners,
 } from "../../test/vitest/vitest.agents-paths.mjs";
+import { cliProcessTestFiles } from "../../test/vitest/vitest.cli-process-paths.mjs";
 import { commandsLightTestFiles } from "../../test/vitest/vitest.commands-light-paths.mjs";
 import {
   gatewayServerExcludedTestFiles,
@@ -228,7 +229,8 @@ const COMPACT_GROUP_SECONDS_HINTS = new Map<string, number>([
   // The measured 131s pair split per config; apportioned by the hosted
   // per-config walls (139s/67s) until direct Blacksmith samples exist.
   ["agentic-cli", 88],
-  ["agentic-cli-process", 43],
+  ["agentic-cli-process-support", 39],
+  ["agentic-cli-process-run-loop", 4],
   ["agentic-command-support", 49],
   ["agentic-commands-agent-channel", 76],
   ["agentic-commands-doctor", 23],
@@ -631,6 +633,29 @@ function applyCompactGroupWorkerPins(group: NodeTestShardGroup): NodeTestShardGr
     return group;
   }
   return { ...group, env: { ...group.env, ...PINNED_COMPACT_GROUP_ENV } };
+}
+
+const CLI_PROCESS_GROUP_NAME = "agentic-cli-process";
+const CLI_PROCESS_RUN_LOOP_TEST_FILE = "src/cli/gateway-cli/run-loop.test.ts";
+
+function splitCompactCliProcessGroup(group: NodeTestShardGroup): NodeTestShardGroup[] {
+  if (group.shard_name !== CLI_PROCESS_GROUP_NAME) {
+    return [group];
+  }
+  const supportFiles = cliProcessTestFiles.filter(
+    (file) => file !== CLI_PROCESS_RUN_LOOP_TEST_FILE,
+  );
+  if (supportFiles.length + 1 !== cliProcessTestFiles.length) {
+    throw new Error(`missing compact CLI process owner: ${CLI_PROCESS_RUN_LOOP_TEST_FILE}`);
+  }
+  return [
+    { ...group, includePatterns: supportFiles, shard_name: `${CLI_PROCESS_GROUP_NAME}-support` },
+    {
+      ...group,
+      includePatterns: [CLI_PROCESS_RUN_LOOP_TEST_FILE],
+      shard_name: `${CLI_PROCESS_GROUP_NAME}-run-loop`,
+    },
+  ];
 }
 
 function estimateDefaultCompactGroupSeconds(group: NodeTestShardGroup): number {
@@ -2187,7 +2212,7 @@ function createCompactNodeTestShardBundles(
     const runner = resolveCiNodeTestRunner(shard);
     const key = JSON.stringify([runner, shard.requiresDist]);
     const groups = groupsByRunner.get(key) ?? [];
-    const group = applyCompactGroupWorkerPins({
+    const baseGroup = applyCompactGroupWorkerPins({
       configs: shard.configs,
       ...(shard.env ? { env: shard.env } : {}),
       ...(shard.includePatterns ? { includePatterns: shard.includePatterns } : {}),
@@ -2195,15 +2220,17 @@ function createCompactNodeTestShardBundles(
       runner,
       shard_name: shard.shardName,
     });
-    const plannedGroups = usesExpandedRunnerProfile(options.runnerBackend)
-      ? splitOversizedGithubCompactGroup(group, options.runnerBackend)
-      : [{ group, seconds: estimateCompactGroupSeconds(group, options.runnerBackend) }];
-    for (const planned of plannedGroups) {
-      groups.push(planned.group);
-      // Synthesized hosted stripes need their divided parent weight. Native
-      // groups must reach the runner-specific stripe estimator during rebalance.
-      if (planned.group.shard_name !== group.shard_name) {
-        synthesizedSplitSeconds.set(planned.group.shard_name, planned.seconds);
+    for (const group of splitCompactCliProcessGroup(baseGroup)) {
+      const plannedGroups = usesExpandedRunnerProfile(options.runnerBackend)
+        ? splitOversizedGithubCompactGroup(group, options.runnerBackend)
+        : [{ group, seconds: estimateCompactGroupSeconds(group, options.runnerBackend) }];
+      for (const planned of plannedGroups) {
+        groups.push(planned.group);
+        // Synthesized hosted stripes need their divided parent weight. Native
+        // groups must reach the runner-specific stripe estimator during rebalance.
+        if (planned.group.shard_name !== group.shard_name) {
+          synthesizedSplitSeconds.set(planned.group.shard_name, planned.seconds);
+        }
       }
     }
     groupsByRunner.set(key, groups);
