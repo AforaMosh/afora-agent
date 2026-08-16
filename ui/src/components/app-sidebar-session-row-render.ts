@@ -293,7 +293,7 @@ export function renderRecentSession(params: {
           >
             ${icons.moreHorizontal}
           </button>
-         </span>`,
+        </span>`,
   });
   const row = html`
     <div
