@@ -8,9 +8,9 @@ export {
   waitForActiveEmbeddedRuns,
 } from "../../agents/embedded-agent-runner/runs.js";
 export { markRestartAbortedMainSessions } from "../../agents/main-session-recovery/main-session-restart-recovery-marking.js";
-export const parkCurrentLaunchAgentForMaintenance = async () =>
+export const parkManagedUpdateLaunchdSuccessor = async () =>
   await (await import("../../daemon/launchd-stop.js")).parkCurrentLaunchAgentForMaintenance();
-export const parkCurrentSystemdServiceForMaintenance = async () =>
+export const parkManagedUpdateSystemdSuccessor = async () =>
   await (
     await import("../../daemon/systemd-lifecycle.js")
   ).parkCurrentSystemdServiceForMaintenance();

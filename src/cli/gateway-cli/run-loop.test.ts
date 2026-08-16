@@ -117,8 +117,8 @@ const respawnGatewayProcessForUpdate = vi.fn<
 const markUpdateRestartSentinelFailure = vi.fn<(reason: string) => Promise<null>>(
   async (_reason: string) => null,
 );
-const parkCurrentLaunchAgentForMaintenance = vi.fn(async () => true);
-const parkCurrentSystemdServiceForMaintenance = vi.fn(async () => true);
+const parkManagedUpdateLaunchdSuccessor = vi.fn(async () => true);
+const parkManagedUpdateSystemdSuccessor = vi.fn(async () => true);
 const abortPendingChannelReloads = vi.fn();
 const abortEmbeddedAgentRun = vi.fn(
   (_sessionId?: string, _opts?: { mode?: "all" | "compacting"; reason?: "restart" }) => false,
@@ -192,11 +192,11 @@ vi.mock("../../infra/restart-handoff.js", () => ({
 }));
 
 vi.mock("../../daemon/launchd-stop.js", () => ({
-  parkCurrentLaunchAgentForMaintenance: () => parkCurrentLaunchAgentForMaintenance(),
+  parkCurrentLaunchAgentForMaintenance: () => parkManagedUpdateLaunchdSuccessor(),
 }));
 
 vi.mock("../../daemon/systemd-lifecycle.js", () => ({
-  parkCurrentSystemdServiceForMaintenance: () => parkCurrentSystemdServiceForMaintenance(),
+  parkCurrentSystemdServiceForMaintenance: () => parkManagedUpdateSystemdSuccessor(),
 }));
 
 vi.mock("../../process/command-queue.js", async (importOriginal) => {
@@ -476,8 +476,8 @@ beforeEach(async () => {
   });
   restartGatewayProcessWithFreshPid.mockReset();
   restartGatewayProcessWithFreshPid.mockReturnValue({ mode: "disabled" });
-  parkCurrentLaunchAgentForMaintenance.mockResolvedValue(true);
-  parkCurrentSystemdServiceForMaintenance.mockResolvedValue(true);
+  parkManagedUpdateLaunchdSuccessor.mockResolvedValue(true);
+  parkManagedUpdateSystemdSuccessor.mockResolvedValue(true);
 });
 
 describe("runGatewayLoop", () => {
@@ -2339,10 +2339,10 @@ describe("runGatewayLoop", () => {
           captureSignal("SIGUSR1")();
 
           await expect(exited).resolves.toBe(0);
-          expect(parkCurrentSystemdServiceForMaintenance).toHaveBeenCalledTimes(
+          expect(parkManagedUpdateSystemdSuccessor).toHaveBeenCalledTimes(
             expectedPark === "systemd" ? 1 : 0,
           );
-          expect(parkCurrentLaunchAgentForMaintenance).toHaveBeenCalledTimes(
+          expect(parkManagedUpdateLaunchdSuccessor).toHaveBeenCalledTimes(
             expectedPark === "launchd" ? 1 : 0,
           );
           expect(respawnGatewayProcessForUpdate).not.toHaveBeenCalled();

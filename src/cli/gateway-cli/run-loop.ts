@@ -226,8 +226,8 @@ export async function runGatewayLoop(params: {
     const {
       detectGatewayRespawnSupervisor,
       markUpdateRestartSentinelFailure,
-      parkCurrentLaunchAgentForMaintenance,
-      parkCurrentSystemdServiceForMaintenance,
+      parkManagedUpdateLaunchdSuccessor,
+      parkManagedUpdateSystemdSuccessor,
       respawnGatewayProcessForUpdate,
       restartGatewayProcessWithFreshPid,
       writeGatewayRestartHandoffSync,
@@ -245,11 +245,11 @@ export async function runGatewayLoop(params: {
       const supervisor = detectGatewayRespawnSupervisor(process.env, process.platform);
       try {
         if (supervisor === "launchd") {
-          if (!(await parkCurrentLaunchAgentForMaintenance())) {
+          if (!(await parkManagedUpdateLaunchdSuccessor())) {
             throw new Error("current LaunchAgent identity is unavailable");
           }
         } else if (supervisor === "systemd") {
-          await parkCurrentSystemdServiceForMaintenance();
+          await parkManagedUpdateSystemdSuccessor();
         }
       } catch (err) {
         gatewayLog.error(`managed update handoff could not park ${supervisor}: ${String(err)}`);

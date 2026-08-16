@@ -35,6 +35,8 @@ describe("gateway lifecycle hub import boundaries", () => {
     expect(hub).not.toContain('from "../../daemon/systemd-lifecycle.js"');
     expect(hub).toContain('import("../../daemon/launchd-stop.js")');
     expect(hub).toContain('import("../../daemon/systemd-lifecycle.js")');
+    expect(hub).toContain("parkManagedUpdateLaunchdSuccessor");
+    expect(hub).toContain("parkManagedUpdateSystemdSuccessor");
   });
 
   it("still primes the hub eagerly so signal handlers survive dist chunk rotation", () => {
