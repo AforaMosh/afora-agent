@@ -2881,6 +2881,11 @@ body.update-dialog-open .sidebar-update-card__status {
   min-height: var(--sidebar-trailing-slot);
 }
 
+.sidebar-recent-session
+  > .session-row-endcap:has(.session-row-badge--pull-request, .sidebar-session-pr-indicator) {
+  margin-inline-end: 4px;
+}
+
 /* While the actions are surfaced, the link content fades out beneath them over
    a 10px ramp. A mask (not a background scrim) keeps the fade correct over
    rest, hover, active, and selected row backgrounds alike, and it lands on the
