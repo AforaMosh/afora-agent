@@ -4002,8 +4002,8 @@ openclaw-sidebar-attention {
   flex: none;
   padding: 4px 9px;
   border-radius: var(--radius-full);
-  background: var(--info);
-  color: var(--bg-elevated);
+  background: color-mix(in srgb, var(--text) 10%, var(--bg-elevated));
+  color: var(--text-strong);
   font-size: var(--control-ui-text-xs);
   font-weight: 600;
   transition:
@@ -4012,8 +4012,8 @@ openclaw-sidebar-attention {
 }
 
 .sidebar-issues-panel__row:hover .sidebar-issues-panel__action {
-  background: color-mix(in srgb, var(--info) 90%, white);
-  color: var(--bg-elevated);
+  background: color-mix(in srgb, var(--text) 16%, var(--bg-elevated));
+  color: var(--text-strong);
 }
 
 .sidebar-issues-panel__chevron {
