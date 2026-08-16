@@ -5618,7 +5618,6 @@ td.data-table-key-col {
   z-index: 1;
   inset-inline-end: 0;
   padding-inline-start: 6px;
-  background: var(--session-row-current-surface, transparent);
   opacity: 0;
   pointer-events: none;
 }
@@ -5626,10 +5625,6 @@ td.data-table-key-col {
 .session-row-endcap--action-only .session-row-endcap__swap {
   position: relative;
   inline-size: 0;
-}
-
-.session-row-endcap--action-only .session-row-endcap__management {
-  background: var(--session-row-current-surface, transparent);
 }
 
 .session-row-endcap__management .session-row-actions {
@@ -5858,15 +5853,6 @@ td.data-table-key-col {
 .session-action:focus-visible:not(:disabled) {
   background: transparent;
   color: var(--text);
-}
-
-.sidebar-recent-session--active .session-row-endcap--action-only .session-row-endcap__management {
-  background: transparent;
-}
-
-.sidebar-recent-session--active .session-action:hover:not(:disabled),
-.sidebar-recent-session--active .session-action:focus-visible:not(:disabled) {
-  background: var(--sidebar-row-surface-pressed);
 }
 
 .session-action:focus-visible {
