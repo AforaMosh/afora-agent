@@ -319,9 +319,10 @@ LaunchAgent when possible. If the Gateway cannot make that handoff safely,
 `update.run` reports a safe shell command instead of running the package
 manager in-process.
 
-The Control UI sidebar update card shows **Update Gateway** when it will start
+The Control UI sidebar update card offers a single **Update** action that starts
 this `update.run` flow directly. This covers browser-hosted Control UI, remote
-Gateways, and manually managed local Gateways.
+Gateways, and manually managed local Gateways. The card itself stays a quiet
+status line; the confirmation it opens is what names the update target.
 
 Manual updates started from the Control UI always ask first. The first click on
 the sidebar update card or on **Settings → Updates → Update now** opens a
@@ -330,8 +331,9 @@ and the restart impact; it sends nothing until you choose **Update and restart**
 Cancel, Escape, and dismissing the dialog leave the Gateway untouched. Automatic
 campaigns, the CLI, and `update.run` API clients are unaffected.
 
-In the signed macOS app, a local app-owned Gateway changes that card to
-**Update Mac app + Gateway**. Sparkle updates the app first; after relaunch, the
+In the signed macOS app, a local app-owned Gateway keeps the same **Update**
+action, and its confirmation names the Mac app and the Gateway as the combined
+target. Sparkle updates the app first; after relaunch, the
 app runs `openclaw update --tag <app-version> --json`, restarts its Gateway,
 and verifies health in a setup-style progress window. The window appears only
 when that managed Gateway needs update, repair, or installation; app-only updates relaunch
