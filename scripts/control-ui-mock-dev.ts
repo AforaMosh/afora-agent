@@ -3028,14 +3028,14 @@ function createCalmSidebarScenario(
   const calm = structuredClone(scenario);
   calm.assistantName = "Molty";
   calm.repeatingSessionEvents = undefined;
-  calm.presenceUsers = calm.presenceUsers
-    ?.filter(
-      (user) => user.self || user.id === MOCK_CREATOR_PETER.id || user.id === MOCK_CREATOR_MIRA.id,
-    )
-    .map((user) => ({
-      ...user,
-      watchedSessions: user.watchedSessions?.filter((key) => CALM_SIDEBAR_SESSION_KEYS.has(key)),
-    }));
+  calm.presenceUsers = calm.presenceUsers?.filter(
+    (user) => user.self || user.id === MOCK_CREATOR_PETER.id || user.id === MOCK_CREATOR_MIRA.id,
+  );
+  for (const user of calm.presenceUsers ?? []) {
+    user.watchedSessions = user.watchedSessions?.filter((key) =>
+      CALM_SIDEBAR_SESSION_KEYS.has(key),
+    );
+  }
 
   const sessionsList = calm.methodResponses?.["sessions.list"];
   if (!isRecord(sessionsList) || !Array.isArray(sessionsList.cases)) {

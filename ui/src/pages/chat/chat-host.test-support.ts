@@ -3,7 +3,7 @@ import type { UiSettings } from "../../app/settings.ts";
 import { createSessionCapability } from "../../lib/sessions/index.ts";
 import type { ChatHost } from "./chat-send-contract.ts";
 import { patchChatSessionSettings } from "./chat-settings-patches.ts";
-import type { ChatComposerMemoryFallback } from "./chat-state-host.ts";
+import type { ChatComposerMemoryFallback, ChatPageHost } from "./chat-state-host.ts";
 import type { RenderLifecycle } from "./render-lifecycle.ts";
 
 type RequestHandlers = Record<string, unknown>;
@@ -30,7 +30,7 @@ function clientWithRequest(request: unknown): ChatHost["client"] {
   return { request } as unknown as ChatHost["client"];
 }
 
-type TestChatHost = Omit<ChatHost, "settings"> & {
+type TestChatHost = Omit<ChatHost, "sessionsResult" | "settings"> & {
   applySettings: (patch: Partial<UiSettings>) => void;
   basePath: string;
   chatAvatarUrl: string | null;
@@ -39,11 +39,13 @@ type TestChatHost = Omit<ChatHost, "settings"> & {
   chatAvatarReason?: string | null;
   chatComposerFallbackByScope: Record<string, ChatComposerMemoryFallback>;
   sessionsError?: string | null;
-  sessionsResultAgentId?: string | null;
   sessionsArchivedFilter?: "active" | "archived" | "all";
   password?: string;
   pendingSettingsPatches?: Record<string, Promise<boolean>>;
+  retainedSelectedSession: ChatPageHost["retainedSelectedSession"];
   settings?: Partial<UiSettings>;
+  sessionsResult: ChatPageHost["sessionsResult"];
+  sessionsResultAgentId: string | null;
 };
 
 function createPendingSettingsSessionCapability(

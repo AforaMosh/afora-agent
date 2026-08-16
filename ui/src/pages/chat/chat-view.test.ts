@@ -656,10 +656,14 @@ function itemAt<T>(items: ArrayLike<T>, index: number, label: string): T {
 
 function createChatProps(overrides: Partial<ChatProps> = {}): ChatProps {
   const transcript = createTestTranscript();
+  const sessionKey = overrides.sessionKey ?? "main";
+  const activeSession =
+    overrides.activeSession ??
+    overrides.sessions?.sessions.find((session) => session.key === sessionKey);
   return {
     transcript,
     paneId: "single",
-    sessionKey: "main",
+    sessionKey,
     onSessionKeyChange: () => undefined,
     thinkingLevel: null,
     showThinking: false,
@@ -685,6 +689,7 @@ function createChatProps(overrides: Partial<ChatProps> = {}): ChatProps {
     error: null,
     runError: null,
     sessions: null,
+    activeSession,
     canvasPluginSurfaceUrl: null,
     embedSandboxMode: "scripts",
     allowExternalEmbedUrls: false,

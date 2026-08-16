@@ -50,6 +50,7 @@ export function sessionRow(
     endedAt?: number;
     childSessions?: string[];
     execNode?: string;
+    lastMessagePreview?: string;
     forkSource?: { sessionKey: string; sessionId: string; entryId?: string };
     /** The Gateway always reports all three; an incomplete one is not a row
         any session list can receive. */

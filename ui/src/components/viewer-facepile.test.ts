@@ -49,7 +49,7 @@ it("uses the same user initials and identity hue in the roster and attributed ch
     expect(rosterInitials?.textContent?.trim()).toBe(expected.initials);
     expect(chatInitials?.textContent?.trim()).toBe(expected.initials);
     expect(rosterInitials?.getAttribute("style")).toContain(
-      `hsl(${expected.colorSeed % 360} 48% 42%)`,
+      `--viewer-hue:${expected.colorSeed % 360}`,
     );
     expect(chatInitials?.getAttribute("style")).toContain(
       `--chat-author-avatar-hue: ${expected.colorSeed % 360}`,

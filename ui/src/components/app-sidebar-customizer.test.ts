@@ -197,7 +197,7 @@ describe("sidebar customizer transaction", () => {
       requestUpdate: vi.fn(),
       sidebarCustomizerContext: () => ({ sessions }),
       sidebarCustomizerEntries: () => [item],
-    }) as ConstructorParameters<typeof SidebarCustomizerController>[0];
+    }) as unknown as ConstructorParameters<typeof SidebarCustomizerController>[0];
     const controller = new SidebarCustomizerController(host);
     controller.open();
     await vi.waitFor(() => expect(controller.isOpen).toBe(true));
@@ -247,7 +247,7 @@ describe("sidebar customizer transaction", () => {
       requestUpdate: vi.fn(),
       sidebarCustomizerContext: () => ({ sessions }),
       sidebarCustomizerEntries: () => [],
-    }) as ConstructorParameters<typeof SidebarCustomizerController>[0];
+    }) as unknown as ConstructorParameters<typeof SidebarCustomizerController>[0];
     const controller = new SidebarCustomizerController(host);
     controller.open();
     await vi.waitFor(() => expect(controller.isOpen).toBe(true));

@@ -9,9 +9,16 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
   resolveUiSelectedGlobalAgentId,
+  type UiSessionDefaultsHost,
   uiSessionRowMatchesSelectedChat,
 } from "../../lib/sessions/session-key.ts";
 import type { ChatPageHost } from "./chat-state-host.ts";
+
+type SelectedChatSessionHost = UiSessionDefaultsHost &
+  Pick<
+    ChatPageHost,
+    "retainedSelectedSession" | "sessionKey" | "sessionsResult" | "sessionsResultAgentId"
+  >;
 
 export function canCreateChatSession(state: ChatPageHost) {
   return (
@@ -23,7 +30,7 @@ export function canCreateChatSession(state: ChatPageHost) {
   );
 }
 
-export function selectedChatSessionRow(state: ChatPageHost) {
+export function selectedChatSessionRow(state: SelectedChatSessionHost) {
   const live = resolveLiveChatSessionRow(state);
   if (live) {
     state.retainedSelectedSession = { sessionKey: state.sessionKey, row: live };
@@ -42,7 +49,7 @@ export function selectedChatSessionRow(state: ChatPageHost) {
     : undefined;
 }
 
-function resolveLiveChatSessionRow(state: ChatPageHost) {
+function resolveLiveChatSessionRow(state: SelectedChatSessionHost) {
   const rows = state.sessionsResult?.sessions ?? [];
   const exact = rows.find((candidate) =>
     areUiSessionKeysEquivalent(candidate.key, state.sessionKey),

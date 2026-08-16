@@ -139,7 +139,7 @@ describe("Control UI theme contrast", () => {
     expect(groupLabelRule).toMatch(/color:\s*var\(--muted\)/);
     expect(buildRule).toMatch(/color:\s*var\(--muted\)/);
     expect(sessionLabelRule).toMatch(
-      /color:\s*color-mix\(in srgb, var\(--muted\) 78%, transparent\)/,
+      /color:\s*color-mix\(in srgb,\s*var\(--muted\)[^;]*var\(--text\)[^;]*\)/,
     );
     expect(readOpacity(sessionLabelRule)).toBe(1);
 

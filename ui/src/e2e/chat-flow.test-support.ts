@@ -9,7 +9,6 @@ import {
   controlUiSessionPath,
   controlUiSessionUrl,
   installMockGateway,
-  pauseVirtualClock,
   type MockGatewayRequest,
 } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
@@ -20,7 +19,6 @@ export {
   controlUiSessionPath,
   controlUiSessionUrl,
   installMockGateway,
-  pauseVirtualClock,
 };
 
 export const managedImageCacheProofDir = path.join(
