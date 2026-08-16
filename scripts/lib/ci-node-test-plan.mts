@@ -652,11 +652,6 @@ function splitCompactCliProcessGroup(group: NodeTestShardGroup): NodeTestShardGr
     { ...group, includePatterns: supportFiles, shard_name: `${CLI_PROCESS_GROUP_NAME}-support` },
     {
       ...group,
-      env: {
-        ...group.env,
-        OPENCLAW_VITEST_FS_MODULE_CACHE: "0",
-        OPENCLAW_VITEST_MAX_WORKERS: "1",
-      },
       includePatterns: [CLI_PROCESS_RUN_LOOP_TEST_FILE],
       shard_name: `${CLI_PROCESS_GROUP_NAME}-run-loop`,
     },
