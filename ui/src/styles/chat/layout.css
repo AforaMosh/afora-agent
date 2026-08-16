@@ -4319,8 +4319,8 @@ button.chat-pr__diff {
 
 @media (max-width: 560px) {
   .agent-chat__composer-footer {
-    grid-template-columns: minmax(0, 1fr) max-content;
-    row-gap: 3px;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    row-gap: 0;
   }
 
   .agent-chat__composer-lead {
@@ -4329,12 +4329,13 @@ button.chat-pr__diff {
   }
 
   .agent-chat__composer-mid {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    grid-column: 2;
+    grid-row: 1;
+    overflow: hidden;
   }
 
   .agent-chat__composer-trail {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 1;
   }
 
@@ -4345,44 +4346,13 @@ button.chat-pr__diff {
   }
 
   .agent-chat__input .agent-chat__composer-controls {
-    width: auto;
+    width: 100%;
     min-width: 0;
+    flex-wrap: nowrap;
   }
 
-  .agent-chat__input
-    .agent-chat__composer-controls:has(
-      .agent-chat__composer-run-status,
-      .agent-chat__session-overrides-pill
-    ) {
-    flex-wrap: wrap;
-  }
-
-  .agent-chat__input
-    .agent-chat__composer-controls:has(
-      .agent-chat__composer-run-status,
-      .agent-chat__session-overrides-pill
-    )
-    .agent-chat__composer-run-status {
-    order: 0;
-  }
-
-  .agent-chat__input
-    .agent-chat__composer-controls:has(
-      .agent-chat__composer-run-status,
-      .agent-chat__session-overrides-pill
-    )
-    .agent-chat__session-overrides-pill {
-    order: 1;
-  }
-
-  .agent-chat__input
-    .agent-chat__composer-controls:has(
-      .agent-chat__composer-run-status,
-      .agent-chat__session-overrides-pill
-    )
-    .chat-composer-model-control {
-    order: 2;
-    flex: 1 0 100%;
+  .agent-chat__input .agent-chat__composer-controls .chat-composer-model-control {
+    flex: 1 1 auto;
   }
 
   .agent-chat__input .agent-chat__composer-meta {
