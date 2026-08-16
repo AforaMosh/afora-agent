@@ -3649,7 +3649,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 .sidebar-agent-card__main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
   flex: 0 1 auto;
   width: fit-content;
   max-width: 100%;
