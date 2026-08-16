@@ -124,7 +124,8 @@ export function renderChatVoiceError(props: ChatVoiceErrorProps): TemplateResult
     return nothing;
   }
   return html`
-    <div class="agent-chat__stt-interim agent-chat__talk-status" role="alert">
+    <div class="agent-chat__composer-error agent-chat__talk-status" role="alert">
+      <span class="agent-chat__composer-error-icon" aria-hidden="true">${icons.alertTriangle}</span>
       <span class="agent-chat__talk-status-text">${props.detail}</span>
       ${props.onDismissError
         ? html`

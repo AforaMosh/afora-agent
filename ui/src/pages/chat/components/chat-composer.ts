@@ -71,10 +71,12 @@ export function renderChatComposer(props: ChatComposerProps) {
     state.dictation?.dispose();
     state.dictation = null;
     state.dictationSelection = null;
+    state.dictationPreview = null;
   }
   state.dictationDraftKey = draftKey;
   const visibleDraft =
-    state.composingDraft?.key === draftKey ? state.composingDraft.value : props.draft;
+    state.dictationPreview?.value ??
+    (state.composingDraft?.key === draftKey ? state.composingDraft.value : props.draft);
   state.composerInputRef ??= (element?: Element) => {
     state.composerInput = replaceComposerPopoverAnchor(state.composerInput, element);
   };
@@ -374,41 +376,62 @@ export function renderChatComposer(props: ChatComposerProps) {
         },
       })
     : nothing;
+  const applyDictationText = (transcript: string) => {
+    const selection = state.dictationSelection;
+    const preview = state.dictationPreview;
+    if (!selection || !preview) {
+      return null;
+    }
+    const insertion = insertComposerDictation(
+      preview.base,
+      transcript,
+      selection.start,
+      selection.end,
+    );
+    const target = state.composerTextarea;
+    if (target) {
+      target.value = insertion.value;
+      adjustTextareaHeight(target);
+    }
+    state.dictationPreview = { ...preview, value: insertion.value };
+    commitComposerDraft(props, insertion.value);
+    requestUpdate();
+    return insertion;
+  };
+  const finishDictation = (transcript: string) => {
+    const insertion = applyDictationText(transcript);
+    state.dictationSelection = null;
+    state.dictationPreview = null;
+    queueMicrotask(() => {
+      const textarea = state.composerTextarea;
+      if (!textarea || !insertion) {
+        return;
+      }
+      textarea.focus({ preventScroll: true });
+      textarea.selectionStart = insertion.caret;
+      textarea.selectionEnd = insertion.caret;
+    });
+  };
+  const cancelDictation = () => {
+    const preview = state.dictationPreview;
+    const target = state.composerTextarea;
+    if (preview && target?.value === preview.value) {
+      target.value = preview.base;
+      adjustTextareaHeight(target);
+      commitComposerDraft(props, preview.base);
+    }
+    state.dictationSelection = null;
+    state.dictationPreview = null;
+    requestUpdate();
+  };
   const dictationOptions = {
     client: props.gatewayClient ?? null,
     connected: props.connected,
     enabled: props.composerHoldToRecord !== false,
     realtimeTalkActive: props.realtimeTalkActive === true,
-    onCommit: (transcript: string) => {
-      const target = state.composerTextarea;
-      const selection = state.dictationSelection ?? {
-        start: target?.selectionStart ?? visibleDraft.length,
-        end: target?.selectionEnd ?? visibleDraft.length,
-      };
-      const currentDraft = target?.value ?? props.getDraft?.() ?? props.draft;
-      const insertion = insertComposerDictation(
-        currentDraft,
-        transcript,
-        selection.start,
-        selection.end,
-      );
-      if (target) {
-        target.value = insertion.value;
-        adjustTextareaHeight(target);
-      }
-      commitComposerDraft(props, insertion.value);
-      state.dictationSelection = null;
-      requestUpdate();
-      queueMicrotask(() => {
-        const textarea = state.composerTextarea;
-        if (!textarea) {
-          return;
-        }
-        textarea.focus({ preventScroll: true });
-        textarea.selectionStart = insertion.caret;
-        textarea.selectionEnd = insertion.caret;
-      });
-    },
+    onCommit: finishDictation,
+    onPreview: (transcript: string) => void applyDictationText(transcript),
+    onCancel: cancelDictation,
     onError: (message: string) => props.onDictationError?.(message),
     onStateChange: requestUpdate,
     // With an initial empty composer, this button retains the existing
@@ -427,11 +450,13 @@ export function renderChatComposer(props: ChatComposerProps) {
       : undefined;
   const handleDictationPointerDown = (event: PointerEvent) => {
     const target = state.composerTextarea;
-    state.dictationSelection = {
+    const selection = {
       start: target?.selectionStart ?? visibleDraft.length,
       end: target?.selectionEnd ?? visibleDraft.length,
     };
     if (dictation?.handlePointerDown(event) && target) {
+      state.dictationSelection = selection;
+      state.dictationPreview = { base: target.value, value: target.value };
       target.readOnly = true;
     }
   };
@@ -442,8 +467,6 @@ export function renderChatComposer(props: ChatComposerProps) {
     draft: visibleDraft,
     hasAttachments: !props.suggestionComposer && Boolean(props.attachments?.length),
     isBusy,
-    followUpMode: props.followUpMode,
-    sendShortcut,
     suggestionComposer: props.suggestionComposer,
     sending: props.sending,
     voiceActive: props.realtimeTalkActive,
@@ -455,7 +478,6 @@ export function renderChatComposer(props: ChatComposerProps) {
     voiceVideoPending: props.realtimeTalkVideoPending,
     onAbort: props.onAbort,
     onSend: handleSend,
-    onStoreDraft: () => {},
     onToggleVoice: props.onToggleRealtimeTalk ? handleVoicePrimaryAction : undefined,
     onToggleCamera: props.onToggleRealtimeCamera,
     microphonePicker,

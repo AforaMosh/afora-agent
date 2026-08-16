@@ -55,6 +55,8 @@ type ComposerDictationControllerOptions = {
   enabled: boolean;
   realtimeTalkActive: boolean;
   onCommit: (text: string) => void;
+  onPreview: (text: string) => void;
+  onCancel: () => void;
   onError: (message: string) => void;
   onStateChange: () => void;
   onTap: () => void;
@@ -514,6 +516,9 @@ export class ComposerDictationController {
   }
 
   dispose(): void {
+    if (this.phase !== "idle") {
+      this.options.onCancel();
+    }
     this.disposed = true;
     this.clearClickSuppression();
     void this.stop({ commit: false });
@@ -541,6 +546,7 @@ export class ComposerDictationController {
     if (this.phase === "holding") {
       this.clearGesture();
       this.setPhase("idle");
+      this.options.onCancel();
       this.options.onTap();
       this.expireClickSuppression();
       return;
@@ -615,6 +621,9 @@ export class ComposerDictationController {
       onLevel: (level) => this.inputLevel.set(level),
       onPartial: (text) => {
         this.partialTranscript = text;
+        if (text) {
+          this.options.onPreview(text);
+        }
         this.options.onStateChange();
       },
       onReady: () => {
@@ -644,6 +653,9 @@ export class ComposerDictationController {
     this.stopElapsedTimer();
     const session = this.session;
     if (!session) {
+      if (!this.disposed) {
+        this.options.onCancel();
+      }
       this.reset();
       return;
     }
@@ -654,6 +666,8 @@ export class ComposerDictationController {
     }
     if (options.commit && transcript && wasActive && !this.disposed) {
       this.options.onCommit(transcript);
+    } else if (!this.disposed) {
+      this.options.onCancel();
     }
     this.reset();
   }

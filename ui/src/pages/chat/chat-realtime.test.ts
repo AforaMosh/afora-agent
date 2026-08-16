@@ -5,6 +5,7 @@ import { createStorageMock } from "../../test-helpers/storage.ts";
 import {
   attachChatRealtimeActions,
   createInitialChatRealtimeState,
+  dismissRealtimeTalkError,
   type ChatRealtimeState,
 } from "./chat-realtime.ts";
 import type { RealtimeTalkCallbacks } from "./realtime-talk-shared.ts";
@@ -256,6 +257,21 @@ describe("chat realtime actions", () => {
     expect(state.realtimeTalkVideoStream).toBeNull();
     expect(state.realtimeTalkDetail).toBe("Camera access is blocked");
     expect(state.realtimeTalkCameraError).toBe(true);
+  });
+
+  it("dismisses a camera error without ending the active voice session", async () => {
+    const state = createState();
+    state.realtimeTalkActive = true;
+    state.realtimeTalkStatus = "listening";
+    state.realtimeTalkCameraError = true;
+    state.realtimeTalkDetail = "Camera access is blocked";
+
+    dismissRealtimeTalkError(state);
+
+    expect(state.realtimeTalkCameraError).toBe(false);
+    expect(state.realtimeTalkDetail).toBeNull();
+    expect(state.realtimeTalkActive).toBe(true);
+    expect(state.realtimeTalkStatus).toBe("listening");
   });
 
   it("cycles live cameras in enumeration order and persists the successful switch", async () => {

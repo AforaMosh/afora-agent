@@ -42,6 +42,7 @@ function createChatComposerState(): ChatComposerState {
     dictation: null,
     dictationDraftKey: null,
     dictationSelection: null,
+    dictationPreview: null,
   };
 }
 

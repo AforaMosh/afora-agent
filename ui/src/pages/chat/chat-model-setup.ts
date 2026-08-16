@@ -19,6 +19,7 @@ export function requiresChatModelSetup(state: ChatModelSetupState): boolean {
 export function createChatModelSetupBanner(onAction: () => void): ChatComposerDisabledBanner {
   return {
     kind: "composer-replacement",
+    runControls: "active-run",
     text: t("modelSetup.required.body"),
     actionLabel: t("modelSetup.required.action"),
     onAction,

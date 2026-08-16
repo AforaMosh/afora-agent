@@ -139,7 +139,9 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                     .busyLabel ?? props.disabledBanner.actionLabel}`
               : props.disabledBanner.actionLabel}
           </button>
-          ${props.disabledBanner.kind === "composer-replacement" && showAbortableUi
+          ${props.disabledBanner.kind === "composer-replacement" &&
+          props.disabledBanner.runControls === "active-run" &&
+          showAbortableUi
             ? renderChatPrimaryActions(runControlsProps)
             : nothing}
         </div>
@@ -263,32 +265,12 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                     </div>
                   `
                 : nothing}
+              ${renderChatVoiceError({
+                status: props.realtimeTalkCameraError ? "error" : props.realtimeTalkStatus,
+                detail: props.realtimeTalkDetail,
+                onDismissError: props.onDismissRealtimeTalkError,
+              })}
               <div class="agent-chat__composer-status-stack">
-                ${dictation?.active
-                  ? html`
-                      <div
-                        class=${`agent-chat__dictation-status${dictation.finalizing ? " agent-chat__dictation-status--finalizing" : ""}`}
-                        role="status"
-                        aria-live="polite"
-                        aria-atomic="true"
-                      >
-                        <span class="agent-chat__dictation-label"
-                          >${dictation.finalizing
-                            ? t("chat.composer.dictationFinalizing")
-                            : dictation.connecting
-                              ? t("chat.composer.dictationConnecting")
-                              : t("chat.composer.dictationRecording", {
-                                  elapsed: dictation.elapsed,
-                                })}</span
-                        >
-                        ${dictation.partial
-                          ? html`<span class="agent-chat__dictation-partial"
-                              >${dictation.partial}</span
-                            >`
-                          : nothing}
-                      </div>
-                    `
-                  : nothing}
                 ${renderChatPlanChecklist(props.planStatus, {
                   active: showAbortableUi,
                   variant: "bar",
@@ -308,13 +290,6 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
               </div>
 
               ${renderChatAttachmentInputs({ ...props, disabled: !canCompose })}
-              ${renderChatVoiceError({
-                status: props.realtimeTalkCameraError ? "error" : props.realtimeTalkStatus,
-                detail: props.realtimeTalkDetail,
-                onDismissError: props.realtimeTalkCameraError
-                  ? undefined
-                  : props.onDismissRealtimeTalkError,
-              })}
               ${props.realtimeTalkVideoStream
                 ? html`
                     <div class="agent-chat__video-preview">

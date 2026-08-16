@@ -54,6 +54,7 @@ type ChatComposerDisabledBannerContent = {
   busy?: boolean;
   busyLabel?: string;
   disabledReason?: string;
+  runControls?: "active-run";
   onAction: () => void;
 };
 
@@ -190,4 +191,5 @@ export type ChatComposerState = {
   dictation: ComposerDictationController | null;
   dictationDraftKey: string | null;
   dictationSelection: { start: number; end: number } | null;
+  dictationPreview: { base: string; value: string } | null;
 };

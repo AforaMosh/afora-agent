@@ -84,6 +84,7 @@ export abstract class ChatPaneSessionCreation extends ChatPaneRetainedPresentati
     });
     return {
       kind: "composer-replacement" as const,
+      runControls: "active-run" as const,
       title: t("chat.restartRecoveryTitle"),
       text: t("chat.restartRecoveryDisabled"),
       tone: "neutral" as const,

@@ -54,7 +54,7 @@ describe("renderChatComposer controls", () => {
         followUpMode: "queue" as const,
         onAbort: vi.fn(),
       },
-      label: t("chat.runControls.queueMessage"),
+      label: t("chat.runControls.stopGenerating"),
       disabled: false,
       stop: true,
     },
@@ -66,7 +66,7 @@ describe("renderChatComposer controls", () => {
         followUpMode: "steer" as const,
         onAbort: vi.fn(),
       },
-      label: t("chat.followUpModeSteer"),
+      label: t("chat.runControls.stopGenerating"),
       disabled: false,
       stop: true,
     },
@@ -78,13 +78,16 @@ describe("renderChatComposer controls", () => {
       stop: false,
     },
   ])(
-    "renders the available turn actions with a separate mic for $name",
+    "renders one primary turn action with a separate mic for $name",
     ({ overrides, label, disabled, stop }) => {
       const view = renderComposer({ ...overrides, onToggleRealtimeTalk: vi.fn() });
       const action = button(view.container, label);
 
       expect(action.disabled).toBe(disabled);
       expect(view.container.querySelectorAll(".chat-send-btn--stop")).toHaveLength(stop ? 1 : 0);
+      expect(
+        view.container.querySelectorAll(".agent-chat__composer-actions > openclaw-tooltip"),
+      ).toHaveLength(1);
       expect(button(view.container, t("chat.composer.startVoiceInput"))).not.toBe(action);
     },
   );
@@ -327,61 +330,20 @@ describe("renderChatComposer controls", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
-  it("teaches the steer shortcut only when the force-steer action is available", () => {
-    const available = renderComposer({
+  it("replaces the send action with stop throughout an active run", () => {
+    const onAbort = vi.fn();
+    const view = renderComposer({
       canAbort: true,
       draft: "Follow up now",
       followUpMode: "queue",
-      onAbort: vi.fn(),
+      onAbort,
       sendShortcut: "enter",
     });
-    const availablePrimary = button(available.container, t("chat.runControls.queueMessage"));
-    const availableTooltip = availablePrimary.closest("openclaw-tooltip") as
-      | (HTMLElement & { content?: string })
-      | null;
-    expect(availablePrimary.getAttribute("aria-label")).toBe(t("chat.runControls.queueMessage"));
-    expect(availableTooltip?.content).toBe("Queue ⏎ · Steer ⌘/Ctrl+Enter");
-
-    const unavailable = [
-      {
-        overrides: {
-          canAbort: true,
-          draft: "Follow up later",
-          followUpMode: "queue" as const,
-          onAbort: vi.fn(),
-          sendShortcut: "modifier-enter" as const,
-        },
-        label: t("chat.runControls.queueMessage"),
-        tooltip: t("chat.runControls.queue"),
-      },
-      {
-        overrides: {
-          draft: "Send without an active run",
-          followUpMode: "queue" as const,
-          sendShortcut: "enter" as const,
-        },
-        label: t("chat.runControls.sendMessage"),
-        tooltip: t("chat.runControls.send"),
-      },
-      {
-        overrides: {
-          canAbort: true,
-          draft: "Already steering",
-          followUpMode: "steer" as const,
-          onAbort: vi.fn(),
-          sendShortcut: "enter" as const,
-        },
-        label: t("chat.followUpModeSteer"),
-        tooltip: t("chat.queue.steer"),
-      },
-    ];
-    for (const testCase of unavailable) {
-      const view = renderComposer(testCase.overrides);
-      const tooltip = button(view.container, testCase.label).closest("openclaw-tooltip") as
-        | (HTMLElement & { content?: string })
-        | null;
-      expect(tooltip?.content).toBe(testCase.tooltip);
-    }
+    expect(view.container.querySelector('[aria-label="Queue message"]')).toBeNull();
+    expect(view.container.querySelector('[aria-label="Steer the active run"]')).toBeNull();
+    const stop = button(view.container, t("chat.runControls.stopGenerating"));
+    stop.click();
+    expect(onAbort).toHaveBeenCalledOnce();
   });
 
   it("stops an abortable run with Escape unless reply or menu precedence owns it", () => {

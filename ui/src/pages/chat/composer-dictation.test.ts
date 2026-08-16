@@ -80,6 +80,8 @@ function pointer(type: string, pointerId = 7, x = 50, y = 50): Event {
 
 function createHarness(overrides: { enabled?: boolean; realtimeTalkActive?: boolean } = {}) {
   const onCommit = vi.fn();
+  const onPreview = vi.fn();
+  const onCancel = vi.fn();
   const onError = vi.fn();
   const onStateChange = vi.fn();
   const onTap = vi.fn();
@@ -89,6 +91,8 @@ function createHarness(overrides: { enabled?: boolean; realtimeTalkActive?: bool
     enabled: overrides.enabled ?? true,
     realtimeTalkActive: overrides.realtimeTalkActive ?? false,
     onCommit,
+    onPreview,
+    onCancel,
     onError,
     onStateChange,
     onTap,
@@ -103,7 +107,17 @@ function createHarness(overrides: { enabled?: boolean; realtimeTalkActive?: bool
   );
   target.addEventListener("click", (event) => controller.handleClick(event));
   document.body.append(target);
-  return { controller, onCommit, onError, onStateChange, onTap, options, target };
+  return {
+    controller,
+    onCommit,
+    onPreview,
+    onCancel,
+    onError,
+    onStateChange,
+    onTap,
+    options,
+    target,
+  };
 }
 
 async function startHold(target: HTMLElement): Promise<void> {
@@ -214,7 +228,7 @@ describe("ComposerDictationController", () => {
       }
       return params;
     });
-    const { controller, onCommit, target } = createHarness();
+    const { controller, onCommit, onPreview, target } = createHarness();
 
     await startHold(target);
     expect(order.slice(0, 3)).toEqual(["talk.catalog", "microphone", "talk.session.create"]);
@@ -237,6 +251,7 @@ describe("ComposerDictationController", () => {
       text: "hello wor",
     });
     expect(controller.partial).toBe("hello wor");
+    expect(onPreview).toHaveBeenCalledWith("hello wor");
     emit({
       transcriptionSessionId: "dictation-1",
       type: "transcript",
@@ -274,8 +289,8 @@ describe("ComposerDictationController", () => {
     controller.dispose();
   });
 
-  it("previews non-final transcript frames without committing them", async () => {
-    const { controller, onCommit, target } = createHarness();
+  it("publishes non-final transcript frames without committing them", async () => {
+    const { controller, onCommit, onPreview, target } = createHarness();
     await startHold(target);
     emit({
       transcriptionSessionId: "dictation-1",
@@ -284,6 +299,8 @@ describe("ComposerDictationController", () => {
       final: false,
     });
     expect(controller.partial).toBe("hello");
+    expect(onPreview).toHaveBeenCalledWith("hello");
+    expect(onCommit).not.toHaveBeenCalled();
     emit({
       transcriptionSessionId: "dictation-1",
       type: "transcript",

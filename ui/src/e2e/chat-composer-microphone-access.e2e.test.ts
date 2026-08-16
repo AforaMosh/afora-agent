@@ -75,7 +75,7 @@ suite.define(() => {
     });
   });
 
-  it("keeps live Talk styling when an active run moves controls into a replacement banner", async () => {
+  it("shows only Unarchive when a live session becomes archived", async () => {
     await suite.withPage({ permissions: ["microphone"] }, async ({ page }) => {
       const activeRunId = "replacement-banner-active-run";
       const sessionKey = "agent:main:main";
@@ -139,40 +139,11 @@ suite.define(() => {
       });
       const banner = page.locator(".agent-chat__disabled-banner");
       await expect.poll(() => banner.count()).toBe(1);
-      const liveTalk = banner.getByRole("button", { name: "Stop voice input" });
-      await expect.poll(() => liveTalk.count()).toBe(1);
+      await expect.poll(() => banner.getByRole("button").count()).toBe(1);
+      expect(await banner.getByRole("button", { name: "Unarchive" }).count()).toBe(1);
+      expect(await banner.getByRole("button", { name: "Stop voice input" }).count()).toBe(0);
+      expect(await banner.getByRole("button", { name: "Stop generating" }).count()).toBe(0);
       expect(await page.locator(".agent-chat__input").count()).toBe(0);
-
-      const liveStyle = await liveTalk.evaluate((node) => {
-        const style = getComputedStyle(node);
-        const glow = getComputedStyle(node, "::after");
-        return {
-          glowAnimation: glow.animationName,
-          minWidth: Number.parseFloat(style.minWidth),
-          position: style.position,
-          width: node.getBoundingClientRect().width,
-        };
-      });
-      expect(liveStyle.position).toBe("relative");
-      expect(liveStyle.minWidth).toBeGreaterThanOrEqual(64);
-      expect(liveStyle.width).toBeGreaterThanOrEqual(64);
-      expect(liveStyle.glowAnimation).toBe("chat-voice-live-breathe");
-
-      await gateway.closeLatest(1006, "provider unavailable");
-      await expect
-        .poll(() => liveTalk.getAttribute("class"))
-        .toContain("chat-send-btn--voice-error");
-      await expect
-        .poll(() =>
-          liveTalk.evaluate(
-            (node) =>
-              getComputedStyle(node.querySelector(".chat-send-btn__voice-stop-glyph")!).opacity,
-          ),
-        )
-        .toBe("1");
-      expect(
-        await liveTalk.evaluate((node) => getComputedStyle(node, "::after").animationName),
-      ).toBe("none");
     });
   });
 });

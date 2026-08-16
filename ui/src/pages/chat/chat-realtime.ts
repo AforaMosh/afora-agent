@@ -81,6 +81,11 @@ export function stopChatRealtimeTalk(state: ChatRealtimeState) {
 }
 
 export function dismissRealtimeTalkError(state: ChatRealtimeState) {
+  if (state.realtimeTalkCameraError) {
+    state.realtimeTalkCameraError = false;
+    state.realtimeTalkDetail = null;
+    return;
+  }
   if (state.realtimeTalkStatus !== "error") {
     return;
   }

@@ -2,7 +2,7 @@
 
 import { html, render } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import type { GatewayBrowserClient, GatewayEventFrame } from "../../api/gateway.ts";
 import type { QuestionPrompt } from "../../app/question-prompt.ts";
 import { loadSettings, patchSettings } from "../../app/settings.ts";
 import { icons } from "../../components/icons.ts";
@@ -180,8 +180,10 @@ describe("renderChatComposer controls", () => {
     expect(container.querySelector(".agent-chat__typing-indicator--outside")).toBeNull();
     banner?.querySelector<HTMLButtonElement>("button")?.click();
     expect(onAction).toHaveBeenCalledOnce();
-    button(container, t("chat.runControls.stopGenerating")).click();
-    expect(onAbort).toHaveBeenCalledOnce();
+    expect(container.querySelectorAll(".agent-chat__disabled-banner button")).toHaveLength(1);
+    expect(container.querySelector('[aria-label="Stop voice input"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Stop generating"]')).toBeNull();
+    expect(onAbort).not.toHaveBeenCalled();
   });
 
   it("keeps the disabled composer mounted for a catalog read-only state", () => {
@@ -461,7 +463,8 @@ describe("renderChatComposer controls", () => {
       realtimeTalkStatus: "error",
       realtimeTalkVideoCapable: true,
     });
-    expect(button(failed.container, t("chat.composer.turnCameraOn")).disabled).toBe(true);
+    expect(failed.container.querySelector('[aria-label="Turn camera on"]')).toBeNull();
+    expect(failed.container.querySelector('[aria-label="Stop voice input"]')).toBeNull();
   });
 
   it("renders the camera-off glyph while the talk camera is enabled", () => {
@@ -564,8 +567,12 @@ describe("renderChatComposer controls", () => {
       }
       return { ok: true };
     });
+    let gatewayListener: ((frame: GatewayEventFrame) => void) | undefined;
     const gatewayClient = {
-      addEventListener: vi.fn(() => () => undefined),
+      addEventListener: vi.fn((listener: (frame: GatewayEventFrame) => void) => {
+        gatewayListener = listener;
+        return () => undefined;
+      }),
       request,
     } as unknown as GatewayBrowserClient;
     const container = document.createElement("div");
@@ -575,6 +582,9 @@ describe("renderChatComposer controls", () => {
       gatewayClient,
       onToggleRealtimeTalk: vi.fn(),
     });
+    composerProps.onDraftChange = (next) => {
+      composerProps.draft = next;
+    };
     const draw = () => render(renderChatComposer(composerProps), container);
     composerProps.onRequestUpdate = draw;
     draw();
@@ -590,6 +600,9 @@ describe("renderChatComposer controls", () => {
       releasePointerCapture: { value: (pointerId: number) => captures.delete(pointerId) },
     });
 
+    const textarea = container.querySelector<HTMLTextAreaElement>("textarea")!;
+    textarea.selectionStart = textarea.value.length;
+    textarea.selectionEnd = textarea.value.length;
     capturedButton!.dispatchEvent(dictationPointerDown(9));
     expect(capturedButton!.hasPointerCapture(9)).toBe(true);
     await vi.advanceTimersByTimeAsync(250);
@@ -603,6 +616,19 @@ describe("renderChatComposer controls", () => {
     expect(request).toHaveBeenCalledWith("talk.session.create", expect.anything());
     expect(rerenderedButton).toBe(capturedButton);
     expect(rerenderedButton?.hasPointerCapture(9)).toBe(true);
+
+    gatewayListener?.({
+      event: "talk.event",
+      payload: {
+        transcriptionSessionId: "dictation-1",
+        type: "partial",
+        text: "updated directly",
+      },
+    } as GatewayEventFrame);
+    expect(container.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "Keep this text updated directly",
+    );
+    expect(container.querySelector(".agent-chat__dictation-status")).toBeNull();
   });
 });
 

@@ -564,8 +564,7 @@ function chatHtml(opts: ChatFixtureOptions = {}, mobileNavLayout = false) {
                         <button class="chat-send-btn chat-send-btn--voice" aria-label="Start voice input">${iconSvg()}</button>
                         ${
                           opts.activeQueuedEditFooter
-                            ? `<span><button class="chat-send-btn" aria-label="Send message">${iconSvg()}</button></span>
-                          <span><button class="chat-send-btn chat-send-btn--stop" aria-label="Stop generating">${iconSvg()}</button></span>`
+                            ? `<span><button class="chat-send-btn chat-send-btn--stop" aria-label="Stop generating">${iconSvg()}</button></span>`
                             : ""
                         }
                       </div>
@@ -1941,8 +1940,13 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
         getRect(page, ".agent-chat__composer-combobox > textarea"),
         getRect(page, ".agent-chat__composer-footer"),
       ]);
-      expect(surface.height).toBeGreaterThanOrEqual(98 - 0.01);
+      if (width > 768) {
+        expect(surface.height).toBeGreaterThanOrEqual(98 - 0.01);
+      }
       expect(actionRow.top).toBeGreaterThanOrEqual(editor.bottom - 1);
+      if (width <= 768) {
+        expect(actionRow.top - editor.bottom).toBeLessThanOrEqual(8);
+      }
       expect(surface.bottom - actionRow.bottom).toBeGreaterThanOrEqual(composerInset / 2);
     } finally {
       await closeBrowserPage(page);
@@ -2616,7 +2620,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
     }
   });
 
-  it("wraps turn settings below queued-edit and active-run actions at 320px", async () => {
+  it("wraps turn settings below queued-edit, microphone, and the single stop action at 320px", async () => {
     const page = await openFixture(320, 568, { activeQueuedEditFooter: true });
     try {
       await expectNoHorizontalOverflow(page);
@@ -2631,14 +2635,21 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
           edit: rectFor(".agent-chat__composer-edit"),
           footer: rectFor(".agent-chat__composer-footer"),
           middle: rectFor(".agent-chat__composer-mid"),
+          microphone: rectFor('.chat-send-btn--voice[aria-label="Start voice input"]'),
           model: rectFor(".chat-controls__model-trigger"),
+          stop: rectFor('.chat-send-btn--stop[aria-label="Stop generating"]'),
+          textarea: rectFor(".agent-chat__composer-combobox > textarea"),
         };
       });
 
       expect(rectsOverlap(layout.edit, layout.model)).toBe(false);
+      expect(rectsOverlap(layout.edit, layout.microphone)).toBe(false);
+      expect(rectsOverlap(layout.microphone, layout.stop)).toBe(false);
+      expect(await page.locator('[aria-label="Send message"]').count()).toBe(0);
       expect(layout.middle.y).toBeGreaterThanOrEqual(
         Math.max(layout.edit.y + layout.edit.height, layout.actions.y + layout.actions.height) - 1,
       );
+      expect(layout.footer.y - (layout.textarea.y + layout.textarea.height)).toBeLessThanOrEqual(8);
       expect(layout.middle.x).toBeGreaterThanOrEqual(layout.footer.x - 1);
       expect(layout.middle.x + layout.middle.width).toBeLessThanOrEqual(
         layout.footer.x + layout.footer.width + 1,
@@ -2780,7 +2791,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
               Math.abs(control.y + control.height / 2 - (model.y + model.height / 2)),
             ).toBeLessThanOrEqual(2);
           }
-          expect(footer.height).toBeLessThanOrEqual(49.1);
+          expect(footer.height).toBeLessThanOrEqual(width <= 560 ? 96 : 49.1);
         } else {
           // The editor reads at input size, while the controls around it stay
           // chrome-sized — that difference is what marks the text as the

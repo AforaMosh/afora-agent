@@ -1,10 +1,8 @@
 import { html, nothing, type TemplateResult } from "lit";
 import { ref } from "lit/directives/ref.js";
-import type { ChatSendShortcut } from "../../../app/settings.ts";
 import { icons } from "../../../components/icons.ts";
 import { syncDropdownItemRadio } from "../../../components/web-awesome.ts";
 import { t } from "../../../i18n/index.ts";
-import type { ControlUiFollowUpMode } from "../../../lib/chat/follow-up-mode.ts";
 import type { ComposerDictationController } from "../composer-dictation.ts";
 import {
   realtimeTalkDeviceIssueMessage,
@@ -22,8 +20,6 @@ export type ChatRunControlsProps = {
   draft: string;
   hasAttachments?: boolean;
   isBusy: boolean;
-  followUpMode?: ControlUiFollowUpMode;
-  sendShortcut: ChatSendShortcut;
   suggestionComposer?: boolean;
   sending: boolean;
   voiceActive?: boolean;
@@ -38,7 +34,6 @@ export type ChatRunControlsProps = {
   onPrimaryActionPointerDown?: (event: PointerEvent) => void;
   onAbort?: () => void;
   onSend: () => void;
-  onStoreDraft: (draft: string) => void;
   onToggleVoice?: () => void;
   onToggleCamera?: () => void;
   microphonePicker?: TemplateResult | typeof nothing;
@@ -208,6 +203,9 @@ function renderComposerVoiceButton(props: ChatRunControlsProps) {
                     inputLevel: props.dictation?.inputLevel,
                   })}
                   <span class="chat-send-btn__dictation-time">${props.dictation?.elapsed}</span>
+                  <span class="chat-send-btn__dictation-stop" aria-hidden="true"
+                    >${icons.stop}</span
+                  >
                 `
               : html`
                   ${icons.mic}
@@ -221,41 +219,6 @@ function renderComposerVoiceButton(props: ChatRunControlsProps) {
 
 export function renderChatPrimaryActions(props: ChatRunControlsProps) {
   const hasComposedContent = Boolean(props.draft.trim() || props.hasAttachments);
-  const steersActiveRun = props.followUpMode === "steer";
-  const interruptsActiveRun = props.followUpMode === "interrupt";
-  const activeRunActionLabel = props.suggestionComposer
-    ? t("chat.sessionSuggestions.suggest")
-    : !props.canAbort || props.followUpMode === undefined
-      ? t("chat.runControls.send")
-      : steersActiveRun
-        ? t("chat.queue.steer")
-        : interruptsActiveRun
-          ? t("chat.runControls.send")
-          : t("chat.runControls.queue");
-  const activeRunActionDescription = props.suggestionComposer
-    ? t("chat.sessionSuggestions.suggestMessage")
-    : !props.canAbort || props.followUpMode === undefined
-      ? t("chat.runControls.sendMessage")
-      : steersActiveRun
-        ? t("chat.followUpModeSteer")
-        : interruptsActiveRun
-          ? t("chat.runControls.sendMessage")
-          : t("chat.runControls.queueMessage");
-  const queueSteerShortcutAvailable =
-    props.canAbort &&
-    props.canSend &&
-    hasComposedContent &&
-    props.followUpMode === "queue" &&
-    props.sendShortcut === "enter";
-  const activeRunActionTooltip = queueSteerShortcutAvailable
-    ? `${activeRunActionLabel} ⏎ · ${t("chat.queue.steer")} ${t("chat.sendShortcutModifierEnter")}`
-    : activeRunActionLabel;
-  const storeDraftAndSend = () => {
-    if (props.draft.trim()) {
-      props.onStoreDraft(props.draft);
-    }
-    props.onSend();
-  };
   const abortAction = props.canAbort
     ? html`
         <openclaw-tooltip .content=${t("chat.runControls.stop")}>
@@ -281,7 +244,8 @@ export function renderChatPrimaryActions(props: ChatRunControlsProps) {
   // Dictation and Talk are one affordance to the operator — a microphone — so
   // the control shows whenever either route exists, and it always sits ahead of
   // the primary action rather than standing in for it.
-  const voiceControl = props.dictation || props.onToggleVoice ? voiceButton : nothing;
+  const voiceControl =
+    !voiceErrored && (props.dictation || props.onToggleVoice) ? voiceButton : nothing;
   // Send holds the trailing edge whatever the draft is. An empty draft disables
   // it instead of removing it: a primary action that vanishes reads as a broken
   // composer, and it takes with it the one place the surface says how a turn is
@@ -291,7 +255,7 @@ export function renderChatPrimaryActions(props: ChatRunControlsProps) {
       <button
         class="chat-send-btn"
         @pointerdown=${props.onPrimaryActionPointerDown}
-        @click=${storeDraftAndSend}
+        @click=${props.onSend}
         ?disabled=${!props.canSend || props.sending || !hasComposedContent}
         aria-label=${description}
       >
@@ -318,15 +282,13 @@ export function renderChatPrimaryActions(props: ChatRunControlsProps) {
         : t("chat.runControls.send"),
   );
   return html`
-    ${props.voiceActive && props.onToggleVoice
+    ${props.voiceActive && props.onToggleVoice && !voiceErrored
       ? html`
           <span class="chat-talk-control chat-talk-control--active">
             ${props.microphonePicker}
             <openclaw-tooltip .content=${t("chat.composer.stopVoiceInput")}>
               <button
-                class="chat-send-btn chat-send-btn--voice-live${voiceErrored
-                  ? " chat-send-btn--voice-error"
-                  : ""}"
+                class="chat-send-btn chat-send-btn--voice-live"
                 @click=${props.onToggleVoice}
                 aria-label=${t("chat.composer.stopVoiceInput")}
               >
@@ -379,22 +341,8 @@ export function renderChatPrimaryActions(props: ChatRunControlsProps) {
                 </openclaw-tooltip>
               `
             : nothing}
-          ${abortAction}
+          ${props.canAbort ? abortAction : sendAction}
         `
-      : html`
-          ${voiceControl}
-          ${props.canAbort
-            ? html`
-                ${hasComposedContent
-                  ? renderSendAction(
-                      activeRunActionTooltip,
-                      activeRunActionDescription,
-                      activeRunActionLabel,
-                    )
-                  : nothing}
-                ${abortAction}
-              `
-            : sendAction}
-        `}
+      : html` ${voiceControl} ${props.canAbort ? abortAction : sendAction} `}
   `;
 }
