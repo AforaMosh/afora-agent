@@ -507,7 +507,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     ).toEqual(["src/cli/gateway-cli/run-loop.test.ts"]);
     expect(cliProcessGroups.find((group) => group.shard_name.endsWith("-run-loop"))?.env).toEqual({
       OPENCLAW_VITEST_FS_MODULE_CACHE: "0",
-      OPENCLAW_VITEST_MAX_WORKERS: "2",
+      OPENCLAW_VITEST_MAX_WORKERS: "1",
     });
     const groupsWith = (plan: typeof githubCompact, shardName: string) =>
       plan.find((shard) => shard.groups.some((group) => group.shard_name === shardName))?.groups;
