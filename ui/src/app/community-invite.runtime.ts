@@ -216,6 +216,12 @@ export function attentionModalOpen(): boolean {
   return (document.openClawModalToastLayers?.size ?? 0) > 0;
 }
 
+/** How one presentation attempt ended. `settled` means the invite is over for this
+ * browser — mounted, retired by a tombstone, or refused by storage that cannot carry
+ * one. `deferred` means nothing was claimed and nothing was recorded, so the watchers
+ * must stay alive for the next visibility or focus event. */
+type PresentationOutcome = "settled" | "deferred";
+
 /** Starts the invite for a load the shell has already qualified. `isEligibleNow`
  * is checked live at presentation time, not only here: it covers state that can
  * change after this load qualified (gateway connectivity, onboarding, an active
@@ -237,7 +243,7 @@ export function runCommunityInvite(
   }
 
   let disposed = false;
-  let presented = false;
+  let presenting = false;
   let dwellAccumulatedMs = 0;
   let dwellStartedAtMs: number | null = null;
   let dwellSatisfied = false;
@@ -274,14 +280,26 @@ export function runCommunityInvite(
     !hasActiveToast() &&
     isEligibleNow();
 
-  const present = async () => {
+  const present = async (): Promise<PresentationOutcome> => {
     // Load the card first and claim second: a failed chunk fetch must not burn the
     // one showing this browser gets, and once the claim lands the card reaches the
     // DOM in the same task.
     const { COMMUNITY_INVITE_SETTLED_EVENT } =
       await import("../components/community-invite-dialog.ts");
-    if (disposed || !isQuietAndEligible() || !(await claimCommunityInviteShowing())) {
-      return;
+    if (disposed) {
+      return "settled";
+    }
+    if (!isQuietAndEligible()) {
+      // Went unquiet inside the import; nothing claimed, so this must not retire.
+      return "deferred";
+    }
+    if (!(await claimCommunityInviteShowing())) {
+      return "settled";
+    }
+    if (disposed) {
+      // The owner vanished inside the claim. The tombstone stands, so nothing
+      // re-shows; appending here would leave a card with no disposer to remove it.
+      return "settled";
     }
     const mounted = document.createElement("openclaw-community-invite-dialog");
     mounted.addEventListener(COMMUNITY_INVITE_SETTLED_EVENT, (event) => {
@@ -297,10 +315,11 @@ export function runCommunityInvite(
     });
     card = mounted;
     document.body.append(mounted);
+    return "settled";
   };
 
   const tryPresent = () => {
-    if (disposed || presented || !isQuietAndEligible()) {
+    if (disposed || presenting || !isQuietAndEligible()) {
       // No retry timer: the next visibility/focus event brings us back here. A
       // run/subagent finishing or a modal closing with no accompanying
       // visibility/focus event will not itself re-trigger a check — an accepted
@@ -308,13 +327,20 @@ export function runCommunityInvite(
       // it, and the invite has no urgency that would justify polling for it.
       return;
     }
-    presented = true;
+    presenting = true;
     void present().then(
-      () => stopWatching(),
+      (outcome) => {
+        presenting = false;
+        // Only a settled attempt retires the watchers. Stopping on a deferral would
+        // strand the invite: no card, no tombstone, and no event left to retry on.
+        if (outcome === "settled") {
+          stopWatching();
+        }
+      },
       () => {
         // Only the chunk fetch can land here, and it burned no tombstone, so a
         // later event in this load may still show the card.
-        presented = false;
+        presenting = false;
       },
     );
   };
@@ -337,7 +363,7 @@ export function runCommunityInvite(
    * presence drives the dwell accumulator, and every event is a chance to present
    * once dwell is satisfied. Nothing polls. */
   const onEnvironmentChange = () => {
-    if (disposed || presented) {
+    if (disposed || presenting) {
       return;
     }
     if (operatorIsPresent()) {
