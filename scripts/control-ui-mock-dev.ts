@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import qrcode from "qrcode";
 import { createServer, type Plugin, type ViteDevServer } from "vite";
 import type {
@@ -3005,11 +3006,82 @@ function createSoloSidebarScenario(
   return solo;
 }
 
+const CALM_SIDEBAR_SESSION_KEYS = new Set([
+  "agent:main:main",
+  "agent:main:lisbon-trip",
+  PINNED_CREATOR_SESSION_KEY,
+  "agent:main:production-export",
+  "agent:main:model-budget",
+  "agent:main:release-draft",
+  "agent:main:home-server",
+  "agent:main:whatsapp:group:family",
+  "agent:main:discord:channel:openclaw-dev",
+  "agent:main:sidebar-zones",
+  "agent:main:issues-panel",
+  "agent:main:peekaboo-audit",
+  "agent:main:clawhub-catalog",
+]);
+
+function createCalmSidebarScenario(
+  scenario: ControlUiMockGatewayScenario,
+): ControlUiMockGatewayScenario {
+  const calm = structuredClone(scenario);
+  calm.assistantName = "Molty";
+  calm.repeatingSessionEvents = undefined;
+  calm.presenceUsers = calm.presenceUsers
+    ?.filter(
+      (user) => user.self || user.id === MOCK_CREATOR_PETER.id || user.id === MOCK_CREATOR_MIRA.id,
+    )
+    .map((user) => ({
+      ...user,
+      watchedSessions: user.watchedSessions?.filter((key) => CALM_SIDEBAR_SESSION_KEYS.has(key)),
+    }));
+
+  const sessionsList = calm.methodResponses?.["sessions.list"];
+  if (!isRecord(sessionsList) || !Array.isArray(sessionsList.cases)) {
+    throw new Error("Calm sidebar fixture requires sessions.list cases");
+  }
+  const cases = sessionsList.cases.filter(isRecord);
+  const rootCase = cases.find(
+    (entry) => isRecord(entry.match) && Object.keys(entry.match).length === 0,
+  );
+  const rootResponse = rootCase && isRecord(rootCase.response) ? rootCase.response : undefined;
+  const rootSessions = Array.isArray(rootResponse?.sessions)
+    ? rootResponse.sessions.filter(
+        (entry) =>
+          isRecord(entry) &&
+          typeof entry.key === "string" &&
+          CALM_SIDEBAR_SESSION_KEYS.has(entry.key),
+      )
+    : [];
+  const childCases = cases.filter(
+    (entry) =>
+      isRecord(entry.match) &&
+      typeof entry.match.spawnedBy === "string" &&
+      CALM_SIDEBAR_SESSION_KEYS.has(entry.match.spawnedBy),
+  );
+  sessionsList.cases = [
+    ...childCases,
+    {
+      match: {},
+      response: sessionsListResponse(rootSessions, {
+        creators: MOCK_SESSION_CREATORS,
+        hasMore: false,
+        nextOffset: null,
+        totalCount: rootSessions.length,
+      }),
+    },
+  ];
+  return calm;
+}
+
 function createMockGatewayPlugin(
   scenario: ControlUiMockGatewayScenario,
   soloScenario: ControlUiMockGatewayScenario,
+  calmScenario: ControlUiMockGatewayScenario,
 ): Plugin {
   const initScripts = {
+    calm: escapeScriptContent(createControlUiMockGatewayInitScript(calmScenario)),
     team: escapeScriptContent(createControlUiMockGatewayInitScript(scenario)),
     solo: escapeScriptContent(createControlUiMockGatewayInitScript(soloScenario)),
   };
@@ -3030,8 +3102,11 @@ function createMockGatewayPlugin(
     name: "openclaw-control-ui-mock-gateway",
     transformIndexHtml(html, context) {
       const query = new URL(context.originalUrl ?? context.path, "http://control-ui.mock");
-      const initScript =
-        query.searchParams.get("solo") === "1" ? initScripts.solo : initScripts.team;
+      const initScript = query.searchParams.has("fixture", "default")
+        ? initScripts.calm
+        : query.searchParams.get("solo") === "1"
+          ? initScripts.solo
+          : initScripts.team;
       return html.replace(
         "</head>",
         `    <script data-openclaw-control-ui-mock-gateway>\n${initScript}\n${custodianInitScript}\n    </script>\n  </head>`,
@@ -3088,6 +3163,7 @@ async function waitForShutdown(): Promise<void> {
 const options = parseArgs(process.argv.slice(2));
 const scenario = await createChatPickerScenario(options.fixture);
 const soloScenario = createSoloSidebarScenario(scenario);
+const calmScenario = createCalmSidebarScenario(scenario);
 const server = await createServer({
   base: "/",
   cacheDir: path.join(repoRoot, ".artifacts", "control-ui-mock-vite"),
@@ -3112,7 +3188,10 @@ const server = await createServer({
       : {}),
     include: ["lit/directives/repeat.js"],
   },
-  plugins: [createMockGatewayPlugin(scenario, soloScenario), createBoardFixturePlugin()],
+  plugins: [
+    createMockGatewayPlugin(scenario, soloScenario, calmScenario),
+    createBoardFixturePlugin(),
+  ],
   publicDir: path.join(uiRoot, "public"),
   resolve: {
     alias: [
