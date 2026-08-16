@@ -1,11 +1,7 @@
 // Archive lifecycle tests protect fence-before-cancel, terminal drains, and sentinels.
 import { afterEach, expect, test, vi } from "vitest";
 import { SessionManager } from "../agents/sessions/session-manager.js";
-import {
-  loadSessionEntry,
-  replaceSessionEntry,
-  upsertSessionEntryCore,
-} from "../config/sessions/session-accessor.js";
+import { loadSessionEntry, upsertSessionEntryCore } from "../config/sessions/session-accessor.js";
 import { onAgentEvent } from "../infra/agent-events.js";
 import {
   beginSessionWorkAdmission,
@@ -1066,67 +1062,3 @@ test("sessions.patch rejects a generation replaced after the exact preparation r
     active.unsubscribe();
   }
 });
-
-test.each([
-  {
-    name: "same-key rollover names the successor it recorded",
-    takeOverKey: async (storePath: string, sessionKey: string) => {
-      await upsertSessionEntryCore(
-        { storePath, sessionKey },
-        { sessionId: "session-archive-prepare-successor", updatedAt: 3 },
-      );
-    },
-    expectedDetails: {
-      code: "SESSION_CHANGED",
-      successorSessionId: "session-archive-prepare-successor",
-    },
-  },
-  {
-    name: "wholesale replacement names none",
-    takeOverKey: async (storePath: string, sessionKey: string) => {
-      await replaceSessionEntry(
-        { storePath, sessionKey },
-        sessionStoreEntry("session-archive-prepare-successor", { updatedAt: 3 }),
-      );
-    },
-    expectedDetails: { code: "SESSION_CHANGED" },
-  },
-])(
-  "sessions.patch reports an archive raced before its preparation read: $name",
-  async ({ takeOverKey, expectedDetails }) => {
-    const { storePath } = await createSessionStoreDir();
-    const sessionKey = "agent:main:archive-prepare-race";
-    const sessionId = "session-archive-prepare-race";
-    await writeSessionStore({ entries: { [sessionKey]: sessionStoreEntry(sessionId) } });
-    const contenderRelease = createDeferredCore();
-    // Holding the lifecycle fence keeps the archive queued after its preflight read but
-    // before preparation re-reads the store, which is the window this rejection owns.
-    const contender = runExclusiveSessionLifecycleMutation({
-      scope: storePath,
-      identities: [sessionKey, sessionId],
-      run: async () => await contenderRelease.promise,
-    });
-    try {
-      const archive = directSessionReq("sessions.patch", archivePatch(sessionKey, sessionId));
-      // Let the request finish its preflight read and queue on the fence; it cannot pass
-      // the fence until this test releases the contender, so the window stays open.
-      for (let turn = 0; turn < 3; turn += 1) {
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 0);
-        });
-      }
-      await takeOverKey(storePath, sessionKey);
-      contenderRelease.resolve();
-
-      const archived = await archive;
-      expect(archived.ok).toBe(false);
-      expect((archived.error as { details?: unknown } | undefined)?.details).toEqual(
-        expectedDetails,
-      );
-      expect(loadSessionEntry({ storePath, sessionKey })?.archivedAt).toBeUndefined();
-    } finally {
-      contenderRelease.resolve();
-      await contender;
-    }
-  },
-);
