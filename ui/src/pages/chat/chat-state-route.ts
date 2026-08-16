@@ -9,6 +9,7 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
   resolveUiSelectedGlobalAgentId,
+  type UiSessionDefaultsHost,
   uiSessionRowMatchesSelectedChat,
 } from "../../lib/sessions/session-key.ts";
 import type { ChatPageHost } from "./chat-state-host.ts";
@@ -18,14 +19,9 @@ import type { ChatPageHost } from "./chat-state-host.ts";
  *  so selecting a row never depends on transcript, realtime or composer state. */
 type ChatSessionRowHost = Pick<
   ChatPageHost,
-  | "sessionKey"
-  | "sessionsResult"
-  | "sessionsResultAgentId"
-  | "retainedSelectedSession"
-  | "assistantAgentId"
-  | "agentsList"
-  | "hello"
->;
+  "sessionKey" | "sessionsResult" | "retainedSelectedSession"
+> &
+  UiSessionDefaultsHost & { sessionsResultAgentId?: string | null };
 
 export function canCreateChatSession(state: ChatPageHost) {
   return (

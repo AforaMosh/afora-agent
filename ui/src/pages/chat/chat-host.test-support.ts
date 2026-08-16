@@ -3,7 +3,7 @@ import type { UiSettings } from "../../app/settings.ts";
 import { createSessionCapability } from "../../lib/sessions/index.ts";
 import type { ChatHost } from "./chat-send-contract.ts";
 import { patchChatSessionSettings } from "./chat-settings-patches.ts";
-import type { ChatComposerMemoryFallback } from "./chat-state-host.ts";
+import type { ChatComposerMemoryFallback, ChatPageHost } from "./chat-state-host.ts";
 import type { RenderLifecycle } from "./render-lifecycle.ts";
 
 type RequestHandlers = Record<string, unknown>;
@@ -40,6 +40,10 @@ type TestChatHost = Omit<ChatHost, "settings"> & {
   chatComposerFallbackByScope: Record<string, ChatComposerMemoryFallback>;
   sessionsError?: string | null;
   sessionsResultAgentId?: string | null;
+  // The route distinguishes a cleared roster (null) from a live one, so the
+  // test host mirrors the page host here instead of also allowing undefined.
+  sessionsResult: ChatPageHost["sessionsResult"];
+  retainedSelectedSession: ChatPageHost["retainedSelectedSession"];
   sessionsArchivedFilter?: "active" | "archived" | "all";
   password?: string;
   pendingSettingsPatches?: Record<string, Promise<boolean>>;
