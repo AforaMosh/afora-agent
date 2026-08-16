@@ -2100,7 +2100,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
   it("does not retire a replacement runtime when guarded cleanup finds a changed session", async () => {
     const changedError = new Error("session changed") as Error & {
       gatewayCode: string;
-      details: { reason: string };
+      details: { code: string };
     };
     changedError.name = "GatewayClientRequestError";
     changedError.gatewayCode = "INVALID_REQUEST";
@@ -2166,7 +2166,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     });
     const changedError = new Error("session changed") as Error & {
       gatewayCode: string;
-      details: { reason: string };
+      details: { code: string };
     };
     changedError.name = "GatewayClientRequestError";
     changedError.gatewayCode = "INVALID_REQUEST";
