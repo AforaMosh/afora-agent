@@ -1477,12 +1477,14 @@ async function createChatPickerScenario(
     // gate the chat header's panel toggles, which stayed invisible here.
     featureMethods: [
       "browser.request",
+      "chat.abort",
       "chat.metadata",
       "chat.startup",
       "question.list",
       "openclaw.changes.list",
       "openclaw.chat",
       "openclaw.chat.history",
+      "sessions.abort",
       "sessions.delete",
       "sessions.diff",
       "sessions.files.set",
