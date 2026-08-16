@@ -6,7 +6,7 @@ import { SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD } from "../../lib/session-pull-r
 import { createGatewayHarness, createSessionsHarness, mountSidebar } from "../app-sidebar.ts";
 import { waitForFast } from "../wait-for.ts";
 
-function expectEmptyLead(row: Element | null) {
+function expectNoLead(row: Element | null) {
   const lead = row?.querySelector(".sidebar-session-indicator");
   expect(lead).not.toBeNull();
   expect(lead?.childElementCount).toBe(0);
@@ -227,7 +227,7 @@ describe("AppSidebar session indicators", () => {
       expect(sidebar.querySelector('[data-session-pr-state="merged"]')).not.toBeNull();
     });
     const plain = sidebar.querySelector(`[data-session-key="${keys.plain}"]`);
-    expectEmptyLead(plain);
+    expectNoLead(plain);
     expect(plain?.querySelector(".session-row-state")).toBeNull();
 
     // A fork is provenance, not operational state, so it earns no row glyph.
@@ -237,14 +237,14 @@ describe("AppSidebar session indicators", () => {
     expect(forked?.querySelector(".session-row-state")).toBeNull();
 
     const unread = sidebar.querySelector(`[data-session-key="${keys.unread}"]`);
-    expectEmptyLead(unread);
+    expectNoLead(unread);
     expect(
       unread?.querySelector(".session-row-aside > .session-row-state .session-state-dot--unread"),
     ).not.toBeNull();
 
     const runningUnread = sidebar.querySelector(`[data-session-key="${keys.runningUnread}"]`);
     expect(runningUnread?.classList.contains("session-row-host--running")).toBe(true);
-    expectEmptyLead(runningUnread);
+    expectNoLead(runningUnread);
     expect(
       runningUnread?.querySelector(".session-row-aside > .session-row-state .session-run-spinner"),
     ).not.toBeNull();
@@ -283,7 +283,7 @@ describe("AppSidebar session indicators", () => {
     sessions.publishList({ result });
     await waitForFast(() => {
       expect(sidebar.querySelector('[data-session-pr-state="open"]')).toBeNull();
-      expectEmptyLead(sidebar.querySelector(`[data-session-key="${keys.openPullRequest}"]`));
+      expectNoLead(sidebar.querySelector(`[data-session-key="${keys.openPullRequest}"]`));
     });
   });
 });
