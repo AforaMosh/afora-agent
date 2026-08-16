@@ -629,6 +629,18 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
                     <nav class="sidebar-nav">
                       <div
                         class="nav-section__items"
+                        @contextmenu=${(event: MouseEvent) => {
+                          const target = event.target as Element;
+                          if (target.closest(".session-row-host")) {
+                            return;
+                          }
+                          event.preventDefault();
+                          event.stopPropagation();
+                          const trigger =
+                            target.closest<HTMLElement>(".nav-item") ??
+                            (event.currentTarget as HTMLElement);
+                          this.sidebarMenus.openMoreMenuAt(trigger, event.clientX, event.clientY);
+                        }}
                         @dragover=${(event: DragEvent) =>
                           this.sessionOrganizer.handleSidebarZoneDragOver(event)}
                         @dragleave=${(event: DragEvent) =>

@@ -255,15 +255,19 @@ export class SidebarMenusController implements ReactiveController, SidebarMenusC
       this.closeMoreMenu();
       return;
     }
+    const rect = trigger.getBoundingClientRect();
+    this.openMoreMenuAt(trigger, rect.right, rect.top);
+  }
+
+  openMoreMenuAt(trigger: HTMLElement, x: number, y: number) {
     this.loadMenuRenderer();
     const menuWidth = 240;
     const menuMaxHeight = 420;
-    const rect = trigger.getBoundingClientRect();
     this.dismissTransientMenus();
     this.moreMenuTrigger = trigger;
     this.updateState("moreMenuPosition", {
-      x: Math.max(8, Math.min(rect.right, window.innerWidth - menuWidth - 8)),
-      y: Math.max(8, Math.min(rect.top, window.innerHeight - menuMaxHeight - 8)),
+      x: Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8)),
+      y: Math.max(8, Math.min(y, window.innerHeight - menuMaxHeight - 8)),
     });
   }
 
