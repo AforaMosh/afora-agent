@@ -216,7 +216,9 @@ suite.define(() => {
       await expect
         .poll(() => menuAutomation.locator(".sidebar-automation-attention-badge").textContent())
         .toBe("1");
-      await expect.poll(() => sidebar.locator(".sidebar-automation-attention-badge").count()).toBe(1);
+      await expect
+        .poll(() => sidebar.locator(".sidebar-automation-attention-badge").count())
+        .toBe(1);
       await captureSidebarUiProof(page, "automation-attention-more.png");
     } finally {
       await suite.closeBrowserContext(context);

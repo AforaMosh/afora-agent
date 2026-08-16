@@ -349,7 +349,6 @@ class SidebarAttention extends OpenClawLightDomContentsElement {
     `;
   }
 
-
   override render() {
     if (this.context?.gateway.snapshot.phase !== "connected") {
       return nothing;
