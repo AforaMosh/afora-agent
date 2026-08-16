@@ -654,6 +654,7 @@ function splitCompactCliProcessGroup(group: NodeTestShardGroup): NodeTestShardGr
       ...group,
       env: {
         ...group.env,
+        NODE_OPTIONS: "--max-old-space-size=512",
         OPENCLAW_VITEST_FS_MODULE_CACHE: "0",
         OPENCLAW_VITEST_MAX_WORKERS: "1",
       },
