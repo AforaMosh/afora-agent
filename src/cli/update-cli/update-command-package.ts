@@ -63,6 +63,7 @@ export async function runPackageInstallUpdate(params: {
   nodeRunner?: string;
   installEnv?: NodeJS.ProcessEnv;
   installTarget?: ResolvedGlobalInstallTarget;
+  beforeMutation?: () => Promise<void>;
 }): Promise<UpdateRunResult> {
   const installEnv = params.installEnv ?? (await createGlobalInstallEnv());
   const runCommand = createGlobalCommandRunner();
@@ -126,6 +127,7 @@ export async function runPackageInstallUpdate(params: {
         ...stepParams,
         progress: params.progress,
       }),
+    beforeMutation: params.beforeMutation,
     postVerifyStep: async (verifiedPackageRoot) => {
       const entryPath = await resolveGatewayInstallEntrypoint(verifiedPackageRoot);
       if (!entryPath) {

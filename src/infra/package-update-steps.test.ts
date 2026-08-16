@@ -202,6 +202,12 @@ describe("runGlobalPackageUpdateSteps", () => {
           };
         },
       );
+      const beforeMutation = vi.fn(async () => {
+        expect(runStep).toHaveBeenCalledOnce();
+        await expect(
+          fs.readFile(path.join(packageRoot, "package.json"), "utf8"),
+        ).resolves.toContain('"version":"1.0.0"');
+      });
 
       const result = await runGlobalPackageUpdateSteps({
         installTarget: createNpmTarget(globalRoot),
@@ -211,8 +217,10 @@ describe("runGlobalPackageUpdateSteps", () => {
         runCommand: createRootRunner(globalRoot),
         runStep,
         timeoutMs: 1000,
+        beforeMutation,
       });
 
+      expect(beforeMutation).toHaveBeenCalledOnce();
       expect(result.failedStep).toBeNull();
       expect(result.verifiedPackageRoot).toBe(packageRoot);
       expect(result.afterVersion).toBe("2.0.0");
@@ -763,6 +771,7 @@ describe("runGlobalPackageUpdateSteps", () => {
           if (name !== "global update") {
             throw new Error(`unexpected step ${name}`);
           }
+          expect(beforeMutation).toHaveBeenCalledOnce();
           expect(argv).toEqual([
             "pnpm",
             "add",
@@ -781,6 +790,11 @@ describe("runGlobalPackageUpdateSteps", () => {
             exitCode: 0,
           };
         });
+        const beforeMutation = vi.fn(async () => {
+          await expect(
+            fs.readFile(path.join(packageRoot, "package.json"), "utf8"),
+          ).resolves.toContain('"version":"1.0.0"');
+        });
 
         const result = await runGlobalPackageUpdateSteps({
           installTarget: createPnpmTarget(globalRoot),
@@ -790,8 +804,10 @@ describe("runGlobalPackageUpdateSteps", () => {
           runCommand: createRootRunner(globalRoot),
           runStep,
           timeoutMs: 1000,
+          beforeMutation,
         });
 
+        expect(beforeMutation).toHaveBeenCalledOnce();
         expect(result.failedStep).toBeNull();
         expect(result.afterVersion).toBe("2.0.0");
         expect(result.steps.map((step) => step.name)).toEqual(["global update"]);
@@ -873,6 +889,7 @@ describe("runGlobalPackageUpdateSteps", () => {
       const packageRoot = path.join(globalRoot, "openclaw");
       await writePackageRoot(packageRoot, "1.0.0");
       const postVerifyStep = vi.fn();
+      const beforeMutation = vi.fn();
 
       const result = await runGlobalPackageUpdateSteps({
         installTarget: createNpmTarget(globalRoot),
@@ -899,6 +916,7 @@ describe("runGlobalPackageUpdateSteps", () => {
           };
         },
         timeoutMs: 1000,
+        beforeMutation,
         postVerifyStep,
       });
 
@@ -913,6 +931,7 @@ describe("runGlobalPackageUpdateSteps", () => {
       expect(result.verifiedPackageRoot).toBe(packageRoot);
       expect(result.afterVersion).toBe("1.0.0");
       expect(postVerifyStep).not.toHaveBeenCalled();
+      expect(beforeMutation).not.toHaveBeenCalled();
       await expect(fs.readFile(path.join(packageRoot, "package.json"), "utf8")).resolves.toContain(
         '"version":"1.0.0"',
       );

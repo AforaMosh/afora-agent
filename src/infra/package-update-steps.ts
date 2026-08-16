@@ -831,6 +831,7 @@ export async function runGlobalPackageUpdateSteps(params: {
   timeoutMs: number;
   env?: NodeJS.ProcessEnv;
   installCwd?: string;
+  beforeMutation?: () => Promise<void>;
   postVerifyStep?: (packageRoot: string) => Promise<PackageUpdateStepResult | null>;
 }): Promise<{
   steps: PackageUpdateStepResult[];
@@ -840,6 +841,14 @@ export async function runGlobalPackageUpdateSteps(params: {
 }> {
   let stagedInstall: StagedNpmInstall | null | undefined;
   let packedInstallDir: string | null = null;
+  let mutationPrepared = false;
+  const prepareMutation = async () => {
+    if (mutationPrepared) {
+      return;
+    }
+    await params.beforeMutation?.();
+    mutationPrepared = true;
+  };
 
   try {
     const pnpmPreflight = await validatePnpmIsolatedUpdate({
@@ -925,6 +934,9 @@ export async function runGlobalPackageUpdateSteps(params: {
           preparedSpec.installCwd ?? process.cwd(),
         )
       : preparedSpec.installSpec;
+    if (!stagedInstall) {
+      await prepareMutation();
+    }
     const updateStep = await params.runStep({
       name: "global update",
       argv: globalInstallArgs(
@@ -967,6 +979,9 @@ export async function runGlobalPackageUpdateSteps(params: {
         preparedSpec.installCwd,
       );
       if (fallbackArgv) {
+        if (!stagedInstall) {
+          await prepareMutation();
+        }
         const fallbackStep = await params.runStep({
           name: "global update (omit optional)",
           argv: fallbackArgv,
@@ -1163,6 +1178,7 @@ export async function runGlobalPackageUpdateSteps(params: {
       }
 
       if (stagedInstall && verificationErrors.length === 0) {
+        await prepareMutation();
         const swapStep = await swapStagedNpmInstall({
           stage: stagedInstall,
           installTarget: params.installTarget,
