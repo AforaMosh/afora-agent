@@ -1748,6 +1748,9 @@ const SPLIT_NODE_SHARDS = new Map<string, NodeTestSplitShard[]>([
       {
         shardName: "agentic-cli-process",
         configs: ["test/vitest/vitest.cli-process.config.ts"],
+        // This process-isolated graph uses dynamic mocks and source children;
+        // restored cross-group transforms can retain its full CLI graph.
+        env: { OPENCLAW_VITEST_FS_MODULE_CACHE: "0" },
         requiresDist: false,
       },
       {
