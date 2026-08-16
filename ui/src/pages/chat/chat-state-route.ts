@@ -13,6 +13,20 @@ import {
 } from "../../lib/sessions/session-key.ts";
 import type { ChatPageHost } from "./chat-state-host.ts";
 
+/** Only the session-identity slice of the page host: the roster, the open key,
+ *  the retained row, and the agent scope the global-key rules read. Kept narrow
+ *  so selecting a row never depends on transcript, realtime or composer state. */
+type ChatSessionRowHost = Pick<
+  ChatPageHost,
+  | "sessionKey"
+  | "sessionsResult"
+  | "sessionsResultAgentId"
+  | "retainedSelectedSession"
+  | "assistantAgentId"
+  | "agentsList"
+  | "hello"
+>;
+
 export function canCreateChatSession(state: ChatPageHost) {
   return (
     !state.chatLoading &&
@@ -23,7 +37,7 @@ export function canCreateChatSession(state: ChatPageHost) {
   );
 }
 
-export function selectedChatSessionRow(state: ChatPageHost) {
+export function selectedChatSessionRow(state: ChatSessionRowHost) {
   const live = resolveLiveChatSessionRow(state);
   if (live) {
     state.retainedSelectedSession = { sessionKey: state.sessionKey, row: live };
@@ -42,7 +56,7 @@ export function selectedChatSessionRow(state: ChatPageHost) {
     : undefined;
 }
 
-function resolveLiveChatSessionRow(state: ChatPageHost) {
+function resolveLiveChatSessionRow(state: ChatSessionRowHost) {
   const rows = state.sessionsResult?.sessions ?? [];
   const exact = rows.find((candidate) =>
     areUiSessionKeysEquivalent(candidate.key, state.sessionKey),
