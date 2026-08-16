@@ -33,6 +33,8 @@ describe("gateway lifecycle hub import boundaries", () => {
     // handoff commits to one platform, never while priming normal lifecycle paths.
     expect(hub).not.toContain('from "../../daemon/launchd-stop.js"');
     expect(hub).not.toContain('from "../../daemon/systemd-lifecycle.js"');
+    expect(hub).toContain('import("../../daemon/launchd-stop.js")');
+    expect(hub).toContain('import("../../daemon/systemd-lifecycle.js")');
   });
 
   it("still primes the hub eagerly so signal handlers survive dist chunk rotation", () => {

@@ -1,7 +1,5 @@
-// Lazy lifecycle runtime export hub used by gateway run-loop restart paths.
-// run-loop.ts primes this hub before the HTTP listener binds, so each re-export
-// must target the module that defines the symbol rather than a re-export facade;
-// a facade also evaluates its siblings and drags their graphs onto cold start.
+// The run loop primes this hub before the HTTP listener binds. Static re-exports
+// target defining modules; lazy wrappers defer platform graphs until their owner runs.
 export {
   abortEmbeddedAgentRun,
   getActiveEmbeddedRunCount,
@@ -10,6 +8,12 @@ export {
   waitForActiveEmbeddedRuns,
 } from "../../agents/embedded-agent-runner/runs.js";
 export { markRestartAbortedMainSessions } from "../../agents/main-session-recovery/main-session-restart-recovery-marking.js";
+export const parkCurrentLaunchAgentForMaintenance = async () =>
+  await (await import("../../daemon/launchd-stop.js")).parkCurrentLaunchAgentForMaintenance();
+export const parkCurrentSystemdServiceForMaintenance = async () =>
+  await (
+    await import("../../daemon/systemd-lifecycle.js")
+  ).parkCurrentSystemdServiceForMaintenance();
 export { getRuntimeConfig } from "../../config/config.js";
 export {
   respawnGatewayProcessForUpdate,
