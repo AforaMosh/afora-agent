@@ -457,10 +457,11 @@ function expectRestartHandoffCall(expected: {
   });
 }
 
-let gatewayWorkAdmissionActual: typeof import("../../process/gateway-work-admission.js");
+const gatewayWorkAdmissionActual = await vi.importActual<
+  typeof import("../../process/gateway-work-admission.js")
+>("../../process/gateway-work-admission.js");
 
-beforeEach(async () => {
-  gatewayWorkAdmissionActual = await vi.importActual("../../process/gateway-work-admission.js");
+beforeEach(() => {
   gatewayWorkAdmissionActual.resetGatewayWorkAdmission();
   consumeGatewaySigusr1RestartIntent.mockReturnValue(null);
   respawnGatewayProcessForUpdate.mockReset();
