@@ -236,7 +236,6 @@ function renderCustomizerItem(
         : ""} ${item.kind === "section" ? "sidebar-customizer__row--section" : ""} ${dropPosition
         ? `sidebar-customizer__row--drop-${dropPosition}`
         : ""}"
-      data-iconless=${item.icon || item.kind === "section" ? "false" : "true"}
       role="listitem"
       draggable=${draggable ? "true" : "false"}
       style=${`--sidebar-customizer-index: ${index}`}

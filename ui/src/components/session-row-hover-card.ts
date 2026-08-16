@@ -10,17 +10,9 @@ import {
 } from "./session-row-badges.ts";
 import { presenceViewerLabel, sessionPresenceViewers } from "./viewer-facepile.ts";
 
-/**
- * A card that opens as fast as a label would flash past every row a reader
- * crosses on the way somewhere else. The tooltip provider's skip-delay window
- * still lets siblings open at once once the reader has asked for the first.
- */
+/** Cold-open delay; the tooltip provider still opens sibling cards immediately. */
 export const SESSION_CARD_COLD_DELAY_MS = 400;
 
-/**
- * One line of session context. The icon supplies the category and the value is
- * the fact itself, because the reader came for the branch name, not a prefix.
- */
 type SessionContextRow = {
   icon: TemplateResult;
   value: string | TemplateResult;
@@ -32,10 +24,6 @@ function basename(path: string | undefined): string | undefined {
   return normalized ? normalized.split(/[\\/]/u).findLast(Boolean) : undefined;
 }
 
-/**
- * Keep the card as scannable as the row: a repository is a folder name here,
- * never a machine-specific path.
- */
 function projectRow(session: SidebarRecentSession): SessionContextRow | undefined {
   const project = session.worktree?.repoRoot
     ? repoName(session.worktree.repoRoot)
@@ -118,9 +106,7 @@ function buildSessionContextRows(params: {
       : undefined,
     cloudRow(session),
   ];
-  // Unread and Active run are deliberately absent: they are row state the
-  // reader can already see, and repeating them would cost the card its promise
-  // of saying something the row could not.
+  // Omit state already visible in the row.
   return rows.filter((row) => row !== undefined);
 }
 
@@ -159,10 +145,6 @@ function renderInformationCard(
   </div>`;
 }
 
-/**
- * The full title the row had to truncate, when the session last moved, and
- * every context fact the Gateway actually knows about it.
- */
 export function renderSessionInformationCard(params: {
   session: SidebarRecentSession;
   title: string;
@@ -177,10 +159,6 @@ export function renderSessionInformationCard(params: {
   );
 }
 
-/**
- * The same card for a session the Gateway knows only through a provider
- * catalog, where the working directory and branch are the whole context.
- */
 export function renderCatalogSessionInformationCard(params: {
   title: string;
   age: string;

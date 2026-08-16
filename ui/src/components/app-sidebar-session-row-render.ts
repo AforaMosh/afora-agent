@@ -58,18 +58,11 @@ const SIDEBAR_VISIBLE_CHILD_SESSION_LIMIT = 4;
 export interface SessionListHost {
   readonly sessionDataContext:
     | {
-        // `hello`/`connection` are the credential candidates the authenticated
-        // workspace-icon route needs; the sidebar reads them, never stores them.
         gateway: {
-          snapshot: {
-            selfUser?: AuthenticatedUser | null;
-            hello?: { auth?: { deviceToken?: string | null } | null } | null;
-          };
-          connection: { token?: string | null; password?: string | null };
+          snapshot: { selfUser?: AuthenticatedUser | null };
         };
       }
     | undefined;
-  readonly basePath: string;
   readonly sidebarLiveActivity: boolean;
   readonly sidebarNarrationLines: ReadonlyMap<string, string>;
   readonly sidebarObserverDigests: ReadonlyMap<string, SessionObserverDigest>;
@@ -433,7 +426,6 @@ export function renderRecentSession(params: {
       <div
         class=${rowClass}
         data-session-key=${session.key}
-        data-session-unread=${session.unread ? "true" : nothing}
         data-session-attention=${session.attention.kind === "none"
           ? nothing
           : session.attention.kind}

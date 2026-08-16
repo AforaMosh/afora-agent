@@ -6,25 +6,9 @@ import { t } from "../i18n/index.ts";
 import { pickFreshestObserverDigest } from "../lib/observer-digest.ts";
 import { createOverflowFadeRef } from "../lib/overflow-fade.ts";
 import type { SessionWorkContext } from "../lib/session-display.ts";
-import type { SidebarRecentSession, SidebarSessionAttention } from "./app-sidebar-session-types.ts";
+import type { SidebarRecentSession } from "./app-sidebar-session-types.ts";
 import { icons } from "./icons.ts";
-
-export function sessionAttentionSubtitle(attention: SidebarSessionAttention): string | undefined {
-  switch (attention.kind) {
-    case "question":
-      return t("sessionsView.waitingForAnswer");
-    case "approval":
-      return t("sessionsView.waitingForApproval");
-    case "error":
-      return t("sessionsView.runFailedReason", { reason: attention.reason });
-    case "agent":
-      return attention.note;
-    case "none":
-      return undefined;
-    default:
-      return attention satisfies never;
-  }
-}
+import { sessionAttentionSubtitle } from "./session-attention-presentation.ts";
 
 type SidebarSessionSubtitle = {
   subtitle: string | undefined;

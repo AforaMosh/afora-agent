@@ -1,6 +1,6 @@
 import { html, nothing } from "lit";
 import { t } from "../i18n/index.ts";
-import type { SidebarRecentSession, SidebarSessionAttention } from "./app-sidebar-session-types.ts";
+import type { SidebarSessionAttention } from "./app-sidebar-session-types.ts";
 import { icons } from "./icons.ts";
 import { resolveSessionAttentionIcon } from "./session-attention-icon-registry.ts";
 
@@ -39,55 +39,4 @@ export function sessionAttentionSubtitle(attention: SidebarSessionAttention): st
     default:
       return attention satisfies never;
   }
-}
-
-export function renderSessionUnreadState(session: SidebarRecentSession) {
-  return !session.isChild && session.unread
-    ? html`<span
-        class="session-unread-dot sidebar-recent-session__unread"
-        role="img"
-        aria-label=${t("sessionsView.unread")}
-      ></span>`
-    : nothing;
-}
-
-export function renderSessionRunSpinner(showTitle = true) {
-  return html`<span
-    class="session-run-spinner sidebar-recent-session__state"
-    role="img"
-    aria-label=${t("sessionsView.activeRun")}
-    title=${showTitle ? t("sessionsView.activeRun") : nothing}
-  ></span>`;
-}
-
-export function renderSessionState(session: SidebarRecentSession, showTitle = true) {
-  if (session.hasActiveRun) {
-    return renderSessionRunSpinner(showTitle);
-  }
-  if (!session.isChild) {
-    return renderSessionUnreadState(session);
-  }
-  const status = session.status;
-  if (!status) {
-    return nothing;
-  }
-  const statusBadge =
-    status === "done"
-      ? { icon: icons.check, label: t("sessionsView.statusDone") }
-      : status === "killed"
-        ? { icon: icons.stop, label: t("sessionsView.statusKilled") }
-        : status === "timeout"
-          ? { icon: icons.alertTriangle, label: t("sessionsView.statusTimeout") }
-          : status === "failed"
-            ? { icon: icons.alertTriangle, label: t("sessionsView.statusFailed") }
-            : null;
-  return statusBadge
-    ? html`<span
-        class="sidebar-child-session__status sidebar-child-session__status--${status}"
-        role="img"
-        aria-label=${statusBadge.label}
-        title=${statusBadge.label}
-        >${statusBadge.icon}</span
-      >`
-    : nothing;
 }

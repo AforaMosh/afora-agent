@@ -981,8 +981,6 @@ openclaw-settings-save-indicator {
   --scrollbar-size: 10px;
   /* One rhythm for every group boundary in the sidebar (Pages and each
      session section) so the column reads as separate shelves, not one list. */
-  --sidebar-group-gap: var(--space-4);
-  --sidebar-group-heading-gap: 2px;
   --sidebar-subgroup-gap: var(--space-2);
   --sidebar-project-gap: var(--space-3);
   --sidebar-lead: 20px;
@@ -1004,7 +1002,6 @@ openclaw-settings-save-indicator {
   --sidebar-pad-x: 6px;
   --sidebar-row-inset: var(--sidebar-pad-x);
   --sidebar-text-start: 34px;
-  --sidebar-tree-depth: 16px;
   --sidebar-trailing-slot: 20px;
   --sidebar-header-action-size: 22px;
   --sidebar-lucide-icon-size: var(--top-band-glyph-size);
@@ -4252,7 +4249,7 @@ openclaw-tooltip.sidebar-hover-tooltip {
 openclaw-tooltip.session-hover-tooltip {
   --openclaw-tooltip-max-width: min(320px, calc(100vw - 24px));
   --openclaw-tooltip-padding: 12px;
-  --openclaw-tooltip-radius: 12px;
+  --openclaw-tooltip-border-radius: 12px;
   --openclaw-tooltip-arrow-size: 0;
 }
 
