@@ -624,7 +624,7 @@ describe("runGatewayLoop", () => {
     vi.clearAllMocks();
 
     await withIsolatedSignals(async ({ captureSignal }) => {
-      const { close, start, runtime, exited } = await createSignaledLoopHarness();
+      const { close, start, runtime, exited, loopPromise } = await createSignaledLoopHarness();
       const sigterm = captureSignal("SIGTERM");
       flushLogger.mockImplementationOnce(async () => {
         expect(runtime.exit).not.toHaveBeenCalled();
@@ -633,6 +633,7 @@ describe("runGatewayLoop", () => {
       sigterm();
 
       await expect(exited).resolves.toBe(0);
+      await expect(loopPromise).resolves.toBeUndefined();
       expect(close).toHaveBeenCalledWith({
         reason: "gateway stopping",
         restartExpectedMs: null,

@@ -159,6 +159,7 @@ export async function runGatewayLoop(params: {
   const exitProcess = (code: number) => {
     cleanupSignals();
     params.runtime.exit(code);
+    restartResolver?.();
   };
   const exitProcessAfterLogFlush = async (code: number) => {
     // Graceful signal/restart paths call process.exit(), which skips beforeExit.
@@ -1110,6 +1111,9 @@ export async function runGatewayLoop(params: {
           };
           flushPendingStartupRequest({ allowMissingServer: true });
         });
+      }
+      if (shuttingDown) {
+        return;
       }
     }
   } finally {

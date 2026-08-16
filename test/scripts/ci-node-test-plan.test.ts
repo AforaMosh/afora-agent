@@ -1315,7 +1315,6 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
       checkName: "checks-node-agentic-cli-process",
       shardName: "agentic-cli-process",
       configs: ["test/vitest/vitest.cli-process.config.ts"],
-      env: { OPENCLAW_VITEST_MAX_WORKERS: "1" },
       requiresDist: false,
       runner: DEFAULT_NODE_TEST_RUNNER,
     });
