@@ -79,6 +79,7 @@ export type CatalogBackingSessionDisplay = {
   meta: string;
   title: string;
   pullRequest?: SessionCatalogSession["pullRequest"];
+  showLeadingIdentity?: boolean;
 };
 
 export type CatalogSessionMenuRequest = {

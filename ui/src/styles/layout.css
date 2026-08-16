@@ -2518,6 +2518,12 @@ body.update-dialog-open .sidebar-update-card__status {
   text-decoration: none;
 }
 
+/* Provider catalogs have no creator rail. Their title starts on the catalog's
+   current depth directly, so project children still line up with the project label. */
+.sidebar-recent-session--catalog-row .sidebar-recent-session__link {
+  padding-inline-start: var(--sidebar-text-offset);
+}
+
 /* Creator identity is optional, but its rail is structural: every session
    title starts on the same axis whether the gateway reports an owner or not. */
 .sidebar-session-indicator {

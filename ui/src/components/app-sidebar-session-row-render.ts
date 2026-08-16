@@ -201,11 +201,13 @@ export function renderRecentSession(params: {
     ? host.sessionPullRequestIndicatorState(session.key, session.worktree.id)
     : "none";
   const ownerAttribution = host.sessionsStatusFilter === "archived" ? "archived" : "created";
-  const ownerActor = host.sessionOwnershipVisible
-    ? host.sessionsStatusFilter === "archived"
-      ? session.archivedBy
-      : session.createdActor
-    : undefined;
+  const showLeadingIdentity = display?.showLeadingIdentity !== false;
+  const ownerActor =
+    showLeadingIdentity && host.sessionOwnershipVisible
+      ? host.sessionsStatusFilter === "archived"
+        ? session.archivedBy
+        : session.createdActor
+      : undefined;
   const ownerId = ownerActor?.id?.trim();
   const ownerViewing = isSessionPresenceIdentityWatching(
     host.sessionData.presencePayload,
@@ -253,6 +255,7 @@ export function renderRecentSession(params: {
     "sidebar-recent-session",
     "session-row-host",
     params.project ? "sidebar-recent-session--catalog-project-child" : "",
+    display?.showLeadingIdentity === false ? "sidebar-recent-session--catalog-row" : "",
     menuOpen ? "session-row-host--menu-open" : "",
     session.isChild ? "sidebar-recent-session--child" : "",
     session.archived ? "sidebar-session--archived" : "",
@@ -476,7 +479,8 @@ export function renderRecentSession(params: {
           aria-describedby=${stateId ?? nothing}
           @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}
         >
-          ${session.isChild ||
+          ${!showLeadingIdentity ||
+          session.isChild ||
           (!host.sessionOwnershipVisible && !session.pinned && leadingIdentity === nothing)
             ? nothing
             : html`<span class="sidebar-session-indicator"

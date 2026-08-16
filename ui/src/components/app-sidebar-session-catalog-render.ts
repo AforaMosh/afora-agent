@@ -38,14 +38,12 @@ import {
 import { sidebarSessionStateId } from "./app-sidebar-session-types.ts";
 import { icons } from "./icons.ts";
 import { hasProviderBrandIcon, renderProviderBrandIcon } from "./provider-icon.ts";
-import { renderSessionOwnerChip } from "./session-owner-chip.ts";
 import { renderSessionRowBadges } from "./session-row-badges.ts";
 import { renderSessionRowEndcap } from "./session-row-endcap.ts";
 import {
   renderCatalogSessionInformationCard,
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
-import { isSessionPresenceIdentityWatching } from "./viewer-facepile.ts";
 
 type SessionCatalogGroupsParams = {
   catalogs: readonly SessionCatalog[];
@@ -59,10 +57,6 @@ type SessionCatalogGroupsParams = {
   projectGrouping: CatalogProjectGrouping;
   liveRows: readonly GatewaySessionRow[];
   creatorId?: string | null;
-  sessionOwnershipVisible: boolean;
-  presencePayload?: unknown;
-  selfUserId?: string;
-  selfInstanceId?: string;
   renderLiveRow: (row: GatewaySessionRow, display: CatalogBackingSessionDisplay) => unknown;
   onToggleSection: (sectionId: string) => void;
   draggingSectionId: string | null;
@@ -418,6 +412,7 @@ function renderCatalogSessionRow(
       ...(branch ? { subtitle: branch, work } : {}),
       title: `${label} · ${host.label}`,
       ...(session.pullRequest ? { pullRequest: session.pullRequest } : {}),
+      showLeadingIdentity: false,
     });
   }
   const catalogKey = {
@@ -447,20 +442,6 @@ function renderCatalogSessionRow(
     pullRequest: running ? undefined : session.pullRequest,
     maxVisible: 2,
   });
-  const ownerActor = params.sessionOwnershipVisible ? session.createdActor : undefined;
-  const ownerId = ownerActor?.id?.trim();
-  const creator = renderSessionOwnerChip(
-    ownerActor,
-    "row",
-    "created",
-    isSessionPresenceIdentityWatching(
-      params.presencePayload,
-      params.selfUserId,
-      params.selfInstanceId,
-      key,
-      ownerId,
-    ),
-  );
   const openTerminal = () => params.onOpenTerminal(catalogKey, params.newSessionAgentId);
   const openMenu = (x: number, y: number, trigger?: HTMLElement) =>
     params.onOpenMenu(
@@ -492,7 +473,7 @@ function renderCatalogSessionRow(
       role="listitem"
     >
       <div
-        class="sidebar-recent-session session-row-host ${active
+        class="sidebar-recent-session sidebar-recent-session--catalog-row session-row-host ${active
           ? "sidebar-recent-session--active"
           : ""} ${project ? "sidebar-recent-session--catalog-project-child" : ""} ${running
           ? "session-row-host--running"
@@ -527,9 +508,6 @@ function renderCatalogSessionRow(
             }
           }}
         >
-          ${params.sessionOwnershipVisible
-            ? html`<span class="sidebar-session-indicator">${creator}</span>`
-            : nothing}
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
               <span
