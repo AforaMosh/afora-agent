@@ -2544,6 +2544,8 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .sidebar-child-session-toggle {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2558,8 +2560,16 @@ body.update-dialog-open .sidebar-update-card__status {
   color: var(--muted);
 }
 
-.sidebar-child-session-toggle[aria-expanded="true"] {
-  color: var(--muted);
+.sidebar-recent-session--has-children > .sidebar-recent-session__link {
+  flex: 0 1 auto;
+}
+
+.sidebar-recent-session--has-children > .sidebar-child-session-toggle {
+  width: auto;
+  min-width: 24px;
+  flex: 0 0 auto;
+  margin-inline-end: auto;
+  padding-inline: 2px;
 }
 
 .sidebar-child-session-toggle:hover,
@@ -2574,6 +2584,10 @@ body.update-dialog-open .sidebar-update-card__status {
 
 .sidebar-child-session-toggle--failed {
   color: var(--danger);
+}
+
+.sidebar-child-session-toggle[aria-expanded="true"] {
+  color: var(--muted);
 }
 
 .sidebar-child-session-toggle__icon {

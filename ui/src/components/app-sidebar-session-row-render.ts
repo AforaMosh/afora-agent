@@ -260,6 +260,7 @@ export function renderRecentSession(params: {
     display?.showLeadingIdentity === false ? "sidebar-recent-session--catalog-row" : "",
     menuOpen ? "session-row-host--menu-open" : "",
     session.isChild ? "sidebar-recent-session--child" : "",
+    session.childSessionKeys.length > 0 ? "sidebar-recent-session--has-children" : "",
     session.archived ? "sidebar-session--archived" : "",
     session.visuallyActive ? "sidebar-recent-session--active" : "",
     host.selectedSessionKeys.has(session.key) ? "sidebar-recent-session--selected" : "",
