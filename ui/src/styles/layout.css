@@ -2565,6 +2565,12 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .sidebar-zone-entry {
+  /* Pinned and plugin entries sit outside .sidebar-recent-sessions but draw the
+     same row, so they read the same inset/lead/gap instead of their own. */
+  --sidebar-inset: 8px;
+  --sidebar-lead: 20px;
+  --sidebar-row-gap: 8px;
+
   min-width: 0;
   border-radius: var(--radius-md);
   transition:
@@ -3075,7 +3081,6 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 .nav-item.nav-item--active {
   color: var(--text-strong);
   background: var(--sidebar-row-surface-selected);
-  border-color: transparent;
 }
 
 .nav-item.active .nav-item__icon,
@@ -3098,8 +3103,6 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 .sidebar-zone-entry .sidebar-recent-session {
   position: relative;
   min-height: 32px;
-  padding: 0 8px;
-  border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
   transition:
@@ -3110,9 +3113,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 }
 
 .sidebar-zone-entry .sidebar-recent-session__link {
-  gap: 8px;
   min-height: 30px;
-  padding: 0;
 }
 
 .sidebar-zone-entry .sidebar-recent-session__name {
@@ -3122,7 +3123,6 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 .sidebar-zone-entry .sidebar-recent-session:hover {
   color: var(--text);
   background: var(--sidebar-row-surface-hover);
-  border-color: transparent;
 }
 
 .sidebar-zone-entry .sidebar-recent-session.sidebar-recent-session--active {
@@ -3358,14 +3358,20 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
 }
 
 .sidebar-identity-card {
+  /* The footer identity is a sidebar row like any other: same inset, same lead
+     column, same gap, so its name lands on the shared text axis. */
+  --sidebar-inset: 8px;
+  --sidebar-lead: 20px;
+  --sidebar-row-gap: 8px;
+
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) var(--sidebar-trailing-slot);
+  grid-template-columns: var(--sidebar-lead) minmax(0, 1fr) var(--sidebar-trailing-slot);
   align-items: center;
-  gap: 8px;
+  gap: var(--sidebar-row-gap);
   width: 100%;
   min-width: 0;
   padding-block: 5px;
-  padding-inline-start: var(--sidebar-row-inset);
+  padding-inline-start: var(--sidebar-inset);
   padding-inline-end: 0;
   border: none;
   border-radius: var(--radius-md);
@@ -4146,14 +4152,9 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
+  width: var(--sidebar-lead, 16px);
   height: 16px;
-  flex: 0 0 16px;
-}
-
-.sidebar-recent-sessions .sidebar-session-indicator {
-  width: var(--sidebar-lead);
-  flex-basis: var(--sidebar-lead);
+  flex: 0 0 var(--sidebar-lead, 16px);
 }
 
 .sidebar-session-indicator > .session-row-draft-indicator:not(:only-child) {

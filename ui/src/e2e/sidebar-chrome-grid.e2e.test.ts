@@ -222,9 +222,10 @@ suite.define(() => {
           .poll(() => page.locator("html").getAttribute("data-theme-mode"))
           .toBe(colorScheme);
 
+        // The Pages head label is sr-only: it is deliberately taken out of the
+        // visual flow, so it has no column to share and cannot anchor the axis.
         const textAnchors = [
           pageText,
-          sidebar.locator(".sidebar-nav__head .sidebar-recent-sessions__label-text"),
           pinnedRow.locator(".sidebar-recent-session__name"),
           parentRow.locator(".sidebar-recent-session__name"),
           draftRow.locator(".sidebar-recent-session__name"),
