@@ -109,16 +109,23 @@ export function projectPresencePayload(
 }
 
 /** Other people currently watching this session, for surfaces that name them
- *  rather than stack their avatars. */
+ *  rather than stack their avatars. excludeUserId drops a viewer the caller
+ *  already renders on its own (the header owner chip), so the same person is
+ *  never both named there and counted here as "someone else is watching". */
 export function sessionPresenceViewers(
   value: unknown,
   authenticatedSelfUserId: string | undefined,
   selfInstanceId: string | undefined,
   sessionKey: string,
+  excludeUserId?: string,
 ): readonly PresenceViewer[] {
   const projection = projectPresencePayload(value, authenticatedSelfUserId, selfInstanceId);
+  const excludedUserId = normalized(excludeUserId);
   return projection.users.filter(
-    (user) => user.id !== projection.selfUserId && user.watchedSessions.includes(sessionKey),
+    (user) =>
+      user.id !== projection.selfUserId &&
+      user.id !== excludedUserId &&
+      user.watchedSessions.includes(sessionKey),
   );
 }
 
@@ -127,9 +134,16 @@ export function hasSessionPresenceViewers(
   authenticatedSelfUserId: string | undefined,
   selfInstanceId: string | undefined,
   sessionKey: string,
+  excludeUserId?: string,
 ): boolean {
   return (
-    sessionPresenceViewers(value, authenticatedSelfUserId, selfInstanceId, sessionKey).length > 0
+    sessionPresenceViewers(
+      value,
+      authenticatedSelfUserId,
+      selfInstanceId,
+      sessionKey,
+      excludeUserId,
+    ).length > 0
   );
 }
 

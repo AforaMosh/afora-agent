@@ -74,6 +74,7 @@ suite.define(() => {
                       pinned: true,
                       unread: true,
                       worktree: {
+                        id: "pinned-handoff",
                         branch: "feat/pinned-handoff",
                         repoRoot: "/workspace/openclaw",
                       },
@@ -84,6 +85,7 @@ suite.define(() => {
                       category: "Research",
                       childSessions: [childKey],
                       worktree: {
+                        id: "release-plan",
                         branch: "feat/release-plan",
                         repoRoot: "/workspace/openclaw",
                       },
