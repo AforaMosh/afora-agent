@@ -104,7 +104,7 @@ describe("chat attachment route handoff", () => {
     expect(getChatAttachmentDataUrl(second)).toBeNull();
     expect(
       handoff.consume({ owner: expectedOwner, paneId: "p1", scopeKey: "agent:main:one" }),
-    ).toEqual({ attachments: [first], fallbacks: {} });
+    ).toEqual({ attachments: [first], fallbacks: {}, owner: expectedOwner });
   });
 
   it("preserves plain payloads across a same-Gateway client replacement", () => {
@@ -135,21 +135,22 @@ describe("chat attachment route handoff", () => {
     expect(
       handoff.consume({ owner: replacement, paneId: "p1", scopeKey: "agent:main:one" }),
     ).toEqual({
-      attachments: [first, second],
+      attachments: [first, annotation, second],
       fallbacks: {
         fallback: {
-          attachments: [fallbackPlain],
+          attachments: [fallbackAnnotation, fallbackPlain],
           message: "retained fallback",
           sequence: 1,
           storageFailed: true,
         },
       },
+      owner: previous,
     });
     expect(getChatAttachmentDataUrl(first)).not.toBeNull();
-    expect(getChatAttachmentDataUrl(annotation)).toBeNull();
+    expect(getChatAttachmentDataUrl(annotation)).not.toBeNull();
     expect(getChatAttachmentDataUrl(second)).not.toBeNull();
     expect(getChatAttachmentDataUrl(fallbackPlain)).not.toBeNull();
-    expect(getChatAttachmentDataUrl(fallbackAnnotation)).toBeNull();
+    expect(getChatAttachmentDataUrl(fallbackAnnotation)).not.toBeNull();
   });
 
   it("does not let an empty retained session teardown erase another scope", () => {

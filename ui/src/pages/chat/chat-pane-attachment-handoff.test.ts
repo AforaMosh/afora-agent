@@ -213,8 +213,12 @@ describe("staged chat attachment pane handoff", () => {
   });
 
   it("drops every staged attachment when the Gateway target changes", () => {
-    const previousOwner = { gatewayUrl: "ws://first.test" } as GatewayBrowserClient;
-    const nextOwner = { gatewayUrl: "ws://second.test" } as GatewayBrowserClient;
+    const previousOwner = {
+      gatewayUrl: "ws://same.test/control?tenant=one",
+    } as GatewayBrowserClient;
+    const nextOwner = {
+      gatewayUrl: "ws://same.test/control?tenant=two",
+    } as GatewayBrowserClient;
     const handoff = createChatAttachmentHandoff();
     const context = { chatAttachmentHandoff: handoff } as unknown as ApplicationContext;
     const attachment = storedAttachment("different-gateway-file", "application/pdf");

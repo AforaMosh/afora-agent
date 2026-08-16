@@ -42,6 +42,17 @@ export function restorePaneStagedAttachments(
   if (!restored) {
     return;
   }
+  if (restored.owner !== owner) {
+    const retainPlain = (attachments: readonly ChatAttachment[]) => {
+      const retained = attachments.filter((attachment) => !attachment.browserAnnotation);
+      releaseDisplacedChatAttachmentPayloads(attachments, [retained]);
+      return retained;
+    };
+    restored.attachments = retainPlain(restored.attachments);
+    for (const fallback of Object.values(restored.fallbacks)) {
+      fallback.attachments = retainPlain(fallback.attachments);
+    }
+  }
   const currentIds = new Set(state.chatAttachments.map((attachment) => attachment.id));
   state.chatAttachments = [
     ...state.chatAttachments,
@@ -102,15 +113,16 @@ export function replacePaneStagedAttachmentGatewayOwner(
   // reconnect or plugin-install rotation must not silently discard them.
   if (state) {
     const preservePlain = !previousOwner || previousOwner.gatewayUrl === nextOwner.gatewayUrl;
-    const dropAnnotations = (attachments: readonly ChatAttachment[]) => {
-      const shouldRetain = (attachment: ChatAttachment) =>
-        preservePlain && !attachment.browserAnnotation;
-      releaseAttachments(attachments.filter((attachment) => !shouldRetain(attachment)));
-      return attachments.filter(shouldRetain);
+    const retainPlain = (attachments: readonly ChatAttachment[]) => {
+      const retained = preservePlain
+        ? attachments.filter((attachment) => !attachment.browserAnnotation)
+        : [];
+      releaseDisplacedChatAttachmentPayloads(attachments, [retained]);
+      return retained;
     };
-    state.chatAttachments = dropAnnotations(state.chatAttachments);
+    state.chatAttachments = retainPlain(state.chatAttachments);
     for (const fallback of Object.values(state.chatComposerFallbackByScope)) {
-      fallback.attachments = dropAnnotations(fallback.attachments);
+      fallback.attachments = retainPlain(fallback.attachments);
     }
     state.requestUpdate?.();
   }

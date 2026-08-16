@@ -9,7 +9,6 @@ const MAX_PENDING_CHAT_ATTACHMENT_ENTRIES = 32;
 type PendingChatAttachmentHandoff = {
   owner: NonNullable<Parameters<ApplicationChatAttachmentHandoff["prepare"]>[0]["owner"]>;
   paneId: string;
-  scopeKey: string;
   attachments: ChatAttachment[];
   fallbacks: Record<string, ChatComposerMemoryFallback>;
   message: string;
@@ -19,8 +18,6 @@ export function createChatAttachmentHandoff(): ApplicationChatAttachmentHandoff 
   const pending = new Map<string, PendingChatAttachmentHandoff>();
   let disposed = false;
 
-  const release = (attachments: readonly ChatAttachment[] = []) =>
-    releaseChatAttachmentPayloads(attachments);
   const handoffAttachments = (handoff: PendingChatAttachmentHandoff) => {
     const byId = new Map(handoff.attachments.map((attachment) => [attachment.id, attachment]));
     for (const fallback of Object.values(handoff.fallbacks)) {
@@ -32,24 +29,18 @@ export function createChatAttachmentHandoff(): ApplicationChatAttachmentHandoff 
   };
   const releaseHandoff = (
     handoff: PendingChatAttachmentHandoff | undefined,
-    retainedIds = new Set<string>(),
+    retainedIds?: ReadonlySet<string>,
   ) => {
-    if (!handoff) {
-      return;
+    if (handoff) {
+      releaseChatAttachmentPayloads(
+        handoffAttachments(handoff).filter((attachment) => !retainedIds?.has(attachment.id)),
+      );
     }
-    release(handoffAttachments(handoff).filter((attachment) => !retainedIds.has(attachment.id)));
-  };
-  const dropClientBoundAttachments = (attachments: ChatAttachment[]) => {
-    const dropped = attachments.filter((attachment) => attachment.browserAnnotation);
-    release(dropped);
-    return attachments.filter((attachment) => !attachment.browserAnnotation);
   };
   const entryKey = (paneId: string, scopeKey: string) => JSON.stringify([paneId, scopeKey]);
   const take = (key: string) => {
     const handoff = pending.get(key);
-    if (handoff) {
-      pending.delete(key);
-    }
+    pending.delete(key);
     return handoff;
   };
 
@@ -70,16 +61,15 @@ export function createChatAttachmentHandoff(): ApplicationChatAttachmentHandoff 
       }
       releaseHandoff(previous, retainedIds);
       if (!owner || disposed) {
-        release(attachments);
+        releaseChatAttachmentPayloads(attachments);
         for (const fallback of Object.values(fallbacks)) {
-          release(fallback.attachments);
+          releaseChatAttachmentPayloads(fallback.attachments);
         }
         return;
       }
       pending.set(key, {
         owner,
         paneId,
-        scopeKey,
         attachments: [...attachments],
         message,
         fallbacks: Object.fromEntries(
@@ -100,24 +90,15 @@ export function createChatAttachmentHandoff(): ApplicationChatAttachmentHandoff 
     },
     consume: ({ owner, paneId, scopeKey }) => {
       const match = take(entryKey(paneId, scopeKey));
-      if (
-        match &&
-        (match.owner === owner || (owner && match.owner.gatewayUrl === owner.gatewayUrl))
-      ) {
-        if (match.owner !== owner) {
-          match.attachments = dropClientBoundAttachments(match.attachments);
-          for (const fallback of Object.values(match.fallbacks)) {
-            fallback.attachments = dropClientBoundAttachments(fallback.attachments);
-          }
-        }
+      if (match && (match.owner === owner || match.owner.gatewayUrl === owner?.gatewayUrl)) {
         return {
           attachments: match.attachments,
           fallbacks: match.fallbacks,
+          owner: match.owner,
           ...(match.message ? { message: match.message } : {}),
         };
       }
-      // A different Gateway target is terminal for this exact presentation.
-      // Other retained session scopes under the same logical pane remain independent.
+      // A different target is terminal here; other retained session scopes remain independent.
       releaseHandoff(match);
       return null;
     },
