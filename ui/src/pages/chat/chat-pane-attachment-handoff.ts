@@ -101,9 +101,12 @@ export function replacePaneStagedAttachmentGatewayOwner(
   // client, but plain file/image payloads are client-local data URLs — a gap
   // reconnect or plugin-install rotation must not silently discard them.
   if (state) {
+    const preservePlain = !previousOwner || previousOwner.gatewayUrl === nextOwner.gatewayUrl;
     const dropAnnotations = (attachments: readonly ChatAttachment[]) => {
-      releaseAttachments(attachments.filter((attachment) => attachment.browserAnnotation));
-      return attachments.filter((attachment) => !attachment.browserAnnotation);
+      const shouldRetain = (attachment: ChatAttachment) =>
+        preservePlain && !attachment.browserAnnotation;
+      releaseAttachments(attachments.filter((attachment) => !shouldRetain(attachment)));
+      return attachments.filter(shouldRetain);
     };
     state.chatAttachments = dropAnnotations(state.chatAttachments);
     for (const fallback of Object.values(state.chatComposerFallbackByScope)) {
@@ -111,7 +114,9 @@ export function replacePaneStagedAttachmentGatewayOwner(
     }
     state.requestUpdate?.();
   }
-  context.chatAttachmentHandoff.clearPane(paneId);
+  if (previousOwner && previousOwner.gatewayUrl !== nextOwner.gatewayUrl) {
+    context.chatAttachmentHandoff.clearPane(paneId);
+  }
   return nextOwner;
 }
 

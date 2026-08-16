@@ -76,7 +76,7 @@ describe("chat attachment route handoff", () => {
 
   it("isolates retained session scopes and releases an exact Gateway-owner mismatch", () => {
     const handoff = createChatAttachmentHandoff();
-    const expectedOwner = {} as GatewayBrowserClient;
+    const expectedOwner = { gatewayUrl: "ws://first.test" } as GatewayBrowserClient;
     const first = storedAttachment("first-scope", "image/png", true);
     const second = storedAttachment("second-scope", "image/png", true);
     handoff.prepare({
@@ -96,7 +96,7 @@ describe("chat attachment route handoff", () => {
 
     expect(
       handoff.consume({
-        owner: {} as GatewayBrowserClient,
+        owner: { gatewayUrl: "ws://second.test" } as GatewayBrowserClient,
         paneId: "p1",
         scopeKey: "agent:main:two",
       }),
@@ -105,6 +105,51 @@ describe("chat attachment route handoff", () => {
     expect(
       handoff.consume({ owner: expectedOwner, paneId: "p1", scopeKey: "agent:main:one" }),
     ).toEqual({ attachments: [first], fallbacks: {} });
+  });
+
+  it("preserves plain payloads across a same-Gateway client replacement", () => {
+    const handoff = createChatAttachmentHandoff();
+    const previous = { gatewayUrl: "ws://same.test" } as GatewayBrowserClient;
+    const replacement = { gatewayUrl: "ws://same.test" } as GatewayBrowserClient;
+    const first = storedAttachment("same-name-first", "text/plain", false);
+    const annotation = storedAttachment("client-bound", "image/png", true);
+    const second = storedAttachment("same-name-second", "text/plain", false);
+    const fallbackPlain = storedAttachment("fallback-plain", "text/plain", false);
+    const fallbackAnnotation = storedAttachment("fallback-client-bound", "image/png", true);
+    first.fileName = second.fileName = "proof.txt";
+    handoff.prepare({
+      owner: previous,
+      paneId: "p1",
+      scopeKey: "agent:main:one",
+      attachments: [first, annotation, second],
+      fallbacks: {
+        fallback: {
+          attachments: [fallbackAnnotation, fallbackPlain],
+          message: "retained fallback",
+          sequence: 1,
+          storageFailed: true,
+        },
+      },
+    });
+
+    expect(
+      handoff.consume({ owner: replacement, paneId: "p1", scopeKey: "agent:main:one" }),
+    ).toEqual({
+      attachments: [first, second],
+      fallbacks: {
+        fallback: {
+          attachments: [fallbackPlain],
+          message: "retained fallback",
+          sequence: 1,
+          storageFailed: true,
+        },
+      },
+    });
+    expect(getChatAttachmentDataUrl(first)).not.toBeNull();
+    expect(getChatAttachmentDataUrl(annotation)).toBeNull();
+    expect(getChatAttachmentDataUrl(second)).not.toBeNull();
+    expect(getChatAttachmentDataUrl(fallbackPlain)).not.toBeNull();
+    expect(getChatAttachmentDataUrl(fallbackAnnotation)).toBeNull();
   });
 
   it("does not let an empty retained session teardown erase another scope", () => {

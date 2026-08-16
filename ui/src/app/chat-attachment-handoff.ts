@@ -39,6 +39,11 @@ export function createChatAttachmentHandoff(): ApplicationChatAttachmentHandoff 
     }
     release(handoffAttachments(handoff).filter((attachment) => !retainedIds.has(attachment.id)));
   };
+  const dropClientBoundAttachments = (attachments: ChatAttachment[]) => {
+    const dropped = attachments.filter((attachment) => attachment.browserAnnotation);
+    release(dropped);
+    return attachments.filter((attachment) => !attachment.browserAnnotation);
+  };
   const entryKey = (paneId: string, scopeKey: string) => JSON.stringify([paneId, scopeKey]);
   const take = (key: string) => {
     const handoff = pending.get(key);
@@ -95,15 +100,24 @@ export function createChatAttachmentHandoff(): ApplicationChatAttachmentHandoff 
     },
     consume: ({ owner, paneId, scopeKey }) => {
       const match = take(entryKey(paneId, scopeKey));
-      // A Gateway mismatch is terminal for this exact presentation. Other
-      // retained session scopes under the same logical pane remain independent.
-      if (match?.owner === owner) {
+      if (
+        match &&
+        (match.owner === owner || (owner && match.owner.gatewayUrl === owner.gatewayUrl))
+      ) {
+        if (match.owner !== owner) {
+          match.attachments = dropClientBoundAttachments(match.attachments);
+          for (const fallback of Object.values(match.fallbacks)) {
+            fallback.attachments = dropClientBoundAttachments(fallback.attachments);
+          }
+        }
         return {
           attachments: match.attachments,
           fallbacks: match.fallbacks,
           ...(match.message ? { message: match.message } : {}),
         };
       }
+      // A different Gateway target is terminal for this exact presentation.
+      // Other retained session scopes under the same logical pane remain independent.
       releaseHandoff(match);
       return null;
     },
