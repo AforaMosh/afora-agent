@@ -2390,13 +2390,17 @@ button.chat-pr__diff {
    heavy shadow on top of each other. Every foreground step below is a mix
    toward that same surface, which keeps the ramp correct in light themes too,
    where --text-strong is dark rather than near-white. */
+.agent-chat__composer-shell,
+.agent-chat__input {
+  --chat-composer-surface: var(--popover);
+}
+
 .agent-chat__input {
   --chat-box-inset: 8px;
   /* Height of every control on the composer's input row. The row bottom-aligns
      so it can follow a growing textarea, which only reads as one axis while all
      its children share this box. */
   --chat-composer-control-height: 36px;
-  --chat-composer-surface: var(--popover);
   --chat-composer-secondary: color-mix(
     in srgb,
     var(--text-strong) 65%,
