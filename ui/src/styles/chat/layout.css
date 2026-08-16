@@ -3296,8 +3296,10 @@ button.chat-pr__diff {
 }
 
 .agent-chat__composer-error {
+  position: absolute;
+  inset: -1px -1px auto;
+  z-index: 2;
   box-sizing: border-box;
-  width: 100%;
   min-height: 36px;
   padding: 8px 10px 8px 14px;
   border-radius: var(--radius-sm);
@@ -3309,8 +3311,14 @@ button.chat-pr__diff {
 }
 
 .agent-chat__composer-lede > .agent-chat__composer-error:first-child {
-  border-radius: calc(19px * var(--openclaw-corner-radius-scale))
-    calc(19px * var(--openclaw-corner-radius-scale)) var(--radius-sm) var(--radius-sm);
+  border-radius: calc(20px * var(--openclaw-corner-radius-scale))
+    calc(20px * var(--openclaw-corner-radius-scale)) var(--radius-sm) var(--radius-sm);
+}
+
+@supports (corner-shape: superellipse(1.5)) {
+  .agent-chat__composer-lede > .agent-chat__composer-error:first-child {
+    corner-shape: superellipse(1.5);
+  }
 }
 
 .agent-chat__composer-error-icon {
