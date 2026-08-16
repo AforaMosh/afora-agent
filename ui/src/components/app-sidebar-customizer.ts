@@ -185,6 +185,8 @@ export function buildSidebarCustomizerSections(params: {
 type SidebarCustomizerParams = {
   entries: readonly SidebarCustomizerItem[];
   sections: readonly SidebarCustomizerItem[];
+  entryDropTarget: { entry: string; position: "before" | "after" } | null;
+  sectionDropTarget: { sectionId: string; position: "before" | "after" } | null;
   dirty: boolean;
   error: string | null;
   onToggle: (item: SidebarCustomizerItem) => void;
@@ -212,6 +214,14 @@ function renderCustomizerItem(
     item.reorderable !== false && (item.kind === "section" || (toggleable && item.visible));
   const showVisibilityControl = toggleable;
   const removable = item.sessionKey !== undefined;
+  const dropPosition =
+    item.kind === "section"
+      ? params.sectionDropTarget?.sectionId === item.id
+        ? params.sectionDropTarget.position
+        : null
+      : item.entry && params.entryDropTarget?.entry === item.entry
+        ? params.entryDropTarget.position
+        : null;
   const visibilityLabel = t(item.visible ? "nav.customizeHide" : "nav.customizeShow", {
     item: item.label,
   });
@@ -223,7 +233,9 @@ function renderCustomizerItem(
         ? "sidebar-customizer__row--fixed"
         : ""} ${!toggleable && item.kind === "entry"
         ? "sidebar-customizer__row--disabled"
-        : ""} ${item.kind === "section" ? "sidebar-customizer__row--section" : ""}"
+        : ""} ${item.kind === "section" ? "sidebar-customizer__row--section" : ""} ${dropPosition
+        ? `sidebar-customizer__row--drop-${dropPosition}`
+        : ""}"
       data-iconless=${item.icon || item.kind === "section" ? "false" : "true"}
       role="listitem"
       draggable=${draggable ? "true" : "false"}

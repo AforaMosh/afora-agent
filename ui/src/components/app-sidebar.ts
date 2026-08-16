@@ -489,6 +489,8 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
     return renderSidebarCustomizer({
       entries,
       sections: this.sidebarCustomizerSections(),
+      entryDropTarget: this.sessionOrganizer.sidebarZoneDropTarget,
+      sectionDropTarget: this.sessionOrganizer.sidebarSectionDropTarget,
       dirty: this.sidebarCustomizer.isDirty(entries),
       error: this.sidebarCustomizer.error,
       onToggle: (item) => this.sidebarCustomizer.toggle(item),

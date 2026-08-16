@@ -1301,6 +1301,27 @@ html.openclaw-native-web-chrome .sidebar-brand__search {
   padding-inline: 9px;
 }
 
+.sidebar-customizer__row--drop-before::before,
+.sidebar-customizer__row--drop-after::after {
+  position: absolute;
+  z-index: 2;
+  right: 6px;
+  left: 6px;
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  content: "";
+  pointer-events: none;
+}
+
+.sidebar-customizer__row--drop-before::before {
+  top: -1px;
+}
+
+.sidebar-customizer__row--drop-after::after {
+  bottom: -1px;
+}
+
 /* Customization keeps the normal sidebar rails: the grip overlays one fixed
    rail, column one owns the lead glyph, and column two owns every label. */
 
