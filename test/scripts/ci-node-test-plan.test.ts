@@ -16,6 +16,7 @@ import {
   agentVitestProjectOwners,
   embeddedAgentVitestProjectOwners,
 } from "../vitest/vitest.agents-paths.mjs";
+import { cliProcessTestFiles } from "../vitest/vitest.cli-process-paths.mjs";
 import { commandsLightTestFiles } from "../vitest/vitest.commands-light-paths.mjs";
 import { createGatewayClientVitestConfig } from "../vitest/vitest.gateway-client.config.ts";
 import { createGatewayCoreVitestConfig } from "../vitest/vitest.gateway-core.config.ts";
@@ -460,13 +461,21 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
       "agentic-agents-embedded-overflow-compaction",
       "agentic-agents-embedded-run",
     ];
+    const expectedCliProcessGroupNames = [
+      "agentic-cli-process-run-loop",
+      "agentic-cli-process-support",
+    ];
     const compactGroups = compact.flatMap((shard) => shard.groups);
     const pullRequestCompactGroups = pullRequestCompact.flatMap((shard) => shard.groups);
-    const expectedGroupNames = base.flatMap((shard) =>
-      shard.shardName === "agentic-agents-embedded"
-        ? expectedEmbeddedAgentGroupNames
-        : [shard.shardName],
-    );
+    const expectedGroupNames = base.flatMap((shard) => {
+      if (shard.shardName === "agentic-agents-embedded") {
+        return expectedEmbeddedAgentGroupNames;
+      }
+      if (shard.shardName === "agentic-cli-process") {
+        return expectedCliProcessGroupNames;
+      }
+      return [shard.shardName];
+    });
     expect(compactGroups.map((group) => group.shard_name).toSorted()).toEqual(
       expectedGroupNames.filter((name) => !pushExcludedShardNames.has(name)).toSorted(),
     );
@@ -485,6 +494,20 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     expect(hostedOwnerNames(githubPullRequestCompact)).toEqual(
       new Set(pullRequestCompactGroups.map((group) => group.shard_name)),
     );
+    const cliProcessGroups = pullRequestCompactGroups.filter((group) =>
+      expectedCliProcessGroupNames.includes(group.shard_name),
+    );
+    expect(cliProcessGroups.map((group) => group.shard_name).toSorted()).toEqual(
+      expectedCliProcessGroupNames,
+    );
+    expect(
+      cliProcessGroups
+        .flatMap((group) => group.includePatterns ?? [])
+        .toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(cliProcessTestFiles.toSorted((a, b) => a.localeCompare(b)));
+    expect(
+      cliProcessGroups.find((group) => group.shard_name.endsWith("-run-loop"))?.includePatterns,
+    ).toEqual(["src/cli/gateway-cli/run-loop.test.ts"]);
     const groupsWith = (plan: typeof githubCompact, shardName: string) =>
       plan.find((shard) => shard.groups.some((group) => group.shard_name === shardName))?.groups;
     const hostedAgentSupportGroups = githubCompact
@@ -511,9 +534,11 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     }
     // Pushes omit only the explicit low-signal families; PR fallback retains
     // their include-pattern coverage when special setup prevents targeting.
+    const cliProcessTestFileSet = new Set(cliProcessTestFiles);
     expect(
       compactGroups
         .flatMap((group) => group.includePatterns ?? [])
+        .filter((file) => !cliProcessTestFileSet.has(file))
         .toSorted((a, b) => a.localeCompare(b)),
     ).toEqual(
       base
@@ -524,6 +549,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     expect(
       pullRequestCompactGroups
         .flatMap((group) => group.includePatterns ?? [])
+        .filter((file) => !cliProcessTestFileSet.has(file))
         .toSorted((a, b) => a.localeCompare(b)),
     ).toEqual(
       base.flatMap((shard) => shard.includePatterns ?? []).toSorted((a, b) => a.localeCompare(b)),
