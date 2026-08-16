@@ -3679,14 +3679,11 @@ button.chat-pr__diff {
    is a single class and loses to the composer-scoped selector above, so the fill
    has to be restated: pulling stop into the brand fill would make the two states
    of one slot — commit and interrupt — read identically at a glance. */
-.agent-chat__input .chat-send-btn--stop {
+.agent-chat__input .chat-send-btn--stop,
+.agent-chat__input .chat-send-btn--stop:hover:not(:disabled) {
   background: var(--text-strong);
   color: var(--chat-composer-surface);
-}
-
-.agent-chat__input .chat-send-btn--stop:hover:not(:disabled) {
-  background: var(--danger-solid-hover);
-  color: var(--destructive-foreground);
+  box-shadow: none;
 }
 
 /* Voice keeps the quiet chrome treatment: it is a mode toggle beside send, not
