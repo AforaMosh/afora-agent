@@ -144,8 +144,8 @@ async function expectQuestionAttention(page: Page, present: boolean): Promise<vo
   const session = page.locator(`[data-session-key="${questionSessionKey}"]`).first();
   const expectedCount = present ? 1 : 0;
   await expect
-    .poll(() => session.locator('[data-session-attention="question"]').count())
-    .toBe(expectedCount);
+    .poll(() => session.getAttribute("data-session-attention"))
+    .toBe(present ? "question" : null);
   await expect
     .poll(() => session.getByText("Waiting for your answer", { exact: true }).count())
     .toBe(expectedCount);

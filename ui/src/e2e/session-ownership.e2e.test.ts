@@ -254,7 +254,15 @@ suite.define(() => {
     await expect
       .poll(() => otherDraft.getAttribute("class"))
       .toContain("session-row-host--draft-other");
-    expect(await currentPage.locator(".session-row-draft-indicator").count()).toBe(2);
+    await expectBrowser(ownDraft.getByRole("img", { name: "Draft", exact: true })).toBeVisible();
+    await expectBrowser(otherDraft.getByRole("img", { name: "Draft", exact: true })).toBeVisible();
+    const ownOpacity = Number.parseFloat(
+      await ownDraft.evaluate((element) => getComputedStyle(element).opacity),
+    );
+    const otherOpacity = Number.parseFloat(
+      await otherDraft.evaluate((element) => getComputedStyle(element).opacity),
+    );
+    expect(otherOpacity).toBeLessThan(ownOpacity);
     await captureUiProof(currentPage, "01-sidebar-draft-treatment.png");
     await currentPage.evaluate(() =>
       document.documentElement.setAttribute("data-theme-mode", "dark"),

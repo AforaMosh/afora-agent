@@ -96,7 +96,7 @@ suite.define(() => {
             updateAvailable: DEV_UPDATE_AVAILABLE,
           });
 
-          await page.getByRole("button", { name: /246 commits behind/ }).click();
+          await page.getByRole("button", { name: "Update", exact: true }).click();
           await page.getByRole("button", { name: "Update and restart", exact: true }).waitFor();
           // The modal fades in; capture it settled so the proof is readable.
           await page.waitForTimeout(500);
@@ -188,7 +188,7 @@ suite.define(() => {
             updateAvailable: DEV_UPDATE_AVAILABLE,
           });
 
-          await page.getByRole("button", { name: /246 commits behind/ }).click();
+          await page.getByRole("button", { name: "Update", exact: true }).click();
           await page.getByRole("button", { name: "Update and restart", exact: true }).click();
           await page.getByRole("button", { name: "Updating…", exact: true }).waitFor();
           await gateway.closeLatest(1012, "managed update handoff");

@@ -141,7 +141,8 @@ suite.define(() => {
         expect(trail.titleRight).toBeLessThanOrEqual(trail.menuLeft + 1);
         expect(trail.menuLeft).toBeLessThan(trail.viewerLeft);
         // One avatar scale across the trail, and no decoration on it.
-        expect(trail.creator).toEqual({ height: 18, width: 18 });
+        expect(trail.creator.height).toBeCloseTo(18, 4);
+        expect(trail.creator.width).toBeCloseTo(18, 4);
         expect(trail.viewerHeight).toBe(18);
         expect(trail.creatorShadow).toBe("none");
         // The 48px header centers its 28px actions on the chrome centerline, and

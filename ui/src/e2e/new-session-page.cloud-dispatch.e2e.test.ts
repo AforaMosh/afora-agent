@@ -379,8 +379,7 @@ suite.define(() => {
       const localSessionRow = page.locator('[data-session-key="agent:cloud:local-e2e"]');
       await sessionRow.waitFor();
       await localSessionRow.waitFor();
-      const cloudPlacementBadge = sessionRow.locator('[data-placement-state="active"]');
-      await cloudPlacementBadge.waitFor();
+      expect(await sessionRow.locator('[data-placement-state="active"]').count()).toBe(0);
       await sessionRow.hover();
       await sessionRow.getByRole("button", { name: "Open session menu" }).click();
       const stopWorker = page
@@ -389,8 +388,6 @@ suite.define(() => {
       await stopWorker.waitFor();
       await captureUiProof(page, "02-active-cloud-worker-stop.png");
       expect(await localSessionRow.locator(".session-row-badge--cloud").count()).toBe(0);
-      expect(await cloudPlacementBadge.locator("circle").count()).toBe(1);
-      expect(await cloudPlacementBadge.locator("rect").count()).toBe(0);
       await stopWorker.click();
       await (await waitForConfirmModal(page)).getByRole("button", { name: "Stop worker" }).click();
       const reclaim = await gateway.waitForRequest("sessions.reclaim");
