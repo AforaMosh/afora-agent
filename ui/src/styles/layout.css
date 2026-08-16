@@ -2723,8 +2723,7 @@ body.update-dialog-open .sidebar-update-card__status {
   background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-/* Privacy and draft state share the title line; creator identity lives in the
-   optional column outside this box. */
+/* Session identity markers share the title baseline. */
 .sidebar-recent-session__title {
   display: flex;
   align-items: center;
@@ -2739,21 +2738,6 @@ body.update-dialog-open .sidebar-update-card__status {
   flex: 0 0 auto;
 }
 
-.session-row-marker--incognito {
-  display: inline-flex;
-  color: var(--muted);
-}
-
-.session-row-marker--incognito svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .session-row-marker--draft {
   color: var(--muted);
   font-size: var(--control-ui-text-xs);
@@ -2765,6 +2749,58 @@ body.update-dialog-open .sidebar-update-card__status {
 .sidebar-recent-session__title:has(.session-row-marker--draft),
 .session-row-markers:has(.session-row-marker--draft) {
   align-items: baseline;
+}
+
+.session-row-leading-identity {
+  position: relative;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-row-state-avatar,
+.session-row-state-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.session-row-state-avatar {
+  width: 16px;
+  height: 16px;
+}
+
+.session-row-state-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  box-shadow: 0 0 0 1px var(--sidebar-bg);
+}
+
+.session-row-state-avatar svg {
+  width: 11px;
+  height: 11px;
+}
+
+.session-row-state-badge svg {
+  width: 8px;
+  height: 8px;
+}
+
+.session-row-state-avatar svg,
+.session-row-state-badge svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8px;
 }
 
 .sidebar-recent-session__name {

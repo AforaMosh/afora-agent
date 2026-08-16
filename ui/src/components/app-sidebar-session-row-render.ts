@@ -45,7 +45,7 @@ import {
   renderSessionInformationCard,
   SESSION_CARD_COLD_DELAY_MS,
 } from "./session-row-hover-card.ts";
-import { renderSessionRowMarkers } from "./session-row-origin.ts";
+import { renderSessionLeadingIdentity, renderSessionRowMarkers } from "./session-row-origin.ts";
 import {
   renderSidebarSessionSubtitle,
   resolveSidebarSessionSubtitle,
@@ -215,6 +215,10 @@ export function renderRecentSession(params: {
     ownerId,
   );
   const ownerIndicator = renderSessionOwnerChip(ownerActor, "row", ownerAttribution, ownerViewing);
+  const leadingIdentity = renderSessionLeadingIdentity({
+    owner: ownerIndicator,
+    incognito: session.incognito === true,
+  });
   const soloPinnedIndicator =
     session.pinned && !host.sessionOwnershipVisible
       ? html`<span class="nav-item__icon" aria-hidden="true">${icons.botMessageSquare}</span>`
@@ -230,7 +234,6 @@ export function renderRecentSession(params: {
     ? nothing
     : renderSessionRowMarkers({
         draft: session.visibility === "draft",
-        incognito: session.incognito === true,
       });
   const openMenuFromEvent = session.isChild
     ? undefined
@@ -477,10 +480,11 @@ export function renderRecentSession(params: {
           aria-describedby=${stateId ?? nothing}
           @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}
         >
-          ${session.isChild || (!host.sessionOwnershipVisible && !session.pinned)
+          ${session.isChild ||
+          (!host.sessionOwnershipVisible && !session.pinned && leadingIdentity === nothing)
             ? nothing
             : html`<span class="sidebar-session-indicator"
-                >${host.sessionOwnershipVisible ? ownerIndicator : soloPinnedIndicator}</span
+                >${leadingIdentity !== nothing ? leadingIdentity : soloPinnedIndicator}</span
               >`}
           <span class="sidebar-recent-session__text">
             <span class="sidebar-recent-session__title">
