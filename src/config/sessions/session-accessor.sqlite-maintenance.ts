@@ -11,7 +11,7 @@ import {
   type SessionStateDeletePlan,
 } from "./session-accessor.sqlite-archive.js";
 import type { SessionLifecycleArchivedTranscript } from "./session-accessor.sqlite-contract.js";
-import { readSessionEntryCount } from "./session-accessor.sqlite-entry-store.js";
+import { readSessionEntryCount, writeSessionEntry } from "./session-accessor.sqlite-entry-store.js";
 import { emitCommittedSessionEntryRemovals } from "./session-accessor.sqlite-identity.js";
 import {
   assertPlannedLifecycleArtifactEntriesUnchanged,
@@ -38,13 +38,15 @@ import {
 } from "./store-maintenance-preserve.js";
 import { resolveMaintenanceConfig } from "./store-maintenance-runtime.js";
 import {
+  archiveStaleDashboardEntries,
   capEntryCount,
   pruneStaleModelRunEntries,
   pruneStaleEntries,
+  normalizeResolvedMaintenanceConfigInput,
   shouldPreserveMaintenanceEntry,
   shouldRunModelRunPrune,
   shouldRunSessionEntryMaintenance,
-  type ResolvedSessionMaintenanceConfig,
+  type ResolvedSessionMaintenanceConfigInput,
 } from "./store-maintenance.js";
 import type { SessionEntry } from "./types.js";
 
@@ -67,11 +69,10 @@ function collectSqliteSessionMaintenanceBaseKeys(
 
 function hasStaleSqliteSessionEntryCandidate(
   database: OpenClawAgentDatabase,
-  pruneAfterMs: number,
-  preserveKeys: ReadonlySet<string> | undefined,
-  preserveRecentMs: number | null,
+  maxAgeMs: number,
+  isCandidate: (key: string, entry: SessionEntry) => boolean,
 ): boolean {
-  const cutoffMs = Date.now() - pruneAfterMs;
+  const cutoffMs = Date.now() - maxAgeMs;
   const db = getSessionKysely(database.db);
   const rows = executeSqliteQuerySync(
     database.db,
@@ -87,12 +88,7 @@ function hasStaleSqliteSessionEntryCandidate(
     if (!entry) {
       return false;
     }
-    return !shouldPreserveMaintenanceEntry({
-      key: normalizeStoreSessionKey(row.session_key),
-      entry,
-      preserveKeys,
-      preserveRecentMs,
-    });
+    return isCandidate(normalizeStoreSessionKey(row.session_key), entry);
   });
 }
 
@@ -120,7 +116,7 @@ export function applySessionEntryMaintenance(
     activeSessionKey: string;
     archiveDirectory: string;
     forceMaintenance?: boolean;
-    maintenanceConfig?: ResolvedSessionMaintenanceConfig;
+    maintenanceConfig?: ResolvedSessionMaintenanceConfigInput;
     skipMaintenance?: boolean;
     storePath: string;
   },
@@ -128,7 +124,9 @@ export function applySessionEntryMaintenance(
   if (params.skipMaintenance) {
     return { entryRemovals: [], stateDeletePlans: [] };
   }
-  const maintenance = params.maintenanceConfig ?? resolveMaintenanceConfig();
+  const maintenance = params.maintenanceConfig
+    ? normalizeResolvedMaintenanceConfigInput(params.maintenanceConfig)
+    : resolveMaintenanceConfig();
   if (maintenance.mode === "warn") {
     return { entryRemovals: [], stateDeletePlans: [] };
   }
@@ -140,12 +138,28 @@ export function applySessionEntryMaintenance(
   const hasStaleCandidate = hasStaleSqliteSessionEntryCandidate(
     database,
     maintenance.pruneAfterMs,
-    preserveCandidateKeys,
-    maintenance.preserveRecentMs ?? null,
+    (key, entry) =>
+      !shouldPreserveMaintenanceEntry({
+        key,
+        entry,
+        preserveKeys: preserveCandidateKeys,
+        preserveRecentMs: maintenance.preserveRecentMs ?? null,
+      }),
   );
+  const hasStaleDashboardCandidate =
+    maintenance.archiveDashboardAfterMs != null &&
+    hasStaleSqliteSessionEntryCandidate(
+      database,
+      maintenance.archiveDashboardAfterMs,
+      (key, entry) =>
+        archiveStaleDashboardEntries({ [key]: entry }, maintenance.archiveDashboardAfterMs, {
+          log: false,
+        }) > 0,
+    );
   const shouldMaintainStore =
     params.forceMaintenance === true ||
     entryCount > maintenance.maxEntries ||
+    hasStaleDashboardCandidate ||
     hasStaleCandidate ||
     shouldRunModelRunPrune({
       maintenance,
@@ -193,6 +207,12 @@ export function applySessionEntryMaintenance(
       preserveRecentMs: maintenance.preserveRecentMs,
     });
   }
+  archiveStaleDashboardEntries(store, maintenance.archiveDashboardAfterMs, {
+    log: false,
+    onArchived: ({ key, entry }) => {
+      writeSessionEntry(database, key, entry);
+    },
+  });
   if (
     params.forceMaintenance === true ||
     hasStaleCandidate ||

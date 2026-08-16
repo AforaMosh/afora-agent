@@ -111,6 +111,7 @@ export const TARGET_KEYS = [
   "session.maintenance",
   "session.maintenance.mode",
   "session.maintenance.pruneAfter",
+  "session.maintenance.archiveDashboardAfter",
   "session.maintenance.maxEntries",
   "session.maintenance.preserveRecent",
   "session.maintenance.resetArchiveRetention",
