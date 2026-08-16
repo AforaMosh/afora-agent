@@ -129,16 +129,14 @@ export function renderChatVoiceError(props: ChatVoiceErrorProps): TemplateResult
       <span class="agent-chat__talk-status-text">${props.detail}</span>
       ${props.onDismissError
         ? html`
-            <openclaw-tooltip .content=${t("chat.composer.dismissVoiceInputError")}>
-              <button
-                class="callout__dismiss"
-                type="button"
-                @click=${props.onDismissError}
-                aria-label=${t("chat.composer.dismissVoiceInputError")}
-              >
-                ${icons.x}
-              </button>
-            </openclaw-tooltip>
+            <button
+              class="callout__dismiss"
+              type="button"
+              @click=${props.onDismissError}
+              aria-label=${t("chat.composer.dismissVoiceInputError")}
+            >
+              ${icons.x}
+            </button>
           `
         : nothing}
     </div>

@@ -3336,6 +3336,13 @@ button.chat-pr__diff {
 
 .agent-chat__composer-error .callout__dismiss {
   margin: -4px -4px -4px 0;
+  border-radius: var(--radius-full);
+  opacity: 0.72;
+}
+
+.agent-chat__composer-error .callout__dismiss:hover {
+  background: transparent;
+  opacity: 1;
 }
 
 .agent-chat__talk-status-text {
