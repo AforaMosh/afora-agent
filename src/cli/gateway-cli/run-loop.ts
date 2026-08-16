@@ -226,8 +226,6 @@ export async function runGatewayLoop(params: {
     const {
       detectGatewayRespawnSupervisor,
       markUpdateRestartSentinelFailure,
-      parkCurrentLaunchAgentForMaintenance,
-      parkCurrentSystemdServiceForMaintenance,
       respawnGatewayProcessForUpdate,
       restartGatewayProcessWithFreshPid,
       writeGatewayRestartHandoffSync,
@@ -244,12 +242,16 @@ export async function runGatewayLoop(params: {
     if (activeRestartRequest?.restartIntent?.successorOwner === "managed-update-handoff") {
       const supervisor = detectGatewayRespawnSupervisor(process.env, process.platform);
       try {
+        // Service manager graphs stay outside the eagerly primed lifecycle hub;
+        // managed handoff is the only path that needs them.
         if (supervisor === "launchd") {
-          if (!(await parkCurrentLaunchAgentForMaintenance())) {
+          const launchd = await import("../../daemon/launchd-stop.js");
+          if (!(await launchd.parkCurrentLaunchAgentForMaintenance())) {
             throw new Error("current LaunchAgent identity is unavailable");
           }
         } else if (supervisor === "systemd") {
-          await parkCurrentSystemdServiceForMaintenance();
+          const systemd = await import("../../daemon/systemd-lifecycle.js");
+          await systemd.parkCurrentSystemdServiceForMaintenance();
         }
       } catch (err) {
         gatewayLog.error(`managed update handoff could not park ${supervisor}: ${String(err)}`);

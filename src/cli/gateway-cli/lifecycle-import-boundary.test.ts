@@ -28,6 +28,11 @@ describe("gateway lifecycle hub import boundaries", () => {
     expect(hub).not.toContain(
       'from "../../agents/main-session-recovery/main-session-restart-recovery.js"',
     );
+
+    // Service-manager control graphs are needed only after a managed update
+    // handoff commits to one platform, never while priming normal lifecycle paths.
+    expect(hub).not.toContain('from "../../daemon/launchd-stop.js"');
+    expect(hub).not.toContain('from "../../daemon/systemd-lifecycle.js"');
   });
 
   it("still primes the hub eagerly so signal handlers survive dist chunk rotation", () => {
