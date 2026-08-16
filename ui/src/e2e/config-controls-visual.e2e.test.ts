@@ -327,17 +327,13 @@ suite.define(() => {
           }
 
           await page.goto(`${suite.server.baseUrl}chat`);
-          await expect
-            .poll(() =>
-              page.evaluate(async () => {
-                await customElements.whenDefined("openclaw-browser-panel");
-                const panel = document.querySelector<HTMLElement & { available?: boolean }>(
-                  "openclaw-browser-panel",
-                );
-                return { available: panel?.available === true };
-              }),
-            )
-            .toEqual({ available: true });
+          await page.locator(".agent-chat__composer-combobox textarea").waitFor();
+          if (captureUiProofEnabled && host === "browser") {
+            await page.screenshot({
+              animations: "disabled",
+              path: path.join(uiProofArtifactDir, "03-link-routing-before.png"),
+            });
+          }
           await page.evaluate(() => {
             const link = document.createElement("a");
             link.href = "https://example.com/application-handled";
@@ -390,7 +386,13 @@ suite.define(() => {
             method: "POST",
             path: "/tabs/open",
           });
-          const browserPanel = page.locator("openclaw-browser-panel");
+          const browserPanel = page.locator("openclaw-browser-panel[embedded]");
+          await browserPanel.waitFor();
+          expect(
+            await browserPanel.evaluate(
+              (element: HTMLElement & { available?: boolean }) => element.available === true,
+            ),
+          ).toBe(true);
           await browserPanel.getByText("Example", { exact: true }).first().waitFor();
           await expect
             .poll(
@@ -398,6 +400,12 @@ suite.define(() => {
             )
             .toBe(false);
           expect(await browserPanel.textContent()).not.toContain("Browser request failed");
+          if (captureUiProofEnabled && host === "browser") {
+            await page.screenshot({
+              animations: "disabled",
+              path: path.join(uiProofArtifactDir, "04-browser-panel-after.png"),
+            });
+          }
 
           if (host === "app") {
             expect(
