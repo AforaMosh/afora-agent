@@ -1,5 +1,3 @@
-// The run loop primes this hub before the HTTP listener binds. Static re-exports
-// target defining modules; lazy wrappers defer platform graphs until their owner runs.
 export {
   abortEmbeddedAgentRun,
   getActiveEmbeddedRunCount,
@@ -8,12 +6,7 @@ export {
   waitForActiveEmbeddedRuns,
 } from "../../agents/embedded-agent-runner/runs.js";
 export { markRestartAbortedMainSessions } from "../../agents/main-session-recovery/main-session-restart-recovery-marking.js";
-export const parkManagedUpdateLaunchdSuccessor = async () =>
-  await (await import("../../daemon/launchd-stop.js")).parkCurrentLaunchAgentForMaintenance();
-export const parkManagedUpdateSystemdSuccessor = async () =>
-  await (
-    await import("../../daemon/systemd-lifecycle.js")
-  ).parkCurrentSystemdServiceForMaintenance();
+export { parkManagedUpdateSuccessor } from "../../infra/managed-update-successor.js";
 export { getRuntimeConfig } from "../../config/config.js";
 export {
   respawnGatewayProcessForUpdate,
