@@ -17,12 +17,13 @@ const THEMES = ["light", "dark"] as const;
 type Theme = (typeof THEMES)[number];
 
 /**
- * No command catalog is published, so the composer keeps the browser-safe
- * fallback registry. Every command exercised below is therefore a real builtin
+ * Unless a catalog is passed, none is published and the composer keeps the
+ * browser-safe fallback registry, so every command exercised is a real builtin
  * with its real declared arguments — including the provider-dependent choice
- * sets that this PR resolves locally.
+ * sets that this PR resolves locally. The connected case publishes a catalog so
+ * the remote projection is covered too.
  */
-function startupResponse(sessionId: string) {
+function startupResponse(sessionId: string, commands?: unknown[]) {
   return {
     agentsList: {
       agents: [{ id: "main", name: "OpenClaw" }],
@@ -31,7 +32,7 @@ function startupResponse(sessionId: string) {
       scope: "agent" as const,
     },
     messages: [],
-    metadata: { models: [] },
+    metadata: { models: [], ...(commands ? { commands } : {}) },
     sessionId,
     thinkingLevel: null,
   };
@@ -49,9 +50,17 @@ type Fixture = {
   sentMessages: () => Promise<unknown[]>;
 };
 
-async function openChat(page: Page, theme: Theme, sessionId: string): Promise<Fixture> {
+async function openChat(
+  page: Page,
+  theme: Theme,
+  sessionId: string,
+  commands?: unknown[],
+): Promise<Fixture> {
   const gateway = await installMockGateway(page, {
-    methodResponses: { "chat.startup": startupResponse(sessionId) },
+    methodResponses: {
+      "chat.startup": startupResponse(sessionId, commands),
+      ...(commands ? { "commands.list": { commands } } : {}),
+    },
   });
   await page.goto(`${suite.server.baseUrl}chat`);
   await gateway.waitForRequest("chat.startup");
@@ -423,6 +432,74 @@ suite.define(() => {
         await expect.poll(() => f.menu.count()).toBe(0);
         expect(await f.sentMessages()).toEqual([]);
         await f.shot("e1-untyped-unchanged");
+      });
+    });
+
+    it(`class G — a published catalog command owns its raw tail (${theme})`, async () => {
+      await mkdir(ARTIFACT_DIR, { recursive: true });
+      await suite.withPage({ colorScheme: theme, viewport: VIEWPORT }, async ({ page }) => {
+        // The catalog advertises two arguments with choices but cannot say how
+        // the command parses its tail: CommandEntrySchema carries no
+        // argsParsing/captureRemaining. Staging these would space-join text the
+        // real parser may reject, so the operator gets the tail instead.
+        const f = await openChat(page, theme, `cmdargs-g-${theme}`, [
+          {
+            name: "deploy",
+            textAliases: ["/deploy"],
+            description: "Deploy a build.",
+            source: "plugin",
+            scope: "both",
+            acceptsArgs: true,
+            args: [
+              {
+                name: "target",
+                description: "Target",
+                type: "string",
+                required: true,
+                choices: [
+                  { value: "staging", label: "staging" },
+                  { value: "production", label: "production" },
+                ],
+              },
+              { name: "note", description: "Note", type: "string" },
+            ],
+          },
+          {
+            name: "ping",
+            textAliases: ["/ping"],
+            description: "Ping the worker.",
+            source: "plugin",
+            scope: "both",
+            acceptsArgs: false,
+          },
+        ]);
+
+        await pickCommand(f, "/deploy");
+        await expect.poll(() => f.optionLabels()).toContain("/deploy");
+        await f.shot("g1-remote-command");
+
+        await f.composer.press("Enter");
+        // No stage: the draft is prepared and the operator writes the tail.
+        await expect.poll(() => f.menu.count()).toBe(0);
+        await expect.poll(() => f.composer.inputValue()).toBe("/deploy ");
+        expect(await f.sentMessages()).toEqual([]);
+        await f.shot("g2-free-draft");
+
+        // The tail reaches the Gateway verbatim, which owns the real parser.
+        await f.composer.fill("/deploy target=staging --note 'first ship'");
+        await f.composer.press("Enter");
+        await waitForSentCount(f, 1);
+        expect(await f.sentMessages()).toEqual(["/deploy target=staging --note 'first ship'"]);
+
+        // An argument-free remote command still runs bare rather than stalling.
+        await pickCommand(f, "/ping");
+        await f.composer.press("Enter");
+        await waitForSentCount(f, 2);
+        expect(await f.sentMessages()).toEqual([
+          "/deploy target=staging --note 'first ship'",
+          "/ping",
+        ]);
+        await f.shot("g3-bare-remote");
       });
     });
 

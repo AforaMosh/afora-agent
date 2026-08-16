@@ -92,16 +92,24 @@ function openSlashArgStage(
 }
 
 /**
- * Runs the assembled command through the composer's normal send route. The text
- * comes from the canonical serializer, so a command that declares its own
- * argument format (`/exec host=…`, `/queue debounce:…`) is never space-joined
- * into syntax its parser rejects.
+ * What the last collected argument does: Tab only completes the draft, Enter and
+ * pointer activation run it. Keeping them apart is why tab-completing a final
+ * argument cannot dispatch a command the operator never sent.
  */
-function runStagedSlashCommand(
+type SlashStageIntent = "complete" | "execute";
+
+/**
+ * Closes the stage and writes the assembled command into the draft, sending it
+ * only on an `execute` intent. The text comes from the canonical serializer, so
+ * a command that declares its own argument format (`/exec host=…`,
+ * `/queue debounce:…`) is never space-joined into syntax its parser rejects.
+ */
+function finishStagedSlashCommand(
   command: SlashCommandDef,
   values: CommandArgValues,
   props: ChatComposerProps,
   requestUpdate: () => void,
+  intent: SlashStageIntent,
 ): void {
   if (abortSlashMenuForQueuedEdit(props, requestUpdate)) {
     return;
@@ -112,7 +120,9 @@ function runStagedSlashCommand(
   const commandText = buildSlashCommandText(command, values);
   rememberSlashMenuDraft(state, commandText);
   commitComposerDraft(props, commandText);
-  submitSlashCommandText(commandText, props);
+  if (intent === "execute") {
+    submitSlashCommandText(commandText, props);
+  }
   queueMicrotask(() => state.composerTextarea?.focus({ preventScroll: true }));
   requestUpdate();
 }
@@ -129,6 +139,7 @@ export function commitSlashArgValue(
   value: string,
   props: ChatComposerProps,
   requestUpdate: () => void,
+  intent: SlashStageIntent,
 ): void {
   if (abortSlashMenuForQueuedEdit(props, requestUpdate)) {
     return;
@@ -148,10 +159,12 @@ export function commitSlashArgValue(
   const values = value ? { ...stage.values, [stage.arg.name]: value } : stage.values;
   const next = value ? buildSlashArgStage(stage.command, values, props) : null;
   if (next) {
+    // Advancing to another argument is completion either way; the intent only
+    // decides what happens once nothing is left to collect.
     openSlashArgStage(next, props, requestUpdate);
     return;
   }
-  runStagedSlashCommand(stage.command, values, props, requestUpdate);
+  finishStagedSlashCommand(stage.command, values, props, requestUpdate, intent);
 }
 
 /** Opens a stage for the chosen command, or prepares the draft when it takes none. */
@@ -245,35 +258,41 @@ export function submitSlashDraft(
     if (validation !== "valid") {
       return refuseSlashStage(stage, props, requestUpdate, validation);
     }
-    runStagedSlashCommand(stage.command, stage.values, props, requestUpdate);
+    finishStagedSlashCommand(stage.command, stage.values, props, requestUpdate, "execute");
     return "submitted";
   }
 
-  if (stage.choices.length > 0) {
+  // A choice-backed stage only accepts a declared value; a free-form stage takes
+  // the typed text as-is. Either way the value has to be committed before the
+  // draft can submit, or a later required argument is skipped in silence.
+  const isChoiceStage = stage.choices.length > 0;
+  let committed = input;
+  if (isChoiceStage) {
     const choice = stage.choices.find((entry) => entry.value === input);
     if (!choice) {
       return refuseSlashStage(stage, props, requestUpdate, "choice");
     }
-    const validation = validateSlashArgValue(stage, choice.value);
-    if (validation !== "valid") {
-      return refuseSlashStage(stage, props, requestUpdate, validation);
-    }
-    const values = { ...stage.values, [stage.arg.name]: choice.value };
-    const next = buildSlashArgStage(stage.command, values, props);
-    if (next) {
-      if (next.arg.required === true) {
-        next.needsValue = true;
-        openSlashArgStage(next, props, requestUpdate);
-        return "blocked";
-      }
-      runStagedSlashCommand(stage.command, values, props, requestUpdate);
-      return "submitted";
-    }
-    runStagedSlashCommand(stage.command, values, props, requestUpdate);
-    return "submitted";
+    committed = choice.value;
   }
-
-  return "allow";
+  const validation = validateSlashArgValue(stage, committed);
+  if (validation !== "valid") {
+    return refuseSlashStage(stage, props, requestUpdate, validation);
+  }
+  const values = { ...stage.values, [stage.arg.name]: committed };
+  const next = buildSlashArgStage(stage.command, values, props);
+  if (next?.arg.required === true) {
+    next.needsValue = true;
+    openSlashArgStage(next, props, requestUpdate);
+    return "blocked";
+  }
+  if (!isChoiceStage) {
+    // Nothing required is left and the visible draft already spells the whole
+    // command, so the host's normal send owns it. Re-serializing here would
+    // rewrite the operator's own spacing inside a captureRemaining value.
+    return "allow";
+  }
+  finishStagedSlashCommand(stage.command, values, props, requestUpdate, "execute");
+  return "submitted";
 }
 
 export function selectSlashCommand(
@@ -379,6 +398,8 @@ export function getSlashArgDraftChoices(state: ChatComposerState): SlashCommandA
  * Owns Enter/Tab while an argument stage is active. Optional choices submit the
  * bare command, required choices accept the highlighted item, and a filtered
  * empty list reports the invalid input instead of falling through to send.
+ * Tab only ever completes: it fills the value in and, on the last argument,
+ * leaves the assembled command in the box for the operator to send.
  */
 export function handleSlashArgKeyDown(
   event: KeyboardEvent,
@@ -393,18 +414,19 @@ export function handleSlashArgKeyDown(
   if (!stage) {
     return false;
   }
+  const intent: SlashStageIntent = event.key === "Enter" ? "execute" : "complete";
   const input = stage.input.trim();
   const choices = getSlashStageChoices(stage);
   if (stage.choices.length > 0) {
     if (!input && stage.arg.required !== true && state.slashMenuIndex === 0) {
       event.preventDefault();
-      commitSlashArgValue("", props, requestUpdate);
+      commitSlashArgValue("", props, requestUpdate, intent);
       return true;
     }
     const choice = choices[state.slashMenuIndex];
     event.preventDefault();
     if (choice) {
-      commitSlashArgValue(choice.value, props, requestUpdate);
+      commitSlashArgValue(choice.value, props, requestUpdate, intent);
     } else {
       stage.invalidChoice = true;
       requestUpdate();
@@ -420,7 +442,7 @@ export function handleSlashArgKeyDown(
     stage.invalidChoice = false;
     requestUpdate();
   } else {
-    commitSlashArgValue("", props, requestUpdate);
+    commitSlashArgValue("", props, requestUpdate, intent);
   }
   return true;
 }
@@ -563,7 +585,7 @@ function renderSlashArgOptions(
                   : ""}"
                 role="option"
                 aria-selected=${i === state.slashMenuIndex}
-                @click=${() => commitSlashArgValue(choice.value, props, requestUpdate)}
+                @click=${() => commitSlashArgValue(choice.value, props, requestUpdate, "execute")}
                 @mouseenter=${() => {
                   state.slashMenuIndex = i;
                   requestUpdate();

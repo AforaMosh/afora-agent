@@ -2,9 +2,12 @@
 import { html, nothing, render } from "lit";
 import { afterEach, describe, expect, it } from "vitest";
 import { defineChatCommand } from "../../../../../src/auto-reply/commands-registry.shared.js";
+import type { CommandArgDefinition } from "../../../../../src/auto-reply/commands-registry.types.js";
 import { makeSlashCommand } from "../../../lib/chat/commands.test-support.ts";
 import {
+  buildFallbackSlashCommands,
   buildSlashCommandText,
+  replaceSlashCommands,
   SLASH_COMMANDS,
   type SlashCommandDef,
 } from "../../../lib/chat/commands.ts";
@@ -14,6 +17,7 @@ import {
   isSlashMenuVisible,
   renderSlashMenu,
   selectSlashCommand,
+  submitSlashDraft,
   updateSlashMenu,
 } from "./chat-composer-slash-menu.ts";
 import { getChatComposerState, resetChatComposerState } from "./chat-composer-state.ts";
@@ -32,6 +36,7 @@ type Harness = {
   hint: () => string;
   type: (draft: string) => void;
   pick: (value: string) => void;
+  press: (key: "Enter" | "Tab") => { handled: boolean; event: KeyboardEvent };
   options: () => HTMLElement[];
   activeOption: () => HTMLElement | null;
 };
@@ -83,7 +88,12 @@ function createHarness(): Harness {
       draft = next;
       updateSlashMenu(next, requestUpdate, props);
     },
-    pick: (value: string) => commitSlashArgValue(value, props, requestUpdate),
+    // Pointer activation, which always runs the command.
+    pick: (value: string) => commitSlashArgValue(value, props, requestUpdate, "execute"),
+    press: (key: "Enter" | "Tab") => {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      return { handled: handleSlashArgKeyDown(event, props, requestUpdate), event };
+    },
     options: () => [...container.querySelectorAll<HTMLElement>("[role='option']")],
     activeOption: () => container.querySelector<HTMLElement>(".slash-menu-item--active"),
   };
@@ -103,6 +113,7 @@ function openCommand(harness: Harness, command: SlashCommandDef): void {
 
 afterEach(() => {
   resetChatComposerState(PANE_ID);
+  replaceSlashCommands(buildFallbackSlashCommands());
   document.body.innerHTML = "";
 });
 
@@ -154,12 +165,8 @@ describe("slash command argument staging", () => {
       const harness = createHarness();
       openCommand(harness, requireCommand(name));
 
-      const event = new KeyboardEvent("keydown", {
-        key: "Enter",
-        bubbles: true,
-        cancelable: true,
-      });
-      expect(handleSlashArgKeyDown(event, harness.props, harness.requestUpdate)).toBe(true);
+      const { handled, event } = harness.press("Enter");
+      expect(handled).toBe(true);
       expect(event.defaultPrevented).toBe(true);
       expect(harness.sent).toEqual([`/${name}`]);
       expect(harness.stage()).toBeNull();
@@ -227,12 +234,8 @@ describe("slash command argument staging", () => {
     });
     openCommand(harness, command);
 
-    const event = new KeyboardEvent("keydown", {
-      key: "Enter",
-      bubbles: true,
-      cancelable: true,
-    });
-    expect(handleSlashArgKeyDown(event, harness.props, harness.requestUpdate)).toBe(true);
+    const { handled, event } = harness.press("Enter");
+    expect(handled).toBe(true);
     expect(event.defaultPrevented).toBe(true);
     expect(harness.sent).toEqual(["/required-choice first"]);
   });
@@ -241,12 +244,8 @@ describe("slash command argument staging", () => {
     const harness = createHarness();
     harness.type("/tools invalid");
 
-    const event = new KeyboardEvent("keydown", {
-      key: "Enter",
-      bubbles: true,
-      cancelable: true,
-    });
-    expect(handleSlashArgKeyDown(event, harness.props, harness.requestUpdate)).toBe(true);
+    const { handled, event } = harness.press("Enter");
+    expect(handled).toBe(true);
     expect(event.defaultPrevented).toBe(true);
     expect(harness.sent).toEqual([]);
     expect(harness.stage()?.invalidChoice).toBe(true);
@@ -467,5 +466,136 @@ describe("slash command argument staging", () => {
     expect(harness.container.querySelector(".slash-menu-name")?.textContent).toBe("auto (45 sec)");
     harness.pick("auto");
     expect(harness.sent).toEqual(["/plugin-fast auto"]);
+  });
+});
+
+describe("Tab completes without executing", () => {
+  function twoChoiceCommand(): SlashCommandDef {
+    return makeSlashCommand("deploy", {
+      definition: defineChatCommand({
+        key: "deploy",
+        textAlias: "/deploy",
+        description: "Deploy.",
+        args: [
+          {
+            name: "target",
+            description: "Target",
+            type: "string",
+            required: true,
+            choices: ["staging", "production"],
+          },
+        ],
+      }),
+    });
+  }
+
+  it("leaves the assembled command in the draft instead of sending it", () => {
+    const harness = createHarness();
+    openCommand(harness, twoChoiceCommand());
+
+    const { handled, event } = harness.press("Tab");
+
+    expect(handled).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    // The whole point: the final argument is filled in, but nothing was sent.
+    expect(harness.sent).toEqual([]);
+    expect(harness.draft()).toBe("/deploy staging");
+    expect(harness.stage()).toBeNull();
+  });
+
+  it("still executes on Enter, so the two keys stay distinguishable", () => {
+    const harness = createHarness();
+    openCommand(harness, twoChoiceCommand());
+
+    harness.press("Enter");
+
+    expect(harness.sent).toEqual(["/deploy staging"]);
+  });
+
+  it("advances to the next argument on Tab exactly as Enter does", () => {
+    const harness = createHarness();
+    openCommand(
+      harness,
+      makeSlashCommand("release", {
+        definition: defineChatCommand({
+          key: "release",
+          textAlias: "/release",
+          description: "Release.",
+          args: [
+            {
+              name: "channel",
+              description: "Channel",
+              type: "string",
+              required: true,
+              choices: ["beta", "stable"],
+            },
+            { name: "note", description: "Note", type: "string", captureRemaining: true },
+          ],
+        }),
+      }),
+    );
+
+    harness.press("Tab");
+
+    // A non-final argument is completion either way, so the stage must advance
+    // rather than dispatch a half-collected command.
+    expect(harness.sent).toEqual([]);
+    expect(harness.stage()?.arg.name).toBe("note");
+    expect(harness.draft()).toBe("/release beta ");
+  });
+});
+
+describe("required arguments cannot be skipped by a free-form value", () => {
+  // The draft is the only input, so submitSlashDraft re-resolves the command by
+  // name; these have to be discoverable the way a real registered command is.
+  function registerCommand(name: string, second: CommandArgDefinition): void {
+    replaceSlashCommands([
+      ...SLASH_COMMANDS,
+      makeSlashCommand(name, {
+        definition: defineChatCommand({
+          key: name,
+          textAlias: `/${name}`,
+          description: "Label a session.",
+          args: [
+            // No choices, so the first stage is free-form -- the shape that
+            // used to fall through to "allow" without committing anything.
+            { name: "name", description: "Name", type: "string", required: true },
+            second,
+          ],
+        }),
+      }),
+    ]);
+  }
+
+  it("blocks submission until the later required argument is collected", () => {
+    const harness = createHarness();
+    registerCommand("label", {
+      name: "colour",
+      description: "Colour",
+      type: "string",
+      required: true,
+      choices: ["red", "blue"],
+    });
+
+    harness.type("/label release-prep");
+    const outcome = submitSlashDraft(harness.draft(), harness.props, harness.requestUpdate);
+
+    expect(outcome).toBe("blocked");
+    expect(harness.sent).toEqual([]);
+    expect(harness.stage()?.arg.name).toBe("colour");
+    expect(harness.stage()?.needsValue).toBe(true);
+  });
+
+  it("lets the draft through once nothing required is left", () => {
+    const harness = createHarness();
+    registerCommand("label-optional", { name: "colour", description: "Colour", type: "string" });
+
+    harness.type("/label-optional release-prep");
+    const outcome = submitSlashDraft(harness.draft(), harness.props, harness.requestUpdate);
+
+    // A trailing optional argument must not hold the command hostage, and the
+    // visible draft is already the exact text the host will send.
+    expect(outcome).toBe("allow");
+    expect(harness.draft()).toBe("/label-optional release-prep");
   });
 });

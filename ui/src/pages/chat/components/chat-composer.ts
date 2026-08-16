@@ -303,7 +303,13 @@ export function renderChatComposer(props: ChatComposerProps) {
           getSlashArgDraftChoices(state),
           props.paneId,
           requestUpdate,
-          (choice) => commitSlashArgValue(choice.value, props, requestUpdate),
+          (choice, submit) =>
+            commitSlashArgValue(
+              choice.value,
+              props,
+              requestUpdate,
+              submit ? "execute" : "complete",
+            ),
           (menuState, paneId) =>
             scrollActiveMenuOptionIntoView(getActiveSlashMenuOptionId(menuState, paneId)),
         )

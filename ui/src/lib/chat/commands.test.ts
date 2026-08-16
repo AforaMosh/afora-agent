@@ -4,6 +4,7 @@ import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it } from "vitest";
 import { makeSlashCommand } from "./commands.test-support.ts";
 import {
+  acceptsSlashCommandArgs,
   buildFallbackSlashCommands,
   buildSlashCommandsFromEntries,
   getRemoteCommandEntries,
@@ -676,5 +677,51 @@ describe("parseSlashCommand", () => {
     expectRecordFields(requireCommandByName("pair"), "pair command", {
       name: "pair",
     });
+  });
+
+  it("lets a remote command own its raw tail, because the catalog never says how it parses", () => {
+    applyRemoteEntries([
+      {
+        name: "deploy",
+        textAliases: ["/deploy"],
+        description: "Deploy a build.",
+        source: "plugin",
+        scope: "both",
+        acceptsArgs: true,
+        args: [
+          {
+            name: "target",
+            description: "Target",
+            type: "string",
+            required: true,
+            choices: [{ value: "staging", label: "staging" }],
+          },
+          { name: "note", description: "Note", type: "string" },
+        ],
+      },
+    ]);
+
+    const deploy = requireCommandByName("deploy");
+    // CommandEntrySchema carries no argsParsing/captureRemaining, so staging
+    // these positionally would space-join text the real parser may reject.
+    expect(ownsRawArgumentTail(deploy)).toBe(true);
+    expect(acceptsSlashCommandArgs(deploy)).toBe(true);
+    // The declarations still survive for the `<name>` hint and option badge.
+    expect(getSlashCommandArgs(deploy).map((arg) => arg.name)).toEqual(["target", "note"]);
+  });
+
+  it("keeps an argument-free remote command runnable bare", () => {
+    applyRemoteEntries([
+      {
+        name: "ping",
+        textAliases: ["/ping"],
+        description: "Ping.",
+        source: "plugin",
+        scope: "both",
+        acceptsArgs: false,
+      },
+    ]);
+
+    expect(acceptsSlashCommandArgs(requireCommandByName("ping"))).toBe(false);
   });
 });

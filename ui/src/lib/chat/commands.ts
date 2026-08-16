@@ -469,14 +469,16 @@ function normalizeCommandEntry(
     );
   const description = clampText(entry.description, MAX_REMOTE_DESCRIPTION_LENGTH);
   return {
-    // The catalog transports choices so clients can offer them; a remote command
-    // carries no argsMenu, so declared choices are what grants it one here.
+    // The catalog carries argument names and choices but no `argsParsing` or
+    // `captureRemaining`: it says what a command takes, never how it splits the
+    // tail. Staging it would invent positional rules and could space-join text
+    // the real parser rejects; the args still drive the hint and option badge.
     definition: defineChatCommand({
       key: primaryName,
       description,
       acceptsArgs: entry.acceptsArgs === true,
+      argsParsing: "none",
       ...(args.length > 0 ? { args } : {}),
-      ...(args.some((arg) => arg.choices?.length) ? { argsMenu: "auto" as const } : {}),
     }),
     key: primaryName,
     name: primaryName,
