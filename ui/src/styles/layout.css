@@ -1905,7 +1905,7 @@ body.update-dialog-open .sidebar-update-card__status {
   gap: 8px;
   min-height: 24px;
   padding: 0 10px 0 var(--sidebar-inset);
-  color: color-mix(in srgb, var(--muted) 72%, var(--text) 28%);
+  color: color-mix(in srgb, var(--muted) 60%, var(--text) 40%);
 }
 
 .sidebar-session-group-toggle {
@@ -2216,7 +2216,7 @@ body.update-dialog-open .sidebar-update-card__status {
 
 .sidebar-recent-sessions__label-text,
 .sidebar-session-catalog-host__label {
-  color: color-mix(in srgb, var(--muted) 78%, transparent);
+  color: color-mix(in srgb, var(--muted) 86%, var(--text) 14%);
   font-size: var(--sidebar-type-section-size);
   font-weight: var(--sidebar-type-section-weight);
   letter-spacing: var(--sidebar-type-section-tracking);
@@ -2322,7 +2322,7 @@ body.update-dialog-open .sidebar-update-card__status {
   gap: 8px;
   min-height: 19px;
   padding: 1px 12px 1px var(--sidebar-inset);
-  color: color-mix(in srgb, var(--muted) 82%, var(--text) 18%);
+  color: color-mix(in srgb, var(--muted) 72%, var(--text) 28%);
 }
 
 .sidebar-session-catalog-host__label {
@@ -2355,7 +2355,7 @@ body.update-dialog-open .sidebar-update-card__status {
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: color-mix(in srgb, var(--muted) 35%, var(--text) 65%);
+  color: color-mix(in srgb, var(--muted) 25%, var(--text) 75%);
   font: inherit;
   cursor: var(--cursor-action);
   text-align: left;
@@ -3495,7 +3495,7 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   padding: 0 var(--sidebar-row-inset);
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 68%, var(--text) 32%);
   transition:
     border-color var(--duration-fast) ease,
     background var(--duration-fast) ease,
@@ -5002,7 +5002,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   letter-spacing: normal;
   line-height: var(--sidebar-type-subtitle-line-height);
   margin-block-start: 2px;
-  color: color-mix(in srgb, var(--muted) 55%, var(--text) 45%);
+  color: color-mix(in srgb, var(--muted) 45%, var(--text) 55%);
 }
 
 /* A Git subtitle is a marked line: the branch glyph sits immediately before the
