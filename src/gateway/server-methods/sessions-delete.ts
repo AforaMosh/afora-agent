@@ -3,14 +3,12 @@ import { normalizeOptionalString } from "@openclaw/normalization-core/string-coe
 import {
   ErrorCodes,
   errorShape,
-  sessionChangedErrorDetails,
   validateSessionsDeleteParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { managedWorktrees } from "../../agents/worktrees/service.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../../config/legacy.default-agent-owner.js";
 import { deleteSessionEntryLifecycle, type SessionEntry } from "../../config/sessions.js";
 import { rollbackPluginOwnedSessionEntryLifecycle } from "../../config/sessions/session-accessor.js";
-import { sessionEntryContinuesIdentity } from "../../config/sessions/session-entry-lineage.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../config/sessions/session-store-owner.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import {
@@ -41,6 +39,7 @@ import {
   resolveSessionWorkerPlacementMutationError,
   retireSessionWorkerPlacementBeforeMutation,
   respondSessionWorkerPlacementMutationError,
+  sessionIdentityChangedError,
   sessionLog,
 } from "./sessions-shared.js";
 import type { GatewayRequestHandlers } from "./types.js";
@@ -165,13 +164,7 @@ export const sessionDeleteHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `Session ${key} changed before deletion. Retry.`, {
-          details: sessionChangedErrorDetails(
-            sessionEntryContinuesIdentity(currentEntry, expectedSessionId)
-              ? currentEntry?.sessionId
-              : undefined,
-          ),
-        }),
+        sessionIdentityChangedError({ action: "deletion", currentEntry, expectedSessionId, key }),
       );
     };
     const rejectExpectedSessionMismatch = (entry: SessionEntry | undefined): boolean => {

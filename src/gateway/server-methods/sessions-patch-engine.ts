@@ -1,7 +1,6 @@
 import {
   ErrorCodes,
   errorShape,
-  sessionChangedErrorDetails,
   type ErrorShape,
   type SessionsPatchManyResult,
   type SessionsPatchManyTarget,
@@ -13,7 +12,6 @@ import {
   applySessionEntryCanonicalReplacements,
   type SessionEntryCanonicalReplacement,
 } from "../../config/sessions/session-accessor.sqlite-replacement-projection.js";
-import { sessionEntryContinuesIdentity } from "../../config/sessions/session-entry-lineage.js";
 import { SessionLabelOwnerIndex } from "../../config/sessions/session-entry-selection.js";
 import { disableCronJobsBoundToSessions } from "../../cron/job-session-bindings.js";
 import { formatErrorMessage } from "../../infra/errors.js";
@@ -42,7 +40,11 @@ import {
   validateSessionPatchArchiveProjection,
 } from "./sessions-patch-archive.js";
 import { persistSessionPatchModelSelection } from "./sessions-patch-model-selection.js";
-import { resolveSessionWorkerPlacementPatchError, sessionLog } from "./sessions-shared.js";
+import {
+  resolveSessionWorkerPlacementPatchError,
+  sessionIdentityChangedError,
+  sessionLog,
+} from "./sessions-shared.js";
 import type {
   GatewayClient,
   GatewayRequestContext,
@@ -98,21 +100,6 @@ function unexpectedPatchError(key: string, error: unknown): ErrorShape {
       retryable: true,
     },
   );
-}
-
-/** A mismatch means the named identity no longer holds the key. */
-function sessionChangedError(
-  key: string,
-  currentEntry: SessionEntry | undefined,
-  expectedSessionId: string | undefined,
-): ErrorShape {
-  return errorShape(ErrorCodes.INVALID_REQUEST, `Session ${key} changed before patch. Retry.`, {
-    details: sessionChangedErrorDetails(
-      sessionEntryContinuesIdentity(currentEntry, expectedSessionId)
-        ? currentEntry?.sessionId
-        : undefined,
-    ),
-  });
 }
 
 function pluginOwnershipError(params: {
@@ -415,11 +402,12 @@ async function executeSessionPatchMutations(params: {
                         ) {
                           projectedOutcomes.push({
                             ok: false,
-                            error: sessionChangedError(
-                              target.key,
-                              existingEntry,
-                              target.fullPatch.expectedSessionId,
-                            ),
+                            error: sessionIdentityChangedError({
+                              action: "patch",
+                              currentEntry: existingEntry,
+                              expectedSessionId: target.fullPatch.expectedSessionId,
+                              key: target.key,
+                            }),
                           });
                           continue;
                         }
