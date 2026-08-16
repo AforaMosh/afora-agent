@@ -124,7 +124,11 @@ suite.define(() => {
         await groupHeader.hover();
         const groupGrip = groupHeader.locator(".sidebar-session-group-drag-handle svg");
         const groupToggle = groupHeader.locator(".sidebar-session-group-toggle");
-        const groupAction = groupHeader.locator(".sidebar-session-group-actions");
+        // A grouped head carries two action buttons (new session, group menu);
+        // the ellipsis menu is the one these checks measure.
+        const groupAction = groupHeader.locator(
+          '.sidebar-session-group-actions[aria-haspopup="menu"]',
+        );
         await expect.poll(() => groupGrip.isVisible()).toBe(true);
         await expect.poll(() => groupAction.isVisible()).toBe(true);
         await expect.poll(() => groupAction.locator('circle[fill="currentColor"]').count()).toBe(3);
