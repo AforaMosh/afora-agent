@@ -78,7 +78,10 @@ function readCompletedOwnedSubagent(params: EvidenceInputs) {
   ) {
     return undefined;
   }
-  return childSessionKey;
+  return {
+    childSessionKey,
+    taskInput: normalizeOptionalString(taskRecord.task),
+  };
 }
 
 function readHandoffSections(value: unknown) {
@@ -103,11 +106,11 @@ function readHandoffSections(value: unknown) {
 export function evaluateSubagentHandoffEvidence(
   params: EvidenceInputs & { childFinalText?: unknown; parentFinalText?: unknown },
 ) {
-  const childSessionKey = readCompletedOwnedSubagent(params);
+  const completed = readCompletedOwnedSubagent(params);
   const childResult = normalizeChildResult(params.childFinalText);
   const sections = readHandoffSections(params.parentFinalText);
   if (
-    !childSessionKey ||
+    !completed ||
     !childResult ||
     isAcceptedOnlyResult(params.childFinalText) ||
     !sections ||
@@ -122,12 +125,17 @@ export function evaluateSubagentHandoffEvidence(
 export function evaluateForkedSubagentEvidence(
   params: EvidenceInputs & { contextNeedle: string; childTranscripts: unknown },
 ) {
-  const childSessionKey = readCompletedOwnedSubagent(params);
-  if (!childSessionKey || !Array.isArray(params.childTranscripts)) {
+  const completed = readCompletedOwnedSubagent(params);
+  // A nonce copied into the delegated task proves prompt injection, not inherited fork context.
+  if (
+    !completed?.taskInput ||
+    completed.taskInput.includes(params.contextNeedle) ||
+    !Array.isArray(params.childTranscripts)
+  ) {
     return undefined;
   }
   const transcript = params.childTranscripts.find(
-    (candidate) => isRecord(candidate) && candidate.sessionKey === childSessionKey,
+    (candidate) => isRecord(candidate) && candidate.sessionKey === completed.childSessionKey,
   );
   const finalText = isRecord(transcript)
     ? (normalizeOptionalString(transcript.finalText) ?? "")

@@ -1,4 +1,5 @@
 // QA Lab mock provider assistant text fixtures.
+import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
 import {
   type ResponsesInputItem,
@@ -96,8 +97,8 @@ export function readCompletedSubagentHandoffResult(allInputText: string): string
     return undefined;
   }
   try {
-    const payload = JSON.parse(childResult) as { status?: unknown };
-    if (payload?.status === "accepted") {
+    const payload: unknown = JSON.parse(childResult);
+    if (isRecord(payload) && payload.status === "accepted") {
       return undefined;
     }
   } catch {

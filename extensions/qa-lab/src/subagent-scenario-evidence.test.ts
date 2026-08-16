@@ -28,6 +28,7 @@ function validChain(requester: string, child: string, label: string) {
           requesterSessionKey: requester,
           childSessionKey: child,
           label,
+          task: "Report the visible code",
           status: "succeeded",
           deliveryStatus: "delivered",
         },
@@ -120,6 +121,17 @@ describe("subagent scenario evidence", () => {
     [
       "an undelivered task",
       { tasks: [{ ...validForkInputs().tasksPayload.tasks[0], deliveryStatus: "pending" }] },
+    ],
+    [
+      "a task containing the context marker",
+      {
+        tasks: [
+          {
+            ...validForkInputs().tasksPayload.tasks[0],
+            task: `Report ${validForkInputs().contextNeedle}`,
+          },
+        ],
+      },
     ],
   ])("rejects fork evidence with %s", (_name, tasksPayload) => {
     expect(evaluateForkedSubagentEvidence({ ...validForkInputs(), tasksPayload })).toBeUndefined();
