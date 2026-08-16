@@ -28,6 +28,7 @@ import { icons } from "./icons.ts";
 import type { SessionDataController } from "./session-data-controller.ts";
 import type { SessionPullRequestIndicatorState } from "./session-menu-work.ts";
 import type { SessionOrganizerController } from "./session-organizer-controller.ts";
+import { renderSessionOwnerChip } from "./session-owner-chip.ts";
 import {
   describeSessionPrimaryState,
   resolveSessionPrimaryState,
@@ -39,7 +40,6 @@ import {
 } from "./session-row-badges.ts";
 import { renderSessionRowEndcap } from "./session-row-endcap.ts";
 import { renderSessionRowOrigin } from "./session-row-origin.ts";
-import { renderSessionOwnerChip } from "./session-owner-chip.ts";
 import {
   renderSidebarSessionSubtitle,
   resolveSidebarSessionSubtitle,
@@ -194,12 +194,7 @@ export function renderRecentSession(params: {
         host.sessionData.presenceInstanceId,
       ).users.some((user) => user.id === ownerId && user.watchedSessions.includes(session.key))
     : undefined;
-  const ownerIndicator = renderSessionOwnerChip(
-    ownerActor,
-    "row",
-    ownerAttribution,
-    ownerViewing,
-  );
+  const ownerIndicator = renderSessionOwnerChip(ownerActor, "row", ownerAttribution, ownerViewing);
   const primaryState = resolveSessionPrimaryState(session);
   const running = primaryState.kind === "running";
   const stateDescription = describeSessionPrimaryState(primaryState);
