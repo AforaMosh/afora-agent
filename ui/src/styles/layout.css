@@ -1072,7 +1072,7 @@ html.openclaw-native-macos .shell:not(.shell--mobile-nav) .sidebar-brand {
 .sidebar-brand__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   flex: 0 0 auto;
 }
 
