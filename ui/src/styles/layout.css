@@ -2751,10 +2751,13 @@ body.update-dialog-open .sidebar-update-card__status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--text);
+}
+
+.session-row-state-badge {
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
-  color: var(--text);
 }
 
 .session-row-state-badge--incognito:has(+ .session-row-state-badge--draft) {
@@ -2764,6 +2767,8 @@ body.update-dialog-open .sidebar-update-card__status {
 .session-row-state-avatar {
   width: 16px;
   height: 16px;
+  border: 0;
+  background: transparent;
 }
 
 .session-row-state-badge {
