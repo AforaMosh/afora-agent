@@ -2027,12 +2027,12 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .provider-brand-icon.sidebar-session-catalog-provider-icon[data-provider-icon="codex"] {
-  color: #111;
+  color: oklch(0.178 0 0);
 }
 
 :root[data-theme-mode="dark"]
   .provider-brand-icon.sidebar-session-catalog-provider-icon[data-provider-icon="codex"] {
-  color: #f6f6f6;
+  color: oklch(0.973 0 0);
 }
 
 .sidebar-session-group-count {
@@ -2806,9 +2806,16 @@ body.update-dialog-open .sidebar-update-card__status {
 }
 
 .session-row-state-badge {
+  position: absolute;
+  z-index: 1;
+  right: -3px;
+  bottom: -3px;
+  width: 11px;
+  height: 11px;
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
+  box-shadow: 0 0 0 1px var(--sidebar-bg);
 }
 
 .session-row-state-badge--incognito:has(+ .session-row-state-badge--draft) {
@@ -2820,16 +2827,6 @@ body.update-dialog-open .sidebar-update-card__status {
   height: 16px;
   border: 0;
   background: transparent;
-}
-
-.session-row-state-badge {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  z-index: 1;
-  width: 11px;
-  height: 11px;
-  box-shadow: 0 0 0 1px var(--sidebar-bg);
 }
 
 .session-row-state-avatar svg {
@@ -3879,28 +3876,22 @@ openclaw-sidebar-attention {
 }
 
 .sidebar-issues-button__count {
+  position: absolute;
+  top: 3px;
+  right: 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: 999px;
+  background: var(--danger);
+  color: var(--bg);
   font-size: calc(10px * var(--control-ui-text-scale));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-}
-
-.sidebar-issues-button__count {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  background: var(--danger);
-  color: var(--bg);
   box-shadow: 0 0 0 2px var(--sidebar-bg);
 }
 
@@ -5102,7 +5093,7 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
 }
 
 .session-row-worktree-glyph {
-  width: 14px;
+  margin-left: auto;
 }
 
 .session-row-git-glyph svg {
@@ -5122,10 +5113,6 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
   height: 14px;
   fill: currentColor;
   stroke: none;
-}
-
-.session-row-worktree-glyph {
-  margin-left: auto;
 }
 
 .sidebar-session-attention__icon {
