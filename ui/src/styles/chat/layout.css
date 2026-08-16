@@ -3297,13 +3297,13 @@ button.chat-pr__diff {
 
 .agent-chat__composer-error {
   position: absolute;
-  inset: -1px -1px auto;
+  inset: auto -1px calc(100% - 1px);
   z-index: 2;
   box-sizing: border-box;
   min-height: 36px;
   padding: 8px 10px 8px 14px;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--danger) 8%, var(--chat-composer-surface));
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
   color: color-mix(in srgb, var(--danger) 78%, var(--text));
   font-size: var(--control-ui-text-sm);
   line-height: 1.35;
