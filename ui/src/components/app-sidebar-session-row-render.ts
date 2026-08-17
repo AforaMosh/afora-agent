@@ -36,6 +36,10 @@ import type { SessionPullRequestIndicatorState } from "./session-menu-work.ts";
 import type { SessionOrganizerController } from "./session-organizer-controller.ts";
 import { renderSessionRowBadges } from "./session-row-badges.ts";
 import {
+  renderSessionInformationCard,
+  SESSION_CARD_COLD_DELAY_MS,
+} from "./session-row-hover-card.ts";
+import {
   renderSidebarSessionSubtitle,
   resolveSidebarSessionSubtitle,
 } from "./session-row-subtitle.ts";
@@ -253,181 +257,199 @@ export function renderRecentSession(params: {
     requiredScope: "operator.write",
   });
   const rowDraggable = !session.isChild && groupWriteAccess.allowed;
+  const menuOpen = host.sidebarMenus.sessionMenu?.session.key === session.key;
   // Always reserve the lead so every title shares the section-label text line.
   const row = html`
-    <div
-      class=${rowClass}
-      data-session-key=${session.key}
+    <openclaw-tooltip
+      class="sidebar-hover-tooltip session-hover-tooltip"
+      delay=${SESSION_CARD_COLD_DELAY_MS}
+      placement="right"
       role=${ifDefined(listItem ? "listitem" : undefined)}
-      draggable=${rowDraggable ? "true" : "false"}
-      title=${!session.isChild && !groupWriteAccess.allowed ? groupWriteAccess.reason : nothing}
-      @dragstart=${!rowDraggable
-        ? nothing
-        : (event: DragEvent) => {
-            if (event.dataTransfer) {
-              writeSessionDragData(event.dataTransfer, session.key);
-              host.startSessionDrag(session);
-            }
-          }}
-      @dragend=${!rowDraggable
-        ? nothing
-        : () => {
-            host.finishSessionDrag();
-          }}
-      @contextmenu=${openMenuFromEvent ?? nothing}
-      @keydown=${openMenuFromEvent ?? nothing}
-      @mouseenter=${(event: MouseEvent) => startHoverMarquee(event.currentTarget as HTMLElement)}
-      @mouseleave=${(event: MouseEvent) => stopHoverMarquee(event.currentTarget as HTMLElement)}
+      ?suppressed=${menuOpen}
     >
-      <a
-        href=${session.href}
-        class="sidebar-recent-session__link"
-        draggable="false"
-        title=${title}
-        aria-current=${session.visuallyActive ? "page" : nothing}
-        aria-describedby=${[stateId, metaId].filter(Boolean).join(" ") || nothing}
-        @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}
+      <div
+        class=${rowClass}
+        data-session-key=${session.key}
+        draggable=${rowDraggable ? "true" : "false"}
+        title=${!session.isChild && !groupWriteAccess.allowed ? groupWriteAccess.reason : nothing}
+        @dragstart=${!rowDraggable
+          ? nothing
+          : (event: DragEvent) => {
+              if (event.dataTransfer) {
+                writeSessionDragData(event.dataTransfer, session.key);
+                host.startSessionDrag(session);
+              }
+            }}
+        @dragend=${!rowDraggable ? nothing : () => host.finishSessionDrag()}
+        @contextmenu=${openMenuFromEvent ?? nothing}
+        @keydown=${openMenuFromEvent ?? nothing}
+        @mouseenter=${(event: MouseEvent) => startHoverMarquee(event.currentTarget as HTMLElement)}
+        @mouseleave=${(event: MouseEvent) => stopHoverMarquee(event.currentTarget as HTMLElement)}
       >
-        <span class="sidebar-session-indicator"
-          >${leadingIndicator}
-          ${session.visibility === "draft"
-            ? html`<span class="session-row-draft-indicator" title=${t("chat.sessionSharing.draft")}
-                >👻</span
-              >`
-            : nothing}</span
+        <a
+          href=${session.href}
+          class="sidebar-recent-session__link"
+          draggable="false"
+          title=${title}
+          aria-current=${session.visuallyActive ? "page" : nothing}
+          aria-describedby=${[stateId, metaId].filter(Boolean).join(" ") || nothing}
+          @click=${(event: MouseEvent) => host.handleSessionRowClick(event, session)}
         >
-        <span class="sidebar-recent-session__text">
-          <span class="sidebar-recent-session__name hover-marquee"
-            >${session.archived
+          <span class="sidebar-session-indicator"
+            >${leadingIndicator}
+            ${session.visibility === "draft"
               ? html`<span
-                  class="sidebar-session__archive-glyph"
-                  aria-label=${t("sessionsView.archived")}
-                  title=${t("sessionsView.archived")}
-                  >${icons.archive}</span
+                  class="session-row-draft-indicator"
+                  title=${t("chat.sessionSharing.draft")}
+                  >👻</span
                 >`
-              : nothing}${label}</span
+              : nothing}</span
           >
-          <span class="sidebar-recent-session__details">
-            ${renderSidebarSessionSubtitle({ subtitle, narration })}
-            <span class="sidebar-recent-session__details-endcap">
-              ${!session.isChild && sessionHasBoard(session.key)
+          <span class="sidebar-recent-session__text">
+            <span class="sidebar-recent-session__name hover-marquee"
+              >${session.archived
                 ? html`<span
-                    class="sidebar-board-glyph"
-                    role="img"
-                    aria-label=${t("sessionsView.dashboardAvailable")}
-                    title=${t("sessionsView.dashboardAvailable")}
-                    >${icons.layoutDashboard}</span
+                    class="sidebar-session__archive-glyph"
+                    aria-label=${t("sessionsView.archived")}
+                    title=${t("sessionsView.archived")}
+                    >${icons.archive}</span
                   >`
-                : nothing}
-              <openclaw-viewer-facepile
-                .presencePayload=${host.sessionData.presencePayload}
-                .selfUserId=${host.sessionDataContext?.gateway.snapshot.selfUser?.id}
-                .selfInstanceId=${host.sessionData.presenceInstanceId}
-                .sessionKey=${session.key}
-                .excludeUserId=${renderedOwnerId}
-                .maxVisible=${3}
-                variant="session"
-              ></openclaw-viewer-facepile>
-              ${renderSessionRowBadges({
-                ...session,
-                hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
-                pullRequest: session.pullRequest ?? display?.pullRequest,
-                hasApproval: sessionHasPendingApproval(
-                  host.sessionData.approvalBadgeSnapshot(),
-                  session.key,
-                ),
-              })}
-              ${trailingIndicator === nothing
-                ? nothing
-                : html`<span class="session-row-aside">
-                    <span
-                      class="session-row-state"
-                      id=${stateId}
+                : nothing}${label}</span
+            >
+            <span class="sidebar-recent-session__details">
+              ${renderSidebarSessionSubtitle({ subtitle, narration })}
+              <span class="sidebar-recent-session__details-endcap">
+                ${!session.isChild && sessionHasBoard(session.key)
+                  ? html`<span
+                      class="sidebar-board-glyph"
                       role="img"
-                      aria-label=${trailingDescription}
-                      >${trailingIndicator}</span
-                    >
-                  </span>`}
-              ${hasTrail
-                ? html`<span class="session-row-trail" id=${metaId}
-                    >${session.runtimeMs != null
-                      ? session.hasActiveRun
-                        ? html`<openclaw-elapsed-time
-                            .startMs=${session.runtimeSampledAt! - session.runtimeMs}
-                          ></openclaw-elapsed-time>`
-                        : (formatDurationCompact(session.runtimeMs) ?? "0ms")
-                      : html`<openclaw-elapsed-time
-                          .startMs=${session.startedAt!}
-                          .endMs=${session.endedAt ?? null}
-                        ></openclaw-elapsed-time>`}</span
-                  >`
-                : nothing}
+                      aria-label=${t("sessionsView.dashboardAvailable")}
+                      title=${t("sessionsView.dashboardAvailable")}
+                      >${icons.layoutDashboard}</span
+                    >`
+                  : nothing}
+                <openclaw-viewer-facepile
+                  .presencePayload=${host.sessionData.presencePayload}
+                  .selfUserId=${host.sessionDataContext?.gateway.snapshot.selfUser?.id}
+                  .selfInstanceId=${host.sessionData.presenceInstanceId}
+                  .sessionKey=${session.key}
+                  .excludeUserId=${renderedOwnerId}
+                  .maxVisible=${3}
+                  variant="session"
+                ></openclaw-viewer-facepile>
+                ${renderSessionRowBadges({
+                  ...session,
+                  hasComposerDraft: session.hasComposerDraft === true && !session.visuallyActive,
+                  pullRequest: session.pullRequest ?? display?.pullRequest,
+                  hasApproval: sessionHasPendingApproval(
+                    host.sessionData.approvalBadgeSnapshot(),
+                    session.key,
+                  ),
+                })}
+                ${trailingIndicator === nothing
+                  ? nothing
+                  : html`<span class="session-row-aside">
+                      <span
+                        class="session-row-state"
+                        id=${stateId}
+                        role="img"
+                        aria-label=${trailingDescription}
+                        >${trailingIndicator}</span
+                      >
+                    </span>`}
+                ${hasTrail
+                  ? html`<span class="session-row-trail" id=${metaId}
+                      >${session.runtimeMs != null
+                        ? session.hasActiveRun
+                          ? html`<openclaw-elapsed-time
+                              .startMs=${session.runtimeSampledAt! - session.runtimeMs}
+                            ></openclaw-elapsed-time>`
+                          : (formatDurationCompact(session.runtimeMs) ?? "0ms")
+                        : html`<openclaw-elapsed-time
+                            .startMs=${session.startedAt!}
+                            .endMs=${session.endedAt ?? null}
+                          ></openclaw-elapsed-time>`}</span
+                    >`
+                  : nothing}
+              </span>
             </span>
           </span>
-        </span>
-      </a>
-      ${session.childSessionKeys.length > 0
-        ? html`<button
-            class="sidebar-child-session-toggle ${session.runningChildCount > 0
-              ? "sidebar-child-session-toggle--running"
-              : session.failedChildCount > 0
-                ? "sidebar-child-session-toggle--failed"
-                : ""}"
-            type="button"
-            data-child-session-toggle=${session.key}
-            aria-expanded=${String(childrenExpanded)}
-            aria-label=${t(
-              childrenExpanded
-                ? "sessionsView.hideChildSessions"
-                : "sessionsView.showChildSessions",
-              { count: String(session.childSessionKeys.length), session: label },
-            )}
-            @click=${() => host.toggleSessionChildren(session)}
-          >
-            <span class="sidebar-child-session-toggle__icon" aria-hidden="true"
-              >${childrenExpanded ? icons.chevronDown : icons.chevronRight}</span
+        </a>
+        ${session.childSessionKeys.length > 0
+          ? html`<button
+              class="sidebar-child-session-toggle ${session.runningChildCount > 0
+                ? "sidebar-child-session-toggle--running"
+                : session.failedChildCount > 0
+                  ? "sidebar-child-session-toggle--failed"
+                  : ""}"
+              type="button"
+              data-child-session-toggle=${session.key}
+              aria-expanded=${String(childrenExpanded)}
+              aria-label=${t(
+                childrenExpanded
+                  ? "sessionsView.hideChildSessions"
+                  : "sessionsView.showChildSessions",
+                { count: String(session.childSessionKeys.length), session: label },
+              )}
+              @click=${() => host.toggleSessionChildren(session)}
             >
-            ${childrenExpanded
-              ? nothing
-              : html`<span class="sidebar-child-session-toggle__count"
-                  >${session.childSessionKeys.length}</span
-                >`}
-          </button>`
-        : nothing}
+              <span class="sidebar-child-session-toggle__icon" aria-hidden="true"
+                >${childrenExpanded ? icons.chevronDown : icons.chevronRight}</span
+              >
+              ${childrenExpanded
+                ? nothing
+                : html`<span class="sidebar-child-session-toggle__count"
+                    >${session.childSessionKeys.length}</span
+                  >`}
+            </button>`
+          : nothing}
+        ${session.isChild
+          ? nothing
+          : html`<span class="sidebar-recent-session__aside session-row-aside">
+              <span class="session-row-actions">
+                <button
+                  class="session-action session-action--pin"
+                  data-sidebar-session-pin="true"
+                  type="button"
+                  title=${pinAccess.allowed ? pinLabel : pinAccess.reason}
+                  aria-label=${pinLabel}
+                  ?disabled=${!pinAccess.allowed}
+                  @click=${() => host.toggleSessionPin(session)}
+                >
+                  ${icons.pin}
+                </button>
+                <button
+                  class="session-action"
+                  data-session-menu="true"
+                  type="button"
+                  title=${menuLabel}
+                  aria-label=${menuLabel}
+                  aria-haspopup="menu"
+                  aria-expanded=${String(
+                    host.sidebarMenus.sessionMenu?.session.key === session.key,
+                  )}
+                  @click=${(event: MouseEvent) => {
+                    event.stopPropagation();
+                    const trigger = event.currentTarget as HTMLElement;
+                    host.toggleSessionMenu(session, trigger);
+                  }}
+                >
+                  ${icons.moreHorizontal}
+                </button>
+              </span>
+            </span>`}
+      </div>
       ${session.isChild
         ? nothing
-        : html`<span class="sidebar-recent-session__aside session-row-aside">
-            <span class="session-row-actions">
-              <button
-                class="session-action session-action--pin"
-                data-sidebar-session-pin="true"
-                type="button"
-                title=${pinAccess.allowed ? pinLabel : pinAccess.reason}
-                aria-label=${pinLabel}
-                ?disabled=${!pinAccess.allowed}
-                @click=${() => host.toggleSessionPin(session)}
-              >
-                ${icons.pin}
-              </button>
-              <button
-                class="session-action"
-                data-session-menu="true"
-                type="button"
-                title=${menuLabel}
-                aria-label=${menuLabel}
-                aria-haspopup="menu"
-                aria-expanded=${String(host.sidebarMenus.sessionMenu?.session.key === session.key)}
-                @click=${(event: MouseEvent) => {
-                  event.stopPropagation();
-                  const trigger = event.currentTarget as HTMLElement;
-                  host.toggleSessionMenu(session, trigger);
-                }}
-              >
-                ${icons.moreHorizontal}
-              </button>
-            </span>
-          </span>`}
-    </div>
+        : renderSessionInformationCard({
+            session,
+            title: label,
+            subtitle,
+            presencePayload: host.sessionData.presencePayload,
+            selfUserId: host.sessionDataContext?.gateway.snapshot.selfUser?.id,
+            selfInstanceId: host.sessionData.presenceInstanceId,
+          })}
+    </openclaw-tooltip>
   `;
   // Marquee state mutates the row DOM; keying prevents cross-session reuse.
   return keyed(session.key, row);

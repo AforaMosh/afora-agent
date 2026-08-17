@@ -3474,6 +3474,85 @@ openclaw-tooltip.sidebar-hover-tooltip {
   --openclaw-tooltip-max-width: min(340px, calc(100vw - 24px));
 }
 
+openclaw-tooltip.session-hover-tooltip {
+  --openclaw-tooltip-max-width: min(320px, calc(100vw - 24px));
+  --openclaw-tooltip-padding: 12px;
+  --openclaw-tooltip-arrow-size: 0;
+}
+
+.session-hover-card {
+  width: 296px;
+}
+
+.session-hover-card__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.session-hover-card__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--text-strong);
+  font-weight: 550;
+}
+
+.session-hover-card__age {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.session-hover-card__body {
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border-strong) 68%, transparent);
+}
+
+.session-hover-card__row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+}
+
+.session-hover-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.session-hover-card__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.session-hover-card__text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-hover-card__label {
+  flex: none;
+  color: var(--muted);
+}
+
+.session-hover-card__value {
+  overflow-wrap: anywhere;
+}
+
 .sidebar-hover-card {
   width: min(320px, calc(100vw - 44px));
   max-width: 100%;

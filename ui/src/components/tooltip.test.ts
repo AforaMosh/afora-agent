@@ -5,6 +5,9 @@ import "./tooltip.ts";
 
 type TooltipElement = HTMLElement & {
   content: string;
+  delay?: number;
+  placement?: string;
+  suppressed?: boolean;
   readonly updateComplete: Promise<boolean>;
 };
 
@@ -191,6 +194,39 @@ describe("openclaw-tooltip", () => {
     expectOpenCount(0);
     vi.advanceTimersByTime(1);
     expectOpenCount(1);
+  });
+
+  it("supports per-trigger delay and placement for rich cards", async () => {
+    const provider = createProvider();
+    const { tooltip, trigger } = createRichTooltip("Session facts");
+    tooltip.delay = 400;
+    tooltip.placement = "right";
+    provider.append(tooltip);
+    document.body.append(provider);
+    await tooltip.updateComplete;
+
+    hoverTrigger(trigger);
+    vi.advanceTimersByTime(399);
+    expectOpenCount(0);
+    vi.advanceTimersByTime(1);
+    expectOpenCount(1);
+    expect(webAwesomeTooltip(tooltip)?.getAttribute("placement")).toBe("right");
+  });
+
+  it("closes and stays closed while another surface suppresses hover", async () => {
+    const { tooltip, trigger } = createRichTooltip("Session facts");
+    document.body.append(tooltip);
+    await tooltip.updateComplete;
+
+    focusTrigger(trigger);
+    expectOpenCount(1);
+    tooltip.suppressed = true;
+    await tooltip.updateComplete;
+    expectOpenCount(0);
+
+    hoverTrigger(trigger);
+    vi.runAllTimers();
+    expectOpenCount(0);
   });
 
   it("suppresses a tooltip that repeats fully visible trigger text", async () => {

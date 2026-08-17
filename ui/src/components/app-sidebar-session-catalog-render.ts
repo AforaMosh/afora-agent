@@ -31,6 +31,10 @@ import { sidebarSessionStateId } from "./app-sidebar-session-types.ts";
 import { icons } from "./icons.ts";
 import { hasProviderBrandIcon, renderProviderBrandIcon } from "./provider-icon.ts";
 import { renderSessionRowBadges } from "./session-row-badges.ts";
+import {
+  renderCatalogSessionInformationCard,
+  SESSION_CARD_COLD_DELAY_MS,
+} from "./session-row-hover-card.ts";
 
 type SessionCatalogGroupsParams = {
   catalogs: readonly SessionCatalog[];
@@ -453,79 +457,92 @@ function renderCatalogSessionRow(
       (trigger, x, y) => openMenu(x, y, trigger ?? undefined),
     );
   return html`
-    <div
-      class="sidebar-recent-session session-row-host ${active
-        ? "sidebar-recent-session--active"
-        : ""} ${projectChild ? "sidebar-recent-session--catalog-project-child" : ""} ${running
-        ? "session-row-host--running"
-        : ""}"
-      data-session-key=${key}
+    <openclaw-tooltip
+      class="sidebar-hover-tooltip session-hover-tooltip"
+      delay=${SESSION_CARD_COLD_DELAY_MS}
+      placement="right"
       role="listitem"
-      @contextmenu=${openMenuFromEvent}
-      @keydown=${openMenuFromEvent}
     >
-      <a
-        href=${href}
-        class="sidebar-recent-session__link"
-        title=${[`${label} · ${host.label}`, stateDescription].filter(Boolean).join(" · ")}
-        aria-current=${active ? "page" : nothing}
-        aria-describedby=${stateId ?? nothing}
-        @click=${(event: MouseEvent) => {
-          if (!shouldHandleNavigationClick(event)) {
-            return;
-          }
-          event.preventDefault();
-          if (params.catalogOpenTarget === "terminal" && canOpenTerminal) {
-            openTerminal();
-          } else {
-            params.onNavigate?.(routeId, navigation);
-          }
-        }}
+      <div
+        class="sidebar-recent-session session-row-host ${active
+          ? "sidebar-recent-session--active"
+          : ""} ${projectChild ? "sidebar-recent-session--catalog-project-child" : ""} ${running
+          ? "session-row-host--running"
+          : ""}"
+        data-session-key=${key}
+        @contextmenu=${openMenuFromEvent}
+        @keydown=${openMenuFromEvent}
       >
-        <span class="sidebar-session-indicator"></span>
-        <span class="sidebar-recent-session__text">
-          <span class="sidebar-recent-session__name hover-marquee">${label}</span>
-          <span class="sidebar-recent-session__details">
-            <span class="sidebar-recent-session__details-endcap">
-              ${renderSessionRowBadges({
-                hasAutomation: false,
-                pullRequest: session.pullRequest,
-              })}
-              ${running
-                ? html`<span class="session-row-aside">
-                    <span
-                      class="session-row-state"
-                      id=${stateId}
-                      role="img"
-                      aria-label=${stateDescription}
-                      >${renderSessionRunSpinner(false)}</span
-                    >
-                  </span>`
-                : nothing}
+        <a
+          href=${href}
+          class="sidebar-recent-session__link"
+          title=${[`${label} · ${host.label}`, stateDescription].filter(Boolean).join(" · ")}
+          aria-current=${active ? "page" : nothing}
+          aria-describedby=${stateId ?? nothing}
+          @click=${(event: MouseEvent) => {
+            if (!shouldHandleNavigationClick(event)) {
+              return;
+            }
+            event.preventDefault();
+            if (params.catalogOpenTarget === "terminal" && canOpenTerminal) {
+              openTerminal();
+            } else {
+              params.onNavigate?.(routeId, navigation);
+            }
+          }}
+        >
+          <span class="sidebar-session-indicator"></span>
+          <span class="sidebar-recent-session__text">
+            <span class="sidebar-recent-session__name hover-marquee">${label}</span>
+            <span class="sidebar-recent-session__details">
+              <span class="sidebar-recent-session__details-endcap">
+                ${renderSessionRowBadges({
+                  hasAutomation: false,
+                  pullRequest: session.pullRequest,
+                })}
+                ${running
+                  ? html`<span class="session-row-aside">
+                      <span
+                        class="session-row-state"
+                        id=${stateId}
+                        role="img"
+                        aria-label=${stateDescription}
+                        >${renderSessionRunSpinner(false)}</span
+                      >
+                    </span>`
+                  : nothing}
+              </span>
             </span>
           </span>
+        </a>
+        <span class="sidebar-recent-session__aside session-row-aside">
+          <span class="session-row-actions">
+            <button
+              class="session-action"
+              data-catalog-session-menu="true"
+              type="button"
+              title=${t("chat.sidebar.openSessionMenu")}
+              aria-label=${t("chat.sidebar.openSessionMenu")}
+              aria-haspopup="menu"
+              @click=${(event: MouseEvent) => {
+                event.stopPropagation();
+                const trigger = event.currentTarget as HTMLElement;
+                const rect = trigger.getBoundingClientRect();
+                openMenu(rect.right, rect.bottom + 4, trigger);
+              }}
+            >
+              ${icons.moreHorizontal}
+            </button>
+          </span>
         </span>
-      </a>
-      <span class="sidebar-recent-session__aside session-row-aside">
-        <span class="session-row-actions">
-          <button
-            class="session-action"
-            data-catalog-session-menu="true"
-            type="button"
-            title=${t("chat.sidebar.openSessionMenu")}
-            aria-label=${t("chat.sidebar.openSessionMenu")}
-            aria-haspopup="menu"
-            @click=${(event: MouseEvent) => {
-              event.stopPropagation();
-              const trigger = event.currentTarget as HTMLElement;
-              const rect = trigger.getBoundingClientRect();
-              openMenu(rect.right, rect.bottom + 4, trigger);
-            }}
-          >
-            ${icons.moreHorizontal}
-          </button>
-        </span>
-      </span>
-    </div>
+      </div>
+      ${renderCatalogSessionInformationCard({
+        title: label,
+        age: meta,
+        cwd: session.cwd,
+        branch: session.gitBranch,
+        pullRequest: session.pullRequest,
+      })}
+    </openclaw-tooltip>
   `;
 }
