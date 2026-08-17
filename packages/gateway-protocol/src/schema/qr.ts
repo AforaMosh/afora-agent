@@ -180,6 +180,7 @@ function validatePngImageData(
     compressedOffset += chunk.length;
   }
 
+  // SAFETY: supported Node and Bun runtimes expose the typed built-in module API here.
   const runtimeProcess = (
     globalThis as typeof globalThis & {
       process?: { getBuiltinModule?: (id: "node:zlib") => PngZlib };
