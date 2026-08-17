@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { BUNDLED_PLUGIN_TEST_GLOB, bundledPluginFile } from "openclaw/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
+import { withEnv } from "../src/test-utils/env.js";
 import { cleanupTempDirs, makeTempDir } from "./helpers/temp-dir.js";
 import { normalizeConfigPath, normalizeConfigPaths } from "./helpers/vitest-config-paths.js";
 import { createAcpVitestConfig } from "./vitest/vitest.acp.config.ts";
@@ -624,11 +625,10 @@ describe("scoped vitest configs", () => {
     expect(processTestConfig.env).toMatchObject({
       ESBUILD_WORKER_THREADS: "0",
     });
-    expectThreadedIsolatedRunner(
-      createCliProcessVitestConfig({
-        OPENCLAW_VITEST_SHARD_NAME: "agentic-cli-process-run-loop",
-      }),
-    );
+    withEnv({ OPENCLAW_VITEST_SHARD_NAME: "agentic-cli-process-run-loop" }, () => {
+      expectForkedIsolatedRunner(createCliProcessVitestConfig({}));
+      expectThreadedIsolatedRunner(createCliProcessVitestConfig());
+    });
   });
 
   it("keeps native SQLite runtime config tests in forked workers", () => {
