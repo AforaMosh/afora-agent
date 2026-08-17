@@ -90,17 +90,13 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
   }
 
   async listSessionGroupFolders(path?: string): Promise<FsListDirResult> {
-    const gateway = this.context?.gateway;
-    const client = gateway?.snapshot.client;
-    if (!gateway || gateway.snapshot.phase !== "connected" || !client) {
+    const sessions = this.context?.sessions;
+    const scope = sessions?.captureConnectionScope();
+    if (!sessions || !scope) {
       throw new Error(t("sessionsView.groupDefaultsStale"));
     }
-    const result = await client.request<FsListDirResult>("fs.listDir", path ? { path } : {});
-    if (
-      this.context?.gateway !== gateway ||
-      gateway.snapshot.phase !== "connected" ||
-      gateway.snapshot.client !== client
-    ) {
+    const result = await scope.client.request<FsListDirResult>("fs.listDir", path ? { path } : {});
+    if (this.context?.sessions !== sessions || !sessions.isConnectionScopeCurrent(scope)) {
       throw new Error(t("sessionsView.groupDefaultsStale"));
     }
     return result;
@@ -116,20 +112,16 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
           ? "not_git"
           : "unavailable";
     }
-    const gateway = this.context?.gateway;
-    const client = gateway?.snapshot.client;
-    if (!gateway || gateway.snapshot.phase !== "connected" || !client) {
+    const sessions = this.context?.sessions;
+    const scope = sessions?.captureConnectionScope();
+    if (!sessions || !scope) {
       throw new Error(t("sessionsView.groupDefaultsStale"));
     }
-    const result = await client.request<WorktreesBranchesResult>("worktrees.branches", {
+    const result = await scope.client.request<WorktreesBranchesResult>("worktrees.branches", {
       repoRoot: requestedPath,
       includeRepositoryStatus: true,
     });
-    if (
-      this.context?.gateway !== gateway ||
-      gateway.snapshot.phase !== "connected" ||
-      gateway.snapshot.client !== client
-    ) {
+    if (this.context?.sessions !== sessions || !sessions.isConnectionScopeCurrent(scope)) {
       throw new Error(t("sessionsView.groupDefaultsStale"));
     }
     return result.repositoryStatus === "git" || result.repositoryStatus === "not_git"
