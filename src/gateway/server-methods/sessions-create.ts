@@ -9,6 +9,8 @@ import {
   ErrorCodes,
   errorShape,
   missingScopeErrorShape,
+  type SessionStartupStage,
+  type SessionStartupState,
   validateSessionsCreateParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
@@ -18,6 +20,7 @@ import { slugifyWorktreeTitle } from "../../agents/worktrees/name.js";
 import { managedWorktrees, WorktreeRepositoryError } from "../../agents/worktrees/service.js";
 import { resolveAgentMainSessionKey } from "../../config/sessions/main-session.js";
 import { sessionEntryForkedFromParent } from "../../config/sessions/session-entry-lineage.js";
+import { patchSessionEntryCore } from "../../config/sessions/session-accessor.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { isPathInside } from "../../infra/path-guards.js";
 import {
@@ -26,6 +29,7 @@ import {
   resolveProjectRegistry,
 } from "../../projects/project-registry.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
+import { runExclusiveSessionLifecycleMutation } from "../../sessions/session-lifecycle-admission.js";
 import { resolveUserPath } from "../../utils.js";
 import { prepareWorktreeSessionTitle } from "../dashboard-session-title.js";
 import { ADMIN_SCOPE, authorizeOperatorScopesForRequiredScope } from "../method-scopes.js";
@@ -282,6 +286,9 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
     const sessionExecCwd = requestedExecNode ? requestedCwd : undefined;
     let sessionCwd = requestedExecNode ? undefined : (projectRoot ?? requestedCwd);
     let prepareLifecycle: Parameters<typeof createGatewaySession>[0]["prepareLifecycle"];
+    let reportStartupStage: ((stage: SessionStartupStage) => Promise<void>) | undefined;
+    let startupOperationId: string | undefined;
+    const startupStartedAt = Date.now();
     if (sessionCwd && !requestedExecNode && (requestedProjectId || p.worktree !== true)) {
       const targetAgentId = normalizeAgentId(
         sessionAgentId ??
@@ -356,6 +363,9 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
       const target = resolveGatewaySessionStoreTarget({ cfg, key: targetKey, agentId });
       sessionKey = preservesUnspecifiedKey ? undefined : targetKey;
       sessionAgentId = target.agentId;
+      if (!loadGatewaySessionEntryReadOnly(target.canonicalKey, { agentId: target.agentId }).entry) {
+        startupOperationId = randomUUID();
+      }
       const workspace =
         projectRoot ?? requestedCwd ?? resolveAgentWorkspaceDir(cfg, target.agentId);
       // Subdirectory workspaces are valid: the worktree service resolves the repo root
@@ -448,7 +458,10 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
               // Checkout hooks and .openclaw/worktree-setup.sh run repo code; keep them
               // admin-only so this write-scoped path cannot execute gated repo scripts.
               runSetupScript: scopes.includes(ADMIN_SCOPE),
-              ...(commitGuard ? { commitGuard } : {}),
+              onStage: async (stage) => {
+                await reportStartupStage?.(stage);
+              },
+              ...(!startupOperationId && commitGuard ? { commitGuard } : {}),
             });
             provisioned = true;
           }
@@ -532,6 +545,18 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
     if (!authority.ensureActive()) {
       return;
     }
+    const sessionStartupState: Extract<SessionStartupState, { status: "initializing" }> | undefined =
+      startupOperationId
+        ? {
+            kind: "managed-worktree",
+            status: "initializing",
+            operationId: startupOperationId,
+            stage: "queued",
+            startedAt: startupStartedAt,
+            updatedAt: startupStartedAt,
+            ...(initialMessage ? { initialTurn: { message: initialMessage } } : {}),
+          }
+        : undefined;
     const created = await createGatewaySession({
       cfg,
       key: sessionKey,
@@ -557,7 +582,8 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
             }
           : undefined,
       spawnedCwd: p.worktree === true ? undefined : sessionCwd,
-      prepareLifecycle,
+      prepareLifecycle: startupOperationId ? undefined : prepareLifecycle,
+      ...(sessionStartupState ? { startupState: sessionStartupState } : {}),
       onLifecycleCleanupError: (error) => {
         sessionLog.warn(
           `failed to finalize session worktree lifecycle: ${formatErrorMessage(error)}`,
@@ -579,54 +605,51 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
       loadGatewayModelCatalog: () =>
         context.loadGatewayModelCatalog({ agentId: modelCatalogAgentId }),
       ...(commitGuard ? { commitGuard } : {}),
-      afterCreate: async ({ key, agentId, entry, storePath }) => {
-        // Session persistence already committed under the guard. Closure after
-        // that point may suppress follow-on work, but cannot roll back the session.
-        if (!authority.hasActive()) {
-          return;
-        }
-        if (await worktreeTitle?.persist(agentId, entry, key, storePath)) {
-          emitSessionsChanged(context, { sessionKey: key, agentId, reason: "chat.title" });
-        }
-        await captureCreatedSessionDiffBaseline({ key, agentId, cfg, entry, storePath });
-        if (hasInitialTurn) {
+      afterCreate: startupOperationId
+        ? undefined
+        : async ({ key, agentId, entry, storePath }) => {
           if (!authority.hasActive()) {
             return;
           }
-          messageSeq =
-            (await readSessionMessageCountAsync({
-              agentId,
-              sessionEntry: entry,
-              sessionId: entry.sessionId,
-              sessionKey: key,
-              storePath,
-            })) + 1;
-          await expectDefined(
-            chatHandlers["chat.send"],
-            "chat.send handler",
-          )({
-            req,
-            params: {
-              sessionKey: key,
-              agentId,
-              message: initialMessage ?? "",
-              idempotencyKey: randomUUID(),
-              ...(initialAttachments ? { attachments: initialAttachments } : {}),
-            },
-            respond: (ok, payload, error, meta) => {
-              if (ok && payload && typeof payload === "object") {
-                runPayload = payload as Record<string, unknown>;
-              } else {
-                runError = error;
-              }
-              runMeta = meta;
-            },
-            context,
-            client,
-            isWebchatConnect,
-          });
-        }
-      },
+          if (await worktreeTitle?.persist(agentId, entry, key, storePath)) {
+            emitSessionsChanged(context, { sessionKey: key, agentId, reason: "chat.title" });
+          }
+          await captureCreatedSessionDiffBaseline({ key, agentId, cfg, entry, storePath });
+          if (hasInitialTurn) {
+            if (!authority.hasActive()) {
+              return;
+            }
+            messageSeq =
+              (await readSessionMessageCountAsync({
+                agentId,
+                sessionEntry: entry,
+                sessionId: entry.sessionId,
+                sessionKey: key,
+                storePath,
+              })) + 1;
+            await expectDefined(chatHandlers["chat.send"], "chat.send handler")({
+              req,
+              params: {
+                sessionKey: key,
+                agentId,
+                message: initialMessage ?? "",
+                idempotencyKey: randomUUID(),
+                ...(initialAttachments ? { attachments: initialAttachments } : {}),
+              },
+              respond: (ok, payload, error, meta) => {
+                if (ok && payload && typeof payload === "object") {
+                  runPayload = payload as Record<string, unknown>;
+                } else {
+                  runError = error;
+                }
+                runMeta = meta;
+              },
+              context,
+              client,
+              isWebchatConnect,
+            });
+          }
+        },
     }).catch((error: unknown) => authority.handleClosedError(error));
     if (!created) {
       return;
@@ -636,6 +659,191 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
       return;
     }
     registerCreatedSessionCategory(normalizeOptionalString(p.category), context);
+    let startupAccepted = false;
+    let finalizedStartupEntry: typeof created.entry | undefined;
+    if (startupOperationId && prepareLifecycle) {
+      const createdStartupEntry = created.entry;
+      const startupStorePath = resolveGatewaySessionStoreTarget({
+        cfg,
+        key: created.key,
+        agentId: created.agentId,
+      }).storePath;
+      const updateStartup = async (patch: Partial<SessionStartupState>) => {
+        const updated = await patchSessionEntryCore(
+          {
+            agentId: created.agentId,
+            sessionKey: created.key,
+            storePath: startupStorePath,
+          },
+          (entry) => {
+            if (
+              entry.sessionId !== createdStartupEntry.sessionId ||
+              entry.lifecycleRevision !== createdStartupEntry.lifecycleRevision ||
+              entry.startupState?.operationId !== startupOperationId
+            ) {
+              return null;
+            }
+            return { startupState: { ...entry.startupState, ...patch } as SessionStartupState };
+          },
+          { preserveActivity: true },
+        );
+        if (updated?.startupState?.operationId === startupOperationId) {
+          emitSessionsChanged(context, {
+            sessionKey: created.key,
+            agentId: created.agentId,
+            reason: "create",
+          });
+          return true;
+        }
+        return false;
+      };
+      reportStartupStage = async (stage) => {
+        await updateStartup({ stage, updatedAt: Date.now() });
+      };
+      await runExclusiveSessionLifecycleMutation({
+        targets: [
+          {
+            scope: startupStorePath,
+            identities: [created.key, createdStartupEntry.sessionId],
+          },
+        ],
+        run: async () => {
+          let prepared: Awaited<ReturnType<NonNullable<typeof prepareLifecycle>>> | undefined;
+          try {
+            const current = loadGatewaySessionEntryReadOnly(created.key, {
+              agentId: created.agentId,
+            }).entry;
+            if (
+              current?.sessionId !== createdStartupEntry.sessionId ||
+              current.lifecycleRevision !== createdStartupEntry.lifecycleRevision ||
+              current.startupState?.operationId !== startupOperationId
+            ) {
+              return;
+            }
+            respond(
+              true,
+              {
+                ok: true,
+                key: created.key,
+                sessionId: created.entry.sessionId,
+                entry: created.entry,
+                resolved: created.resolved,
+                runStarted: false,
+                startupState: created.entry.startupState,
+              },
+              undefined,
+            );
+            startupAccepted = true;
+            emitSessionsChanged(context, {
+              sessionKey: created.key,
+              agentId: created.agentId,
+              reason: "create",
+            });
+            await reportStartupStage("preparing");
+            prepared = await prepareLifecycle({
+              agentId: created.agentId,
+              entry: createdStartupEntry,
+              key: created.key,
+              storePath: startupStorePath,
+              titleModelSelection: resolveCreateTitleEntry(
+                cfg,
+                created.agentId,
+                catalogTarget?.target ?? requestedModel,
+              ),
+            });
+            if (!prepared.ok) {
+              throw new Error(prepared.error.message);
+            }
+            const finalized = await patchSessionEntryCore(
+              {
+                agentId: created.agentId,
+                sessionKey: created.key,
+                storePath: startupStorePath,
+              },
+              (entry) => {
+                if (
+                  entry.sessionId !== createdStartupEntry.sessionId ||
+                  entry.lifecycleRevision !== createdStartupEntry.lifecycleRevision ||
+                  entry.startupState?.operationId !== startupOperationId
+                ) {
+                  return null;
+                }
+                const { startupState: _startupState, initializationPending: _pending, ...next } =
+                  entry;
+                return {
+                  ...next,
+                  spawnedCwd: prepared.value.spawnedCwd,
+                  worktree: prepared.value.worktree,
+                };
+              },
+              { preserveActivity: true, replaceEntry: true },
+            );
+            if (!finalized || finalized.startupState) {
+              await prepared.value.rollback?.();
+              return;
+            }
+            emitSessionsChanged(context, {
+              sessionKey: created.key,
+              agentId: created.agentId,
+              reason: "create",
+            });
+            finalizedStartupEntry = finalized;
+          } catch (error) {
+            const currentStage =
+              loadGatewaySessionEntryReadOnly(created.key, { agentId: created.agentId }).entry
+                ?.startupState?.stage ?? "preparing";
+            await updateStartup({
+              status: "failed",
+              stage: currentStage,
+              updatedAt: Date.now(),
+              error: formatErrorMessage(error).slice(0, 512),
+              retryable: false,
+            });
+          }
+        },
+      }).catch((error: unknown) => {
+        sessionLog.warn(`session startup lifecycle failed: ${formatErrorMessage(error)}`);
+      });
+      if (finalizedStartupEntry) {
+        if (
+          await worktreeTitle?.persist(
+            created.agentId,
+            finalizedStartupEntry,
+            created.key,
+            startupStorePath,
+          )
+        ) {
+          emitSessionsChanged(context, {
+            sessionKey: created.key,
+            agentId: created.agentId,
+            reason: "chat.title",
+          });
+        }
+        await captureCreatedSessionDiffBaseline({
+          key: created.key,
+          agentId: created.agentId,
+          cfg,
+          entry: finalizedStartupEntry,
+          storePath: startupStorePath,
+        });
+        if (hasInitialTurn) {
+          await expectDefined(chatHandlers["chat.send"], "chat.send handler")({
+            req,
+            params: {
+              sessionKey: created.key,
+              agentId: created.agentId,
+              message: initialMessage ?? "",
+              idempotencyKey: startupOperationId,
+              ...(initialAttachments ? { attachments: initialAttachments } : {}),
+            },
+            respond: () => undefined,
+            context,
+            client,
+            isWebchatConnect,
+          });
+        }
+      }
+    }
     if (created.resetExisting) {
       await captureCreatedSessionDiffBaseline({
         key: created.key,
@@ -678,6 +886,10 @@ export const sessionCreateHandlers: GatewayRequestHandlers = {
         agentId: created.agentId,
         reason: "new",
       });
+      return;
+    }
+
+    if (startupAccepted) {
       return;
     }
 

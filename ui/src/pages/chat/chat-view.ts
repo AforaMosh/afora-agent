@@ -33,7 +33,11 @@ import type { ProviderUsageDisplayProps } from "../../lib/provider-quota-summary
 import type { SessionToolOverrides } from "../../lib/sessions/patch.ts";
 import type { UiSessionDefaultsHost } from "../../lib/sessions/session-key.ts";
 import type { ChatRunStartupStatus } from "./chat-run-startup.ts";
-import { type ChatCloudStartupNoticeProps, renderChatViewNotices } from "./chat-view-notices.ts";
+import {
+  type ChatCloudStartupNoticeProps,
+  type ChatWorktreeStartupNoticeProps,
+  renderChatViewNotices,
+} from "./chat-view-notices.ts";
 import { createChatAttachmentDropHandlers } from "./components/chat-attachments.ts";
 import type { BackgroundTasksProps } from "./components/chat-background-tasks.types.ts";
 import type {
@@ -74,7 +78,8 @@ type ChatReplyTarget = {
   sourceMessageId?: string | null;
 };
 export type ChatProps = ChatTaskSuggestionTrayProps &
-  ChatCloudStartupNoticeProps & {
+  ChatCloudStartupNoticeProps &
+  ChatWorktreeStartupNoticeProps & {
     transcript: ChatTranscriptController;
     paneId: string;
     sessionKey: string;

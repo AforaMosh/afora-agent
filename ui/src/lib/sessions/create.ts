@@ -5,6 +5,7 @@ export type SessionCreateOutcome = {
   key: string;
   initialRun:
     | { status: "idle" }
+    | { status: "initializing"; operationId: string }
     | { status: "started"; runId?: string; messageSeq?: number }
     | { status: "rejected"; error: string };
 };
@@ -85,6 +86,12 @@ export async function requestSessionCreate(
         status: "rejected",
         error: message || "The session was created, but its first message could not be sent.",
       },
+    };
+  }
+  if (result.startupState?.status === "initializing") {
+    return {
+      key,
+      initialRun: { status: "initializing", operationId: result.startupState.operationId },
     };
   }
   return { key, initialRun: { status: "idle" } };

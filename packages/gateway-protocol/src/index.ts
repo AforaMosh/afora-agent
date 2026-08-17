@@ -18,6 +18,8 @@ export {
   type SessionCreatedActor,
   type SessionRow,
   type SessionRunStatus,
+  type SessionStartupStage,
+  type SessionStartupState,
   type SessionToolOverrides,
 } from "./schema/sessions-row.js";
 export * from "./schema/session-classification.js";

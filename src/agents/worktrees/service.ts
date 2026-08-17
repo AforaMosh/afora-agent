@@ -589,6 +589,7 @@ export class ManagedWorktreeService {
   }
 
   async create(params: CreateManagedWorktreeParams): Promise<ManagedWorktreeRecord> {
+    await params.onStage?.("preparing");
     const repository = await resolveRepository(params.repoRoot);
     if (params.ownerId) {
       const ownerKind = params.ownerKind ?? "manual";
@@ -699,7 +700,9 @@ export class ManagedWorktreeService {
     if (branchExists.code !== 1) {
       throw commandError("git show-ref --verify", branchExists);
     }
-    const base = await resolveWorktreeBase(repository.repoRoot, params.baseRef);
+    const base = await resolveWorktreeBase(repository.repoRoot, params.baseRef, async () =>
+      await params.onStage?.("fetching-base"),
+    );
     params.commitGuard?.();
     await fs.mkdir(root, { recursive: true });
     let gitBase = base.gitOperand;
@@ -715,6 +718,7 @@ export class ManagedWorktreeService {
       worktreePath,
       gitBase,
     ];
+    await params.onStage?.("checking-out");
     let added = await runGit(repository.repoRoot, worktreeAddArgs());
     if (added.code !== 0 && base.remote) {
       if (!(await canResetFailedWorktreeAdd(repository.repoRoot, worktreePath, branch, added))) {
@@ -730,8 +734,10 @@ export class ManagedWorktreeService {
     }
     let provisionedPaths: string[];
     try {
+      await params.onStage?.("provisioning-files");
       provisionedPaths = await provisionIncludedFiles(repository.sourceRoot, worktreePath);
       if (runRepositorySetup) {
+        await params.onStage?.("running-setup");
         await runSetupScript(repository.sourceRoot, worktreePath);
       }
       params.commitGuard?.();

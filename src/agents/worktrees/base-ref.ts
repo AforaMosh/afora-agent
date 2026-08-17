@@ -9,6 +9,7 @@ type ResolvedWorktreeBase = {
 export async function resolveWorktreeBase(
   repoRoot: string,
   baseRef?: string,
+  onFetch?: () => Promise<void> | void,
 ): Promise<ResolvedWorktreeBase> {
   if (baseRef) {
     let gitOperand = baseRef;
@@ -48,6 +49,7 @@ export async function resolveWorktreeBase(
     }
     return { gitOperand, recordRef: baseRef, remote: false };
   }
+  await onFetch?.();
   const fetched = await runGit(repoRoot, ["fetch", "origin"]);
   if (fetched.code === 0) {
     const remoteHead = await runGit(repoRoot, [

@@ -8,6 +8,7 @@ import { PluginJsonValueSchema } from "./plugins.js";
 import { NonEmptyString, SessionLabelString } from "./primitives.js";
 import { SessionsCreateParamsSchema } from "./sessions-create.js";
 import { SessionsRecoverParamsSchema, SessionsRecoverResultSchema } from "./sessions-recover.js";
+import { SessionStartupStateSchema } from "./sessions-row.js";
 
 export { SessionsCreateParamsSchema };
 export { SessionsRecoverParamsSchema, SessionsRecoverResultSchema };
@@ -28,12 +29,16 @@ export {
 export {
   SessionCreatedActorSchema,
   SessionRowSchema,
+  SessionStartupStageSchema,
   SessionToolOverridesSchema,
   type SessionCreatedActor,
   type SessionRow,
   type SessionRunStatus,
+  type SessionStartupStage,
+  type SessionStartupState,
   type SessionToolOverrides,
 } from "./sessions-row.js";
+export { SessionStartupStateSchema } from "./sessions-row.js";
 
 export const SESSION_OBSERVER_HEALTH_VALUES = [
   "on-track",
@@ -479,6 +484,7 @@ export const SessionsCreateResultSchema = Type.Object(
     messageSeq: Type.Optional(Type.Integer({ minimum: 1 })),
     runError: Type.Optional(ErrorShapeSchema),
     worktree: Type.Optional(SessionWorktreeInfoSchema),
+    startupState: Type.Optional(SessionStartupStateSchema),
   },
   { additionalProperties: true },
 );

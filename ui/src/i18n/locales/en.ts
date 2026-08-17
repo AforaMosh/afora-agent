@@ -4715,6 +4715,16 @@ export const en: TranslationMap = {
       preparingContext: "Preparing this turn…",
       startingModel: "Waiting for a response…",
     },
+    worktreeStartup: {
+      queued: "Workspace setup queued…",
+      preparing: "Preparing repository…",
+      fetchingBase: "Fetching the base revision…",
+      checkingOut: "Checking out files…",
+      provisioningFiles: "Provisioning included files…",
+      runningSetup: "Running repository setup…",
+      failed: "Workspace setup failed: {error}. Delete this session and try again.",
+      blocked: "Workspace setup failed. Delete this session and try again.",
+    },
     archivedSessionDisabled: "This session is archived. Unarchive it to continue the conversation.",
     sessionRoute: {
       chooseTitle: "Choose a session",

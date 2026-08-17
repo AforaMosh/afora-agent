@@ -78,6 +78,7 @@ import {
 } from "./sidebar-layout.ts";
 import { resolveActiveRunOutputTokens, resolveChatProjectionRunId } from "./tool-stream.ts";
 import { configureToolTitleFetcher } from "./tool-titles.ts";
+import { buildUserChatMessageContentBlocks } from "./user-message-content.ts";
 import { workspaceResultConflictFromPlacement } from "./workspace-conflict.ts";
 
 export class ChatPane extends ChatPaneBrowserAnnotationRender {
@@ -188,6 +189,21 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
     const selectedSessionArchived = this.isCurrentSessionArchived(state);
     const cloudStartup = this.context.cloudStartup.get(state.sessionKey);
     const cloudStartupPending = cloudStartup !== null && cloudStartup.phase !== "failed";
+    const worktreeStartup = selectedSession?.startupState ?? null;
+    const worktreeStartupPending = worktreeStartup?.status === "initializing";
+    const worktreeStartupBlocked = worktreeStartup !== null;
+    const startupInitialMessage = worktreeStartup?.initialTurn?.message;
+    const chatMessages =
+      startupInitialMessage && state.chatMessages.length === 0
+        ? [
+            {
+              role: "user",
+              content: buildUserChatMessageContentBlocks(startupInitialMessage),
+              timestamp: worktreeStartup.startedAt,
+              __openclaw: { idempotencyKey: `${worktreeStartup.operationId}:user` },
+            },
+          ]
+        : state.chatMessages;
     const sessionParticipationBlocked = this.sessionParticipationTracker.resolve({
       catalog: catalogKey !== null,
       listLoading: state.sessionsLoading,
@@ -213,7 +229,11 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
         ? t("chat.sessionSharing.readOnlyNotice")
         : cloudStartupPending
           ? t("newSession.starting")
-          : null;
+          : worktreeStartupPending
+            ? t("chat.startupStatus.preparingWorkspace")
+            : worktreeStartupBlocked
+              ? t("chat.worktreeStartup.blocked")
+              : null;
     const typingEnabled =
       multiIdentity &&
       hasOperatorWriteAccess(gatewaySnapshot.hello?.auth ?? null) &&
@@ -310,10 +330,12 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
       loading: catalogKey ? this.catalogLoading : state.chatLoading,
       sending:
         cloudStartupPending ||
+        worktreeStartupPending ||
         state.chatSending ||
         this.recoveringSession ||
         this.sessionSuggestionAddOperation !== undefined,
       cloudStartup,
+      worktreeStartup,
       onRetryCloudStartup: cloudStartup?.retryable
         ? () => this.context.cloudStartup.retry(state.sessionKey)
         : undefined,
@@ -332,7 +354,7 @@ export class ChatPane extends ChatPaneBrowserAnnotationRender {
       onGatewayQuestionSubmit: (id, answers) =>
         submitQuestionPrompt(this.questionPromptState, id, answers),
       onGatewayQuestionSkip: (id) => cancelQuestionPrompt(this.questionPromptState, id),
-      messages: catalogKey ? this.catalogMessages : state.chatMessages,
+      messages: catalogKey ? this.catalogMessages : chatMessages,
       historyPagination:
         historyHasMore || this.loadingOlder
           ? {

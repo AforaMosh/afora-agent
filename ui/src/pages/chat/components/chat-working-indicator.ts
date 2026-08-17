@@ -1,6 +1,7 @@
 import { html, nothing } from "lit";
 import "../../../components/elapsed-time.ts";
 import type { ApplicationCloudStartupStatus } from "../../../app/cloud-session-startup.ts";
+import type { SessionStartupState } from "../../../../../packages/gateway-protocol/src/index.js";
 import "../../../components/working-phrase.ts";
 import { icons } from "../../../components/icons.ts";
 import { i18n, t } from "../../../i18n/index.ts";
@@ -66,6 +67,43 @@ export function renderCloudStartupStatus(
       <div class="chat-bubble chat-reading-indicator" aria-hidden="true">${icons.claw}</div>
       <span class="chat-working-indicator__status">
         <span>${cloudStartupStatusLabel(status)}</span>
+        <openclaw-elapsed-time
+          class="chat-working-indicator__elapsed"
+          .startMs=${status.startedAt}
+        ></openclaw-elapsed-time>
+      </span>
+    </div>
+  `;
+}
+
+const WORKTREE_STAGE_LABEL_KEYS = {
+  queued: "chat.worktreeStartup.queued",
+  preparing: "chat.worktreeStartup.preparing",
+  "fetching-base": "chat.worktreeStartup.fetchingBase",
+  "checking-out": "chat.worktreeStartup.checkingOut",
+  "provisioning-files": "chat.worktreeStartup.provisioningFiles",
+  "running-setup": "chat.worktreeStartup.runningSetup",
+} as const satisfies Record<SessionStartupState["stage"], Parameters<typeof t>[0]>;
+
+export function renderWorktreeStartupStatus(status: SessionStartupState | null | undefined) {
+  if (!status) {
+    return nothing;
+  }
+  if (status.status === "failed") {
+    return html`
+      <div class="chat-error chat-worktree-startup-error" role="alert">
+        <span class="chat-error__dot" aria-hidden="true"></span>
+        <span class="chat-error__content"
+          >${t("chat.worktreeStartup.failed", { error: status.error })}</span
+        >
+      </div>
+    `;
+  }
+  return html`
+    <div class="chat-working-indicator chat-worktree-startup" role="status" aria-live="polite">
+      <div class="chat-bubble chat-reading-indicator" aria-hidden="true">${icons.claw}</div>
+      <span class="chat-working-indicator__status">
+        <span>${t(WORKTREE_STAGE_LABEL_KEYS[status.stage])}</span>
         <openclaw-elapsed-time
           class="chat-working-indicator__elapsed"
           .startMs=${status.startedAt}
