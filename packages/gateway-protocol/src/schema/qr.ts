@@ -29,13 +29,6 @@ type PngHeader = {
   interlaceMethod: number;
 };
 
-type PngZlib = {
-  inflateSync: (
-    input: Uint8Array,
-    options: { info: true; maxOutputLength: number },
-  ) => { buffer: Uint8Array; engine: { bytesWritten: number } };
-};
-
 const ADAM7_PASSES = [
   [0, 0, 8, 8],
   [4, 0, 8, 8],
@@ -180,27 +173,29 @@ function validatePngImageData(
     compressedOffset += chunk.length;
   }
 
-  // SAFETY: supported Node and Bun runtimes expose the typed built-in module API here.
-  const runtimeProcess = (
-    globalThis as typeof globalThis & {
-      process?: { getBuiltinModule?: (id: "node:zlib") => PngZlib };
-    }
-  ).process;
-  const zlib = runtimeProcess?.getBuiltinModule?.("node:zlib");
-  if (!zlib || typeof zlib.inflateSync !== "function") {
+  if (typeof process === "undefined" || typeof process.getBuiltinModule !== "function") {
     return false;
   }
+  const zlib = process.getBuiltinModule("node:zlib");
 
   try {
     // A CRC-valid compressed stream can still expand far beyond its declared
     // dimensions. Bound allocation to the exact scanline budget before decoding.
-    const decoded = zlib.inflateSync(compressed, {
+    const decoded: unknown = zlib.inflateSync(compressed, {
       info: true,
       maxOutputLength: expectedLength,
     });
     if (
-      decoded.buffer.length !== expectedLength ||
-      decoded.engine.bytesWritten !== compressed.length
+      typeof decoded !== "object" ||
+      decoded === null ||
+      !("buffer" in decoded) ||
+      !(decoded.buffer instanceof Uint8Array) ||
+      !("engine" in decoded) ||
+      typeof decoded.engine !== "object" ||
+      decoded.engine === null ||
+      !("bytesWritten" in decoded.engine) ||
+      decoded.engine.bytesWritten !== compressed.length ||
+      decoded.buffer.length !== expectedLength
     ) {
       return false;
     }
