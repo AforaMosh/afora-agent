@@ -1,3 +1,4 @@
+import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type {
   SessionOwner,
   SessionsAssignOwnerParams,
@@ -8,6 +9,12 @@ import type {
   SessionsListResult,
   SessionsPatchResult,
 } from "../../api/types.ts";
+import { retireDurableComposerDraft } from "../chat/composer-draft-store.ts";
+import {
+  resolveStoredChatOutboxScope,
+  storedChatOutboxScopeKey,
+  storageTargetForGateway,
+} from "../chat/outbox-store.ts";
 import { formatUiError } from "../format-error.ts";
 import {
   requestSessionCreate,
@@ -49,6 +56,23 @@ type SessionMutationsHost = {
   notifyCreated: (key: string) => void;
   retirePullRequestSummary: (key: string) => void;
 };
+
+function retireDeletedComposerDraft(
+  client: GatewayBrowserClient,
+  key: string,
+  agentId?: string | null,
+) {
+  if (!client?.recoveryScopeReady || !client.recoveryScope) {
+    return;
+  }
+  const state = { settings: { gatewayUrl: client.gatewayUrl } };
+  const scope = resolveStoredChatOutboxScope(state, key, agentId ?? undefined);
+  void retireDurableComposerDraft({
+    gatewayOwner: storageTargetForGateway(client.gatewayUrl).gatewayOwner,
+    recoveryScope: client.recoveryScope,
+    scopeKey: storedChatOutboxScopeKey(scope),
+  });
+}
 
 export function createSessionMutations(host: SessionMutationsHost) {
   const pendingModelPatches = new Map<
@@ -413,6 +437,7 @@ export function createSessionMutations(host: SessionMutationsHost) {
       if (!host.connection.isCurrent(scope) || !confirmsSessionDeletion(response)) {
         return { deleted: false };
       }
+      retireDeletedComposerDraft(scope.client, key, options.agentId);
       host.retirePullRequestSummary(key);
       confirmedArchives.delete(key.trim());
       preparedWorkSessionKeys.delete(key.trim());
@@ -453,6 +478,7 @@ export function createSessionMutations(host: SessionMutationsHost) {
         }
         if (confirmsSessionDeletion(response)) {
           deleted.push(target.key);
+          retireDeletedComposerDraft(scope.client, target.key, target.agentId);
           if (response.worktreePreserved) {
             preservedWorktrees.push(response.worktreePreserved);
           }
