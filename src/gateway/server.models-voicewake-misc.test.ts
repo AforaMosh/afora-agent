@@ -631,6 +631,7 @@ describe("gateway server models + voicewake", () => {
           researchAuth,
           models,
           auth,
+          emptyAuth,
           skills,
           memory,
           health,
@@ -656,6 +657,7 @@ describe("gateway server models + voicewake", () => {
             preparedOnly: true,
           }),
           rpcReq(ws, "models.authStatus", {}),
+          rpcReq(ws, "models.authStatus", { agentId: "" }),
           rpcReq<{ agentId: string; workspaceDir: string }>(ws, "skills.status", {}),
           rpcReq<{ agentId: string }>(ws, "doctor.memory.status", {}),
           rpcReq<Record<string, unknown>>(ws, "health", { probe: true }),
@@ -681,6 +683,7 @@ describe("gateway server models + voicewake", () => {
           expect.objectContaining({ id: "ops-model", provider: "fixture" }),
         ]);
         expect(auth.ok, JSON.stringify(auth)).toBe(true);
+        expect(emptyAuth.ok, JSON.stringify(emptyAuth)).toBe(true);
         expect(skills.payload).toMatchObject({
           agentId: "ops",
           workspaceDir: path.join(workspaceRoot, "ops-workspace"),

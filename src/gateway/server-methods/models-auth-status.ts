@@ -608,7 +608,12 @@ export const modelsAuthStatusHandlers: GatewayRequestHandlers = {
     const now = Date.now();
     const refreshRequested = Boolean(params.refresh);
     const resolveScope = (cfg: OpenClawConfig) =>
-      resolveModelAuthAgentScope(cfg, params.agentId ?? tryResolveSystemAgentTargetAgentId(cfg));
+      resolveModelAuthAgentScope(
+        cfg,
+        params.agentId === undefined || params.agentId === ""
+          ? tryResolveSystemAgentTargetAgentId(cfg)
+          : params.agentId,
+      );
     try {
       let cfg = context.getRuntimeConfig();
       let scope = resolveScope(cfg);
