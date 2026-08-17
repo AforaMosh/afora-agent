@@ -120,7 +120,7 @@ OpenClaw derives one canonical `cbx_...` lease ID from the durable provision ope
 
 ### Bundle installation
 
-The setup bootstrap first tries the exact `openclaw@<version>` package. For an unreleased source build, it falls back to the Gateway checkout's exact public Git commit; that fallback requires Git on the leased machine and the commit to be reachable from `openclaw/openclaw`. After the node connects and publishes its session-host inventory, the Gateway pushes one content-addressed worker bundle through the paired channel. The node verifies and publishes those exact bytes without installing the normal OpenClaw package dependency tree. A stale Gateway build retires the environment and reprovisions against the current bundle rather than downgrading the execution-context protocol.
+The setup bootstrap first reuses an installed `openclaw` binary when its version exactly matches the Gateway, then tries the exact `openclaw@<version>` registry package. For an unreleased source build, install a locally packed candidate with the same version in `settings.setup`; the provider will select it before touching the registry. After the node connects and publishes its session-host inventory, the Gateway pushes one content-addressed worker bundle through the paired channel. The node verifies and publishes those exact bytes without installing the normal OpenClaw package dependency tree. A stale Gateway build retires the environment and reprovisions against the current bundle rather than downgrading the execution-context protocol.
 
 ### Verify the profile
 

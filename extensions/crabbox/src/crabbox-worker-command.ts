@@ -12,6 +12,7 @@ export type CrabboxCommandRunner = (
   argv: string[],
   options: {
     killProcessTree: boolean;
+    env?: NodeJS.ProcessEnv;
     input?: string | Uint8Array;
     maxOutputBytes: number;
     signal?: AbortSignal;
@@ -24,6 +25,7 @@ export async function runCrabboxCommand(params: {
   args: string[];
   binary: string;
   runCommand: CrabboxCommandRunner;
+  env?: NodeJS.ProcessEnv;
   input?: string | Uint8Array;
   signal?: AbortSignal;
   timeoutMs: number;
@@ -33,6 +35,7 @@ export async function runCrabboxCommand(params: {
       timeoutMs: params.timeoutMs,
       maxOutputBytes: MAX_OUTPUT_BYTES,
       killProcessTree: true,
+      ...(params.env === undefined ? {} : { env: params.env }),
       ...(params.input === undefined ? {} : { input: params.input }),
       ...(params.signal ? { signal: params.signal } : {}),
     });

@@ -75,8 +75,9 @@ function providerWithRawRunner(
           options?.beginNodeEnrollment ??
           (async () => ({
             mode: "connect" as const,
-            setupCode: "setup-code",
+            setupCode: "secret-setup-value",
             setupId: "setup-id",
+            openclawVersion: "2026.8.1",
             packageSpecs: ["openclaw@2026.8.1"],
             displayName: "Cloud worker test",
             waitForDeviceId: async () => "device-1",
@@ -181,6 +182,7 @@ describe("Crabbox worker provider", () => {
         beginNodeEnrollment: async () => ({
           mode: "resume",
           deviceId: "device-bound",
+          openclawVersion: "2026.8.1",
           packageSpecs: ["openclaw@2026.8.1"],
           displayName: "Bound worker",
           waitForDeviceId: async () => "device-bound",
@@ -885,6 +887,13 @@ describe("Crabbox worker provider", () => {
     );
     expect(String(calls[2]?.options.input)).toContain(
       'connect --target-file "$setup_code_file" --ephemeral',
+    );
+    expect(String(calls[2]?.options.input)).not.toContain("secret-setup-value");
+    expect(calls[2]?.options.env).toMatchObject({
+      OPENCLAW_CLOUD_SETUP_CODE: "secret-setup-value",
+    });
+    expect(calls[2]?.argv).toEqual(
+      expect.arrayContaining(["--allow-env", "OPENCLAW_CLOUD_SETUP_CODE"]),
     );
     expect(calls[2]?.argv.join(" ")).not.toContain("setup-code");
     expect(calls[3]?.argv[1]).toBe("inspect");

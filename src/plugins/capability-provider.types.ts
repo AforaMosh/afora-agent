@@ -116,6 +116,7 @@ export type WorkerNodeEnrollment =
       mode: "connect";
       setupCode: string;
       setupId: string;
+      openclawVersion: string;
       packageSpecs: readonly string[];
       displayName: string;
       waitForDeviceId: () => Promise<string>;
@@ -123,6 +124,7 @@ export type WorkerNodeEnrollment =
   | {
       mode: "resume";
       deviceId: string;
+      openclawVersion: string;
       packageSpecs: readonly string[];
       displayName: string;
       waitForDeviceId: () => Promise<string>;

@@ -1,7 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { ensureDevicePairSetupBootstrapToken } from "../../infra/device-bootstrap.js";
 import { removePairedDeviceRole } from "../../infra/device-pairing.js";
-import { resolveCommitHash } from "../../infra/git-commit.js";
 import {
   encodePairingSetupCode,
   resolveConfiguredPairingPublicUrl,
@@ -29,9 +28,7 @@ function enrollmentDisplayName(record: WorkerEnvironmentRecord): string {
 }
 
 function resolveEnrollmentPackageSpecs(): string[] {
-  const npmSpec = `openclaw@${VERSION}`;
-  const commit = resolveCommitHash({ moduleUrl: import.meta.url });
-  return commit ? [npmSpec, `github:openclaw/openclaw#${commit}`] : [npmSpec];
+  return [`openclaw@${VERSION}`];
 }
 
 export function createWorkerNodeEnrollmentManager(options: WorkerNodeEnrollmentManagerOptions) {
@@ -64,6 +61,7 @@ export function createWorkerNodeEnrollmentManager(options: WorkerNodeEnrollmentM
       return {
         mode: "resume",
         deviceId: current.nodeDeviceId,
+        openclawVersion: VERSION,
         packageSpecs,
         displayName,
         waitForDeviceId: wait,
@@ -84,6 +82,7 @@ export function createWorkerNodeEnrollmentManager(options: WorkerNodeEnrollmentM
       return {
         mode: "resume",
         deviceId: current.nodeDeviceId,
+        openclawVersion: VERSION,
         packageSpecs,
         displayName,
         waitForDeviceId: wait,
@@ -108,6 +107,7 @@ export function createWorkerNodeEnrollmentManager(options: WorkerNodeEnrollmentM
       mode: "connect",
       setupCode: encodePairingSetupCode(resolved.payload),
       setupId: current.nodeSetupId,
+      openclawVersion: VERSION,
       packageSpecs,
       displayName,
       waitForDeviceId: wait,

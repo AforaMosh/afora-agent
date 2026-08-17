@@ -49,6 +49,7 @@ const CRABBOX_KEY_REF_PROVIDER = "crabbox";
 
 const READY_POLL_INTERVAL_MS = 2_000;
 const MAX_ERROR_DETAIL_CHARS = 512;
+const CLOUD_SETUP_CODE_ENV = "OPENCLAW_CLOUD_SETUP_CODE";
 // Only states that prove the resource is gone or stopped map to `destroyed`. Crabbox also
 // treats `deleting` and `failed` as unable to become ready, but those can retain resources
 // that still need an explicit stop during teardown.
@@ -260,7 +261,7 @@ function nodeEnrollmentSetupCommand(params: {
       ? [
           'setup_code_file="$state_dir/setup-code"',
           "umask 077",
-          `printf "%s\\n" ${shellQuote(enrollment.setupCode)} >"$setup_code_file"`,
+          `printf "%s\\n" "$${CLOUD_SETUP_CODE_ENV}" >"$setup_code_file"`,
         ]
       : [];
   const launch =
@@ -276,6 +277,9 @@ function nodeEnrollmentSetupCommand(params: {
     'package_spec_file="$state_dir/package-spec"',
     'if [ -s "$pid_file" ] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then exit 0; fi',
     ...setupCodeLines,
+    `if command -v openclaw >/dev/null 2>&1 && [ "$(openclaw --version)" = ${shellQuote(enrollment.openclawVersion)} ]; then`,
+    '  printf "%s\\n" "@global" >"$package_spec_file"',
+    "fi",
     'if [ ! -s "$package_spec_file" ]; then',
     '  rm -f "$package_spec_file"',
     `  for package_candidate in ${packageCandidates}; do`,
@@ -287,8 +291,13 @@ function nodeEnrollmentSetupCommand(params: {
     "fi",
     'test -s "$package_spec_file"',
     'package_spec="$(cat "$package_spec_file")"',
-    'OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
-    `nohup env OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null &`,
+    'if [ "$package_spec" = "@global" ]; then',
+    '  OPENCLAW_STATE_DIR="$state_dir" openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
+    `  nohup env OPENCLAW_STATE_DIR="$state_dir" openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null &`,
+    "else",
+    '  OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
+    `  nohup env OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null &`,
+    "fi",
     'printf "%s\\n" "$!" >"$pid_file"',
   ].join("\n");
 }
@@ -297,7 +306,11 @@ function nodeEnrollmentSetupCommand(params: {
 // must be idempotent. A failed setup stops the lease before surfacing the error;
 // otherwise the caller cannot release a box it never learned about.
 async function runProvisionSetup(
-  params: ProvisionInspectContext & { setup: string; timeoutMs?: number },
+  params: ProvisionInspectContext & {
+    setup: string;
+    timeoutMs?: number;
+    forwardedEnv?: Record<string, string>;
+  },
 ): Promise<void> {
   let result: SpawnResult;
   try {
@@ -316,9 +329,11 @@ async function runProvisionSetup(
         // Workspace transfer is owned by the worker tunnel; crabbox run must not
         // rsync the gateway checkout into the box just to execute setup.
         "--no-sync",
+        ...Object.keys(params.forwardedEnv ?? {}).flatMap((name) => ["--allow-env", name]),
         "--script-stdin",
       ],
       binary: params.binary,
+      env: params.forwardedEnv,
       input: params.setup,
       runCommand: params.runCommand,
       timeoutMs: remainingProvisionTimeout(
@@ -342,6 +357,7 @@ async function runProvisionSetupAndWaitReady(
   params: ProvisionInspectContext & {
     setup: string;
     timeoutMs?: number;
+    forwardedEnv?: Record<string, string>;
     sleep: (milliseconds: number) => Promise<void>;
   },
 ): Promise<ParsedInspect> {
@@ -603,6 +619,9 @@ export function createCrabboxWorkerProvider(
         ...inspectedParams,
         setup: nodeEnrollmentSetupCommand({ enrollment, leaseId }),
         timeoutMs: CRABBOX_NODE_ENROLLMENT_TIMEOUT_MS,
+        ...(enrollment.mode === "connect"
+          ? { forwardedEnv: { [CLOUD_SETUP_CODE_ENV]: enrollment.setupCode } }
+          : {}),
         sleep,
       });
       const deviceId = await enrollment.waitForDeviceId();

@@ -15,6 +15,7 @@ describe("node worker provider provisioning", () => {
       mode: "connect" as const,
       setupCode: "setup-code",
       setupId: "setup-id",
+      openclawVersion: "2026.8.1",
       packageSpecs: ["openclaw@2026.8.1"],
       displayName: "Cloud worker test",
       waitForDeviceId: async () => "cloud-device-1",
