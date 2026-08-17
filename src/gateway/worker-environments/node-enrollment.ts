@@ -2,7 +2,11 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { ensureDevicePairSetupBootstrapToken } from "../../infra/device-bootstrap.js";
 import { removePairedDeviceRole } from "../../infra/device-pairing.js";
 import { resolveCommitHash } from "../../infra/git-commit.js";
-import { encodePairingSetupCode, resolvePairingSetupFromConfig } from "../../pairing/setup-code.js";
+import {
+  encodePairingSetupCode,
+  resolveConfiguredPairingPublicUrl,
+  resolvePairingSetupFromConfig,
+} from "../../pairing/setup-code.js";
 import type { WorkerNodeEnrollment } from "../../plugins/types.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import { CLOUD_WORKER_PAIRING_SETUP_BOOTSTRAP_PROFILE } from "../../shared/device-bootstrap-profile.js";
@@ -85,8 +89,10 @@ export function createWorkerNodeEnrollmentManager(options: WorkerNodeEnrollmentM
         waitForDeviceId: wait,
       };
     }
-    const resolved = await resolvePairingSetupFromConfig(options.getConfig(), {
+    const config = options.getConfig();
+    const resolved = await resolvePairingSetupFromConfig(config, {
       env: process.env,
+      publicUrl: resolveConfiguredPairingPublicUrl(config),
       bootstrapProfile: CLOUD_WORKER_PAIRING_SETUP_BOOTSTRAP_PROFILE,
       issuedBootstrap: issued,
       runCommandWithTimeout: async (argv, runOptions) =>

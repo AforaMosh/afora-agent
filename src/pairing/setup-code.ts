@@ -75,6 +75,11 @@ type ResolvePairingSetupOptions = {
   loadLocalTlsFingerprint?: () => Promise<string | undefined>;
 };
 
+export function resolveConfiguredPairingPublicUrl(config: OpenClawConfig): string | undefined {
+  const value = config.plugins?.entries?.["device-pair"]?.config?.["publicUrl"];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
 type PairingSetupResolution =
   | {
       ok: true;
