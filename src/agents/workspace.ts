@@ -193,7 +193,7 @@ async function readWorkspaceFileWithGuards(params: {
   } catch (error) {
     // Non-transient read failure, or transient retries exhausted.
     workspaceFileCache.delete(params.filePath);
-    return { ok: false, reason: "io", error };
+    return { ok: false, reason: error instanceof RangeError ? "validation" : "io", error };
   }
 }
 
