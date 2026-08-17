@@ -13,6 +13,11 @@ suite.define(() => {
     const workspace = "/home/peter/openclaw";
     const initialGroupCwd = "/home/peter";
     const groupCwd = "/home/peter/client-work";
+    const gitRepository = {
+      branches: [{ kind: "local", name: "main" }],
+      defaultBranch: "main",
+      repositoryStatus: "git",
+    };
     const context = await suite.browser.newContext({
       locale: "en-US",
       serviceWorkers: "block",
@@ -30,9 +35,13 @@ suite.define(() => {
         "sessions.create": { key: "agent:main:client-work", runStarted: true },
         "sessions.list": sessionsListResponse([]),
         "worktrees.branches": {
-          branches: [{ kind: "local", name: "main" }],
-          defaultBranch: "main",
-          repositoryStatus: "git",
+          cases: [
+            {
+              match: { repoRoot: initialGroupCwd },
+              response: { branches: [], repositoryStatus: "not_git" },
+            },
+            { match: { repoRoot: groupCwd }, response: gitRepository },
+          ],
         },
       },
       sessionGroups: ["Client work"],
@@ -53,6 +62,20 @@ suite.define(() => {
         `openclaw-modal-dialog[label='New session defaults for "Client work"']`,
       );
       await dialog.waitFor({ state: "visible" });
+      expect((await gateway.waitForRequest("worktrees.branches")).params).toMatchObject({
+        repoRoot: initialGroupCwd,
+        includeRepositoryStatus: true,
+      });
+      const environment = dialog.locator("[data-session-group-environment]");
+      await expect
+        .poll(() => environment.getAttribute("data-session-group-environment"))
+        .toBe("local");
+      await expect.poll(() => dialog.locator('select[name="mode"]').count()).toBe(0);
+      await expect.poll(() => environment.getByRole("button").count()).toBe(0);
+      const localEnvironmentBox = await environment
+        .locator(".session-group-defaults__resolved-mode")
+        .boundingBox();
+      expect(localEnvironmentBox?.height).toBe(56);
       const folderTrigger = dialog.locator("#session-group-defaults-folder-trigger");
       await expect.poll(() => folderTrigger.getAttribute("aria-label")).toContain("peter");
       await folderTrigger.click();
@@ -90,7 +113,20 @@ suite.define(() => {
       await page.setViewportSize({ height: 900, width: 1280 });
       await expect.poll(() => folderTrigger.textContent()).toContain("client-work");
       await expect.poll(() => dialog.locator('input[name="cwd"]').count()).toBe(0);
-      await dialog.locator('select[name="mode"]').selectOption("worktree");
+      await expect
+        .poll(async () => (await gateway.getRequests("worktrees.branches")).at(-1)?.params)
+        .toMatchObject({ repoRoot: groupCwd, includeRepositoryStatus: true });
+      await expect
+        .poll(async () => ({
+          state: await environment.getAttribute("data-session-group-environment"),
+          text: await environment.textContent(),
+        }))
+        .toMatchObject({ state: "git" });
+      const modeSelect = environment.locator('select[name="mode"]');
+      await expect.poll(() => modeSelect.inputValue()).toBe("local");
+      expect((await modeSelect.boundingBox())?.height).toBe(localEnvironmentBox?.height);
+      await modeSelect.selectOption("worktree");
+      await expect.poll(() => modeSelect.inputValue()).toBe("worktree");
       await dialog.getByRole("button", { name: "Save" }).click();
       expect((await gateway.waitForRequest("sessions.groups.update")).params).toMatchObject({
         name: "Client work",
@@ -315,7 +351,14 @@ suite.define(() => {
     const page = await context.newPage();
     const gateway = await installMockGateway(page, {
       deferredMethods: ["sessions.groups.update"],
-      methodResponses: { "sessions.list": sessionsListResponse([]) },
+      methodResponses: {
+        "sessions.list": sessionsListResponse([]),
+        "worktrees.branches": {
+          branches: [{ kind: "local", name: "main" }],
+          defaultBranch: "main",
+          repositoryStatus: "git",
+        },
+      },
       sessionGroups: ["Client work"],
       sessionGroupDefaults: { "Client work": { cwd: groupCwd, worktree: true } },
       workspace: "/home/peter/openclaw",
@@ -333,7 +376,9 @@ suite.define(() => {
         `openclaw-modal-dialog[label='New session defaults for "Client work"']`,
       );
       await dialog.waitFor({ state: "visible" });
-      await dialog.locator('select[name="mode"]').selectOption("local");
+      const modeSelect = dialog.locator('select[name="mode"]');
+      await modeSelect.waitFor({ state: "visible" });
+      await modeSelect.selectOption("local");
       await dialog.getByRole("button", { name: "Save" }).click();
       await gateway.waitForRequest("sessions.groups.update");
       await gateway.rejectDeferred("sessions.groups.update", {
@@ -344,7 +389,7 @@ suite.define(() => {
       const alert = dialog.getByRole("alert");
       await alert.waitFor({ state: "visible" });
       await expect.poll(() => alert.textContent()).toContain("rejected group defaults");
-      await expect.poll(() => dialog.locator('select[name="mode"]').inputValue()).toBe("local");
+      await expect.poll(() => modeSelect.inputValue()).toBe("local");
 
       await dialog.getByRole("button", { name: "Save" }).click();
       await expect
@@ -373,7 +418,14 @@ suite.define(() => {
     const page = await context.newPage();
     const gateway = await installMockGateway(page, {
       deferredMethods: ["sessions.groups.defaults"],
-      methodResponses: { "sessions.list": sessionsListResponse([]) },
+      methodResponses: {
+        "sessions.list": sessionsListResponse([]),
+        "worktrees.branches": {
+          branches: [{ kind: "local", name: "main" }],
+          defaultBranch: "main",
+          repositoryStatus: "git",
+        },
+      },
       sessionGroups: ["Client work"],
       sessionGroupDefaults: { "Client work": { cwd: groupCwd, worktree: true } },
       workspace: "/home/peter/openclaw",

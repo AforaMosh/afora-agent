@@ -1,6 +1,10 @@
 import { html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
-import type { FsListDirResult } from "../../../packages/gateway-protocol/src/index.js";
+import type {
+  FsListDirResult,
+  WorktreeRepositoryStatus,
+  WorktreesBranchesResult,
+} from "../../../packages/gateway-protocol/src/index.js";
 import type { SessionObserverDigest } from "../../../packages/gateway-protocol/src/schema/sessions.js";
 import { isSessionRouteId, pathForRoute } from "../app-route-paths.ts";
 import { beginNativeWindowDragFromTopInset } from "../app/native-window-drag.ts";
@@ -86,15 +90,51 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
   }
 
   async listSessionGroupFolders(path?: string): Promise<FsListDirResult> {
-    const scope = this.sessionData.beginSessionMutation();
-    if (!scope) {
+    const gateway = this.context?.gateway;
+    const client = gateway?.snapshot.client;
+    if (!gateway || gateway.snapshot.phase !== "connected" || !client) {
       throw new Error(t("sessionsView.groupDefaultsStale"));
     }
-    const result = await scope.client.request<FsListDirResult>("fs.listDir", path ? { path } : {});
-    if (!this.sessionData.isSessionMutationScopeCurrent(scope)) {
+    const result = await client.request<FsListDirResult>("fs.listDir", path ? { path } : {});
+    if (
+      this.context?.gateway !== gateway ||
+      gateway.snapshot.phase !== "connected" ||
+      gateway.snapshot.client !== client
+    ) {
       throw new Error(t("sessionsView.groupDefaultsStale"));
     }
     return result;
+  }
+
+  async inspectSessionGroupRepository(path?: string): Promise<WorktreeRepositoryStatus> {
+    const requestedPath = path?.trim();
+    const agent = this.activeChipAgent().agent;
+    if (!requestedPath) {
+      return agent?.workspaceGit === true
+        ? "git"
+        : agent?.workspaceGit === false
+          ? "not_git"
+          : "unavailable";
+    }
+    const gateway = this.context?.gateway;
+    const client = gateway?.snapshot.client;
+    if (!gateway || gateway.snapshot.phase !== "connected" || !client) {
+      throw new Error(t("sessionsView.groupDefaultsStale"));
+    }
+    const result = await client.request<WorktreesBranchesResult>("worktrees.branches", {
+      repoRoot: requestedPath,
+      includeRepositoryStatus: true,
+    });
+    if (
+      this.context?.gateway !== gateway ||
+      gateway.snapshot.phase !== "connected" ||
+      gateway.snapshot.client !== client
+    ) {
+      throw new Error(t("sessionsView.groupDefaultsStale"));
+    }
+    return result.repositoryStatus === "git" || result.repositoryStatus === "not_git"
+      ? result.repositoryStatus
+      : "unavailable";
   }
 
   // Lazy: the controller pulls core token-suppression modules that must stay

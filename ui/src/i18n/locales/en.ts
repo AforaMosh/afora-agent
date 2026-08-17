@@ -1093,6 +1093,7 @@ export const en: TranslationMap = {
     newSessionInGroup: "New session in {group}",
     groupDefaultsMenu: "New session defaults…",
     groupDefaultsTitle: 'New session defaults for "{group}"',
+    groupDefaultsDescription: "Choose where new sessions in this group start.",
     groupDefaultsCwd: "Working directory",
     groupDefaultsCwdPlaceholder: "Use the agent workspace",
     groupDefaultsCwdHint: "Leave empty to use the selected agent's workspace.",
