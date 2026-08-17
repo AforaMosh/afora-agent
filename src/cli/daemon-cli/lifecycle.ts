@@ -186,6 +186,7 @@ async function handleSystemScopeSystemdGateway(
   }
   const stdout = createNullWriter();
   if (action === "stop") {
+    assertGatewayServiceMutationAllowed("stop the gateway");
     await stopSystemdService({
       stdout,
       env: process.env,
@@ -196,6 +197,7 @@ async function handleSystemScopeSystemdGateway(
       message: `Gateway stopped via system-scope systemd unit ${installed.unitName}.`,
     };
   }
+  assertGatewayServiceMutationAllowed("restart the gateway");
   await restartSystemdService({
     stdout,
     env: process.env,

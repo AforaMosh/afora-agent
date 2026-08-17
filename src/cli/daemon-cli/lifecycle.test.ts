@@ -1118,6 +1118,22 @@ describe("runDaemonRestart health checks", () => {
     expect(signalVerifiedGatewayPidSync).not.toHaveBeenCalled();
   });
 
+  it("rejects a system-scope stop for a non-default install identity before mutation", async () => {
+    vi.spyOn(process, "platform", "get").mockReturnValue("linux");
+    isDefaultInstallIdentity.mockReturnValue(false);
+    findInstalledSystemdGatewayScope.mockResolvedValue({
+      scope: "system",
+      unitName: "openclaw-gateway.service",
+      unitPath: "/etc/systemd/system/openclaw-gateway.service",
+    });
+    findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4200]);
+
+    await expect(runUnmanagedStop()).rejects.toThrow(/non-default state dir/);
+
+    expect(stopSystemdService).not.toHaveBeenCalled();
+    expect(signalVerifiedGatewayPidSync).not.toHaveBeenCalled();
+  });
+
   it("surfaces systemd sudo guidance and never signals when stopping a system-scope unit as non-root (openclaw#87577)", async () => {
     vi.spyOn(process, "platform", "get").mockReturnValue("linux");
     findInstalledSystemdGatewayScope.mockResolvedValue({
