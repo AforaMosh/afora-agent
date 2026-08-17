@@ -62,7 +62,7 @@ export function showSessionGroupDefaultsDialog(options: Options): Promise<void> 
 
     const handleSubmit = async (event: Event) => {
       event.preventDefault();
-      if (submitting) {
+      if (submitting || repositoryStatus === "checking" || repositoryStatus === "unavailable") {
         return;
       }
       submitting = true;
@@ -448,10 +448,25 @@ export function showSessionGroupDefaultsDialog(options: Options): Promise<void> 
                 <button
                   type="submit"
                   class="btn primary"
-                  ?disabled=${submitting || repositoryStatus === "checking"}
+                  ?disabled=${submitting ||
+                  repositoryStatus === "checking" ||
+                  repositoryStatus === "unavailable"}
                 >
                   ${t("common.save")}
                 </button>
+                ${repositoryStatus === "unavailable"
+                  ? html`
+                      <button
+                        type="button"
+                        class="btn"
+                        ?disabled=${submitting}
+                        @click=${() =>
+                          void inspectRepository(cwd.trim() === options.defaults.cwd.trim())}
+                      >
+                        ${t("common.retry")}
+                      </button>
+                    `
+                  : nothing}
                 <button type="button" class="btn" ?disabled=${submitting} @click=${finish}>
                   ${t("common.cancel")}
                 </button>
