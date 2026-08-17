@@ -520,12 +520,15 @@ export async function runDaemonStop(opts: DaemonLifecycleOptions = {}) {
     fail(NON_INTERACTIVE_GATEWAY_STOP_MESSAGE);
     return;
   }
-  assertGatewayServiceMutationAllowed("stop the gateway");
+  if (isGatewayExternallySupervised()) {
+    assertGatewayServiceMutationAllowed("stop the gateway");
+  }
   const service = resolveGatewayService();
   return await runServiceStop({
     serviceNoun: "Gateway",
     service,
     opts,
+    beforeServiceMutation: () => assertGatewayServiceMutationAllowed("stop the gateway"),
     stopWhenNotLoaded: process.platform === "darwin" && Boolean(opts.disable),
     onNotLoaded: async ({ stdout }) => {
       if (process.platform === "linux") {
@@ -533,6 +536,7 @@ export async function runDaemonStop(opts: DaemonLifecycleOptions = {}) {
         if (runtime?.status === "running") {
           // systemd can run a disabled unit with Restart=always. Stop it through
           // systemctl so a process-level SIGTERM cannot trigger a respawn.
+          assertGatewayServiceMutationAllowed("stop the gateway");
           await service.stop({
             env: process.env,
             stdout,
@@ -548,7 +552,11 @@ export async function runDaemonStop(opts: DaemonLifecycleOptions = {}) {
       const port =
         lockIdentity?.port ??
         (await resolveGatewayLifecyclePort(service).catch(() => resolveGatewayPortFallback()));
-      return await stopGatewayWithoutServiceManager(port, lockIdentity?.pid);
+      const handled = await stopGatewayWithoutServiceManager(port, lockIdentity?.pid);
+      if (!handled) {
+        assertGatewayServiceMutationAllowed("stop the gateway");
+      }
+      return handled;
     },
   });
 }
