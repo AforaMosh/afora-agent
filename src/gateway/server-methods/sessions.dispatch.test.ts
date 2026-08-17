@@ -220,6 +220,36 @@ describe("sessions.dispatch", () => {
     );
   });
 
+  it("rejects remote-exec before allocation when the profile is node-only", async () => {
+    mocks.resolveTarget.mockReturnValue(
+      targetWithEntry({
+        sessionId,
+        agentRuntimeOverride: "codex",
+        worktree: { id: "worktree-1", branch: "openclaw/cloud-test", repoRoot: "/repo" },
+      }),
+    );
+    const dispatch = vi.fn();
+    const respond = await invoke(
+      makeContext({
+        workerEnvironmentService: {
+          supportsExecutionMode: () => false,
+        } as never,
+        workerPlacementDispatchService: { dispatch },
+        workerSessionPlacementService: { getMany: () => new Map() },
+      }),
+    );
+
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: ErrorCodes.INVALID_REQUEST,
+        message: "runtime codex requires an SSH-backed cloud worker provider",
+      }),
+    );
+  });
+
   it("passes a per-dispatch machine class to placement", async () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({

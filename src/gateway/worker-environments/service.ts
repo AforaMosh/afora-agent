@@ -13,6 +13,8 @@ import type { SecretRef } from "../../config/types.secrets.js";
 import { withTimeout } from "../../infra/fs-safe.js";
 import { KeyedAsyncQueue } from "../../plugin-sdk/keyed-async-queue.js";
 import type {
+  WorkerExecutionMode,
+  WorkerNodeEnrollment,
   WorkerProfile,
   WorkerProvider,
   WorkerSshEndpoint,
@@ -89,6 +91,8 @@ type WorkerEnvironmentServiceOptions = {
     keyRef: SecretRef;
   }) => Promise<WorkerSshIdentity>;
   ensureNodeWorkerBundle?: (deviceId: string) => Promise<WorkerAdmissionHandshake>;
+  prepareNodeEnrollment?: (record: WorkerEnvironmentRecord) => Promise<WorkerNodeEnrollment>;
+  retireNodeEnrollment?: (record: WorkerEnvironmentRecord) => Promise<void>;
   tunnelManager?: WorkerTunnelManager;
   nodeTunnelManager?: NodeWorkerTunnelManager;
   stopNodeWorkerBundleTransfers?: () => void;
@@ -282,6 +286,8 @@ export function createWorkerEnvironmentService(options: WorkerEnvironmentService
     bootstrapWorker: options.bootstrapWorker,
     resolveSshIdentity: options.resolveSshIdentity,
     ensureNodeWorkerBundle: options.ensureNodeWorkerBundle,
+    prepareNodeEnrollment: options.prepareNodeEnrollment,
+    retireNodeEnrollment: options.retireNodeEnrollment,
     providerCallTimeoutMs: options.providerCallTimeoutMs,
     tunnelManager: tunnelLifecycle,
     credentialBroker,
@@ -409,6 +415,11 @@ export function createWorkerEnvironmentService(options: WorkerEnvironmentService
 
   const service = {
     list: environmentAccess.list,
+    supportsExecutionMode: (profileId: string, mode: WorkerExecutionMode) => {
+      const profile = options.getConfig().cloudWorkers?.profiles?.[profileId];
+      const provider = profile ? options.resolveProvider(profile.provider) : undefined;
+      return provider?.supportedExecutionModes?.includes(mode) ?? Boolean(provider);
+    },
     get: environmentAccess.get,
     listMachineOptions: async (profileId: string) =>
       providerLifecycle.listMachineOptions(profileId),

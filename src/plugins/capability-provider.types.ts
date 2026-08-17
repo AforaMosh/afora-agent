@@ -107,6 +107,27 @@ export type WorkerDesktopEndpoint = {
   apps?: WorkerDesktopApp[];
 };
 
+/** Placement execution modes a worker provider can carry. */
+export type WorkerExecutionMode = "worker-turn" | "remote-exec";
+
+/** Replay-safe node enrollment prepared only after a provider has allocated its machine. */
+export type WorkerNodeEnrollment =
+  | {
+      mode: "connect";
+      setupCode: string;
+      setupId: string;
+      packageSpecs: readonly string[];
+      displayName: string;
+      waitForDeviceId: () => Promise<string>;
+    }
+  | {
+      mode: "resume";
+      deviceId: string;
+      packageSpecs: readonly string[];
+      displayName: string;
+      waitForDeviceId: () => Promise<string>;
+    };
+
 /** Durable lease identity and endpoint returned by a successful provision operation. */
 export type WorkerLease = {
   leaseId: string;
@@ -141,11 +162,15 @@ export type WorkerProvider = {
   id: string;
   /** Process-stable choices available for this profile; omit the hook to hide machine selection. */
   listMachineOptions?: (profile: WorkerProfile) => readonly WorkerMachineOption[];
+  /** Omit for both legacy modes; node-only providers advertise worker-turn explicitly. */
+  supportedExecutionModes?: readonly WorkerExecutionMode[];
   /**
    * Provision before preparing an installation when the lease transport decides whether an
    * installation is needed. Defaults to false so SSH providers retain prepare-before-allocation.
    */
   provisionBeforeInstallation?: boolean;
+  /** Provider allocates a node host through the environment-owned enrollment callback. */
+  requiresNodeEnrollment?: boolean;
   /**
    * Provision or adopt the lease for this operation id.
    * Repeating the same operation id must be idempotent across gateway restarts.
@@ -153,7 +178,10 @@ export type WorkerProvider = {
   provision: (
     profile: WorkerProfile,
     operationId: string,
-    options?: { machineClass?: string },
+    options?: {
+      machineClass?: string;
+      beginNodeEnrollment?: () => Promise<WorkerNodeEnrollment>;
+    },
   ) => Promise<WorkerLease>;
   /** Maximum core wait for one provision attempt, including provider-owned setup and cleanup. */
   resolveProvisionTimeoutMs?: (profile: WorkerProfile) => number;

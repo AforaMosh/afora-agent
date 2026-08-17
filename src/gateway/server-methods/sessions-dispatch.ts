@@ -214,6 +214,20 @@ export const sessionDispatchHandlers: GatewayRequestHandlers = {
       );
       return;
     }
+    if (
+      executionMode === "remote-exec" &&
+      (dispatchTarget.deviceId !== undefined ||
+        context.workerEnvironmentService?.supportsExecutionMode?.(
+          dispatchTarget.profileId,
+          executionMode,
+        ) === false)
+    ) {
+      respondInvalidWorkerSession(
+        respond,
+        `runtime ${sessionRuntime} requires an SSH-backed cloud worker provider`,
+      );
+      return;
+    }
     const existingPlacement = placementReader.getMany([sessionId]).get(sessionId);
     if (
       existingPlacement?.state === "failed" &&

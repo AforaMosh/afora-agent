@@ -62,6 +62,8 @@ function environment(): WorkerEnvironmentRecord {
     profileId: "device:node-1",
     profileSnapshot: { settings: { device: "node-1" } },
     provisionOperationId: "provision-1",
+    nodeSetupId: null,
+    nodeDeviceId: "node-1",
     sharedHost: true,
     desktop: null,
     bootstrapReceipt: { ...BUILD, installKind: "bundle" },

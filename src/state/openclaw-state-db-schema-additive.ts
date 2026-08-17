@@ -132,6 +132,28 @@ export function ensureDevicePairSetupBootstrapSchema(database: DatabaseSync): vo
   ensureColumn(database, "device_bootstrap_tokens", "setup_id TEXT");
 }
 
+/**
+ * Installs the environment-owned node binding at first cloud enrollment use.
+ * The trigger records the authenticated device identity in the same transaction
+ * that consumes the one-shot setup credential, so Gateway restart cannot lose it.
+ */
+export function ensureWorkerEnvironmentNodeEnrollmentSchema(database: DatabaseSync): void {
+  ensureDevicePairSetupCompletionSchema(database);
+  ensureColumn(database, "worker_environments", "node_setup_id TEXT");
+  ensureColumn(database, "worker_environments", "node_device_id TEXT");
+  database.exec(`
+    CREATE TRIGGER IF NOT EXISTS worker_environment_node_setup_completion
+    AFTER INSERT ON device_pair_setup_completions
+    BEGIN
+      UPDATE worker_environments
+      SET node_device_id = NEW.device_id,
+          updated_at_ms = MAX(updated_at_ms, NEW.completed_at_ms)
+      WHERE node_setup_id = NEW.setup_id
+        AND (node_device_id IS NULL OR node_device_id = NEW.device_id);
+    END
+  `); // sqlite-allow-raw -- Canonical first-use lifecycle trigger.
+}
+
 function resolveLegacyManagedImageRoot(recordJson: unknown): string | null {
   if (typeof recordJson !== "string") {
     return null;

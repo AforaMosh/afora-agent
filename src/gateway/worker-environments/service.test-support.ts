@@ -168,6 +168,8 @@ export function createService(
       | "providerCallTimeoutMs"
       | "resolveSshIdentity"
       | "ensureNodeWorkerBundle"
+      | "prepareNodeEnrollment"
+      | "retireNodeEnrollment"
       | "resolveWorkerGateway"
       | "tunnelManager"
       | "generateWorkerCredential"
