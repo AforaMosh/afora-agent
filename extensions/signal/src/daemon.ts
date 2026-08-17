@@ -19,12 +19,16 @@ type SignalDaemonOpts = {
 
 export type SignalDaemonHandle = {
   pid?: number;
+  ready: Promise<void>;
   stop: () => Promise<void>;
   exited: Promise<SignalDaemonExitEvent>;
   isExited: () => boolean;
 };
 
 const SIGNAL_DAEMON_STOP_KILL_TIMEOUT_MS = 1_500;
+// signal-cli emits this only after its own HttpServer.start() succeeds, so an unrelated listener
+// cannot make OpenClaw claim that the spawned child owns the configured endpoint.
+const SIGNAL_DAEMON_HTTP_READY_PATTERN = /\bStarted HTTP server on\b/;
 
 type SignalDaemonExitEvent = {
   source: "process" | "spawn-error";
@@ -64,6 +68,7 @@ function bindSignalCliOutput(params: {
   stream: NodeJS.ReadableStream | null | undefined;
   log: (message: string) => void;
   error: (message: string) => void;
+  onLine?: (line: string) => void;
 }): void {
   if (!params.stream) {
     return;
@@ -72,6 +77,7 @@ function bindSignalCliOutput(params: {
   // framing so classification sees complete text, including the final unterminated line.
   const lines = createInterface({ input: params.stream });
   lines.on("line", (line) => {
+    params.onLine?.(line);
     const kind = classifySignalCliLogLine(line);
     if (kind === "log") {
       params.log(`signal-cli: ${line.trim()}`);
@@ -122,20 +128,39 @@ export function spawnSignalDaemon(opts: SignalDaemonOpts): SignalDaemonHandle {
   let settledExit = false;
   let stopPromise: Promise<void> | undefined;
   let resolveExit!: (value: SignalDaemonExitEvent) => void;
+  let resolveReady!: () => void;
+  let rejectReady!: (error: Error) => void;
   const exitedPromise = new Promise<SignalDaemonExitEvent>((resolve) => {
     resolveExit = resolve;
   });
+  const readyPromise = new Promise<void>((resolve, reject) => {
+    resolveReady = resolve;
+    rejectReady = reject;
+  });
+  // A lifecycle owner may stop the child before it starts awaiting readiness. Keep the returned
+  // rejection observable without turning that deliberate early teardown into an unhandled task.
+  void readyPromise.catch(() => {});
+  let ready = false;
+  const markReady = (line: string) => {
+    if (!ready && SIGNAL_DAEMON_HTTP_READY_PATTERN.test(line)) {
+      ready = true;
+      resolveReady();
+    }
+  };
   const settleExit = (value: SignalDaemonExitEvent) => {
     if (settledExit) {
       return;
     }
     settledExit = true;
     exited = true;
+    if (!ready) {
+      rejectReady(new Error(formatSignalDaemonExit(value)));
+    }
     resolveExit(value);
   };
 
-  bindSignalCliOutput({ stream: child.stdout, log, error });
-  bindSignalCliOutput({ stream: child.stderr, log, error });
+  bindSignalCliOutput({ stream: child.stdout, log, error, onLine: markReady });
+  bindSignalCliOutput({ stream: child.stderr, log, error, onLine: markReady });
   child.once("exit", (code, signal) => {
     settleExit({
       source: "process",
@@ -166,6 +191,7 @@ export function spawnSignalDaemon(opts: SignalDaemonOpts): SignalDaemonHandle {
 
   return {
     pid: child.pid ?? undefined,
+    ready: readyPromise,
     exited: exitedPromise,
     isExited: () => exited,
     stop: () => {

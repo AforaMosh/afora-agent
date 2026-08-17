@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   spawnDaemon: vi.fn(
     (): SignalDaemonHandle => ({
       pid: 1234,
+      ready: Promise.resolve(),
       stop: mocks.stop,
       exited: new Promise<never>(() => {}),
       isExited: () => false,

@@ -163,6 +163,50 @@ describe("monitorSignalProvider autostart", () => {
     expect(isSignalManagedDaemonOwned(owner)).toBe(false);
   });
 
+  it("does not publish ownership for another listener before the child reports readiness", async () => {
+    const account = "+15555550123";
+    setSignalAutoStartConfig({ account });
+    const abortController = new AbortController();
+    const owner = {
+      accountId: "default",
+      account,
+      cliPath: "signal-cli",
+      httpHost: "127.0.0.1",
+      httpPort: 8080,
+    };
+    let resolveChildReady!: () => void;
+    const childReady = new Promise<void>((resolve) => {
+      resolveChildReady = resolve;
+    });
+    let resolveProbeStarted!: () => void;
+    const probeStarted = new Promise<void>((resolve) => {
+      resolveProbeStarted = resolve;
+    });
+    spawnSignalDaemonMock.mockReturnValueOnce(createMockSignalDaemonHandle({ ready: childReady }));
+    waitForTransportReadyMock.mockImplementationOnce(async () => {
+      resolveProbeStarted();
+    });
+    streamMock.mockImplementationOnce(async () => {
+      expect(isSignalManagedDaemonOwned(owner)).toBe(true);
+      abortController.abort();
+    });
+
+    const monitorPromise = runMonitorWithMocks({
+      abortSignal: abortController.signal,
+      runtime: createMonitorRuntime(),
+    });
+    const firstReadinessEvent = await Promise.race([
+      probeStarted.then(() => "transport-probe" as const),
+      new Promise<"event-loop-turn">((resolve) => {
+        setImmediate(() => resolve("event-loop-turn"));
+      }),
+    ]);
+    resolveChildReady();
+    await monitorPromise;
+
+    expect(firstReadinessEvent).toBe("event-loop-turn");
+  });
+
   it("lets setup validate the active owned daemon, then removes ownership on stop", async () => {
     const account = "+15555550123";
     const transport = {

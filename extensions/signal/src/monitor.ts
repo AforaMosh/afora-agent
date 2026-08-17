@@ -605,6 +605,7 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
 
   try {
     if (daemonHandle) {
+      await daemonHandle.ready;
       await waitForSignalDaemonReady({
         baseUrl,
         abortSignal: daemonLifecycle.abortSignal,

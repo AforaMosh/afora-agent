@@ -330,6 +330,7 @@ export async function probeManagedSignalSetup(params: {
         : {}),
     });
     daemon = spawnedDaemon;
+    await spawnedDaemon.ready;
     await waitForTransportReady({
       label: "signal-cli setup daemon",
       timeoutMs: Math.min(120_000, Math.max(1_000, resolved.startupTimeoutMs)),

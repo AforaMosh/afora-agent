@@ -120,6 +120,39 @@ describe("spawnSignalDaemon", () => {
     },
   );
 
+  it("reports readiness only after the spawned child starts its HTTP server", async () => {
+    const handle = spawnSignalDaemon({
+      cliPath: "signal-cli",
+      httpHost: "127.0.0.1",
+      httpPort: 8080,
+    });
+    let ready = false;
+    void handle.ready.then(() => {
+      ready = true;
+    });
+    await Promise.resolve();
+    expect(ready).toBe(false);
+
+    child.stderr.write("INFO HttpServerHandler - Started HTTP server on /127.0.0.1:8080\n");
+    await handle.ready;
+
+    expect(ready).toBe(true);
+  });
+
+  it("rejects readiness when the spawned child exits before binding", async () => {
+    const handle = spawnSignalDaemon({
+      cliPath: "signal-cli",
+      httpHost: "127.0.0.1",
+      httpPort: 8080,
+    });
+
+    child.emit("exit", 1, null);
+
+    await expect(handle.ready).rejects.toThrow(
+      "signal daemon exited (source=process code=1 signal=null)",
+    );
+  });
+
   it("waits for exit after SIGTERM before resolving stop", async () => {
     const handle = spawnSignalDaemon({
       cliPath: "signal-cli",
