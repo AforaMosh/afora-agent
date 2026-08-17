@@ -197,6 +197,7 @@ function buildSignalReactionSystemEventText(params: {
 
 async function waitForSignalDaemonReady(params: {
   baseUrl: string;
+  daemonHandle: SignalDaemonHandle;
   abortSignal?: AbortSignal;
   timeoutMs: number;
   logAfterMs: number;
@@ -214,6 +215,12 @@ async function waitForSignalDaemonReady(params: {
     abortSignal: params.abortSignal,
     runtime: params.runtime,
     check: async () => {
+      if (params.daemonHandle.isExited()) {
+        throw new Error("signal-cli exited before its HTTP server became ready.");
+      }
+      if (!params.daemonHandle.isReady()) {
+        return { ok: false, error: "child readiness marker missing" };
+      }
       const res = await signalCheck(params.baseUrl, 1000);
       if (res.ok) {
         return { ok: true };
@@ -605,9 +612,9 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
 
   try {
     if (daemonHandle) {
-      await daemonHandle.ready;
       await waitForSignalDaemonReady({
         baseUrl,
+        daemonHandle,
         abortSignal: daemonLifecycle.abortSignal,
         timeoutMs: startupTimeoutMs,
         logAfterMs: 10_000,
@@ -615,6 +622,7 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
         runtime,
         waitForTransportReadyFn,
       });
+      daemonLifecycle.abortSignal.throwIfAborted();
       const daemonExitError = daemonLifecycle.getExitError();
       if (daemonExitError) {
         throw daemonExitError;

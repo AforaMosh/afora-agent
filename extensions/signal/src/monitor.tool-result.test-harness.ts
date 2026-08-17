@@ -141,9 +141,9 @@ export function createSignalToolResultConfig(
 
 export function createMockSignalDaemonHandle(
   overrides: {
-    ready?: Promise<void>;
     stop?: MockFn;
     exited?: Promise<SignalDaemonExitEvent>;
+    isReady?: () => boolean;
     isExited?: () => boolean;
   } = {},
 ): SignalDaemonHandle {
@@ -151,9 +151,9 @@ export function createMockSignalDaemonHandle(
   const exited = overrides.exited ?? new Promise<SignalDaemonExitEvent>(() => {});
   const isExited = overrides.isExited ?? (() => false);
   return {
-    ready: overrides.ready ?? Promise.resolve(),
     stop: stop as unknown as () => Promise<void>,
     exited,
+    isReady: overrides.isReady ?? (() => true),
     isExited,
   };
 }

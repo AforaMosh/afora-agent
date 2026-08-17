@@ -330,7 +330,6 @@ export async function probeManagedSignalSetup(params: {
         : {}),
     });
     daemon = spawnedDaemon;
-    await spawnedDaemon.ready;
     await waitForTransportReady({
       label: "signal-cli setup daemon",
       timeoutMs: Math.min(120_000, Math.max(1_000, resolved.startupTimeoutMs)),
@@ -342,6 +341,9 @@ export async function probeManagedSignalSetup(params: {
       check: async () => {
         if (spawnedDaemon.isExited()) {
           throw new Error("signal-cli exited before its HTTP server became ready.");
+        }
+        if (!spawnedDaemon.isReady()) {
+          return { ok: false, error: "child readiness marker missing" };
         }
         result = await probeManagedBind({
           ...params,

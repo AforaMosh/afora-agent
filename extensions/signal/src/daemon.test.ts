@@ -126,20 +126,15 @@ describe("spawnSignalDaemon", () => {
       httpHost: "127.0.0.1",
       httpPort: 8080,
     });
-    let ready = false;
-    void handle.ready.then(() => {
-      ready = true;
-    });
-    await Promise.resolve();
-    expect(ready).toBe(false);
+    expect(handle.isReady()).toBe(false);
 
     child.stderr.write("INFO HttpServerHandler - Started HTTP server on /127.0.0.1:8080\n");
-    await handle.ready;
+    await vi.waitFor(() => expect(handle.isReady()).toBe(true));
 
-    expect(ready).toBe(true);
+    expect(handle.isExited()).toBe(false);
   });
 
-  it("rejects readiness when the spawned child exits before binding", async () => {
+  it("does not report readiness when the spawned child exits before binding", async () => {
     const handle = spawnSignalDaemon({
       cliPath: "signal-cli",
       httpHost: "127.0.0.1",
@@ -148,9 +143,8 @@ describe("spawnSignalDaemon", () => {
 
     child.emit("exit", 1, null);
 
-    await expect(handle.ready).rejects.toThrow(
-      "signal daemon exited (source=process code=1 signal=null)",
-    );
+    expect(handle.isReady()).toBe(false);
+    expect(await handle.exited).toEqual({ source: "process", code: 1, signal: null });
   });
 
   it("waits for exit after SIGTERM before resolving stop", async () => {

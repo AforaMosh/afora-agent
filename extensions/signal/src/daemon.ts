@@ -19,9 +19,9 @@ type SignalDaemonOpts = {
 
 export type SignalDaemonHandle = {
   pid?: number;
-  ready: Promise<void>;
   stop: () => Promise<void>;
   exited: Promise<SignalDaemonExitEvent>;
+  isReady: () => boolean;
   isExited: () => boolean;
 };
 
@@ -128,23 +128,13 @@ export function spawnSignalDaemon(opts: SignalDaemonOpts): SignalDaemonHandle {
   let settledExit = false;
   let stopPromise: Promise<void> | undefined;
   let resolveExit!: (value: SignalDaemonExitEvent) => void;
-  let resolveReady!: () => void;
-  let rejectReady!: (error: Error) => void;
   const exitedPromise = new Promise<SignalDaemonExitEvent>((resolve) => {
     resolveExit = resolve;
   });
-  const readyPromise = new Promise<void>((resolve, reject) => {
-    resolveReady = resolve;
-    rejectReady = reject;
-  });
-  // A lifecycle owner may stop the child before it starts awaiting readiness. Keep the returned
-  // rejection observable without turning that deliberate early teardown into an unhandled task.
-  void readyPromise.catch(() => {});
   let ready = false;
   const markReady = (line: string) => {
     if (!ready && SIGNAL_DAEMON_HTTP_READY_PATTERN.test(line)) {
       ready = true;
-      resolveReady();
     }
   };
   const settleExit = (value: SignalDaemonExitEvent) => {
@@ -153,9 +143,6 @@ export function spawnSignalDaemon(opts: SignalDaemonOpts): SignalDaemonHandle {
     }
     settledExit = true;
     exited = true;
-    if (!ready) {
-      rejectReady(new Error(formatSignalDaemonExit(value)));
-    }
     resolveExit(value);
   };
 
@@ -191,8 +178,8 @@ export function spawnSignalDaemon(opts: SignalDaemonOpts): SignalDaemonHandle {
 
   return {
     pid: child.pid ?? undefined,
-    ready: readyPromise,
     exited: exitedPromise,
+    isReady: () => ready,
     isExited: () => exited,
     stop: () => {
       if (exited) {

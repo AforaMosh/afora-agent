@@ -25,9 +25,9 @@ const mocks = vi.hoisted(() => ({
   spawnDaemon: vi.fn(
     (): SignalDaemonHandle => ({
       pid: 1234,
-      ready: Promise.resolve(),
       stop: mocks.stop,
       exited: new Promise<never>(() => {}),
+      isReady: () => true,
       isExited: () => false,
     }),
   ),
@@ -50,7 +50,10 @@ vi.mock("openclaw/plugin-sdk/gateway-runtime", async () => {
   );
   return { ...actual, callGatewayFromCli: mocks.callGateway };
 });
-vi.mock("./daemon.js", () => ({ spawnSignalDaemon: mocks.spawnDaemon }));
+vi.mock("./daemon.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./daemon.js")>();
+  return { ...actual, spawnSignalDaemon: mocks.spawnDaemon };
+});
 vi.mock("./setup-daemon-bind.js", () => ({
   assertSignalSetupDaemonBindAvailable: mocks.assertBindAvailable,
 }));
@@ -457,8 +460,19 @@ describe("probeManagedSignalSetup", () => {
   it("passes setup cancellation to readiness and rethrows its reason after cleanup", async () => {
     const abort = new AbortController();
     const reason = new DOMException("setup cancelled", "AbortError");
-    mocks.waitForReady.mockImplementationOnce(async ({ abortSignal }) => {
+    mocks.spawnDaemon.mockReturnValueOnce({
+      pid: 1234,
+      stop: mocks.stop,
+      exited: new Promise<never>(() => {}),
+      isReady: () => false,
+      isExited: () => false,
+    });
+    mocks.waitForReady.mockImplementationOnce(async ({ abortSignal, check }) => {
       expect(abortSignal).toBe(abort.signal);
+      await expect(check()).resolves.toEqual({
+        ok: false,
+        error: "child readiness marker missing",
+      });
       abort.abort(reason);
     });
 
