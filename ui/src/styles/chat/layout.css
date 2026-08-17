@@ -5804,7 +5804,7 @@ button.chat-pr__diff {
 
   .agent-chat__composer-shell {
     width: calc(100% - 8px);
-    margin: 6px 4px calc(6px + var(--safe-area-bottom));
+    margin: 6px 4px var(--safe-area-bottom);
     gap: 6px;
   }
 
@@ -5824,16 +5824,6 @@ button.chat-pr__diff {
 
   .agent-chat__composer-controls .chat-controls__model {
     min-width: 0;
-  }
-}
-
-@media (display-mode: standalone) and (max-width: 768px) {
-  .agent-chat__composer-shell {
-    margin-bottom: max(6px, var(--safe-area-bottom));
-  }
-
-  .agent-chat__composer-shell:has(.agent-chat__composer-combobox > :is(textarea, input):focus) {
-    margin-bottom: 0;
   }
 }
 
