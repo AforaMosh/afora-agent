@@ -384,7 +384,6 @@ describe("spawnSubagentDirect in-process Gateway collector launch", () => {
       sessionId: "parent-session-id",
       runId: "parent-run",
       claimId: "parent-claim",
-      claimedAt: 1,
       placementGeneration: 4,
       owner: { kind: "worker", environmentId: "worker-env", ownerEpoch: 7 },
     } satisfies WorkerSessionTurnClaim;
