@@ -1,6 +1,9 @@
 import type { ExecutionIdentityAdmissionFacts } from "../../audit/execution-identity-admission.js";
 import { executionIdentitySpawnAdmission } from "../../audit/execution-identity-spawn-admission.js";
-import { readAgentRuntimeExecutionLineage } from "../agent-runtime-execution-lineage.js";
+import {
+  consumeAgentRuntimeExecutionLineage,
+  readAgentRuntimeExecutionLineage,
+} from "../agent-runtime-execution-lineage.js";
 import type { AgentRuntimeIdentity } from "../agent-runtime-identity-token.js";
 
 type ExecutionIdentitySpawnFacts = Pick<
@@ -15,7 +18,7 @@ export function resolveExecutionIdentitySpawnFacts(
   identity: AgentRuntimeIdentity | undefined,
 ): ExecutionIdentitySpawnFacts | undefined {
   const lineage = readAgentRuntimeExecutionLineage(identity?.sessionSpawnContext);
-  if (!identity || !lineage) {
+  if (!identity || !lineage || !consumeAgentRuntimeExecutionLineage(identity)) {
     return undefined;
   }
   const parent = identity.executionIdentity;
