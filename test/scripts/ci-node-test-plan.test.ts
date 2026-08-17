@@ -506,7 +506,6 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
       cliProcessGroups.find((group) => group.shard_name.endsWith("-run-loop"))?.includePatterns,
     ).toEqual(["src/cli/gateway-cli/run-loop.test.ts"]);
     expect(cliProcessGroups.find((group) => group.shard_name.endsWith("-run-loop"))?.env).toEqual({
-      NODE_OPTIONS: "--max-old-space-size=512",
       OPENCLAW_VITEST_FS_MODULE_CACHE: "0",
       OPENCLAW_VITEST_MAX_WORKERS: "1",
     });

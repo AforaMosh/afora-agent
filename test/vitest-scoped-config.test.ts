@@ -624,6 +624,11 @@ describe("scoped vitest configs", () => {
     expect(processTestConfig.env).toMatchObject({
       ESBUILD_WORKER_THREADS: "0",
     });
+    expectThreadedIsolatedRunner(
+      createCliProcessVitestConfig({
+        OPENCLAW_VITEST_SHARD_NAME: "agentic-cli-process-run-loop",
+      }),
+    );
   });
 
   it("keeps native SQLite runtime config tests in forked workers", () => {
