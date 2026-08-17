@@ -11,7 +11,7 @@ function noteRunner() {
   });
 }
 
-function qrStep(): WizardStep {
+function qrStep(): Extract<WizardStep, { type: "qr" }> {
   return {
     id: "qr-step",
     type: "qr",
