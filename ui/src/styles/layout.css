@@ -884,18 +884,26 @@ openclaw-settings-save-indicator {
   display: flex;
   min-height: 100%;
   overflow: visible;
-  border-right: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-inline-end: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
   transition: width var(--shell-focus-duration) var(--shell-focus-ease);
 }
 
-/* 1px overlay on the nav border edge; the divider paints its own centered
-   line, so the host needs no background here. */
+/* The shell owns the resting boundary. The wider resize target takes over
+   that same edge during interaction, avoiding a doubled divider. */
 .sidebar-resizer {
   grid-area: nav;
   align-self: stretch;
   justify-self: end;
   z-index: 20;
-  width: 1px;
+  width: var(--rail-resizer-size);
+  --rail-resizer-size: 6px;
+  --rail-divider-color: transparent;
+  --accent: color-mix(in srgb, var(--text) 42%, transparent);
+  outline: none;
+}
+
+.shell:has(.sidebar-resizer:is(:hover, :focus-visible, .dragging)) .shell-nav {
+  border-inline-end-color: transparent;
 }
 
 .shell:has(.sidebar-resizer.dragging) {
@@ -1018,10 +1026,37 @@ openclaw-settings-save-indicator {
      horizontal scrollbar beside the divider. */
   overflow-x: hidden;
   overflow-y: auto;
-  /* Cancel the shell's horizontal padding so the thumb hugs its right edge;
-     both values share --sidebar-pad-x so they cannot drift. */
-  margin-right: calc(-1 * var(--sidebar-pad-x));
-  padding-right: var(--sidebar-pad-x);
+  /* Extend the scrollport through the shell padding so the thumb hugs the
+     column edge while content keeps its existing inset. */
+  margin-inline-end: calc(-1 * var(--sidebar-pad-x));
+  padding-inline-end: var(--sidebar-pad-x);
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.sidebar-shell__body::-webkit-scrollbar,
+.sidebar-shell__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-shell__body::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  background-clip: content-box;
+}
+
+.sidebar:hover .sidebar-shell__body,
+.sidebar-shell__body:focus-within,
+.sidebar-shell__body--scrolling {
+  scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent;
+}
+
+.sidebar:hover .sidebar-shell__body::-webkit-scrollbar-thumb,
+.sidebar-shell__body:focus-within::-webkit-scrollbar-thumb,
+.sidebar-shell__body--scrolling::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, currentColor 22%, transparent);
 }
 
 .sidebar-shell__footer {
