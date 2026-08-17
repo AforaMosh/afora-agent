@@ -547,7 +547,11 @@ export function createCodexDynamicToolBridge(params: {
     ...availableProjection.quarantinedTools,
     ...registeredProjection.quarantinedTools,
   ]);
-  warnQuarantinedDynamicTools(quarantinedTools);
+  warnQuarantinedDynamicTools({
+    tools: quarantinedTools,
+    availableToolCount: availableTools.length,
+    registeredToolCount: registeredSpecTools.length,
+  });
   emitQuarantinedDynamicToolDiagnostics(quarantinedTools, params.hookContext);
   const telemetry: CodexDynamicToolBridge["telemetry"] = {
     didSendViaMessagingTool: false,
@@ -1298,18 +1302,24 @@ function readCodexDynamicToolDescriptor(
   return { ok: true, name, description, parameters };
 }
 
-function warnQuarantinedDynamicTools(tools: readonly CodexDynamicToolSchemaQuarantine[]): void {
-  if (tools.length === 0) {
+function warnQuarantinedDynamicTools(params: {
+  tools: readonly CodexDynamicToolSchemaQuarantine[];
+  availableToolCount: number;
+  registeredToolCount: number;
+}): void {
+  if (params.tools.length === 0) {
     return;
   }
   const unique = new Map<string, readonly string[]>();
-  for (const tool of tools) {
+  for (const tool of params.tools) {
     unique.set(tool.tool, tool.violations);
   }
   embeddedAgentLog.warn(
-    `codex app-server quarantined ${unique.size} dynamic ${unique.size === 1 ? "tool" : "tools"} with unsupported input schemas: ${[...unique.keys()].join(", ")}`,
+    `codex app-server quarantined ${unique.size} unsupported dynamic tool ${unique.size === 1 ? "definition" : "definitions"}: ${[...unique.keys()].join(", ")}; retained ${params.availableToolCount} available and ${params.registeredToolCount} registered tools`,
     {
       tools: [...unique.entries()].map(([tool, violations]) => ({ tool, violations })),
+      availableToolCount: params.availableToolCount,
+      registeredToolCount: params.registeredToolCount,
     },
   );
 }

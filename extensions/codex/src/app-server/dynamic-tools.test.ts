@@ -1386,7 +1386,7 @@ describe("createCodexDynamicToolBridge", () => {
       diagnosticTool: "mcp__read",
     },
   ])("quarantines Codex-invalid dynamic tool names: $label", async (testCase) => {
-    vi.spyOn(embeddedAgentLog, "warn").mockImplementation(() => undefined);
+    const warn = vi.spyOn(embeddedAgentLog, "warn").mockImplementation(() => undefined);
     const execute = vi.fn(async () => textToolResult("healthy sibling executed"));
     const placement =
       testCase.placement === "direct-only" ? { catalogMode: "direct-only" as const } : {};
@@ -1440,6 +1440,13 @@ describe("createCodexDynamicToolBridge", () => {
     expect(bridge.telemetry.quarantinedTools).toEqual([
       expect.objectContaining({ tool: testCase.diagnosticTool }),
     ]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("retained 1 available and 2 registered tools"),
+      expect.objectContaining({
+        availableToolCount: 1,
+        registeredToolCount: 2,
+      }),
+    );
 
     const validResult = await bridge.handleToolCall({
       threadId: "thread-1",
@@ -1470,6 +1477,26 @@ describe("createCodexDynamicToolBridge", () => {
         text: `Unknown OpenClaw tool: ${testCase.name}`,
       },
     ]);
+  });
+
+  it("reports an empty final surface when all dynamic tool names are invalid", () => {
+    const warn = vi.spyOn(embeddedAgentLog, "warn").mockImplementation(() => undefined);
+    const bridge = createCodexDynamicToolBridge({
+      tools: [createTool({ name: "bad.name" }), createTool({ name: "mcp" })],
+      signal: new AbortController().signal,
+    });
+
+    expect(bridge.availableTools).toEqual([]);
+    expect(bridge.availableSpecs).toEqual([]);
+    expect(bridge.specs).toEqual([]);
+    expect(bridge.telemetry.quarantinedTools.map((tool) => tool.tool)).toEqual(["bad.name", "mcp"]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("retained 0 available and 0 registered tools"),
+      expect.objectContaining({
+        availableToolCount: 0,
+        registeredToolCount: 0,
+      }),
+    );
   });
 
   it("uses the bridge's executable projection for authority snapshots", () => {
