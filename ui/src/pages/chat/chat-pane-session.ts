@@ -152,10 +152,10 @@ export abstract class ChatPaneSession extends ChatPaneTaskSuggestions {
       this.deferredSessionHydrationRequestVersion === requestVersion &&
       this.connectionGeneration === connectionGeneration &&
       this.state === state &&
-      this.presented &&
       state.connected &&
       state.client === client &&
       state.sessionKey === sessionKey;
+    const isPrewarmCurrent = () => isCurrent() && this.presented;
     const scheduleAfterTranscript = () => {
       if (!isCurrent()) {
         return;
@@ -168,7 +168,7 @@ export abstract class ChatPaneSession extends ChatPaneTaskSuggestions {
           void this.probeSessionDiscussion(sessionKey);
           this.hydrateSessionCompanion(sessionKey);
           void this.refreshSessionPullRequests();
-          this.prewarmSessionGitHubPreviews(state, prewarmController.signal, isCurrent);
+          this.prewarmSessionGitHubPreviews(state, prewarmController.signal, isPrewarmCurrent);
         }
         complete();
       });
@@ -182,10 +182,7 @@ export abstract class ChatPaneSession extends ChatPaneTaskSuggestions {
     isCurrent: () => boolean,
   ): void {
     const client = state.client;
-    if (
-      !client ||
-      isGatewayMethodAdvertised(this.context.gateway.snapshot, GITHUB_PREVIEW_METHOD) !== true
-    ) {
+    if (!client || signal.aborted || !isCurrent()) {
       return;
     }
     const anchors = this.querySelectorAll<HTMLAnchorElement>(

@@ -36,13 +36,6 @@ describe("chat pane session hydration", () => {
         methods: [SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD, "session.discussion.info"],
       },
     } as never;
-    const thread = document.createElement("div");
-    thread.className = "chat-thread";
-    const anchor = document.createElement("a");
-    anchor.className = "markdown-github-link";
-    anchor.href = "https://github.com/openclaw/openclaw/issues/1";
-    thread.append(anchor);
-    pane.append(thread);
     const commitEffects: AfterCommitEffect[] = [];
     const afterCommit = vi.fn((effect: AfterCommitEffect) => {
       commitEffects.push(effect);
@@ -82,6 +75,61 @@ describe("chat pane session hydration", () => {
     expect(complete).toHaveBeenCalledOnce();
   });
 
+  it("keeps hidden retained-pane hydration independent of preview prewarming", async () => {
+    const request = vi.fn((_method: string, _params?: unknown) => Promise.resolve({}));
+    const listBranches = vi.fn(() => Promise.resolve([]));
+    const sessions = {
+      capturePullRequestEpoch: vi.fn(() => Symbol("pull-requests")),
+      listBranches,
+      setPullRequestSummary: vi.fn(),
+    } as unknown as SessionCapability;
+    const { pane, state } = createTestChatPane({
+      client: { request } as unknown as GatewayBrowserClient,
+      sessions,
+    });
+    state.assistantAgentId = "main";
+    state.sessionKey = "agent:work:current";
+    pane.context.gateway.snapshot.hello = {
+      features: {
+        methods: [SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD, "session.discussion.info"],
+      },
+    } as never;
+    const thread = document.createElement("div");
+    thread.className = "chat-thread";
+    const anchor = document.createElement("a");
+    anchor.className = "markdown-github-link";
+    anchor.href = "https://github.com/openclaw/openclaw/issues/1";
+    thread.append(anchor);
+    pane.append(thread);
+    const commitEffects: AfterCommitEffect[] = [];
+    state.renderLifecycle = {
+      invalidate: vi.fn(),
+      afterCommit: (effect) => {
+        commitEffects.push(effect);
+        return () => undefined;
+      },
+    };
+    const transcript = deferred<void>();
+
+    pane.deferSessionHydrationUntilTranscript(state.sessionKey, transcript.promise);
+    pane.presented = false;
+    transcript.resolve();
+    await transcript.promise;
+    await Promise.resolve();
+
+    expect(commitEffects).toHaveLength(1);
+    const complete = vi.fn();
+    commitEffects[0]?.(complete);
+    await Promise.resolve();
+
+    expect(listBranches).toHaveBeenCalledOnce();
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      "session.discussion.info",
+      "sessions.companion.state",
+    ]);
+    expect(complete).toHaveBeenCalledOnce();
+  });
+
   it("prewarms the newest three unique rendered GitHub cards after commit", async () => {
     const request = vi.fn((_method: string, params?: unknown) =>
       (params as { number?: number } | undefined)?.number === 4
@@ -92,9 +140,6 @@ describe("chat pane session hydration", () => {
       client: { request } as unknown as GatewayBrowserClient,
       sessions: {} as SessionCapability,
     });
-    pane.context.gateway.snapshot.hello = {
-      features: { methods: [GITHUB_PREVIEW_METHOD] },
-    } as never;
     const thread = document.createElement("div");
     thread.className = "chat-thread";
     for (const href of [
