@@ -12,20 +12,22 @@ export type AgentRuntimeExecutionLineage = {
   externalNativeActions: "observable" | "unsupported";
 };
 
+const AGENT_RUNTIME_EXECUTION_LINEAGE = Symbol("agentRuntimeExecutionLineage");
+
 type AgentRuntimeExecutionLineageCarrier = {
-  executionLineage?: AgentRuntimeExecutionLineage;
+  [AGENT_RUNTIME_EXECUTION_LINEAGE]?: AgentRuntimeExecutionLineage;
 };
 
-/** Add private signed lineage without expanding the public session-spawn context. */
+/** Add process-local lineage without expanding or serializing the spawn context. */
 export function withAgentRuntimeExecutionLineage<T extends AgentRuntimeSessionSpawnContext>(
   context: T,
   lineage: AgentRuntimeExecutionLineage,
 ): T & AgentRuntimeExecutionLineageCarrier {
-  return { ...context, executionLineage: lineage };
+  return { ...context, [AGENT_RUNTIME_EXECUTION_LINEAGE]: lineage };
 }
 
 export function readAgentRuntimeExecutionLineage(
   context: (AgentRuntimeSessionSpawnContext & AgentRuntimeExecutionLineageCarrier) | undefined,
 ): AgentRuntimeExecutionLineage | undefined {
-  return context?.executionLineage;
+  return context?.[AGENT_RUNTIME_EXECUTION_LINEAGE];
 }

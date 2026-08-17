@@ -14,7 +14,10 @@ import { readExecApprovalsSnapshot } from "../infra/exec-approvals-store.js";
 import { testing as execApprovalsStoreTesting } from "../infra/exec-approvals-store.test-support.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
-import { withAgentRuntimeExecutionLineage } from "./agent-runtime-execution-lineage.js";
+import {
+  readAgentRuntimeExecutionLineage,
+  withAgentRuntimeExecutionLineage,
+} from "./agent-runtime-execution-lineage.js";
 
 const envSnapshot = captureEnv(["HOME", "OPENCLAW_HOME", "OPENCLAW_STATE_DIR"]);
 
@@ -268,7 +271,7 @@ describe("agent runtime identity token", () => {
     });
   });
 
-  it("round-trips a signed visible-session spawn policy", async () => {
+  it("round-trips spawn policy without serializing private lineage", async () => {
     useTempHome();
     const runtimeToken = await importRuntimeTokenModule();
     const parentExecutionIdentity = createExecutionIdentityAdmissionToken("run-1", {
@@ -291,8 +294,8 @@ describe("agent runtime identity token", () => {
         },
         {
           relation: "sessions_spawn",
-          requesterRef: "agent:main:main",
-          controllerRef: "agent:main:main",
+          requesterRef: "private-requester-ref",
+          controllerRef: "private-controller-ref",
           depth: 2,
           applicableGrantRefs: ["tool:sessions_spawn"],
           localPolicyRefs: ["local-policy"],
@@ -303,7 +306,13 @@ describe("agent runtime identity token", () => {
       ),
     });
 
-    await expect(runtimeToken.verifyAgentRuntimeIdentityToken(token)).resolves.toMatchObject({
+    const [payload] = token.split(".");
+    const decodedPayload = Buffer.from(payload ?? "", "base64url").toString("utf8");
+    expect(decodedPayload).not.toContain("private-requester-ref");
+    expect(decodedPayload).not.toContain("private-controller-ref");
+
+    const identity = await runtimeToken.verifyAgentRuntimeIdentityToken(token);
+    expect(identity).toMatchObject({
       kind: "agentRuntime",
       agentId: "main",
       sessionKey: "agent:main:main",
@@ -315,19 +324,9 @@ describe("agent runtime identity token", () => {
           allow: ["read", "sessions_spawn"],
           deny: ["exec"],
         },
-        executionLineage: {
-          relation: "sessions_spawn",
-          requesterRef: "agent:main:main",
-          controllerRef: "agent:main:main",
-          depth: 2,
-          applicableGrantRefs: ["tool:sessions_spawn"],
-          localPolicyRefs: ["local-policy"],
-          runtimeAssuranceRefs: ["spawn-runtime:subagent"],
-          targetPolicyRefs: ["target-policy"],
-          externalNativeActions: "observable",
-        },
       },
     });
+    expect(readAgentRuntimeExecutionLineage(identity?.sessionSpawnContext)).toBeUndefined();
   });
 
   it("round-trips a short-lived cron self-management capability", async () => {
