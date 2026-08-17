@@ -77,6 +77,8 @@ const allowedAttrs = [
   "data-file-path",
   "type",
   "aria-label",
+  "aria-pressed",
+  "title",
   "role",
 ];
 const sanitizeOptions = {

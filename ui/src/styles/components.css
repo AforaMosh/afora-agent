@@ -2321,7 +2321,7 @@ openclaw-chat-session-rail {
 .code-block-wrapper pre {
   margin: 0;
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .code-block-wrapper pre:has(> code.markdown-block-art) {

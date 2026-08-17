@@ -1,6 +1,11 @@
 // Public chat transcript renderer and DOM shell.
 import { html, nothing, type TemplateResult } from "lit";
-import { handleMarkdownCodeBlockCopy } from "../../../components/markdown-code-blocks.ts";
+import { ref } from "lit/directives/ref.js";
+import {
+  handleMarkdownCodeBlockCopy,
+  handleMarkdownCodeBlockInteraction,
+  initializeMarkdownCodeBlocks,
+} from "../../../components/markdown-code-blocks.ts";
 import {
   markdownFileLinkFromEvent,
   markdownFileLinkFromKeyboardEvent,
@@ -104,6 +109,11 @@ function renderTranscriptShell(
   return html`
     <div
       class="chat-thread ${projection.isDirectThread ? "chat-thread--direct" : ""}"
+      ${ref((element) => {
+        if (element) {
+          initializeMarkdownCodeBlocks(element);
+        }
+      })}
       role="log"
       aria-live="off"
       aria-relevant="additions"
@@ -130,6 +140,7 @@ function renderTranscriptShell(
       @touchcancel=${props.onHistoryIntent}
       @click=${(event: Event) => {
         handleMarkdownCodeBlockCopy(event);
+        handleMarkdownCodeBlockInteraction(event);
         const target = markdownFileLinkFromEvent(event);
         if (target) {
           props.onOpenWorkspaceFile?.(target);

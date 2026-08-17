@@ -5027,11 +5027,14 @@ export const en: TranslationMap = {
       truncated: "… truncated ({total} chars, showing first {shown}).",
     },
     codeBlock: {
-      jsonLines: "JSON · {count} lines",
       jsonBadge: "JSON",
       jsonArrayItem: "Array ({count} item)",
       jsonArrayItems: "Array ({count} items)",
       jsonObjectKeys: "Object ({count} keys)",
+      hiddenLines: "{count} hidden lines",
+      showHiddenLines: "Show {count} hidden lines",
+      enableWrap: "Enable word wrap",
+      disableWrap: "Disable word wrap",
     },
     workspaceConflict: {
       titleOne: "1 cloud workspace conflict",
