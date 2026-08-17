@@ -29,7 +29,6 @@ import {
   parseAgentSessionKey,
   resolveAgentIdFromSessionKey,
 } from "../../../routing/session-key.js";
-import { recordSessionParticipantBestEffort } from "../../../sessions/session-participant-recording.js";
 import {
   recordSessionCreated,
   recordSubagentSpawned,
@@ -99,7 +98,6 @@ import { resolveConfiguredSubagentRunTimeoutSeconds } from "./subagent-spawn-pla
 
 type SpawnAcpMode = "run" | "session";
 type SpawnAcpSandboxMode = "inherit" | "require";
-type SpawnAcpStreamTarget = "parent";
 
 type SpawnAcpParams = {
   task: string;
@@ -116,7 +114,7 @@ type SpawnAcpParams = {
   sandbox?: SpawnAcpSandboxMode;
   cleanup?: "delete" | "keep";
   expectsCompletionMessage?: boolean;
-  streamTo?: SpawnAcpStreamTarget;
+  streamTo?: "parent";
   attachments?: AcpTurnAttachment[];
 };
 
@@ -611,13 +609,9 @@ export async function spawnAcpDirect(
           inheritedToolDenylist: ctx.inheritedToolDenylist,
         },
         parentExecutionIdentityToken: readParentExecutionIdentity(ctx),
-      });
-      recordSessionParticipantBestEffort({
-        actor: { type: "agent", id: requesterAgentId },
-        agentId: targetAgentId,
-        sessionKey,
-        source: "agent",
-        storePath: resolveSessionStorePathCore(cfg.session?.store, { agentId: targetAgentId }),
+        participantStorePath: resolveSessionStorePathCore(cfg.session?.store, {
+          agentId: targetAgentId,
+        }),
       });
       const runId = readGatewayRunId(response) ?? childIdem;
       if (state.parentRelay && runId !== childIdem && parentSessionKey) {

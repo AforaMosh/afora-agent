@@ -1,4 +1,5 @@
 import type { ExecutionIdentityAdmissionToken } from "../../../audit/execution-identity-admission.js";
+import { recordSessionParticipantBestEffort } from "../../../sessions/session-participant-recording.js";
 import { AGENT_LANE_SUBAGENT } from "../../lanes.js";
 import type { AcpSpawnBootstrapDeliveryPlan } from "./acp-spawn-bootstrap-delivery.js";
 import {
@@ -14,11 +15,12 @@ export async function launchAcpChildThroughGateway(params: {
   label?: string;
   lineage: Parameters<typeof buildSubagentExecutionSessionSpawnContext>[0];
   parentExecutionIdentityToken?: ExecutionIdentityAdmissionToken;
+  participantStorePath: string;
   runTimeoutSeconds: number;
   sessionKey: string;
   task: string;
 }) {
-  return await callSubagentGateway(
+  const response = await callSubagentGateway(
     withSubagentGatewayExecutionIdentity(
       {
         method: "agent",
@@ -45,4 +47,12 @@ export async function launchAcpChildThroughGateway(params: {
       },
     ),
   );
+  recordSessionParticipantBestEffort({
+    actor: { type: "agent", id: params.lineage.parentAgentId },
+    agentId: params.lineage.targetAgentId,
+    sessionKey: params.sessionKey,
+    source: "agent",
+    storePath: params.participantStorePath,
+  });
+  return response;
 }
