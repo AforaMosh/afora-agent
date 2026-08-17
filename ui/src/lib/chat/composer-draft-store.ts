@@ -296,12 +296,12 @@ export async function writeDurableComposerDraft(
     return total + attachment.blob.size;
   }, 0);
   if (payloadBytes > MAX_DURABLE_DRAFT_ATTACHMENT_BYTES) {
-    const emptyResult = await writeDurableComposerDraft(
+    const fallbackResult = await writeDurableComposerDraft(
       scope,
-      { revision: draft.revision, text: "", attachments: [] },
+      { revision: draft.revision, text: draft.text, attachments: [] },
       options,
     );
-    return emptyResult.status === "persisted" ? { status: "payload-too-large" } : emptyResult;
+    return fallbackResult.status === "persisted" ? { status: "payload-too-large" } : fallbackResult;
   }
   try {
     const database = await openDatabase();

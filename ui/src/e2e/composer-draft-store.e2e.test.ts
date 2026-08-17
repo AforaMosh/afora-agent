@@ -290,6 +290,9 @@ suite.define(() => {
             wrongGateway: wrongGateway.status,
             oversized: oversized.status,
             oversizedRead: oversizedRead.status,
+            oversizedText: oversizedRead.status === "found" ? oversizedRead.draft.text : null,
+            oversizedAttachmentCount:
+              oversizedRead.status === "found" ? oversizedRead.draft.attachments.length : null,
             oversizeConflict: oversizeConflict.status,
             oversizeConflictRead: oversizeConflictRead.status,
             oversizeConflictText:
@@ -325,7 +328,9 @@ suite.define(() => {
         wrongCredential: "not-found",
         wrongGateway: "not-found",
         oversized: "payload-too-large",
-        oversizedRead: "not-found",
+        oversizedRead: "found",
+        oversizedText: "oversized",
+        oversizedAttachmentCount: 0,
         oversizeConflict: "conflict",
         oversizeConflictRead: "found",
         oversizeConflictText: "newer record",

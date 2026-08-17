@@ -107,7 +107,8 @@ export class DraftSubmissionFlow {
 
   setVisibility(visibility: NewSessionVisibility) {
     this.visibilityValue = visibility;
-    this.callbacks.requestUpdate();
+    // Render the toggle transition only after its durable retirement fence settles.
+    // An immediate close after returning to normal can then persist the next edit directly.
     void this.draftPersistence
       .setIncognito(visibility === "incognito")
       .finally(this.callbacks.requestUpdate);
