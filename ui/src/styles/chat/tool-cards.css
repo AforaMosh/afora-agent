@@ -1885,6 +1885,17 @@
   animation: none;
 }
 
+.chat-turn-interrupted__icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.chat-turn-interrupted__icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 .chat-tasks-status__link {
   padding: 0;
   border: 0;

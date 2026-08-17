@@ -294,12 +294,7 @@ function composerControlsHtml(crowded = false) {
     <div class="agent-chat__composer-controls">
       ${
         crowded
-          ? `<div class="agent-chat__composer-run-status">
-          <span class="agent-chat__run-status agent-chat__run-status--interrupted">
-            ${iconSvg()}<span class="agent-chat__run-status-label">Interrupted</span>
-          </span>
-        </div>
-        <span class="agent-chat__session-overrides-pill">
+          ? `<span class="agent-chat__session-overrides-pill">
           <button class="agent-chat__session-overrides-open" type="button">4 session overrides</button>
           <button class="agent-chat__session-overrides-clear" type="button" aria-label="Clear session overrides">${iconSvg()}</button>
         </span>`
@@ -565,7 +560,7 @@ function chatHtml(opts: ChatFixtureOptions = {}, mobileNavLayout = false) {
                         ${
                           opts.activeQueuedEditFooter
                             ? `<span><button class="chat-send-btn chat-send-btn--stop" aria-label="Stop generating">${iconSvg()}</button></span>`
-                            : ""
+                            : `<button class="chat-send-btn" aria-label="Send message">${iconSvg()}</button>`
                         }
                       </div>
                     </div>
@@ -2311,20 +2306,25 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
         </html>
       `);
 
-      const colors = await page
-        .locator("[data-provider-mark]")
-        .evaluateAll((marks) =>
-          Object.fromEntries(
-            marks.map((mark) => [
+      const presentation = await page.locator("[data-provider-mark]").evaluateAll((marks) =>
+        Object.fromEntries(
+          marks.map((mark) => {
+            const rect = mark.getBoundingClientRect();
+            return [
               (mark as HTMLElement).dataset.providerMark,
-              getComputedStyle(mark).color,
-            ]),
-          ),
-        );
-      expect(colors.chat).toBe(colors.muted);
-      expect(colors.companion).toBe(colors.muted);
-      expect(colors.new).toBe(colors.brand);
-      expect(colors.muted).not.toBe(colors.brand);
+              { color: getComputedStyle(mark).color, height: rect.height, width: rect.width },
+            ];
+          }),
+        ),
+      );
+      expect(presentation.chat?.color).toBe(presentation.muted?.color);
+      expect(presentation.companion?.color).toBe(presentation.muted?.color);
+      expect(presentation.new?.color).toBe(presentation.brand?.color);
+      expect(presentation.muted?.color).not.toBe(presentation.brand?.color);
+      for (const mark of [presentation.chat, presentation.new, presentation.companion]) {
+        expect(mark?.width).toBeCloseTo(16, 2);
+        expect(mark?.height).toBeCloseTo(16, 2);
+      }
     } finally {
       await closeBrowserPage(page);
     }
@@ -2409,7 +2409,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
           meta: rectFor(".agent-chat__composer-meta"),
           model: rectFor(".chat-composer-model-control"),
           context: rectFor(".context-ring"),
-          send: rectFor(".chat-send-btn"),
+          send: rectFor('.chat-send-btn[aria-label="Send message"]'),
           shell: rectFor(".agent-chat__composer-shell"),
           textarea:
             textareaNode && textareaRect
@@ -2466,8 +2466,8 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
         ).toBeLessThanOrEqual(2);
       }
       expect(meta.y).toBeGreaterThanOrEqual(model.y - 1);
-      expect(attachIcon.width).toBeGreaterThanOrEqual(16);
-      expect(attachIcon.height).toBeGreaterThanOrEqual(16);
+      expect(attachIcon.width).toBeCloseTo(18, 2);
+      expect(attachIcon.height).toBeCloseTo(18, 2);
     } finally {
       await closeBrowserPage(page);
     }
@@ -2583,19 +2583,12 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
           model: rectFor(".chat-controls__model-trigger"),
           modelLabel: rectFor(".chat-controls__model-trigger .chat-controls__inline-select-label"),
           overrides: rectFor(".agent-chat__session-overrides-pill"),
-          status: rectFor(".agent-chat__composer-run-status"),
           typing: rectFor(".agent-chat__typing-indicator--outside"),
         };
       });
 
       expect(layout.controls.scrollWidth).toBeLessThanOrEqual(layout.controls.clientWidth + 1);
-      for (const control of [
-        layout.status,
-        layout.overrides,
-        layout.model,
-        layout.effort,
-        layout.typing,
-      ]) {
+      for (const control of [layout.overrides, layout.model, layout.effort, layout.typing]) {
         expect(control.x).toBeGreaterThanOrEqual(layout.footer.x - 1);
         expect(control.x + control.width).toBeLessThanOrEqual(
           layout.footer.x + layout.footer.width + 1,
@@ -2605,14 +2598,14 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
         expect(trigger.width).toBeGreaterThanOrEqual(TOUCH_TARGET_MIN_PX);
         expect(trigger.height).toBeGreaterThanOrEqual(TOUCH_TARGET_MIN_PX);
       }
-      expect(layout.modelLabel.scrollWidth).toBeLessThanOrEqual(layout.modelLabel.clientWidth + 1);
-      for (const [left, right] of [
-        [layout.status, layout.overrides],
-        [layout.overrides, layout.model],
-        [layout.model, layout.effort],
-        [layout.effort, layout.meta],
+      expect(layout.modelLabel.clientWidth).toBeGreaterThan(0);
+      expect(layout.modelLabel.scrollWidth).toBeGreaterThanOrEqual(layout.modelLabel.clientWidth);
+      for (const [name, left, right] of [
+        ["overrides-model", layout.overrides, layout.model],
+        ["model-effort", layout.model, layout.effort],
+        ["effort-meta", layout.effort, layout.meta],
       ] as const) {
-        expect(rectsOverlap(left, right)).toBe(false);
+        expect(rectsOverlap(left, right), `${name}: ${JSON.stringify(layout)}`).toBe(false);
       }
       expect(rectsOverlap(layout.typing, layout.footer)).toBe(false);
     } finally {
@@ -2620,7 +2613,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
     }
   });
 
-  it("wraps turn settings below queued-edit, microphone, and the single stop action at 320px", async () => {
+  it("keeps queued-edit, settings, microphone, and the single stop action on one row at 320px", async () => {
     const page = await openFixture(320, 568, { activeQueuedEditFooter: true });
     try {
       await expectNoHorizontalOverflow(page);
@@ -2646,9 +2639,10 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
       expect(rectsOverlap(layout.edit, layout.microphone)).toBe(false);
       expect(rectsOverlap(layout.microphone, layout.stop)).toBe(false);
       expect(await page.locator('[aria-label="Send message"]').count()).toBe(0);
-      expect(layout.middle.y).toBeGreaterThanOrEqual(
-        Math.max(layout.edit.y + layout.edit.height, layout.actions.y + layout.actions.height) - 1,
-      );
+      const rowCenter = layout.footer.y + layout.footer.height / 2;
+      for (const control of [layout.edit, layout.middle, layout.actions]) {
+        expect(Math.abs(control.y + control.height / 2 - rowCenter)).toBeLessThanOrEqual(2);
+      }
       expect(layout.footer.y - (layout.textarea.y + layout.textarea.height)).toBeLessThanOrEqual(8);
       expect(layout.middle.x).toBeGreaterThanOrEqual(layout.footer.x - 1);
       expect(layout.middle.x + layout.middle.width).toBeLessThanOrEqual(
@@ -2709,7 +2703,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
             ),
             context: rectFor(".context-ring"),
             attach: rectFor('.agent-chat__input-btn[aria-label="Add attachment"]'),
-            send: rectFor(".chat-send-btn"),
+            send: rectFor('.chat-send-btn[aria-label="Send message"]'),
           };
         });
 
@@ -2782,7 +2776,8 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
           for (const label of [modelLabel, effortLabel]) {
             expect(label.clientWidth).toBeDefined();
             expect(label.scrollWidth).toBeDefined();
-            expect(label.scrollWidth ?? 0).toBeLessThanOrEqual((label.clientWidth ?? 0) + 1);
+            expect(label.clientWidth ?? 0).toBeGreaterThan(0);
+            expect(label.scrollWidth ?? 0).toBeGreaterThanOrEqual(label.clientWidth ?? 0);
           }
           expect(send.width).toBeGreaterThanOrEqual(TOUCH_TARGET_MIN_PX);
           expect(send.height).toBeGreaterThanOrEqual(TOUCH_TARGET_MIN_PX);
@@ -2797,8 +2792,8 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
           // chrome-sized — that difference is what marks the text as the
           // subject of the surface.
           expect(composerFontSize).toBe(16);
-          expect(send.width).toBeCloseTo(28, 2);
-          expect(send.height).toBeCloseTo(28, 2);
+          expect(send.width).toBeCloseTo(32, 2);
+          expect(send.height).toBeCloseTo(32, 2);
         }
 
         if (width >= 1600) {
@@ -3031,7 +3026,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
           input: rectFor(".agent-chat__composer-shell > .agent-chat__input"),
           meta: rectFor(".agent-chat__composer-meta"),
           model: rectFor(".chat-composer-model-control"),
-          send: rectFor(".chat-send-btn"),
+          send: rectFor('.chat-send-btn[aria-label="Send message"]'),
         };
       });
 

@@ -57,7 +57,7 @@ import type {
   TranscriptRow,
 } from "./chat-transcript-controller.ts";
 import { resolveAssistantDisplayAvatar } from "./chat-welcome.ts";
-import { renderTurnRecapRow } from "./chat-working-indicator.ts";
+import { renderInterruptedTurnRow, renderTurnRecapRow } from "./chat-working-indicator.ts";
 
 type ChatTranscriptProjection = {
   isDirectThread: boolean;
@@ -187,6 +187,10 @@ export function projectChatTranscript(
   const activeSession = props.sessions?.sessions?.find((row) =>
     areUiSessionKeysEquivalent(row.key, props.sessionKey),
   );
+  const runInterrupted =
+    !props.runActive &&
+    !props.runWorking &&
+    (props.runStatus?.phase === "interrupted" || activeSession?.status === "killed");
   // Global-alias detection needs no session row: under configured global
   // scope, agent:<id>:global and configured-main aliases route to the global
   // stream even when the capped sessions list omits the canonical row (or it
@@ -595,6 +599,13 @@ export function projectChatTranscript(
       content: renderTurnRecapRow(turnRecap),
     });
   }
+  if (runInterrupted && !isEmpty && !showLoadingSkeleton) {
+    transcriptRows.push({
+      kind: "content",
+      key: "turn-interrupted",
+      content: renderInterruptedTurnRow(),
+    });
+  }
   const backgroundTasks =
     !props.runWorking && !isEmpty && !showLoadingSkeleton
       ? renderBackgroundTasksStatusRow(props.backgroundTasks)
@@ -629,6 +640,8 @@ export function projectChatTranscript(
     props.showToolCalls,
     Boolean(props.runActive),
     Boolean(props.runWorking),
+    props.runStatus?.phase,
+    runInterrupted,
     props.startupStatus?.phase,
     Boolean(props.waitingApproval),
     props.planStatus,

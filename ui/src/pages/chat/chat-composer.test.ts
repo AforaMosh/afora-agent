@@ -743,27 +743,14 @@ describe("renderChatComposer status", () => {
 
     expect(view.container.querySelector("openclaw-chat-question-panel")).toBeNull();
   });
-  it("renders only a fresh interrupted run as visible status chrome", () => {
-    const now = vi.spyOn(Date, "now").mockReturnValue(1_000);
-    let view = renderComposer({
-      runStatus: { phase: "done", runId: "run-0", sessionKey: "main", occurredAt: 900 },
-    });
-    expect(view.container.querySelector(".agent-chat__run-status")).toBeNull();
-
-    view = renderComposer({
-      runStatus: { phase: "interrupted", runId: "run-1", sessionKey: "main", occurredAt: 900 },
-      composerControls: html`<button type="button">Settings</button>`,
-    });
-    expect(
-      view.container.querySelector(".agent-chat__run-status--interrupted")?.textContent,
-    ).toContain("Interrupted");
-
-    now.mockReturnValue(7_000);
-    view = renderComposer({
-      runStatus: { phase: "interrupted", runId: "run-1", sessionKey: "main", occurredAt: 1_000 },
-      composerControls: html`<button type="button">Settings</button>`,
-    });
-    expect(view.container.querySelector(".agent-chat__run-status--interrupted")).toBeNull();
+  it("keeps terminal run status out of visible composer chrome", () => {
+    for (const phase of ["done", "interrupted"] as const) {
+      const view = renderComposer({
+        runStatus: { phase, runId: "run-1", sessionKey: "main", occurredAt: 900 },
+        composerControls: html`<button type="button">Settings</button>`,
+      });
+      expect(view.container.querySelector(".agent-chat__run-status")).toBeNull();
+    }
   });
 
   it("renders fresh compaction and fallback status", () => {

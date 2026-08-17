@@ -301,6 +301,7 @@ export function renderChat(props: ChatProps) {
       persistCommentary: props.persistCommentary,
       runActive: Boolean(props.canAbort),
       runWorking: isChatRunWorking(props),
+      runStatus: props.runStatus,
       startupStatus: props.startupStatus,
       waitingApproval: props.waitingApproval,
       planStatus: props.planStatus,

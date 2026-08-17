@@ -2428,7 +2428,8 @@ button.chat-pr__diff {
   --chat-composer-chip-gap: 6px;
   --chat-composer-chip-padding-inline: 8px;
   --chat-composer-chip-text: 13px;
-  --chat-composer-chip-icon: 14px;
+  --chat-composer-icon-size: 16px;
+  --chat-composer-chip-icon: var(--chat-composer-icon-size);
   /* Breathing room between the draft and the surface it sits in. Small on
      purpose — it exists so the text never touches the frame, not to pad the
      composer out — and owned here so the editor's inset is one decision for
@@ -2772,19 +2773,9 @@ button.chat-pr__diff {
   user-select: none;
 }
 
-.agent-chat__composer-run-status {
-  display: inline-flex;
-  order: 2;
-  flex: 0 0 auto;
-  align-items: center;
-}
-
 .agent-chat__composer-controls .chat-composer-model-control {
   order: 3;
-}
-
-.agent-chat__composer-run-status .agent-chat__run-status {
-  max-width: min(240px, 30vw);
+  margin-left: 0;
 }
 
 .agent-chat__composer-controls .chat-controls {
@@ -2846,8 +2837,10 @@ button.chat-pr__diff {
 
 .agent-chat__composer-edit-icon svg,
 .agent-chat__composer-edit-cancel svg {
-  width: 14px;
-  height: 14px;
+  box-sizing: border-box;
+  width: var(--chat-composer-icon-size);
+  height: var(--chat-composer-icon-size);
+  padding: 0;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.85px;
@@ -2915,10 +2908,12 @@ button.chat-pr__diff {
   color: var(--muted);
 }
 
-/* Three fixed tracks keep turn settings together and actions at the edge. */
+/* Lead, settings and actions always share one footer row. The flexible middle
+   track absorbs viewport changes, keeping the plus attached to the settings
+   group while the primary actions stay pinned to the trailing edge. */
 .agent-chat__composer-footer {
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -2945,6 +2940,13 @@ button.chat-pr__diff {
    parent would take the dial a pixel above it. */
 .agent-chat__input .context-ring__pct {
   transform: translateY(-1px);
+}
+
+.agent-chat__input .context-ring__dial {
+  box-sizing: border-box;
+  width: var(--chat-composer-icon-size);
+  height: var(--chat-composer-icon-size);
+  padding: 0;
 }
 
 /* Model, effort and the context reading are one group: they all describe how
@@ -3025,10 +3027,13 @@ button.chat-pr__diff {
   stroke-linejoin: round;
 }
 
-/* Icons draw at 16 regardless of the 20-unit viewBox some of them carry. */
-.agent-chat__input :is(.agent-chat__input-btn, .chat-send-btn) svg {
-  width: 16px;
-  height: 16px;
+/* Composer actions carry an 18px glyph; settings and status marks use the 16px
+   token above. Padding belongs to the control, never to the artwork itself. */
+.agent-chat__input :is(.agent-chat__input-btn, .chat-send-btn) > svg {
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  padding: 0;
 }
 
 /* The plus turns into a close mark while its menu is open, instead of a second
@@ -3288,8 +3293,10 @@ button.chat-pr__diff {
 }
 
 .agent-chat__session-overrides-clear svg {
-  width: 13px;
-  height: 13px;
+  box-sizing: border-box;
+  width: var(--chat-composer-icon-size);
+  height: var(--chat-composer-icon-size);
+  padding: 0;
 }
 
 /* Selected/open states stay a quiet neutral wash; only live recording gets a
@@ -3308,8 +3315,7 @@ button.chat-pr__diff {
   z-index: 0;
   box-sizing: border-box;
   min-height: calc(36px + var(--chat-composer-alert-underlap));
-  margin: 0 0
-    calc(0px - var(--chat-composer-shell-gap) - var(--chat-composer-alert-underlap));
+  margin: 0 0 calc(0px - var(--chat-composer-shell-gap) - var(--chat-composer-alert-underlap));
   padding: 8px 10px calc(8px + var(--chat-composer-alert-underlap)) 14px;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 8%, var(--chat-composer-surface));
@@ -3525,51 +3531,6 @@ button.chat-pr__diff {
   opacity: 0.7;
 }
 
-.agent-chat__run-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 24px;
-  max-width: 132px;
-  padding: 0 2px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  flex-shrink: 0;
-  user-select: none;
-}
-
-.agent-chat__run-status svg {
-  width: 13px;
-  height: 13px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.6px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-}
-
-.agent-chat__run-status-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Interrupted is the only visible composer run status: killed runs leave no
-   transcript marker, so silence would read as "finished". Working/Done are
-   covered by the thread spark, content arriving, and Stop reverting. */
-.agent-chat__run-status--interrupted {
-  color: var(--warn);
-}
-
-@keyframes chat-run-status-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Send is the primary action of the whole surface, so it gets the same solid
    accent treatment as .btn.primary; variants (--stop, --voice*) override the
    fill instead of reintroducing borders. */
@@ -3659,6 +3620,21 @@ button.chat-pr__diff {
   background: var(--primary);
   color: var(--primary-foreground);
   box-shadow: none;
+}
+
+@media (min-width: 769px) {
+  /* Send becomes Stop while a run is active, so both states share the larger
+     desktop box and the trailing edge never jumps during the transition. */
+  .agent-chat__input
+    .chat-send-btn:not(
+      .chat-send-btn--voice,
+      .chat-send-btn--voice-live,
+      .chat-send-btn--dictating
+    ) {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+  }
 }
 
 /* Hover steps the fill toward the surface's own far end rather than reaching for
@@ -4189,6 +4165,15 @@ button.chat-pr__diff {
     gap: 0;
   }
 
+  /* Keep 44px touch targets without painting 44px hover discs. The inset masks
+     the perimeter, so the plus retains the same 28px visual footprint as the
+     desktop control while its hit area remains comfortably large. */
+  .agent-chat__input .agent-chat__input-btn:hover:not(:disabled),
+  .agent-chat__input .agent-chat__attach-menu[open] > .agent-chat__input-btn--attach {
+    background: var(--chat-composer-hover);
+    box-shadow: inset 0 0 0 8px var(--chat-composer-surface);
+  }
+
   .agent-chat__composer-error .callout__dismiss {
     width: 44px;
     height: 44px;
@@ -4229,23 +4214,12 @@ button.chat-pr__diff {
     min-width: 187px;
   }
 
-  .agent-chat__input .agent-chat__composer-run-status,
   .agent-chat__input .agent-chat__session-overrides-pill {
     flex: 1 1 auto;
   }
 
-  .agent-chat__input .agent-chat__composer-run-status {
-    min-width: 23px;
-    overflow: hidden;
-  }
-
   .agent-chat__input .agent-chat__session-overrides-pill {
     min-width: 26px;
-  }
-
-  .agent-chat__input .agent-chat__composer-run-status .agent-chat__run-status {
-    min-width: 0;
-    flex-shrink: 1;
   }
 
   .agent-chat__input .agent-chat__session-overrides-open {
@@ -4312,7 +4286,6 @@ button.chat-pr__diff {
 
 @media (max-width: 560px) {
   .agent-chat__composer-footer {
-    grid-template-columns: max-content minmax(0, 1fr) max-content;
     row-gap: 0;
   }
 
@@ -4339,13 +4312,21 @@ button.chat-pr__diff {
   }
 
   .agent-chat__input .agent-chat__composer-controls {
-    width: 100%;
+    flex: 0 1 auto;
+    width: auto;
     min-width: 0;
     flex-wrap: nowrap;
+    gap: 0;
+  }
+
+  .agent-chat__input .agent-chat__session-overrides-pill {
+    flex: 0 0 26px;
+    width: 26px;
+    overflow: hidden;
   }
 
   .agent-chat__input .agent-chat__composer-controls .chat-composer-model-control {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
   }
 
   .agent-chat__input .agent-chat__composer-meta {
@@ -5090,13 +5071,13 @@ button.chat-pr__diff {
   font-size: 9px;
 }
 
-/* The trigger's own brand mark is smaller than the 18px menu rows: it is an icon
-   inside a chip, so it takes the chip family's icon box and inherits the same
-   icon-to-label gap the session-mode chip uses. */
+/* The trigger mark uses the same unpadded 16px box as every footer glyph. */
 .chat-controls__trigger-provider-icon {
-  width: var(--chat-composer-chip-icon, 14px);
-  height: var(--chat-composer-chip-icon, 14px);
-  flex: 0 0 var(--chat-composer-chip-icon, 14px);
+  box-sizing: border-box;
+  width: var(--chat-composer-chip-icon, 16px);
+  height: var(--chat-composer-chip-icon, 16px);
+  padding: 0;
+  flex: 0 0 var(--chat-composer-chip-icon, 16px);
 }
 
 /* Conversation composers keep provider identity secondary to the turn controls.
@@ -5572,16 +5553,18 @@ button.chat-pr__diff {
 .chat-controls__fast-mode-icon,
 .chat-controls__effort-zap {
   display: inline-flex;
-  width: var(--chat-composer-chip-icon, 14px);
-  height: var(--chat-composer-chip-icon, 14px);
+  width: var(--chat-composer-chip-icon, 16px);
+  height: var(--chat-composer-chip-icon, 16px);
   color: var(--accent);
-  flex: 0 0 var(--chat-composer-chip-icon, 14px);
+  flex: 0 0 var(--chat-composer-chip-icon, 16px);
 }
 
 .chat-controls__fast-mode-icon svg,
 .chat-controls__effort-zap svg {
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
+  padding: 0;
   fill: currentColor;
   stroke: currentColor;
 }
@@ -5793,8 +5776,7 @@ button.chat-pr__diff {
 
   /* Paint the committed action at desktop size inside its 44px touch target.
      Voice retains its full box because it has no filled circle to read as large. */
-  .agent-chat__input
-    .chat-send-btn:not(.chat-send-btn--voice):not(.chat-send-btn--voice-live) {
+  .agent-chat__input .chat-send-btn:not(.chat-send-btn--voice):not(.chat-send-btn--voice-live) {
     box-shadow: inset 0 0 0 4px var(--chat-composer-surface);
   }
 

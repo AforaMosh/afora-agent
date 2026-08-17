@@ -27,7 +27,6 @@ import { renderSkillMenu } from "./chat-composer-skill-menu.ts";
 import { renderSlashMenu } from "./chat-composer-slash-menu.ts";
 import { commitComposerDraft } from "./chat-composer-state.ts";
 import {
-  renderChatRunStatusIndicator,
   renderCompactionIndicator,
   renderFallbackIndicator,
   type ComposerRunStatus,
@@ -465,13 +464,6 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
                 ${composerControls !== nothing
                   ? html`
                       <div class="agent-chat__composer-controls">
-                        ${composerRunStatus?.phase === "interrupted"
-                          ? html`
-                              <div class="agent-chat__composer-run-status">
-                                ${renderChatRunStatusIndicator(composerRunStatus)}
-                              </div>
-                            `
-                          : nothing}
                         ${overrideCount > 0 && props.capabilityMenu
                           ? html`
                               <openclaw-tooltip .content=${overrideTooltip}>

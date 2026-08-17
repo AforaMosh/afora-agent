@@ -2723,7 +2723,7 @@ describe("chat loading skeleton", () => {
     }
   });
 
-  it("shows the interrupted toast in the composer footer", () => {
+  it("shows interruption as a terminal transcript row while leaving the composer clean", () => {
     const nowSpy = vi.spyOn(Date, "now").mockReturnValue(1_000);
     try {
       const container = renderChatView({
@@ -2736,12 +2736,13 @@ describe("chat loading skeleton", () => {
           sessionKey: "main",
           occurredAt: 1_000,
         },
+        messages: [{ role: "assistant", content: "Partial reply", timestamp: 1 }],
       });
 
-      const toast = container.querySelector(
-        ".agent-chat__composer-run-status .agent-chat__run-status--interrupted",
+      expect(container.querySelector(".chat-turn-interrupted")?.textContent).toContain(
+        "Interrupted",
       );
-      expect(toast?.textContent).toContain("Interrupted");
+      expect(container.querySelector(".agent-chat__composer-run-status")).toBeNull();
       expect(
         container.querySelector(".agent-chat__run-status-announcement")?.textContent?.trim(),
       ).toBe("Interrupted");

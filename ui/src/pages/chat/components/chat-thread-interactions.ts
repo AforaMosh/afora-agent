@@ -22,6 +22,7 @@ import type { UiSessionDefaultsHost } from "../../../lib/sessions/session-key.ts
 import type { ChatRunStartupStatus } from "../chat-run-startup.ts";
 import { resetChatThreadState } from "../chat-thread.ts";
 import type { RealtimeTalkConversationEntry } from "../realtime-talk-conversation.ts";
+import type { ChatRunUiStatus } from "../run-lifecycle.ts";
 import type { PlanStatus } from "../tool-stream.ts";
 import type { BackgroundTasksProps } from "./chat-background-tasks.types.ts";
 import type { ArtifactDownloadResolver } from "./chat-message-media.ts";
@@ -74,6 +75,7 @@ export type ChatThreadProps = {
   persistCommentary?: boolean;
   runActive?: boolean;
   runWorking?: boolean;
+  runStatus?: ChatRunUiStatus | null;
   startupStatus?: ChatRunStartupStatus | null;
   waitingApproval?: boolean;
   planStatus?: PlanStatus | null;
