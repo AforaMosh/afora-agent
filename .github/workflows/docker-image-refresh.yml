@@ -1,24 +1,8 @@
 name: Docker Beta Backfill
 
-on:
-  workflow_dispatch:
-    inputs:
-      channel:
-        description: Temporary recovery selector; use both for beta.1 and beta.2
-        required: false
-        default: both
-        type: choice
-        options:
-          - stable
-          - extended-stable
-          - both
-      dry_run:
-        description: Resolve and summarize without publishing
-        required: false
-        default: false
-        type: boolean
-  schedule:
-    - cron: "17 3 * * 1"
+# Recovery completed in run 31995206751. Keep the historical workflow inert so
+# the immutable beta tags cannot be republished accidentally from this branch.
+on: []
 
 permissions:
   contents: read
