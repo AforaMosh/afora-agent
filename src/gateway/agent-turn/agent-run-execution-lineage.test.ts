@@ -95,7 +95,7 @@ describe("child execution identity lineage", () => {
     const [lineage, missingEvidence] = executionIdentitySpawnAdmission({
       operation: "parse",
       value: facts?.spawnAdmission ?? "",
-    }) as [Record<string, unknown>, string[]];
+    });
     expect(lineage).not.toHaveProperty("parentContextId");
     expect(missingEvidence).toEqual([
       "lineage.parent-context",
