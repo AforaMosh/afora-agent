@@ -35,7 +35,8 @@ type RestoredDraft = {
 
 const reportedStorageOwners = new Set<string>();
 
-const loadDurableComposerStore = () => import("../../lib/chat/composer-draft-store.runtime.ts");
+const durableComposerStore = import("../../lib/chat/composer-draft-store.runtime.ts");
+const loadDurableComposerStore = () => durableComposerStore;
 
 function durableComposerOwnerKey(scope: DurableComposerDraftScope): string {
   return JSON.stringify([scope.gatewayOwner, scope.recoveryScope]);

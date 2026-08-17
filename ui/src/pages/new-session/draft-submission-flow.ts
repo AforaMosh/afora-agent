@@ -106,12 +106,10 @@ export class DraftSubmissionFlow {
   }
 
   setVisibility(visibility: NewSessionVisibility) {
+    const wasIncognito = this.visibilityValue === "incognito";
+    const publish = this.callbacks.requestUpdate;
     this.visibilityValue = visibility;
-    // Render the toggle transition only after its durable retirement fence settles.
-    // An immediate close after returning to normal can then persist the next edit directly.
-    void this.draftPersistence
-      .setIncognito(visibility === "incognito")
-      .finally(this.callbacks.requestUpdate);
+    this.draftPersistence.transitionIncognito(wasIncognito, visibility === "incognito", publish);
   }
 
   setError(error: string | null) {

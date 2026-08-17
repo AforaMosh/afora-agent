@@ -96,6 +96,9 @@ suite.define(() => {
           },
         ],
       });
+      await restoredPage.waitForURL(
+        (url) => url.pathname === controlUiSessionPath("agent:main:restart-draft"),
+      );
       await restoredPage.close();
 
       const clearedPage = await context.newPage();

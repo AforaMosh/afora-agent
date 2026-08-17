@@ -30,7 +30,8 @@ type DraftSnapshot = {
   writeId: string;
 };
 
-const loadDurableComposerStore = () => import("../../lib/chat/composer-draft-store.runtime.ts");
+const durableComposerStore = import("../../lib/chat/composer-draft-store.runtime.ts");
+const loadDurableComposerStore = () => durableComposerStore;
 
 export class NewSessionDraftPersistence {
   private gatewayOwner = "";
@@ -80,6 +81,15 @@ export class NewSessionDraftPersistence {
     }
     this.noteUserMutation();
     return this.writeChain;
+  }
+
+  transitionIncognito(wasIncognito: boolean, incognito: boolean, publish: () => void) {
+    const transition = this.setIncognito(incognito);
+    if (wasIncognito && !incognito) {
+      void transition.finally(publish);
+      return;
+    }
+    publish();
   }
 
   selectRoute(routeKey: string) {
