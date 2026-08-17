@@ -279,13 +279,14 @@ describeStandaloneMockServer("standalone Control UI mock server", () => {
     try {
       await page.goto(new URL("/chat", fixtureServer.url).toString(), { waitUntil: "networkidle" });
       await page.getByText("OpenClaw work checkout", { exact: true }).click();
+      await page.getByRole("button", { name: "Write a message to send." }).waitFor();
 
       const prompt = "generic mock send probe";
       const composer = page.locator(
         ".chat-pane-cache__pane--active .agent-chat__composer-combobox textarea",
       );
       await composer.fill(prompt);
-      await composer.press("Enter");
+      await page.getByRole("button", { name: "Send message" }).click();
 
       await page
         .locator(".chat-thread-inner")
