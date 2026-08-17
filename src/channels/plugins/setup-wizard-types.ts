@@ -300,16 +300,18 @@ export type ChannelSetupWizard = {
   onAccountRecorded?: ChannelSetupWizardAdapter["onAccountRecorded"];
 };
 
-/** Runtime options for selecting and configuring one or more channels. */
-export type SetupPersistentEffectOptions = {
-  /**
-   * Keep cancellation available only when the effect consumes `abortSignal` and does not return
-   * until its owned work has stopped. Default durable effects lock cancellation before starting.
-   */
-  cancellation?: "lock" | "abortable";
+/** Host-owned lifecycle for work that can be cancelled until it reaches a durable commit. */
+export type SetupAbortablePersistentEffectContext = {
+  signal: AbortSignal;
+  /** Lock cancellation synchronously when the dependency reports its durable commit. */
+  markCommitted: () => void;
 };
 
-export type BeforeSetupPersistentEffect = (options?: SetupPersistentEffectOptions) => Promise<void>;
+export type RunSetupAbortablePersistentEffect = <T>(
+  effect: (context: SetupAbortablePersistentEffectContext) => Promise<T>,
+) => Promise<T>;
+
+export type BeforeSetupPersistentEffect = () => Promise<void>;
 
 export type SetupChannelsOptions = {
   allowDisable?: boolean;
@@ -319,6 +321,11 @@ export type SetupChannelsOptions = {
   abortSignal?: AbortSignal;
   /** Revalidate host authority immediately before an installer or other durable effect. */
   beforePersistentEffect?: BeforeSetupPersistentEffect;
+  /**
+   * Run abort-aware work under host authority and cleanup ownership. Older hosts omit this
+   * capability; plugins must not start such work without it.
+   */
+  runAbortablePersistentEffect?: RunSetupAbortablePersistentEffect;
   onSelection?: (selection: ChannelId[]) => void;
   onPostWriteHook?: (hook: ChannelOnboardingPostWriteHook) => void;
   accountIds?: Partial<Record<ChannelId, string>>;

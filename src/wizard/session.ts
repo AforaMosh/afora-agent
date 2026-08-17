@@ -555,6 +555,28 @@ export class WizardSession {
     this.cancellationLocked = true;
   }
 
+  /** Authorize and own abort-aware work until it either cleans up or commits durably. */
+  async runAbortablePersistentEffect<T>(
+    authorize: () => Promise<void>,
+    effect: (context: { signal: AbortSignal; markCommitted: () => void }) => Promise<T>,
+  ): Promise<T> {
+    this.signal.throwIfAborted();
+    await authorize();
+    this.signal.throwIfAborted();
+    let committed = false;
+    return await effect({
+      signal: this.signal,
+      markCommitted: () => {
+        if (committed) {
+          return;
+        }
+        this.signal.throwIfAborted();
+        committed = true;
+        this.lockCancellation();
+      },
+    });
+  }
+
   get signal(): AbortSignal {
     return this.abortController.signal;
   }

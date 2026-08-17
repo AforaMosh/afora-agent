@@ -111,7 +111,8 @@ export const signalSetupWizard: ChannelSetupWizard = {
     }
 
     const presentQrCode = prompter.qrCode;
-    if (!cliDetected || !presentQrCode) {
+    const runAbortablePersistentEffect = options?.runAbortablePersistentEffect;
+    if (!cliDetected || !presentQrCode || !runAbortablePersistentEffect) {
       return Object.keys(preparedCredentialValues).length > 0
         ? { credentialValues: preparedCredentialValues }
         : undefined;
@@ -182,25 +183,25 @@ export const signalSetupWizard: ChannelSetupWizard = {
         : undefined;
     }
 
-    // Revalidate hosted authority before signal-cli can mutate its account store, but keep
-    // cancellation available while the dependency waits for phone approval. The config owner
-    // locks cancellation separately immediately before writing OpenClaw config.
-    await options?.beforePersistentEffect?.({ cancellation: "abortable" });
-    const linkResult = await linkSignalCliAccount({
-      cliPath: currentCliPath,
-      ...(configPath ? { configPath } : {}),
-      ...(options?.abortSignal ? { signal: options.abortSignal } : {}),
-      onLinkUri: async (uri, completion, expiresAtMs) => {
-        await presentQrCode({
-          title: "Signal account linking",
-          message:
-            "On your phone, open Signal > Settings > Linked devices, scan this code, and approve the device. Setup continues automatically.",
-          text: uri,
-          dismissed: completion,
-          expiresAtMs,
-        });
-      },
-    });
+    const linkResult = await runAbortablePersistentEffect(
+      async ({ signal, markCommitted }) =>
+        await linkSignalCliAccount({
+          cliPath: currentCliPath,
+          ...(configPath ? { configPath } : {}),
+          signal,
+          onAssociatedAccount: () => markCommitted(),
+          onLinkUri: async (uri, completion, expiresAtMs) => {
+            await presentQrCode({
+              title: "Signal account linking",
+              message:
+                "On your phone, open Signal > Settings > Linked devices, scan this code, and approve the device. Setup continues automatically.",
+              text: uri,
+              dismissed: completion,
+              expiresAtMs,
+            });
+          },
+        }),
+    );
     if (!linkResult.ok) {
       await prompter.note(linkResult.error, "Signal account linking");
       return Object.keys(preparedCredentialValues).length > 0

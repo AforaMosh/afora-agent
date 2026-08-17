@@ -6,6 +6,7 @@ import {
   runSetupWizardPrepare,
   type WizardPrompter,
 } from "openclaw/plugin-sdk/plugin-test-runtime";
+import type { RunSetupAbortablePersistentEffect } from "openclaw/plugin-sdk/setup";
 import { detectBinary } from "openclaw/plugin-sdk/setup-tools";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signalSetupPlugin } from "./channel.setup.js";
@@ -28,6 +29,7 @@ const detectBinaryMock = vi.mocked(detectBinary);
 const installSignalCliMock = vi.mocked(installSignalCli);
 const linkSignalCliAccountMock = vi.mocked(linkSignalCliAccount);
 const listSignalCliAccountsMock = vi.mocked(listSignalCliAccounts);
+const configureSignalSetup = createPluginSetupWizardConfigure(signalSetupPlugin);
 
 function createConfig(account?: string) {
   return {
@@ -55,13 +57,31 @@ function createQrPrompter(params?: {
   });
 }
 
-type PrepareParams = Parameters<typeof runSetupWizardPrepare>[0];
-type ConfigureParams = Parameters<typeof runSetupWizardConfigure>[0];
+type PrepareParams = Parameters<NonNullable<typeof signalSetupWizard.prepare>>[0];
+type ConfigureParams = Parameters<typeof configureSignalSetup>[0];
+
+function createPersistentEffectRunner(
+  signal: AbortSignal,
+  markCommitted = vi.fn(),
+): RunSetupAbortablePersistentEffect {
+  return async (effect) => await effect({ signal, markCommitted });
+}
+
+function withPersistentEffectRunner(
+  options: NonNullable<PrepareParams["options"]>,
+): NonNullable<PrepareParams["options"]> {
+  const signal = options?.abortSignal ?? new AbortController().signal;
+  return {
+    runAbortablePersistentEffect: createPersistentEffectRunner(signal),
+    ...options,
+  };
+}
 
 function prepare(
   params: {
     accountId?: string;
     cfg?: PrepareParams["cfg"];
+    effectRunner?: boolean;
     options?: PrepareParams["options"];
     prompter?: WizardPrompter;
   } = {},
@@ -71,7 +91,10 @@ function prepare(
     cfg: params.cfg ?? createConfig(),
     ...(params.accountId ? { accountId: params.accountId } : {}),
     prompter: params.prompter ?? createQrPrompter(),
-    options: params.options ?? { allowSignalInstall: true },
+    options:
+      params.effectRunner === false
+        ? (params.options ?? { allowSignalInstall: true })
+        : withPersistentEffectRunner(params.options ?? { allowSignalInstall: true }),
   });
 }
 
@@ -84,15 +107,17 @@ function configure(
   } = {},
 ) {
   return runSetupWizardConfigure({
-    configure: createPluginSetupWizardConfigure(signalSetupPlugin),
+    configure: configureSignalSetup,
     cfg: params.cfg ?? createConfig(),
     prompter: params.prompter ?? createQrPrompter(),
     accountOverrides: params.accountId ? { signal: params.accountId } : {},
-    options: params.options ?? {
-      allowSignalInstall: true,
-      skipConfirm: true,
-      skipDmPolicyPrompt: true,
-    },
+    options: withPersistentEffectRunner(
+      params.options ?? {
+        allowSignalInstall: true,
+        skipConfirm: true,
+        skipDmPolicyPrompt: true,
+      },
+    ),
   });
 }
 
@@ -272,10 +297,16 @@ describe("signalSetupWizard QR linking", () => {
       await params.dismissed;
     });
     const note = vi.fn<WizardPrompter["note"]>(async () => undefined);
-    const beforePersistentEffect = vi.fn(async () => undefined);
+    const markCommitted = vi.fn();
     const abortController = new AbortController();
-    linkSignalCliAccountMock.mockImplementationOnce(async ({ onLinkUri }) => {
-      await onLinkUri("sgnl://linkdevice?uuid=test&pub_key=test", completion, 1_800_000_120_000);
+    linkSignalCliAccountMock.mockImplementationOnce(async ({ onAssociatedAccount, onLinkUri }) => {
+      const presentation = onLinkUri(
+        "sgnl://linkdevice?uuid=test&pub_key=test",
+        completion,
+        1_800_000_120_000,
+      );
+      onAssociatedAccount?.("+15555550123");
+      await presentation;
       return { ok: true, associatedAccount: "+15555550123" };
     });
 
@@ -285,8 +316,11 @@ describe("signalSetupWizard QR linking", () => {
         allowSignalInstall: true,
         skipConfirm: true,
         skipDmPolicyPrompt: true,
-        beforePersistentEffect,
         abortSignal: abortController.signal,
+        runAbortablePersistentEffect: createPersistentEffectRunner(
+          abortController.signal,
+          markCommitted,
+        ),
       },
     });
 
@@ -305,8 +339,7 @@ describe("signalSetupWizard QR linking", () => {
         expiresAtMs: 1_800_000_120_000,
       }),
     );
-    expect(beforePersistentEffect).toHaveBeenCalledOnce();
-    expect(beforePersistentEffect).toHaveBeenCalledWith({ cancellation: "abortable" });
+    expect(markCommitted).toHaveBeenCalledOnce();
 
     finishLink();
     await expect(resultPromise).resolves.toMatchObject({
@@ -317,6 +350,7 @@ describe("signalSetupWizard QR linking", () => {
 
   it("does not link when setup cannot or should not present a QR", async () => {
     expect(await prepare({ options: { allowSignalInstall: false } })).toBeUndefined();
+    expect(await prepare({ effectRunner: false })).toBeUndefined();
     expect(
       await prepare({
         cfg: createConfig("+15555550123"),
@@ -394,15 +428,18 @@ describe("signalSetupWizard QR linking", () => {
           );
         }),
     );
-    const beforePersistentEffect = vi.fn(async (effect?: { cancellation?: string }) => {
-      cancellationLocked = effect?.cancellation !== "abortable";
+    const markCommitted = vi.fn(() => {
+      cancellationLocked = true;
     });
     const resultPromise = prepare({
       prompter: createQrPrompter(),
       options: {
         allowSignalInstall: true,
         abortSignal: abortController.signal,
-        beforePersistentEffect,
+        runAbortablePersistentEffect: createPersistentEffectRunner(
+          abortController.signal,
+          markCommitted,
+        ),
       },
     });
 
@@ -410,7 +447,7 @@ describe("signalSetupWizard QR linking", () => {
     expect(cancellationLocked).toBe(false);
     abortController.abort();
     await vi.waitFor(() => expect(cleanupStarted).toHaveBeenCalledOnce());
-    expect(beforePersistentEffect).toHaveBeenCalledWith({ cancellation: "abortable" });
+    expect(markCommitted).not.toHaveBeenCalled();
 
     const settled = vi.fn();
     void resultPromise.then(settled);
@@ -464,19 +501,19 @@ describe("signalSetupWizard QR linking", () => {
     expect(linkSignalCliAccountMock).not.toHaveBeenCalled();
   });
 
-  it("reauthorizes before signal-cli can mutate its account store", async () => {
+  it("does not link when the host rejects abortable-effect authorization", async () => {
     const blocked = new Error("inference authorization failed");
-    const beforePersistentEffect = vi.fn(async () => {
+    const runAbortablePersistentEffect = vi.fn(async () => {
       throw blocked;
     });
 
     await expect(
       prepare({
         prompter: createQrPrompter(),
-        options: { allowSignalInstall: true, beforePersistentEffect },
+        options: { allowSignalInstall: true, runAbortablePersistentEffect },
       }),
     ).rejects.toBe(blocked);
-    expect(beforePersistentEffect).toHaveBeenCalledWith({ cancellation: "abortable" });
+    expect(runAbortablePersistentEffect).toHaveBeenCalledOnce();
     expect(linkSignalCliAccountMock).not.toHaveBeenCalled();
   });
 
@@ -484,15 +521,21 @@ describe("signalSetupWizard QR linking", () => {
     detectBinaryMock.mockResolvedValue(false);
     installSignalCliMock.mockResolvedValue({ ok: true, cliPath: "/managed/signal-cli" });
     const beforePersistentEffect = vi.fn(async () => undefined);
+    const runAbortablePersistentEffect = vi.fn(
+      async (effect) =>
+        await effect({ signal: new AbortController().signal, markCommitted: vi.fn() }),
+    );
 
     await prepare({
       prompter: createQrPrompter({ confirmValues: [true, true] }),
-      options: { allowSignalInstall: true, beforePersistentEffect },
+      options: {
+        allowSignalInstall: true,
+        beforePersistentEffect,
+        runAbortablePersistentEffect,
+      },
     });
-    expect(beforePersistentEffect).toHaveBeenCalledTimes(2);
-    expect(beforePersistentEffect).toHaveBeenLastCalledWith({
-      cancellation: "abortable",
-    });
+    expect(beforePersistentEffect).toHaveBeenCalledOnce();
+    expect(runAbortablePersistentEffect).toHaveBeenCalledOnce();
     expect(installSignalCliMock).toHaveBeenCalledOnce();
     expect(linkSignalCliAccountMock).toHaveBeenCalledOnce();
   });

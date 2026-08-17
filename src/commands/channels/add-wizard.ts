@@ -4,7 +4,11 @@
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { getLoadedChannelPlugin } from "../../channels/plugins/index.js";
-import type { ChannelSetupPlugin } from "../../channels/plugins/setup-wizard-types.js";
+import type {
+  BeforeSetupPersistentEffect,
+  ChannelSetupPlugin,
+  RunSetupAbortablePersistentEffect,
+} from "../../channels/plugins/setup-wizard-types.js";
 import { formatUnknownChannelMessage } from "../../cli/error-format.js";
 import { readConfigFileSnapshot, type OpenClawConfig } from "../../config/config.js";
 import { commitConfigWithPendingPluginInstalls } from "../../plugins/install-record-commit.js";
@@ -72,7 +76,9 @@ type ChannelsAddWizardFlowParams = {
   runtime: RuntimeEnv;
   prompter: WizardPrompter;
   initialChannel?: ChannelChoice;
-  beforePersistentEffect?: () => Promise<void>;
+  beforePersistentEffect?: BeforeSetupPersistentEffect;
+  runAbortablePersistentEffect?: RunSetupAbortablePersistentEffect;
+  abortSignal?: AbortSignal;
   /**
    * The controlling client completes device linking itself after config is
    * written (e.g. the Control UI renders the WhatsApp QR via web.login.*), so
@@ -104,6 +110,10 @@ export async function runChannelsAddWizardFlow(params: ChannelsAddWizardFlowPara
     ...(params.beforePersistentEffect
       ? { beforePersistentEffect: params.beforePersistentEffect }
       : {}),
+    ...(params.runAbortablePersistentEffect
+      ? { runAbortablePersistentEffect: params.runAbortablePersistentEffect }
+      : {}),
+    ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
     ...(params.deferDeviceLinkToClient ? { deferDeviceLinkToClient: true } : {}),
     onPostWriteHook: (hook) => {
       postWriteHooks.collect(hook);
@@ -276,7 +286,9 @@ export async function runChannelsSetupWizard(
     channel?: string;
     onConfigured?: (accounts: Array<{ channel: string; accountId: string }>) => void;
     /** Revalidate/lock cancellation immediately before durable effects. */
-    beforePersistentEffect?: () => Promise<void>;
+    beforePersistentEffect?: BeforeSetupPersistentEffect;
+    runAbortablePersistentEffect?: RunSetupAbortablePersistentEffect;
+    abortSignal?: AbortSignal;
   },
   runtime: RuntimeEnv,
   prompter: WizardPrompter,
@@ -301,5 +313,9 @@ export async function runChannelsSetupWizard(
     deferDeviceLinkToClient: true,
     ...(opts.onConfigured ? { onConfigured: opts.onConfigured } : {}),
     ...(opts.beforePersistentEffect ? { beforePersistentEffect: opts.beforePersistentEffect } : {}),
+    ...(opts.runAbortablePersistentEffect
+      ? { runAbortablePersistentEffect: opts.runAbortablePersistentEffect }
+      : {}),
+    ...(opts.abortSignal ? { abortSignal: opts.abortSignal } : {}),
   });
 }

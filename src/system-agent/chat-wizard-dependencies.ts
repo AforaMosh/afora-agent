@@ -1,13 +1,11 @@
-import type { SetupPersistentEffectOptions } from "../channels/plugins/setup-wizard-types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { MemoryImportProviderOutcome } from "../wizard/setup.memory-import.js";
+import type {
+  BeforeHostedPersistentApply,
+  RunHostedAbortablePersistentEffect,
+} from "./chat-wizard-persistent-effect.js";
 import type { HostedMemoryImportOutcome, HostedSetupCompletion } from "./hosted-setup.runtime.js";
-
-export type BeforeHostedPersistentApply = (
-  runtime: RuntimeEnv,
-  effect?: SetupPersistentEffectOptions,
-) => Promise<void>;
 
 type SetupWizardRunner = (
   prompter: WizardPrompter,
@@ -20,6 +18,7 @@ export type ChatWizardHostDependencies = {
     prompter: WizardPrompter,
     beforePersistentApply: BeforeHostedPersistentApply,
     abortSignal: AbortSignal,
+    runAbortablePersistentEffect: RunHostedAbortablePersistentEffect,
   ) => Promise<void | HostedSetupCompletion>;
   runSkillsSetupWizard?: SetupWizardRunner;
   runSearchSetupWizard?: SetupWizardRunner;

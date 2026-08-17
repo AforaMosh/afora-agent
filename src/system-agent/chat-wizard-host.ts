@@ -15,11 +15,9 @@ import {
 } from "../wizard/session.js";
 import type { MemoryImportProviderOutcome } from "../wizard/setup.memory-import.js";
 import { auditChatWizardSetup } from "./chat-wizard-audit.js";
-import type {
-  BeforeHostedPersistentApply,
-  ChatWizardHostDependencies,
-} from "./chat-wizard-dependencies.js";
+import type { ChatWizardHostDependencies } from "./chat-wizard-dependencies.js";
 import { ChatWizardPassiveQrLifecycle } from "./chat-wizard-passive-qr.js";
+import { createChatWizardPersistentEffectBoundary } from "./chat-wizard-persistent-effect.js";
 import {
   formatStructuredWizardAnswerForHistory,
   parseWizardAnswer,
@@ -33,6 +31,7 @@ type HostedRuntime = typeof import("./hosted-setup.runtime.js");
 type HostedSetupCompletion = import("./hosted-setup.runtime.js").HostedSetupCompletion;
 type HostedMemoryImportOutcome = import("./hosted-setup.runtime.js").HostedMemoryImportOutcome;
 type HostedWizardRunResult = void | HostedSetupCompletion | HostedMemoryImportOutcome;
+type ChannelSetupRun = NonNullable<ChatWizardHostDependencies["runChannelSetupWizard"]>;
 
 type SystemAgentChatReplyAction = "none" | "exit" | "open-tui" | "open-setup";
 
@@ -329,17 +328,15 @@ export class ChatWizardHost {
   }
 
   async startChannel(channel: string): Promise<ChatWizardResult> {
-    const run = this.options.dependencies?.runChannelSetupWizard;
+    const run =
+      this.options.dependencies?.runChannelSetupWizard ??
+      (await loadHostedRuntime()).runHostedChannelSetup;
     return await this.start({
       kind: "channel",
       label: channel,
       autoSelectChannel: channel,
-      run: async (prompter, signal, beforePersistentApply) =>
-        run
-          ? await run(channel, prompter, beforePersistentApply, signal)
-          : await (
-              await loadHostedRuntime()
-            ).runHostedChannelSetup(channel, prompter, beforePersistentApply, signal),
+      run: async (prompter, signal, beforePersistentApply, runAbortablePersistentEffect) =>
+        await run(channel, prompter, beforePersistentApply, signal, runAbortablePersistentEffect),
     });
   }
 
@@ -415,7 +412,8 @@ export class ChatWizardHost {
     run: (
       prompter: WizardPrompter,
       signal: AbortSignal,
-      beforePersistentApply: BeforeHostedPersistentApply,
+      beforePersistentApply: Parameters<ChannelSetupRun>[2],
+      runAbortablePersistentEffect: Parameters<ChannelSetupRun>[4],
     ) => Promise<HostedWizardRunResult>;
   }): Promise<ChatWizardResult> {
     this.options.assertActive?.();
@@ -427,16 +425,17 @@ export class ChatWizardHost {
     };
     const session = new WizardSession(
       async (prompter, signal, runnerSession) => {
-        const beforePersistentApply: BeforeHostedPersistentApply = async (runtime, effect) => {
-          signal.throwIfAborted();
-          await this.options.beforePersistentApply(runtime);
-          signal.throwIfAborted();
-          if (effect?.cancellation !== "abortable") {
-            // Once a durable effect starts, its truthful result must win over a late cancel.
-            runnerSession.lockCancellation();
-          }
-        };
-        const result = await params.run(prompter, signal, beforePersistentApply);
+        const { beforePersistentApply, runAbortablePersistentEffect } =
+          createChatWizardPersistentEffectBoundary({
+            session: runnerSession,
+            authorize: this.options.beforePersistentApply,
+          });
+        const result = await params.run(
+          prompter,
+          signal,
+          beforePersistentApply,
+          runAbortablePersistentEffect,
+        );
         if (typeof result === "string") {
           completion.status = result;
         } else if (result) {

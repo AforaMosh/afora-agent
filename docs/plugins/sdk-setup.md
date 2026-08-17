@@ -560,28 +560,32 @@ const setupWizard: ChannelSetupWizard = {
     Setup code that already owns a QR-backed operation can pass its raw QR text and completion promise through `WizardPrompter.qrCode`. OpenClaw renders and transports a bounded image; the plugin remains the authority for success, failure, and cancellation.
 
     ```typescript
-    if (!prompter.qrCode) {
+    const runPersistentEffect = options?.runAbortablePersistentEffect;
+    if (!prompter.qrCode || !runPersistentEffect) {
       throw new Error(
         "This setup host cannot present QR credentials. Use the plugin's native setup flow.",
       );
     }
 
-    const link = startDeviceLink();
-    try {
-      await prompter.qrCode({
-        title: "Link a device",
-        message: "Scan the code and approve the device.",
-        text: link.uri,
-        expiresAtMs: link.expiresAtMs,
-        dismissed: link.finished,
-      });
-    } catch (error) {
-      link.cancel();
-      throw error;
-    }
+    await runPersistentEffect(async ({ signal, markCommitted }) => {
+      const link = startDeviceLink({ signal, onCommitted: markCommitted });
+      try {
+        await prompter.qrCode({
+          title: "Link a device",
+          message: "Scan the code and approve the device.",
+          text: link.uri,
+          expiresAtMs: link.expiresAtMs,
+          dismissed: link.finished,
+        });
+      } catch (error) {
+        link.cancel();
+        await link.finished;
+        throw error;
+      }
+    });
     ```
 
-    `dismissed` is required and must settle with the producer operation. `qrCode(...)` returns `Promise<void>` only after that promise settles; there is no separate user Continue acknowledgement. Check capability before starting a credential-bearing operation. When `prompter.qrCode` is unavailable, route the operator to a plugin-native setup flow instead of putting the raw link URI in prompt text.
+    `dismissed` is required and must settle with the producer operation. `qrCode(...)` returns `Promise<void>` only after that promise settles; there is no separate user Continue acknowledgement. `runAbortablePersistentEffect` makes the host own authorization, cancellation, and cleanup; call `markCommitted()` synchronously at the dependency's durable commit point. Before that call, abort must stop and join the operation. After it, the host rejects cancellation and preserves the committed result. Check both capabilities before starting credential-bearing work. Older hosts omit the runner, so route the operator to a plugin-native setup flow instead of putting the raw link URI in prompt text.
 
   </Accordion>
   <Accordion title="Shared allowFrom prompts">

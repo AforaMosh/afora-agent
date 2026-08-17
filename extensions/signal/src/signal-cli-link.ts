@@ -1,3 +1,4 @@
+import { safeParseJsonWithSchema } from "openclaw/plugin-sdk/extension-shared";
 import { runCommandWithTimeout } from "openclaw/plugin-sdk/process-runtime";
 import { z } from "zod";
 import { resolveSignalCliConfigPath } from "./signal-cli-config-path.js";
@@ -17,6 +18,8 @@ const SIGNAL_CLI_LINK_QR_TIMEOUT_MS = 120_000;
 // Leave a small startup/write buffer while still bounding hangs before either timeout starts.
 const SIGNAL_CLI_LINK_TIMEOUT_MS = 3 * 60_000;
 const SIGNAL_CLI_LIST_TIMEOUT_MS = 10_000;
+const SIGNAL_CLI_LIST_ERROR =
+  "signal-cli could not inspect linked accounts. Check its account store and retry.";
 const SignalCliAccountsSchema = z.array(z.object({ number: z.string().regex(/^\+\d{5,15}$/u) }));
 let signalCliLinkActive = false;
 
@@ -46,17 +49,14 @@ export async function listSignalCliAccounts(params: {
       },
     );
     if (result.code !== 0 || result.termination !== "exit") {
-      return {
-        ok: false,
-        error: result.stderr.trim() || "signal-cli could not inspect its linked accounts.",
-      };
+      return { ok: false, error: SIGNAL_CLI_LIST_ERROR };
     }
-    const parsed = SignalCliAccountsSchema.safeParse(JSON.parse(result.stdout));
-    return parsed.success
-      ? { ok: true, accounts: parsed.data.map((account) => account.number) }
+    const parsed = safeParseJsonWithSchema(SignalCliAccountsSchema, result.stdout);
+    return parsed
+      ? { ok: true, accounts: parsed.map((account) => account.number) }
       : { ok: false, error: "signal-cli returned an invalid account list." };
-  } catch (error) {
-    return { ok: false, error: `Could not inspect signal-cli accounts: ${errorMessage(error)}` };
+  } catch {
+    return { ok: false, error: SIGNAL_CLI_LIST_ERROR };
   }
 }
 
@@ -69,6 +69,8 @@ export async function linkSignalCliAccount(params: {
     completion: SignalCliLinkCompletion,
     expiresAtMs: number,
   ) => Promise<void>;
+  /** Called synchronously when signal-cli reports its dependency-owned durable commit marker. */
+  onAssociatedAccount?: (account: string) => void;
 }): Promise<SignalCliLinkResult> {
   if (params.signal?.aborted) {
     return { ok: false, error: "Signal account linking was cancelled." };
@@ -124,8 +126,13 @@ export async function linkSignalCliAccount(params: {
       return;
     }
     const associatedMatch = /^Associated with:\s*(\+\d{5,15})$/iu.exec(trimmed);
-    if (associatedMatch?.[1]) {
-      associatedAccount = associatedMatch[1];
+    if (associatedMatch?.[1] && !associatedAccount) {
+      try {
+        params.onAssociatedAccount?.(associatedMatch[1]);
+        associatedAccount = associatedMatch[1];
+      } catch {
+        stopWithError("Signal account linking was cancelled before setup could save it.");
+      }
     }
   };
   try {

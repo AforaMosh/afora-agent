@@ -103,21 +103,25 @@ describe("listSignalCliAccounts", () => {
     );
   });
 
-  it("rejects failed or malformed account discovery", async () => {
+  it("rejects failed or malformed account discovery without exposing dependency output", async () => {
+    const credentialUri = "sgnl://linkdevice?uuid=synthetic-secret&pub_key=synthetic-key";
     runCommandMock
-      .mockResolvedValueOnce(commandResult({ code: 1, stderr: "store locked" }))
-      .mockResolvedValueOnce(commandResult({ stdout: '[{"number":"not-e164"}]' }))
+      .mockResolvedValueOnce(
+        commandResult({ code: 1, stderr: `store locked while reading ${credentialUri}` }),
+      )
+      .mockResolvedValueOnce(commandResult({ stdout: `{"credential":"${credentialUri}"` }))
       .mockResolvedValueOnce(
         commandResult({
           stdout: '[{"number":"+15555550123"}]',
           signal: "SIGTERM",
           termination: "signal",
         }),
-      );
+      )
+      .mockRejectedValueOnce(new Error(`spawn failed for ${credentialUri}`));
 
     await expect(listSignalCliAccounts({ cliPath: "signal-cli" })).resolves.toEqual({
       ok: false,
-      error: "store locked",
+      error: "signal-cli could not inspect linked accounts. Check its account store and retry.",
     });
     await expect(listSignalCliAccounts({ cliPath: "signal-cli" })).resolves.toEqual({
       ok: false,
@@ -125,7 +129,11 @@ describe("listSignalCliAccounts", () => {
     });
     await expect(listSignalCliAccounts({ cliPath: "signal-cli" })).resolves.toEqual({
       ok: false,
-      error: "signal-cli could not inspect its linked accounts.",
+      error: "signal-cli could not inspect linked accounts. Check its account store and retry.",
+    });
+    await expect(listSignalCliAccounts({ cliPath: "signal-cli" })).resolves.toEqual({
+      ok: false,
+      error: "signal-cli could not inspect linked accounts. Check its account store and retry.",
     });
   });
 });
@@ -150,10 +158,12 @@ describe("linkSignalCliAccount", () => {
     vi.setSystemTime(1_800_000_000_000);
     const command = createDeferredCommand();
     const onLinkUri = vi.fn(async () => undefined);
+    const onAssociatedAccount = vi.fn();
     const resultPromise = linkSignalCliAccount({
       cliPath: "/opt/openclaw/signal-cli",
       configPath: "~/.local/share/signal-cli",
       onLinkUri,
+      onAssociatedAccount,
     });
 
     emitStdoutLine("sgnl://linkdevice?uuid=test&pub_key=test");
@@ -187,6 +197,7 @@ describe("linkSignalCliAccount", () => {
       expect.any(Promise),
       1_800_000_120_000,
     );
+    expect(onAssociatedAccount).toHaveBeenCalledWith("+15555550123");
     vi.useRealTimers();
   });
 

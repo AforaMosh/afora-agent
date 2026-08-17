@@ -190,6 +190,111 @@ describe("hosted wizard runtime isolation", () => {
       }
     },
   );
+
+  it("joins direct Gateway abortable-effect cleanup after cancellation", async () => {
+    const effectStarted = createDeferred();
+    const releaseCleanup = createDeferred();
+    const cleanupStarted = vi.fn();
+    const tracker = createWizardSessionTracker();
+    const context = {
+      ...tracker,
+      channelWizardRunner: async (
+        opts: Parameters<import("./wizard.js").ChannelSetupWizardRunner>[0],
+        _runtime: RuntimeEnv,
+        prompter: WizardPrompter,
+      ) => {
+        prompter.progress("linking");
+        await opts.runAbortablePersistentEffect?.(async ({ signal }) => {
+          effectStarted.resolve();
+          await new Promise<void>((resolve) => {
+            signal.addEventListener(
+              "abort",
+              () => {
+                cleanupStarted();
+                void releaseCleanup.promise.then(() => resolve());
+              },
+              { once: true },
+            );
+          });
+        });
+      },
+    };
+
+    const start = await invokeWizard("wizard.start", { flow: "channels" }, context as never);
+    await effectStarted.promise;
+    const sessionId = String(start.sessionId);
+    const cancelRespond = vi.fn();
+    await expectDefined(
+      wizardHandlers["wizard.cancel"],
+      "wizard.cancel test invariant",
+    )({
+      params: { sessionId },
+      respond: cancelRespond,
+      context,
+    } as never);
+
+    expect(cancelRespond.mock.calls[0]?.[1]).toMatchObject({ status: "cancelled" });
+    expect(cleanupStarted).toHaveBeenCalledOnce();
+    expect(tracker.wizardSessions.has(sessionId)).toBe(true);
+
+    releaseCleanup.resolve();
+    await vi.waitFor(() => expect(tracker.wizardSessions.has(sessionId)).toBe(false));
+  });
+
+  it("keeps a direct Gateway session active after its dependency commits", async () => {
+    const committed = createDeferred();
+    const releaseEffect = createDeferred();
+    const tracker = createWizardSessionTracker();
+    const context = {
+      ...tracker,
+      channelWizardRunner: async (
+        opts: Parameters<import("./wizard.js").ChannelSetupWizardRunner>[0],
+        _runtime: RuntimeEnv,
+        prompter: WizardPrompter,
+      ) => {
+        prompter.progress("linking");
+        await opts.runAbortablePersistentEffect?.(async ({ markCommitted }) => {
+          markCommitted();
+          committed.resolve();
+          await releaseEffect.promise;
+        });
+      },
+    };
+
+    const start = await invokeWizard("wizard.start", { flow: "channels" }, context as never);
+    await committed.promise;
+    const sessionId = String(start.sessionId);
+    const cancelRespond = vi.fn();
+    await expectDefined(
+      wizardHandlers["wizard.cancel"],
+      "wizard.cancel test invariant",
+    )({
+      params: { sessionId },
+      respond: cancelRespond,
+      context,
+    } as never);
+
+    expect(cancelRespond.mock.calls[0]?.[1]).toMatchObject({ status: "running" });
+    expect(tracker.wizardSessions.has(sessionId)).toBe(true);
+
+    releaseEffect.resolve();
+    const session = expectDefined(
+      tracker.wizardSessions.get(sessionId),
+      "committed channel wizard session",
+    );
+    await whenAdmittedWizardSessionSettled(session);
+    const statusRespond = vi.fn();
+    await expectDefined(
+      wizardHandlers["wizard.status"],
+      "wizard.status test invariant",
+    )({
+      params: { sessionId },
+      respond: statusRespond,
+      context,
+    } as never);
+    expect(statusRespond.mock.calls[0]?.[1]).toMatchObject({ status: "done" });
+    expect(tracker.wizardSessions.has(sessionId)).toBe(false);
+  });
 });
 
 describe("wizard setup ownership", () => {

@@ -11,7 +11,10 @@ import {
   validateWizardStartParams,
   validateWizardStatusParams,
 } from "../../../packages/gateway-protocol/src/index.js";
-import type { BeforeSetupPersistentEffect } from "../../channels/plugins/setup-wizard-types.js";
+import type {
+  BeforeSetupPersistentEffect,
+  RunSetupAbortablePersistentEffect,
+} from "../../channels/plugins/setup-wizard-types.js";
 import type { OnboardOptions } from "../../commands/onboard-types.js";
 import { createNonExitingRuntime, ExitError, type RuntimeEnv } from "../../runtime.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
@@ -40,6 +43,8 @@ export type ChannelSetupWizardRunner = (
     channel?: string;
     onConfigured?: (accounts: Array<{ channel: string; accountId: string }>) => void;
     beforePersistentEffect?: BeforeSetupPersistentEffect;
+    runAbortablePersistentEffect?: RunSetupAbortablePersistentEffect;
+    abortSignal?: AbortSignal;
   },
   runtime: RuntimeEnv,
   prompter: WizardPrompter,
@@ -109,7 +114,7 @@ export const wizardHandlers: GatewayRequestHandlers = {
     const flow = params.flow ?? "setup";
     const createSession = () =>
       flow === "channels"
-        ? new WizardSession((prompter, _signal, wizardSession) =>
+        ? new WizardSession((prompter, signal, wizardSession) =>
             runHostedWizard((runtime) =>
               context.channelWizardRunner(
                 {
@@ -117,11 +122,10 @@ export const wizardHandlers: GatewayRequestHandlers = {
                   onConfigured: (accounts) => wizardSession.setConfiguredAccounts(accounts),
                   // Durable effects (plugin installs, config commit) must finish
                   // even if the client cancels mid-write.
-                  beforePersistentEffect: async (effect) => {
-                    if (effect?.cancellation !== "abortable") {
-                      wizardSession.lockCancellation();
-                    }
-                  },
+                  beforePersistentEffect: async () => wizardSession.lockCancellation(),
+                  runAbortablePersistentEffect: async (effect) =>
+                    await wizardSession.runAbortablePersistentEffect(async () => {}, effect),
+                  abortSignal: signal,
                 },
                 runtime,
                 prompter,
@@ -219,7 +223,7 @@ export const wizardHandlers: GatewayRequestHandlers = {
     if (cancelled) {
       const purge = () => context.purgeWizardSession(sessionId);
       void whenAdmittedWizardSessionSettled(session).then(purge, purge);
-    } else {
+    } else if (status.status !== "running") {
       context.purgeWizardSession(sessionId);
     }
     respond(true, status, undefined);

@@ -11,14 +11,22 @@ type ScopedChannelStepParams<T> = {
 };
 
 export async function runScopedChannelStep<T>(params: ScopedChannelStepParams<T>) {
+  const runAbortablePersistentEffect = params.options?.runAbortablePersistentEffect;
   return await runWizardWithPromptNavigationScope(params.prompter, async (scopedPrompter) =>
     params.runner(scopedPrompter, {
       ...params.options,
-      beforePersistentEffect: async (effect) => {
+      beforePersistentEffect: async () => {
         params.onPersistentEffect?.();
         scopedPrompter.disableBackNavigation?.();
-        await params.options?.beforePersistentEffect?.(effect);
+        await params.options?.beforePersistentEffect?.();
       },
+      runAbortablePersistentEffect: runAbortablePersistentEffect
+        ? async (effect) => {
+            params.onPersistentEffect?.();
+            scopedPrompter.disableBackNavigation?.();
+            return await runAbortablePersistentEffect(effect);
+          }
+        : undefined,
     }),
   );
 }

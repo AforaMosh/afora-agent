@@ -292,7 +292,8 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       // +1: strict explicit agent-id normalization without default-agent fallback.
       // +5: session-catalog paging capability, family/node-host composers, and option contracts.
       // +3: two focused primitives and the closed read-only SecretRef result contract.
-      4327,
+      // +3: host-owned abortable setup effect runner and its commit context contracts.
+      4330,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(

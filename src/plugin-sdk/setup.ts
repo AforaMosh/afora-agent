@@ -20,9 +20,12 @@ export { createSetupTranslator } from "../wizard/i18n/index.js";
 export type { ChannelSetupAdapter } from "../channels/plugins/types.adapters.js";
 export type { ChannelSetupInput } from "../channels/plugins/types.core.js";
 export type {
+  BeforeSetupPersistentEffect,
   ChannelSetupDmPolicy,
   ChannelSetupWizardAdapter,
   ChannelSetupWizard,
+  RunSetupAbortablePersistentEffect,
+  SetupAbortablePersistentEffectContext,
 } from "../channels/plugins/setup-wizard-types.js";
 
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";

@@ -1,5 +1,5 @@
 import { stat } from "node:fs/promises";
-import type { SetupPersistentEffectOptions } from "../channels/plugins/setup-wizard-types.js";
+import type { SetupAbortablePersistentEffectContext } from "../channels/plugins/setup-wizard-types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
@@ -84,11 +84,12 @@ export async function runHostedSetup(params: {
 export async function runHostedChannelSetup(
   channel: string,
   prompter: WizardPrompter,
-  beforePersistentApply: (
-    runtime: RuntimeEnv,
-    effect?: SetupPersistentEffectOptions,
-  ) => Promise<void>,
+  beforePersistentApply: (runtime: RuntimeEnv) => Promise<void>,
   abortSignal: AbortSignal,
+  runAbortablePersistentEffect: <T>(
+    runtime: RuntimeEnv,
+    effect: (context: SetupAbortablePersistentEffectContext) => Promise<T>,
+  ) => Promise<T>,
   runtime?: RuntimeEnv,
 ): Promise<HostedSetupCompletion> {
   const {
@@ -97,14 +98,11 @@ export async function runHostedChannelSetup(
     setupChannels,
   } = await import("../commands/onboard-channels.js");
   const postWriteHooks = createChannelOnboardingPostWriteHookCollector();
-  const guardPersistentEffect = async (
-    setupRuntime: RuntimeEnv,
-    effect?: SetupPersistentEffectOptions,
-  ) => {
+  const guardPersistentEffect = async (setupRuntime: RuntimeEnv) => {
     // Cancellation can race an awaited authority check. Fence both sides so a
     // retired wizard cannot cross an install, config-write, or hook boundary.
     abortSignal.throwIfAborted();
-    await beforePersistentApply(setupRuntime, effect);
+    await beforePersistentApply(setupRuntime);
     abortSignal.throwIfAborted();
   };
   return await runHostedSetup({
@@ -121,7 +119,9 @@ export async function runHostedChannelSetup(
         quickstartDefaults: true,
         skipDmPolicyPrompt: true,
         skipConfirm: true,
-        beforePersistentEffect: async (effect) => await guardPersistentEffect(setupRuntime, effect),
+        beforePersistentEffect: async () => await guardPersistentEffect(setupRuntime),
+        runAbortablePersistentEffect: async (effect) =>
+          await runAbortablePersistentEffect(setupRuntime, effect),
         abortSignal,
         onPostWriteHook: (hook) => postWriteHooks.collect(hook),
       }),
