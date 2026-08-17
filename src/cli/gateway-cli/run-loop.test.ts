@@ -2496,9 +2496,9 @@ describe("runGatewayLoop", () => {
           .fn()
           .mockImplementationOnce(async () => {
             resolveStarted();
-            return { close: closeFirst };
+            return createGatewayServer(closeFirst);
           })
-          .mockResolvedValueOnce({ close: closeSecond });
+          .mockResolvedValueOnce(createGatewayServer(closeSecond));
         const { runtime, exited } = createRuntimeWithExitSignal();
         await runLoopWithStart({ start, runtime });
         await waitForStart(started);
