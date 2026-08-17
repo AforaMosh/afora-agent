@@ -279,7 +279,7 @@ function nodeEnrollmentSetupCommand(params: {
     'if [ ! -s "$package_spec_file" ]; then',
     '  rm -f "$package_spec_file"',
     `  for package_candidate in ${packageCandidates}; do`,
-    '    if OPENCLAW_STATE_DIR="$state_dir" npx --yes "$package_candidate" --version >/dev/null 2>&1; then',
+    '    if OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_candidate" -- openclaw --version >/dev/null 2>&1; then',
     '      printf "%s\\n" "$package_candidate" >"$package_spec_file"',
     "      break",
     "    fi",
@@ -287,8 +287,8 @@ function nodeEnrollmentSetupCommand(params: {
     "fi",
     'test -s "$package_spec_file"',
     'package_spec="$(cat "$package_spec_file")"',
-    'OPENCLAW_STATE_DIR="$state_dir" npx --yes "$package_spec" config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
-    `nohup env OPENCLAW_STATE_DIR="$state_dir" npx --yes "$package_spec" ${launch} >"$state_dir/node.log" 2>&1 </dev/null &`,
+    'OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
+    `nohup env OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null &`,
     'printf "%s\\n" "$!" >"$pid_file"',
   ].join("\n");
 }

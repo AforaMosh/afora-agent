@@ -881,6 +881,9 @@ describe("Crabbox worker provider", () => {
     expect(calls[2]?.argv[1]).toBe("run");
     expect(String(calls[2]?.options.input)).toContain("openclaw@2026.8.1");
     expect(String(calls[2]?.options.input)).toContain(
+      'npx --yes --package "$package_spec" -- openclaw',
+    );
+    expect(String(calls[2]?.options.input)).toContain(
       'connect --target-file "$setup_code_file" --ephemeral',
     );
     expect(calls[2]?.argv.join(" ")).not.toContain("setup-code");
