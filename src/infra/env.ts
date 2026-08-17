@@ -3,6 +3,7 @@ import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
 import type { SubsystemLogger } from "../logging/subsystem.js";
 import { createLazyPromise } from "../shared/lazy-runtime.js";
 import { parseBooleanValue } from "../utils/boolean.js";
+import { applyAforaEnvAliases } from "./afora-env-alias.js";
 export { isFastTestRuntimeEnv, isVitestRuntimeEnv } from "./test-runtime-env.js";
 
 let log: SubsystemLogger | null = null;
@@ -100,5 +101,7 @@ export function isTruthyEnvValue(value?: string): boolean {
 
 /** Applies process-wide env normalization before runtime configuration is read. */
 export function normalizeEnv(): void {
+  // afora: AFORA_* aliases must land before anything reads OPENCLAW_*.
+  applyAforaEnvAliases(process.env);
   normalizeZaiEnv(process.env);
 }

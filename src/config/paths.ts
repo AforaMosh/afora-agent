@@ -24,9 +24,9 @@ export let isNixMode = resolveIsNixMode();
 
 // Support the remaining legacy pre-rebrand state dir.
 const LEGACY_STATE_DIRNAMES = [".clawdbot"] as const;
-const NEW_STATE_DIRNAME = ".openclaw";
-const CONFIG_FILENAME = "openclaw.json";
-const LEGACY_CONFIG_FILENAMES = ["clawdbot.json"] as const;
+const NEW_STATE_DIRNAME = ".afora";
+const CONFIG_FILENAME = "afora.json";
+const LEGACY_CONFIG_FILENAMES = ["openclaw.json", "clawdbot.json"] as const;
 
 /** True when the root CLI selected a non-default isolated profile. */
 export function isNamedProfile(env: NodeJS.ProcessEnv = process.env): boolean {

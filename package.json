@@ -1,5 +1,5 @@
 {
-  "name": "openclaw",
+  "name": "afora-agent",
   "version": "2026.8.1",
   "openclaw": {
     "schemaVersions": {
@@ -20,7 +20,7 @@
     "url": "git+https://github.com/openclaw/openclaw.git"
   },
   "bin": {
-    "openclaw": "openclaw.mjs"
+    "afora": "openclaw.mjs"
   },
   "directories": {
     "doc": "docs",
