@@ -14,6 +14,8 @@ describe("SystemAgentChatResultSchema", () => {
   const base = { sessionId: "chat-1", reply: "Bot token", action: "none" };
   const qrDataUrl =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  const indexedQrDataUrl =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAABlBMVEUAAAD///+l2Z/dAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==";
 
   const steps: Array<{ name: string; step: WizardStep }> = [
     {
@@ -139,6 +141,15 @@ describe("SystemAgentChatResultSchema", () => {
     expect(validate.Check(base)).toBe(true);
   });
 
+  it("accepts indexed-color QR PNGs with a palette before image data", () => {
+    expect(
+      validate.Check({
+        ...base,
+        step: { ...steps.at(-1)?.step, qrDataUrl: indexedQrDataUrl },
+      }),
+    ).toBe(true);
+  });
+
   it("rejects a step outside the wizard step contract", () => {
     expect(validate.Check({ ...base, step: { id: "step-bogus", type: "freeform" } })).toBe(false);
   });
@@ -176,6 +187,10 @@ describe("SystemAgentChatResultSchema", () => {
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQBAAC03mY1AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAQCsBz1DAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAJbEm0uAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      // Indexed color without PLTE, PLTE after IDAT, and non-consecutive IDAT chunks.
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAABlBMVEUAAAD///+l2Z/dAAAAAElFTkSuQmCC",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAABElEQVR4nGNgs8N33AAAAAN0RVh0awB2ywTzkAAAAAZJREFUAAAAAgABRHX9OAAAAABJRU5ErkJggg==",
     ];
     expect(
       validate.Check({

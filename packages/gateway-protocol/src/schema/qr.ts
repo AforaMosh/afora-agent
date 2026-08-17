@@ -17,6 +17,7 @@ const QR_PNG_DATA_URL_PATTERN = `^${QR_PNG_DATA_URL_PREFIX}${QR_PNG_BASE64_SIGNA
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const;
 const PNG_IHDR = 0x49484452;
+const PNG_PLTE = 0x504c5445;
 const PNG_IDAT = 0x49444154;
 const PNG_IEND = 0x49454e44;
 
@@ -79,6 +80,22 @@ function isValidPngIhdr(bytes: Uint8Array, dataOffset: number, length: number): 
   );
 }
 
+function isValidPngPalette(colorType: number, bitDepth: number, length: number): boolean {
+  const entries = length / 3;
+  return (
+    length >= 3 &&
+    length <= 3 * 256 &&
+    Number.isInteger(entries) &&
+    colorType !== 0 &&
+    colorType !== 4 &&
+    (colorType !== 3 || entries <= 2 ** bitDepth)
+  );
+}
+
+function isCriticalPngChunk(bytes: Uint8Array, typeOffset: number): boolean {
+  return ((bytes[typeOffset] ?? 0) & 0x20) === 0;
+}
+
 /** Validates the bounded PNG structure that QR-capable protocol clients consume. */
 function isValidQrPngDataUrl(value: string): boolean {
   const bytes = decodeQrPngDataUrl(value);
@@ -87,7 +104,11 @@ function isValidQrPngDataUrl(value: string): boolean {
   }
 
   let offset: number = PNG_SIGNATURE.length;
+  let bitDepth = -1;
+  let colorType = -1;
+  let sawPlte = false;
   let sawIdat = false;
+  let finishedIdat = false;
   while (offset + 12 <= bytes.length) {
     const length = readUint32Be(bytes, offset);
     const typeOffset = offset + 4;
@@ -99,22 +120,42 @@ function isValidQrPngDataUrl(value: string): boolean {
     }
 
     const type = readUint32Be(bytes, typeOffset);
-    if (
-      pngCrc32(bytes, typeOffset, crcOffset) !== readUint32Be(bytes, crcOffset) ||
-      (offset === PNG_SIGNATURE.length &&
-        (type !== PNG_IHDR || !isValidPngIhdr(bytes, dataOffset, length)))
-    ) {
+    if (pngCrc32(bytes, typeOffset, crcOffset) !== readUint32Be(bytes, crcOffset)) {
       return false;
     }
 
-    if (type === PNG_IHDR && offset !== PNG_SIGNATURE.length) {
+    if (offset === PNG_SIGNATURE.length) {
+      if (type !== PNG_IHDR || !isValidPngIhdr(bytes, dataOffset, length)) {
+        return false;
+      }
+      bitDepth = bytes[dataOffset + 8] ?? -1;
+      colorType = bytes[dataOffset + 9] ?? -1;
+    } else if (type === PNG_IHDR) {
       return false;
     }
-    if (type === PNG_IDAT) {
+
+    if (type === PNG_IHDR) {
+      // The first-chunk branch above already validated the only legal IHDR.
+    } else if (type === PNG_PLTE) {
+      if (sawPlte || sawIdat || !isValidPngPalette(colorType, bitDepth, length)) {
+        return false;
+      }
+      sawPlte = true;
+    } else if (type === PNG_IDAT) {
+      // PNG decoders require one contiguous IDAT run, and indexed pixels cannot
+      // be interpreted until their palette has appeared.
+      if (finishedIdat || (colorType === 3 && !sawPlte)) {
+        return false;
+      }
       sawIdat = true;
-    }
-    if (type === PNG_IEND) {
-      return length === 0 && sawIdat && nextOffset === bytes.length;
+    } else {
+      finishedIdat = sawIdat;
+      if (type === PNG_IEND) {
+        return length === 0 && sawIdat && nextOffset === bytes.length;
+      }
+      if (isCriticalPngChunk(bytes, typeOffset)) {
+        return false;
+      }
     }
     offset = nextOffset;
   }
