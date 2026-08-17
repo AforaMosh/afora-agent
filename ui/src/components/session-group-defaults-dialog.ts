@@ -1,5 +1,6 @@
 import { readMissingScopeError } from "@openclaw/gateway-client/browser";
 import { html, nothing, render } from "lit";
+import { ref } from "lit/directives/ref.js";
 import type {
   FsListDirResult,
   WorktreeRepositoryStatus,
@@ -13,6 +14,7 @@ import { renderPlaceBrowser } from "../pages/new-session/place-browser.ts";
 import "../styles/new-session.css";
 import { icons } from "./icons.ts";
 import "./modal-dialog.ts";
+import { syncDropdownItemRadio } from "./web-awesome.ts";
 import "./web-awesome-popover.ts";
 
 export type SessionGroupDefaults = { cwd: string; worktree: boolean };
@@ -137,12 +139,47 @@ export function showSessionGroupDefaultsDialog(options: Options): Promise<void> 
       paint();
     };
 
-    const handleModeChange = (event: Event) => {
-      const select = event.currentTarget;
-      if (!(select instanceof HTMLSelectElement)) {
+    const handleModeSelect = (event: CustomEvent<{ item: Element }>) => {
+      const value = event.detail.item.getAttribute("value");
+      if (value !== "local" && value !== "worktree") {
         return;
       }
-      selectWorktree(select.value === "worktree");
+      selectWorktree(value === "worktree");
+    };
+
+    const focusSelectedMode = (event: Event) => {
+      if (!(event.currentTarget instanceof HTMLElement)) {
+        return;
+      }
+      const items = Array.from(
+        event.currentTarget.querySelectorAll<HTMLElement & { active: boolean }>(
+          "wa-dropdown-item[data-environment-mode]",
+        ),
+      );
+      const selected = items.find((item) => item.hasAttribute("data-selected")) ?? items[0];
+      if (!selected) {
+        return;
+      }
+      for (const item of items) {
+        item.active = item === selected;
+      }
+      selected.focus({ preventScroll: true });
+    };
+
+    const handleModeKeydown = (event: KeyboardEvent) => {
+      if (!(event.currentTarget instanceof HTMLElement)) {
+        return;
+      }
+      const dropdown = event.currentTarget as HTMLElement & { open?: boolean };
+      if (event.key !== "Escape" || !dropdown.open) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      dropdown.open = false;
+      dropdown
+        .querySelector<HTMLElement>("#session-group-defaults-mode-trigger")
+        ?.focus({ preventScroll: true });
     };
 
     const loadDirectory = async (path?: string) => {
@@ -192,6 +229,21 @@ export function showSessionGroupDefaultsDialog(options: Options): Promise<void> 
         : null;
       const environmentState =
         repositoryStatus === "checking" ? "checking" : repositoryStatus === "git" ? "git" : "local";
+      const environmentOptions = [
+        {
+          value: "local",
+          label: t("sessionsView.groupDefaultsLocal"),
+          description: t("newSession.runsDirectlyNote"),
+          icon: icons.monitor,
+        },
+        {
+          value: "worktree",
+          label: t("sessionsView.groupDefaultsWorktree"),
+          description: t("sessionsView.groupDefaultsWorktreeHint"),
+          icon: icons.gitBranch,
+        },
+      ] as const;
+      const selectedEnvironment = environmentOptions[worktree ? 1 : 0];
       render(
         html`
           <openclaw-modal-dialog
@@ -303,20 +355,62 @@ export function showSessionGroupDefaultsDialog(options: Options): Promise<void> 
                   >
                     ${repositoryStatus === "git"
                       ? html`
-                          <select
-                            class="session-group-defaults__mode-select"
-                            name="mode"
+                          <wa-dropdown
+                            class="session-group-defaults__mode-dropdown"
+                            placement="bottom-start"
                             aria-label=${t("sessionsView.groupDefaultsMode")}
-                            ?disabled=${submitting}
-                            @change=${handleModeChange}
+                            @wa-select=${handleModeSelect}
+                            @wa-after-show=${focusSelectedMode}
+                            @keydown=${handleModeKeydown}
                           >
-                            <option value="local" ?selected=${!worktree}>
-                              ${t("sessionsView.groupDefaultsLocal")}
-                            </option>
-                            <option value="worktree" ?selected=${worktree}>
-                              ${t("sessionsView.groupDefaultsWorktree")}
-                            </option>
-                          </select>
+                            <button
+                              id="session-group-defaults-mode-trigger"
+                              slot="trigger"
+                              type="button"
+                              class="session-group-defaults__resolved-mode session-group-defaults__mode-trigger"
+                              data-value=${selectedEnvironment.value}
+                              aria-label=${`${t("sessionsView.groupDefaultsMode")}: ${selectedEnvironment.label}`}
+                              ?disabled=${submitting}
+                            >
+                              <span class="new-session-page__target-icon" aria-hidden="true"
+                                >${selectedEnvironment.icon}</span
+                              >
+                              <span class="session-group-defaults__resolved-copy">
+                                <strong>${selectedEnvironment.label}</strong>
+                                <small>${selectedEnvironment.description}</small>
+                              </span>
+                              <span class="new-session-page__trigger-chevron" aria-hidden="true"
+                                >${icons.chevronDown}</span
+                              >
+                            </button>
+                            ${environmentOptions.map((option) => {
+                              const selected = option === selectedEnvironment;
+                              return html`
+                                <wa-dropdown-item
+                                  class="session-group-defaults__mode-option"
+                                  data-environment-mode=${option.value}
+                                  ?data-selected=${selected}
+                                  aria-label=${`${option.label}, ${option.description}`}
+                                  value=${option.value}
+                                  type="checkbox"
+                                  .checked=${selected}
+                                  ?disabled=${submitting}
+                                  ${ref((element) => syncDropdownItemRadio(element, selected))}
+                                >
+                                  <span
+                                    slot="icon"
+                                    class="new-session-page__target-icon session-group-defaults__mode-option-icon"
+                                    aria-hidden="true"
+                                    >${option.icon}</span
+                                  >
+                                  <span class="session-group-defaults__resolved-copy">
+                                    <strong>${option.label}</strong>
+                                    <small>${option.description}</small>
+                                  </span>
+                                </wa-dropdown-item>
+                              `;
+                            })}
+                          </wa-dropdown>
                         `
                       : html`
                           <div

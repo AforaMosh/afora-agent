@@ -343,14 +343,75 @@ html.openclaw-native-macos .new-session-page__incognito-rail {
   background: color-mix(in srgb, var(--card) 82%, var(--bg) 18%);
 }
 
-.session-group-defaults__resolved-mode > .new-session-page__target-icon {
+.session-group-defaults__resolved-mode > .new-session-page__target-icon,
+.session-group-defaults__mode-option-icon {
   display: inline-flex;
   color: var(--muted);
 }
 
-.session-group-defaults .session-group-defaults__mode-select {
+.session-group-defaults__mode-dropdown {
+  display: block;
   width: 100%;
-  height: 56px;
+  container-type: inline-size;
+}
+
+.session-group-defaults__mode-dropdown::part(menu) {
+  width: min(100cqw, calc(100vw - 48px));
+  padding: var(--menu-padding);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--menu-radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+  color: var(--text);
+}
+
+.session-group-defaults__mode-trigger {
+  grid-template-columns: 18px minmax(0, 1fr) 14px;
+  width: 100%;
+  min-height: 56px;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: var(--cursor-action);
+  box-shadow: inset 0 1px 0 var(--card-highlight);
+}
+
+@media (hover: hover) {
+  .session-group-defaults__mode-trigger:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--input));
+    background: color-mix(in srgb, var(--bg-hover) 65%, var(--card));
+  }
+}
+
+.session-group-defaults__mode-trigger:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: var(--focus-ring);
+}
+
+.session-group-defaults__mode-trigger:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.session-group-defaults__mode-trigger .new-session-page__trigger-chevron {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.session-group-defaults__mode-option {
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.session-group-defaults__mode-option::part(label) {
+  width: 100%;
+  min-width: 0;
+}
+
+.session-group-defaults__mode-option .session-group-defaults__resolved-copy {
+  padding: 3px 0;
 }
 
 /* Menu panel anchored under its trigger; item rows reuse the shared

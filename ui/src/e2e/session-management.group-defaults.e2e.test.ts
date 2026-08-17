@@ -70,12 +70,15 @@ suite.define(() => {
       await expect
         .poll(() => environment.getAttribute("data-session-group-environment"))
         .toBe("local");
-      await expect.poll(() => dialog.locator('select[name="mode"]').count()).toBe(0);
+      await expect
+        .poll(() => dialog.locator("wa-dropdown.session-group-defaults__mode-dropdown").count())
+        .toBe(0);
       await expect.poll(() => environment.getByRole("button").count()).toBe(0);
-      const localEnvironmentBox = await environment
-        .locator(".session-group-defaults__resolved-mode")
-        .boundingBox();
-      expect(localEnvironmentBox?.height).toBe(56);
+      const localEnvironment = environment.locator(".session-group-defaults__resolved-mode");
+      await expect
+        .poll(async () => (await localEnvironment.boundingBox())?.height)
+        .toBeCloseTo(56, 1);
+      const localEnvironmentBox = await localEnvironment.boundingBox();
       const folderTrigger = dialog.locator("#session-group-defaults-folder-trigger");
       await expect.poll(() => folderTrigger.getAttribute("aria-label")).toContain("peter");
       await folderTrigger.click();
@@ -122,11 +125,28 @@ suite.define(() => {
           text: await environment.textContent(),
         }))
         .toMatchObject({ state: "git" });
-      const modeSelect = environment.locator('select[name="mode"]');
-      await expect.poll(() => modeSelect.inputValue()).toBe("local");
-      expect((await modeSelect.boundingBox())?.height).toBe(localEnvironmentBox?.height);
-      await modeSelect.selectOption("worktree");
-      await expect.poll(() => modeSelect.inputValue()).toBe("worktree");
+      const modeDropdown = environment.locator("wa-dropdown.session-group-defaults__mode-dropdown");
+      const modeTrigger = modeDropdown.locator("#session-group-defaults-mode-trigger");
+      await expect.poll(() => modeTrigger.getAttribute("data-value")).toBe("local");
+      await expect.poll(() => modeTrigger.textContent()).toContain("Runs directly");
+      expect((await modeTrigger.boundingBox())?.height).toBeCloseTo(
+        localEnvironmentBox?.height ?? 0,
+        1,
+      );
+      await modeTrigger.click();
+      const worktreeOption = modeDropdown.getByRole("menuitemradio", {
+        name: /Worktree.*isolated Git worktree/i,
+      });
+      await expect.poll(() => worktreeOption.locator('[slot="icon"]').count()).toBe(1);
+      await page.keyboard.press("Escape");
+      await expect.poll(() => modeTrigger.getAttribute("aria-expanded")).toBe("false");
+      await expect
+        .poll(() => modeTrigger.evaluate((element) => element === document.activeElement))
+        .toBe(true);
+      await expect.poll(() => dialog.isVisible()).toBe(true);
+      await modeTrigger.click();
+      await worktreeOption.click();
+      await expect.poll(() => modeTrigger.getAttribute("data-value")).toBe("worktree");
       await dialog.getByRole("button", { name: "Save" }).click();
       expect((await gateway.waitForRequest("sessions.groups.update")).params).toMatchObject({
         name: "Client work",
@@ -376,9 +396,11 @@ suite.define(() => {
         `openclaw-modal-dialog[label='New session defaults for "Client work"']`,
       );
       await dialog.waitFor({ state: "visible" });
-      const modeSelect = dialog.locator('select[name="mode"]');
-      await modeSelect.waitFor({ state: "visible" });
-      await modeSelect.selectOption("local");
+      const modeDropdown = dialog.locator("wa-dropdown.session-group-defaults__mode-dropdown");
+      const modeTrigger = modeDropdown.locator("#session-group-defaults-mode-trigger");
+      await modeTrigger.waitFor({ state: "visible" });
+      await modeTrigger.click();
+      await modeDropdown.getByRole("menuitemradio", { name: /Local.*Runs directly/i }).click();
       await dialog.getByRole("button", { name: "Save" }).click();
       await gateway.waitForRequest("sessions.groups.update");
       await gateway.rejectDeferred("sessions.groups.update", {
@@ -389,7 +411,7 @@ suite.define(() => {
       const alert = dialog.getByRole("alert");
       await alert.waitFor({ state: "visible" });
       await expect.poll(() => alert.textContent()).toContain("rejected group defaults");
-      await expect.poll(() => modeSelect.inputValue()).toBe("local");
+      await expect.poll(() => modeTrigger.getAttribute("data-value")).toBe("local");
 
       await dialog.getByRole("button", { name: "Save" }).click();
       await expect
@@ -483,7 +505,11 @@ suite.define(() => {
           dialog.locator("#session-group-defaults-folder-trigger").getAttribute("aria-label"),
         )
         .toContain("client-work");
-      await expect.poll(() => dialog.locator('select[name="mode"]').inputValue()).toBe("worktree");
+      await expect
+        .poll(() =>
+          dialog.locator("#session-group-defaults-mode-trigger").getAttribute("data-value"),
+        )
+        .toBe("worktree");
       expect(await gateway.getRequests("sessions.groups.update")).toHaveLength(0);
       await dialog.getByRole("button", { name: "Cancel" }).click();
     } finally {

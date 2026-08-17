@@ -1100,6 +1100,7 @@ export const en: TranslationMap = {
     groupDefaultsMode: "Environment",
     groupDefaultsLocal: "Local",
     groupDefaultsWorktree: "Worktree",
+    groupDefaultsWorktreeHint: "Runs each session in an isolated Git worktree.",
     groupDefaultsFailed: "Could not save the group defaults.",
     groupDefaultsStale: "Gateway connection replaced before the defaults were saved. Try again.",
     renameGroupMenu: "Rename group…",
