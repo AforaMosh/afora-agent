@@ -32,8 +32,14 @@ type AgentRuntimeExecutionLineageCarrier = {
 type AgentRuntimeExecutionLineageRedemption = Readonly<{ consume: () => boolean }>;
 
 type AgentRuntimeExecutionLineageRedemptionCarrier = {
-  [AGENT_RUNTIME_EXECUTION_LINEAGE_REDEMPTION]?: AgentRuntimeExecutionLineageRedemption;
+  [AGENT_RUNTIME_EXECUTION_LINEAGE_REDEMPTION]: AgentRuntimeExecutionLineageRedemption;
 };
+
+function hasAgentRuntimeExecutionLineageRedemption(
+  identity: object,
+): identity is object & AgentRuntimeExecutionLineageRedemptionCarrier {
+  return AGENT_RUNTIME_EXECUTION_LINEAGE_REDEMPTION in identity;
+}
 
 type ExecutionLineageHandoff = Readonly<{
   agentId: string;
@@ -191,9 +197,7 @@ export function withAgentRuntimeExecutionLineageRedemption<T extends object>(
 
 /** Direct in-process lineage needs no redemption; handed-off lineage is one-shot. */
 export function consumeAgentRuntimeExecutionLineage(identity: object): boolean {
-  return (
-    (identity as AgentRuntimeExecutionLineageRedemptionCarrier)[
-      AGENT_RUNTIME_EXECUTION_LINEAGE_REDEMPTION
-    ]?.consume() ?? true
-  );
+  return hasAgentRuntimeExecutionLineageRedemption(identity)
+    ? identity[AGENT_RUNTIME_EXECUTION_LINEAGE_REDEMPTION].consume()
+    : true;
 }

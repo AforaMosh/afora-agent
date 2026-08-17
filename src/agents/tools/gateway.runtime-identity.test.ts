@@ -245,9 +245,10 @@ describe("gateway tool runtime identity", () => {
           /private-parent|private-requester|private-controller|private-local|private-target/,
         );
         const verified = await verifyAgentRuntimeIdentityToken(token);
+        const copied = verified ? { ...verified } : undefined;
         return {
           identity: verified,
-          facts: resolveExecutionIdentitySpawnFacts(verified),
+          facts: resolveExecutionIdentitySpawnFacts(copied),
           replayFacts: resolveExecutionIdentitySpawnFacts(verified),
         };
       },
