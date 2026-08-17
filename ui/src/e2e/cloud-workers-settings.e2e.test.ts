@@ -63,9 +63,15 @@ suite.define(() => {
       await page.getByRole("button", { name: "Add profile" }).click();
       await page.getByLabel("Profile ID").fill("build-fleet");
       await page.getByLabel("Crabbox backend").fill("hetzner");
+      // Pin the wait past earlier config.patch traffic: without a cursor,
+      // waitForRequest is satisfied by a prior same-method request and can
+      // return the stale earlier patch on slow runners.
+      const patchesBeforeAdd = (await gateway.getRequests("config.patch")).length;
       await gateway.deferNext("config.patch");
       await page.getByRole("button", { name: "Save" }).click();
-      const addPatch = requestRaw(await gateway.waitForRequest("config.patch"));
+      const addPatch = requestRaw(
+        await gateway.waitForRequest("config.patch", { after: patchesBeforeAdd }),
+      );
       expect(addPatch).toEqual({
         cloudWorkers: {
           profiles: {
@@ -95,11 +101,22 @@ suite.define(() => {
           idleTimeout: "45m",
         },
       };
+      // Keep the mocked config.get consistent with the patch response: the
+      // config store may reconcile with a refetch, and a stale empty config
+      // would flap the snapshot and silently drop the next save.
+      await gateway.setMethodResponse(
+        "config.get",
+        configResponse(
+          { cloudWorkers: { profiles: { "build-fleet": buildFleet } } },
+          "cloud-workers-2",
+        ),
+      );
       await gateway.resolveDeferred("config.patch", {
         ok: true,
         hash: "cloud-workers-2",
         config: { cloudWorkers: { profiles: { "build-fleet": buildFleet } } },
       });
+
       await page.getByText("Advertised", { exact: true }).waitFor();
       await page.getByText("Gateway restart required.", { exact: true }).waitFor();
 
@@ -113,9 +130,15 @@ suite.define(() => {
         .locator("wa-switch")
         .click();
       await page.getByLabel("Crabbox binary").fill("/opt/bin/crabbox");
+      // Pin the wait past earlier config.patch traffic: without a cursor,
+      // waitForRequest is satisfied by a prior same-method request and can
+      // return the stale earlier patch on slow runners.
+      const patchesBeforeEdit = (await gateway.getRequests("config.patch")).length;
       await gateway.deferNext("config.patch");
       await page.getByRole("button", { name: "Save" }).click();
-      const editPatch = requestRaw(await gateway.waitForRequest("config.patch"));
+      const editPatch = requestRaw(
+        await gateway.waitForRequest("config.patch", { after: patchesBeforeEdit }),
+      );
       expect(editPatch).toMatchObject({
         cloudWorkers: {
           profiles: {
@@ -147,19 +170,36 @@ suite.define(() => {
           binary: "/opt/bin/crabbox",
         },
       };
+      // Keep the mocked config.get consistent with the patch response: the
+      // config store may reconcile with a refetch, and a stale empty config
+      // would flap the snapshot and silently drop the next save.
+      await gateway.setMethodResponse(
+        "config.get",
+        configResponse(
+          { cloudWorkers: { profiles: { "build-fleet": editedFleet } } },
+          "cloud-workers-3",
+        ),
+      );
       await gateway.resolveDeferred("config.patch", {
         ok: true,
         hash: "cloud-workers-3",
         config: { cloudWorkers: { profiles: { "build-fleet": editedFleet } } },
       });
+
       await page.getByText(/Class: ccx53/).waitFor();
 
       await page.getByRole("button", { name: "Add profile" }).click();
       await page.getByLabel("Profile ID").fill("pending");
       await page.getByLabel("Crabbox backend").fill("aws");
+      // Pin the wait past earlier config.patch traffic: without a cursor,
+      // waitForRequest is satisfied by a prior same-method request and can
+      // return the stale earlier patch on slow runners.
+      const patchesBeforePending = (await gateway.getRequests("config.patch")).length;
       await gateway.deferNext("config.patch");
       await page.getByRole("button", { name: "Save" }).click();
-      const pendingPatch = requestRaw(await gateway.waitForRequest("config.patch"));
+      const pendingPatch = requestRaw(
+        await gateway.waitForRequest("config.patch", { after: patchesBeforePending }),
+      );
       expect(pendingPatch).toMatchObject({
         cloudWorkers: {
           profiles: {
@@ -182,6 +222,13 @@ suite.define(() => {
           idleTimeout: "45m",
         },
       };
+      await gateway.setMethodResponse(
+        "config.get",
+        configResponse(
+          { cloudWorkers: { profiles: { "build-fleet": editedFleet, pending } } },
+          "cloud-workers-4",
+        ),
+      );
       await gateway.resolveDeferred("config.patch", {
         ok: true,
         hash: "cloud-workers-4",
