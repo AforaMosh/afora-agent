@@ -23,7 +23,6 @@ import { SETTINGS_SEARCH_TARGETS } from "../pages/config/settings-targets.ts";
 import type { NewSessionTarget } from "../pages/new-session/location.ts";
 import { sidebarPluginTabs } from "./app-sidebar-nav-menus.ts";
 import {
-  renderAppSidebarAttention,
   renderAppSidebarBrand,
   renderAppSidebarFooterBar,
   renderAppSidebarHomeRow,
@@ -520,7 +519,6 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
             ${this.renderSessions()}
           </div>
           <div class="sidebar-shell__footer">
-            ${renderAppSidebarAttention(this)}
             <openclaw-sidebar-update-card
               .updateAvailable=${this.updateAvailable}
               .updateSchedule=${this.updateSchedule}
