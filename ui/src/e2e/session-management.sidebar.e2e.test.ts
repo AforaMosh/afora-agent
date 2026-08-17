@@ -201,8 +201,14 @@ suite.define(() => {
       await childMenuButton.click();
       const childMenu = page.getByRole("menu", { name: "Actions for Verify tests" });
       await childMenu.waitFor({ state: "visible" });
+      await page.getByRole("menuitem", { name: "Mark as unread" }).waitFor();
+      await page.getByRole("menuitem", { name: "Rename…" }).waitFor();
+      await page.getByRole("menuitem", { name: "Set icon" }).waitFor();
+      await page.getByRole("menuitem", { name: "Fork" }).waitFor();
       await page.getByRole("menuitem", { name: "Archive session" }).waitFor();
       await page.getByRole("menuitem", { name: "Delete…" }).waitFor();
+      expect(await page.getByRole("menuitem", { name: "Pin session" }).count()).toBe(0);
+      expect(await page.getByRole("menuitem", { name: "Move to group" }).count()).toBe(0);
       await captureUiProof(page, "child-session-menu.png");
       await page.keyboard.press("Escape");
       await childMenu.waitFor({ state: "detached" });
