@@ -335,9 +335,7 @@ describe("listGatewayMethods", () => {
     expect(methods.indexOf("portal.open")).toBe(methods.indexOf("portal.list") + 1);
     expect(methods.indexOf("portal.close")).toBe(methods.indexOf("portal.open") + 1);
     expect(methods.indexOf("sessions.move")).toBe(methods.indexOf("portal.close") + 1);
-    expect(methods.indexOf("sessions.workspace.status")).toBe(
-      methods.indexOf("sessions.move") + 1,
-    );
+    expect(methods.indexOf("sessions.workspace.status")).toBe(methods.indexOf("sessions.move") + 1);
   });
 
   it("advertises the versioned Talk session RPCs", () => {
