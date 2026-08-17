@@ -1,4 +1,5 @@
 import { stat } from "node:fs/promises";
+import type { SetupPersistentEffectOptions } from "../channels/plugins/setup-wizard-types.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
@@ -83,7 +84,10 @@ export async function runHostedSetup(params: {
 export async function runHostedChannelSetup(
   channel: string,
   prompter: WizardPrompter,
-  beforePersistentApply: (runtime: RuntimeEnv) => Promise<void>,
+  beforePersistentApply: (
+    runtime: RuntimeEnv,
+    effect?: SetupPersistentEffectOptions,
+  ) => Promise<void>,
   abortSignal: AbortSignal,
   runtime?: RuntimeEnv,
 ): Promise<HostedSetupCompletion> {
@@ -93,11 +97,14 @@ export async function runHostedChannelSetup(
     setupChannels,
   } = await import("../commands/onboard-channels.js");
   const postWriteHooks = createChannelOnboardingPostWriteHookCollector();
-  const guardPersistentEffect = async (setupRuntime: RuntimeEnv) => {
+  const guardPersistentEffect = async (
+    setupRuntime: RuntimeEnv,
+    effect?: SetupPersistentEffectOptions,
+  ) => {
     // Cancellation can race an awaited authority check. Fence both sides so a
     // retired wizard cannot cross an install, config-write, or hook boundary.
     abortSignal.throwIfAborted();
-    await beforePersistentApply(setupRuntime);
+    await beforePersistentApply(setupRuntime, effect);
     abortSignal.throwIfAborted();
   };
   return await runHostedSetup({
@@ -114,7 +121,7 @@ export async function runHostedChannelSetup(
         quickstartDefaults: true,
         skipDmPolicyPrompt: true,
         skipConfirm: true,
-        beforePersistentEffect: async () => await guardPersistentEffect(setupRuntime),
+        beforePersistentEffect: async (effect) => await guardPersistentEffect(setupRuntime, effect),
         abortSignal,
         onPostWriteHook: (hook) => postWriteHooks.collect(hook),
       }),

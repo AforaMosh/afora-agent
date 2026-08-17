@@ -301,6 +301,16 @@ export type ChannelSetupWizard = {
 };
 
 /** Runtime options for selecting and configuring one or more channels. */
+export type SetupPersistentEffectOptions = {
+  /**
+   * Keep cancellation available only when the effect consumes `abortSignal` and does not return
+   * until its owned work has stopped. Default durable effects lock cancellation before starting.
+   */
+  cancellation?: "lock" | "abortable";
+};
+
+export type BeforeSetupPersistentEffect = (options?: SetupPersistentEffectOptions) => Promise<void>;
+
 export type SetupChannelsOptions = {
   allowDisable?: boolean;
   allowIMessageInstall?: boolean;
@@ -308,7 +318,7 @@ export type SetupChannelsOptions = {
   /** Abort owner-controlled setup work when the hosting wizard is cancelled. */
   abortSignal?: AbortSignal;
   /** Revalidate host authority immediately before an installer or other durable effect. */
-  beforePersistentEffect?: () => Promise<void>;
+  beforePersistentEffect?: BeforeSetupPersistentEffect;
   onSelection?: (selection: ChannelId[]) => void;
   onPostWriteHook?: (hook: ChannelOnboardingPostWriteHook) => void;
   accountIds?: Partial<Record<ChannelId, string>>;

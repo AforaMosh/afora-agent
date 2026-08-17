@@ -11,6 +11,7 @@ import {
   validateWizardStartParams,
   validateWizardStatusParams,
 } from "../../../packages/gateway-protocol/src/index.js";
+import type { BeforeSetupPersistentEffect } from "../../channels/plugins/setup-wizard-types.js";
 import type { OnboardOptions } from "../../commands/onboard-types.js";
 import { createNonExitingRuntime, ExitError, type RuntimeEnv } from "../../runtime.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
@@ -38,7 +39,7 @@ export type ChannelSetupWizardRunner = (
   opts: {
     channel?: string;
     onConfigured?: (accounts: Array<{ channel: string; accountId: string }>) => void;
-    beforePersistentEffect?: () => Promise<void>;
+    beforePersistentEffect?: BeforeSetupPersistentEffect;
   },
   runtime: RuntimeEnv,
   prompter: WizardPrompter,
@@ -116,7 +117,11 @@ export const wizardHandlers: GatewayRequestHandlers = {
                   onConfigured: (accounts) => wizardSession.setConfiguredAccounts(accounts),
                   // Durable effects (plugin installs, config commit) must finish
                   // even if the client cancels mid-write.
-                  beforePersistentEffect: async () => wizardSession.lockCancellation(),
+                  beforePersistentEffect: async (effect) => {
+                    if (effect?.cancellation !== "abortable") {
+                      wizardSession.lockCancellation();
+                    }
+                  },
                 },
                 runtime,
                 prompter,

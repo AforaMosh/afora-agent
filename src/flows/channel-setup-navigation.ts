@@ -14,10 +14,10 @@ export async function runScopedChannelStep<T>(params: ScopedChannelStepParams<T>
   return await runWizardWithPromptNavigationScope(params.prompter, async (scopedPrompter) =>
     params.runner(scopedPrompter, {
       ...params.options,
-      beforePersistentEffect: async () => {
+      beforePersistentEffect: async (effect) => {
         params.onPersistentEffect?.();
         scopedPrompter.disableBackNavigation?.();
-        await params.options?.beforePersistentEffect?.();
+        await params.options?.beforePersistentEffect?.(effect);
       },
     }),
   );

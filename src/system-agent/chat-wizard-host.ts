@@ -15,7 +15,10 @@ import {
 } from "../wizard/session.js";
 import type { MemoryImportProviderOutcome } from "../wizard/setup.memory-import.js";
 import { auditChatWizardSetup } from "./chat-wizard-audit.js";
-import type { ChatWizardHostDependencies } from "./chat-wizard-dependencies.js";
+import type {
+  BeforeHostedPersistentApply,
+  ChatWizardHostDependencies,
+} from "./chat-wizard-dependencies.js";
 import { ChatWizardPassiveQrLifecycle } from "./chat-wizard-passive-qr.js";
 import {
   formatStructuredWizardAnswerForHistory,
@@ -412,7 +415,7 @@ export class ChatWizardHost {
     run: (
       prompter: WizardPrompter,
       signal: AbortSignal,
-      beforePersistentApply: (runtime: RuntimeEnv) => Promise<void>,
+      beforePersistentApply: BeforeHostedPersistentApply,
     ) => Promise<HostedWizardRunResult>;
   }): Promise<ChatWizardResult> {
     this.options.assertActive?.();
@@ -424,12 +427,14 @@ export class ChatWizardHost {
     };
     const session = new WizardSession(
       async (prompter, signal, runnerSession) => {
-        const beforePersistentApply = async (runtime: RuntimeEnv) => {
+        const beforePersistentApply: BeforeHostedPersistentApply = async (runtime, effect) => {
           signal.throwIfAborted();
           await this.options.beforePersistentApply(runtime);
           signal.throwIfAborted();
-          // Once a durable effect starts, its truthful result must win over a late cancel.
-          runnerSession.lockCancellation();
+          if (effect?.cancellation !== "abortable") {
+            // Once a durable effect starts, its truthful result must win over a late cancel.
+            runnerSession.lockCancellation();
+          }
         };
         const result = await params.run(prompter, signal, beforePersistentApply);
         if (typeof result === "string") {

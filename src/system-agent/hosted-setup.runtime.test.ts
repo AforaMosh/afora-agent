@@ -1,5 +1,6 @@
 import "./chat-engine.mocks.test-support.js";
 import { describe, expect, it, vi } from "vitest";
+import type { BeforeSetupPersistentEffect } from "../channels/plugins/setup-wizard-types.js";
 import {
   fakeOverviewLoader,
   sharedVerifiedInferenceConfig,
@@ -99,6 +100,70 @@ describe("SystemAgentChatEngine runtime", () => {
     expect(persistentEffect).not.toHaveBeenCalled();
     expect(mocks.writeWizardConfigFile).not.toHaveBeenCalled();
     expect(mocks.runCollectedChannelOnboardingPostWriteHooks).not.toHaveBeenCalled();
+  });
+
+  it("reauthorizes an abortable dependency effect without locking cancellation", async () => {
+    useTempStateDir();
+    const baseConfig: OpenClawConfig = {};
+    const authorized = vi.fn();
+    const cleanupStarted = vi.fn();
+    mocks.readSetupConfigFileSnapshot.mockResolvedValue({
+      exists: true,
+      valid: true,
+      path: "/tmp/openclaw.json",
+      hash: "base-hash",
+      config: baseConfig,
+      sourceConfig: baseConfig,
+      issues: [],
+    });
+    mocks.setupChannels.mockImplementation(
+      async (
+        config: OpenClawConfig,
+        _runtime: unknown,
+        prompter: WizardPrompter,
+        options: {
+          abortSignal?: AbortSignal;
+          beforePersistentEffect?: BeforeSetupPersistentEffect;
+        },
+      ) => {
+        await options.beforePersistentEffect?.({ cancellation: "abortable" });
+        authorized();
+        const owner = new Promise<void>((_resolve, reject) => {
+          options.abortSignal?.addEventListener(
+            "abort",
+            () => {
+              cleanupStarted();
+              reject(new Error("dependency cleanup completed"));
+            },
+            { once: true },
+          );
+        });
+        await prompter.qrCode?.({
+          title: "Link a device",
+          message: "Scan this QR code and approve the device.",
+          text: QR_TEXT,
+          dismissed: owner,
+        });
+        return config;
+      },
+    );
+    const engine = new SystemAgentChatEngine({
+      surface: "gateway",
+      supportsQrCode: true,
+      runAgentTurn: async () => null,
+      planWithAssistant: async () => null,
+      deps: { loadOverview: fakeOverviewLoader() },
+    });
+
+    const prompt = await engine.handle("connect signal");
+    expect(prompt.step?.type).toBe("qr");
+    expect(authorized).toHaveBeenCalledOnce();
+
+    const cancelled = await engine.handle("cancel");
+
+    expect(cancelled.text).toContain("setup cancelled");
+    expect(cleanupStarted).toHaveBeenCalledOnce();
+    expect(mocks.writeWizardConfigFile).not.toHaveBeenCalled();
   });
 
   it("hosts a channel setup wizard as chat turns", async () => {

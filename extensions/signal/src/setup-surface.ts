@@ -182,8 +182,10 @@ export const signalSetupWizard: ChannelSetupWizard = {
         : undefined;
     }
 
-    // Keep hosted cancellation available while signal-cli waits for phone approval. The config
-    // owner locks cancellation separately immediately before writing OpenClaw config.
+    // Revalidate hosted authority before signal-cli can mutate its account store, but keep
+    // cancellation available while the dependency waits for phone approval. The config owner
+    // locks cancellation separately immediately before writing OpenClaw config.
+    await options?.beforePersistentEffect?.({ cancellation: "abortable" });
     const linkResult = await linkSignalCliAccount({
       cliPath: currentCliPath,
       ...(configPath ? { configPath } : {}),
