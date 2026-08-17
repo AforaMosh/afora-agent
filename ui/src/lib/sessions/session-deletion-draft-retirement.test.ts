@@ -1,23 +1,20 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { createSessionCapability } from "./index.ts";
 import { createGatewayHarness, sessionsResult } from "./session-capability.test-support.ts";
 
-const retirement = vi.hoisted(() => ({
-  run: vi.fn<() => Promise<never>>(),
-}));
+function installPendingIndexedDbOpen() {
+  const request = new EventTarget() as IDBOpenDBRequest;
+  Object.defineProperty(request, "error", {
+    value: new DOMException("storage unavailable", "UnknownError"),
+  });
+  const open = vi.fn(() => request);
+  vi.stubGlobal("indexedDB", { open });
+  return { open, request };
+}
 
-vi.mock("../chat/composer-draft-store.ts", () => ({
-  retireDurableComposerDraft: retirement.run,
-}));
-
-beforeEach(() => {
-  retirement.run.mockReset();
-  retirement.run.mockReturnValue(
-    new Promise<never>(() => {
-      // Intentionally pending: deletion must not await best-effort browser cleanup.
-    }),
-  );
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 it("schedules confirmed draft retirement without delaying session deletion", async () => {
@@ -37,11 +34,17 @@ it("schedules confirmed draft retirement without delaying session deletion", asy
     recoveryScopeReady: true,
     request,
   } as unknown as GatewayBrowserClient;
+  const { open, request: openRequest } = installPendingIndexedDbOpen();
   const { gateway } = createGatewayHarness(client);
   const sessions = createSessionCapability(gateway);
 
   await expect(sessions.delete(key)).resolves.toEqual({ deleted: true });
-  expect(retirement.run).toHaveBeenCalledOnce();
+  expect(open).toHaveBeenCalledOnce();
+
+  // Let the intentionally pending best-effort cleanup settle without leaking
+  // IndexedDB module state into the shared isolate:false UI test worker.
+  openRequest.dispatchEvent(new Event("error"));
+  await Promise.resolve();
   sessions.dispose();
 });
 
@@ -58,10 +61,11 @@ it("does not schedule draft retirement for a deletion no-op", async () => {
     recoveryScopeReady: true,
     request,
   } as unknown as GatewayBrowserClient;
+  const { open } = installPendingIndexedDbOpen();
   const { gateway } = createGatewayHarness(client);
   const sessions = createSessionCapability(gateway);
 
   await expect(sessions.delete("agent:main:not-deleted")).resolves.toEqual({ deleted: false });
-  expect(retirement.run).not.toHaveBeenCalled();
+  expect(open).not.toHaveBeenCalled();
   sessions.dispose();
 });
