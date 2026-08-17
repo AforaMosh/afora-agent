@@ -560,6 +560,7 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
   const daemonLifecycle = createSignalDaemonLifecycle({ abortSignal: opts.abortSignal });
   const monitorTaskRunner = createSignalMonitorTaskRunner(runtime);
   let daemonHandle: SignalDaemonHandle | null = null;
+  let daemonOwnerRegistration: Parameters<typeof registerSignalManagedDaemonOwner>[0] | undefined;
   let ingressMonitor: SignalIngressMonitor | undefined;
 
   if (autoStart) {
@@ -583,7 +584,7 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
     });
     daemonLifecycle.attach(daemonHandle);
     if (account) {
-      registerSignalManagedDaemonOwner({
+      daemonOwnerRegistration = {
         channelRuntime: opts.channelRuntime,
         handle: daemonHandle,
         owner: {
@@ -595,7 +596,7 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
           httpPort,
         },
         abortSignal: daemonLifecycle.abortSignal,
-      });
+      };
     }
   }
 
@@ -616,6 +617,10 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
       const daemonExitError = daemonLifecycle.getExitError();
       if (daemonExitError) {
         throw daemonExitError;
+      }
+      if (daemonOwnerRegistration) {
+        // Account identity becomes authoritative only after this exact child proves readiness.
+        registerSignalManagedDaemonOwner(daemonOwnerRegistration);
       }
     }
 

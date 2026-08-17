@@ -103,6 +103,66 @@ function expectWaitForTransportReadyTimeout(timeoutMs: number) {
 }
 
 describe("monitorSignalProvider autostart", () => {
+  it("publishes managed-daemon ownership only after readiness", async () => {
+    const account = "+15555550123";
+    setSignalAutoStartConfig({ account });
+    const abortController = new AbortController();
+    const owner = {
+      accountId: "default",
+      account,
+      cliPath: "signal-cli",
+      httpHost: "127.0.0.1",
+      httpPort: 8080,
+    };
+    let resolveReady!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      resolveReady = resolve;
+    });
+    waitForTransportReadyMock.mockImplementationOnce(async () => await ready);
+    streamMock.mockImplementationOnce(async () => {
+      expect(isSignalManagedDaemonOwned(owner)).toBe(true);
+      abortController.abort();
+    });
+
+    const monitorPromise = runMonitorWithMocks({
+      abortSignal: abortController.signal,
+      runtime: createMonitorRuntime(),
+    });
+    await vi.waitFor(() => expect(waitForTransportReadyMock).toHaveBeenCalledOnce());
+    const ownedWhileStarting = isSignalManagedDaemonOwned(owner);
+    resolveReady();
+    await monitorPromise;
+
+    expect(ownedWhileStarting).toBe(false);
+    expect(isSignalManagedDaemonOwned(owner)).toBe(false);
+  });
+
+  it("never publishes managed-daemon ownership when readiness fails", async () => {
+    const account = "+15555550123";
+    setSignalAutoStartConfig({ account });
+    const owner = {
+      accountId: "default",
+      account,
+      cliPath: "signal-cli",
+      httpHost: "127.0.0.1",
+      httpPort: 8080,
+    };
+    let rejectReady!: (error: Error) => void;
+    const ready = new Promise<void>((_resolve, reject) => {
+      rejectReady = reject;
+    });
+    waitForTransportReadyMock.mockImplementationOnce(async () => await ready);
+
+    const monitorPromise = runMonitorWithMocks({ runtime: createMonitorRuntime() });
+    await vi.waitFor(() => expect(waitForTransportReadyMock).toHaveBeenCalledOnce());
+    const ownedWhileStarting = isSignalManagedDaemonOwned(owner);
+    rejectReady(new Error("daemon readiness failed"));
+
+    await expect(monitorPromise).rejects.toThrow("daemon readiness failed");
+    expect(ownedWhileStarting).toBe(false);
+    expect(isSignalManagedDaemonOwned(owner)).toBe(false);
+  });
+
   it("lets setup validate the active owned daemon, then removes ownership on stop", async () => {
     const account = "+15555550123";
     const transport = {
