@@ -1,7 +1,7 @@
 // Whimsical long-wait status word ("Clawing…") for the chat working row.
 // Silent for the first stretch of a run, then rotates through crab-themed
 // gerunds so long quiet runs feel alive without claiming progress data the
-// UI does not have. Decorative only — the row keeps its sr-only "Working…".
+// UI does not have. Decorative only — the row keeps its visible "Working…".
 import { html, nothing } from "lit";
 import { property } from "lit/decorators.js";
 import { t } from "../i18n/index.ts";
