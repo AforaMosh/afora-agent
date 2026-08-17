@@ -6,9 +6,7 @@ import { i18n, t } from "../../i18n/index.ts";
 import { createComposerProps } from "./chat-composer.test-support.ts";
 import { renderChatComposer, resetChatComposerState } from "./components/chat-composer.ts";
 
-type ComposerProps = Parameters<typeof renderChatComposer>[0];
-
-function renderComposer(overrides: Partial<ComposerProps> = {}): HTMLElement {
+function renderComposer(overrides: Parameters<typeof createComposerProps>[0] = {}): HTMLElement {
   const container = document.createElement("div");
   document.body.append(container);
   render(renderChatComposer(createComposerProps(overrides)), container);
