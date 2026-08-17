@@ -529,9 +529,6 @@ function combineSlackIngressTurnLifecycles(
     onFailed: async (error) => {
       await Promise.all(lifecycles.map((lifecycle) => lifecycle.onFailed?.(error)));
     },
-    onCancelled: async () => {
-      await Promise.all(lifecycles.map((lifecycle) => lifecycle.onCancelled?.()));
-    },
     onAbandoned: async () => {
       await Promise.all(lifecycles.map((lifecycle) => lifecycle.onAbandoned()));
     },
