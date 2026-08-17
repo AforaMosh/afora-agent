@@ -318,12 +318,14 @@ class WizardSessionPrompter implements WizardPrompter {
   private createStep(step: WizardStepInput): WizardStep {
     // Each emitted step receives an id so remote clients can answer the exact
     // pending prompt and stale answers can be rejected. Explicit browser
-    // destinations bind to the very next step regardless of its input type.
-    const externalUrl = this.session.consumeExternalUrl();
+    // destinations skip credential-only QR presentation and bind to the next
+    // ordinary step that can actually render a browser destination.
     const id = randomUUID();
-    return step.type === "qr"
-      ? { ...step, ...(externalUrl ? { externalUrl } : {}), id }
-      : { ...step, ...(externalUrl ? { externalUrl } : {}), id };
+    if (step.type === "qr") {
+      return { ...step, id };
+    }
+    const externalUrl = this.session.consumeExternalUrl();
+    return { ...step, ...(externalUrl ? { externalUrl } : {}), id };
   }
 }
 
@@ -588,7 +590,7 @@ export class WizardSession {
   }
 
   pushStep(step: WizardStep) {
-    if (step.type === "qr" && !isValidQrPngDataUrl(step.qrDataUrl)) {
+    if (step.type === "qr" && (!step.qrDataUrl || !isValidQrPngDataUrl(step.qrDataUrl))) {
       throw new Error("wizard: invalid QR step");
     }
     this.currentStep = step;

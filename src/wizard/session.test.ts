@@ -229,6 +229,32 @@ describe("WizardSession", () => {
     expect((await session.next()).status).toBe("done");
   });
 
+  test("keeps a browser destination off QR credentials for the following prompt", async () => {
+    let settleOwner!: () => void;
+    const owner = new Promise<void>((resolve) => {
+      settleOwner = resolve;
+    });
+    const externalUrl = "https://provider.example/link-help";
+    const session = createQrSession(async (prompter) => {
+      await prompter.openUrl?.(externalUrl);
+      await presentQr(prompter, owner);
+      await prompter.text({ message: "Confirm the linked account" });
+    });
+
+    const qr = await session.next();
+    expect(qr.step).toMatchObject({ type: "qr", qrDataUrl: QR_DATA_URL });
+    expect(qr.step).not.toHaveProperty("externalUrl");
+
+    settleOwner();
+    const followUp = await session.next();
+    expect(followUp.step).toMatchObject({ type: "text", externalUrl });
+    if (!followUp.step) {
+      throw new Error("expected follow-up step");
+    }
+    await session.answer(followUp.step.id, "linked");
+    await expect(session.next()).resolves.toMatchObject({ done: true, status: "done" });
+  });
+
   test("carries device-code presentation without parsing provider prose", async () => {
     const session = new WizardSession(async (prompter) => {
       await prompter.openUrl?.("https://provider.example/device");
