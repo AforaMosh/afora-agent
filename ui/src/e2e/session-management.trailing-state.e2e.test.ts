@@ -3,6 +3,8 @@ import { CONTROL_UI_SESSION_PULL_REQUESTS_CHANGED_EVENT } from "../../../src/gat
 import { SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD } from "../lib/session-pull-requests.ts";
 import {
   actionOpacity,
+  captureUiProof,
+  captureUiProofRegion,
   createSessionManagementE2eSuite,
   installMockGateway,
   requireRecord,
@@ -12,7 +14,186 @@ import {
 
 const suite = createSessionManagementE2eSuite();
 
+function pullRequestSnapshot(branch: string, state: "open" | "merged", number: number) {
+  return {
+    pullRequests: [
+      {
+        branch,
+        number,
+        owner: "openclaw",
+        repo: "openclaw",
+        state,
+        title: `${state === "open" ? "Open" : "Merged"} combination`,
+        url: `https://example.test/openclaw/openclaw/pull/${number}`,
+      },
+    ],
+    rateLimited: false,
+    status: "ready",
+  };
+}
+
 suite.define(() => {
+  it("composes pull-request state with each session identity without duplicate branch glyphs", async () => {
+    const context = await suite.browser.newContext({
+      colorScheme: "dark",
+      locale: "en-US",
+      serviceWorkers: "block",
+      viewport: { height: 900, width: 1280 },
+    });
+    const page = await context.newPage();
+    const rows = [
+      {
+        branch: "feature/named-glyph",
+        key: "agent:main:pr-named-glyph",
+        label: "Open PR with named session icon",
+        state: "open" as const,
+        options: { icon: "braces" },
+      },
+      {
+        branch: "feature/emoji",
+        key: "agent:main:pr-emoji",
+        label: "Open PR with emoji session icon",
+        state: "open" as const,
+        options: { icon: "🦞" },
+      },
+      {
+        branch: "feature/owner",
+        key: "agent:main:pr-owner",
+        label: "Merged PR with owner session icon",
+        state: "merged" as const,
+        options: {
+          createdActor: { id: "designer", label: "Design Owner", type: "human" as const },
+        },
+      },
+      {
+        branch: "feature/plain",
+        key: "agent:main:pr-plain",
+        label: "Open PR without a session icon",
+        state: "open" as const,
+        options: {},
+      },
+    ];
+    const gateway = await installMockGateway(page, {
+      featureMethods: [
+        "chat.metadata",
+        "chat.startup",
+        "sessions.patch",
+        SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD,
+      ],
+      methodResponses: {
+        [SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD]: { subscribed: true },
+        "sessions.list": sessionsListResponse([
+          sessionRow("agent:main:main", "Main", Date.now(), {
+            createdActor: { id: "operator", label: "Operator", type: "human" },
+          }),
+          ...rows.map((row, index) =>
+            sessionRow(row.key, row.label, Date.now() - index - 1, {
+              forkSource: { sessionKey: "agent:main:main", sessionId: "source-session" },
+              worktree: { id: `worktree-${index}`, branch: row.branch, repoRoot: "/tmp/openclaw" },
+              ...row.options,
+            }),
+          ),
+        ]),
+      },
+      sessionKey: "agent:main:main",
+    });
+
+    try {
+      await page.goto(`${suite.server.baseUrl}chat`);
+      const codingSection = page.locator('[data-session-section="work"]');
+      const codingToggle = codingSection.locator(".sidebar-session-group-toggle");
+      await codingToggle.waitFor({ state: "visible" });
+      await codingToggle.click();
+      await expect
+        .poll(async () => {
+          const requests = await gateway.getRequests(SESSION_PULL_REQUESTS_SUBSCRIBE_METHOD);
+          return requests.some((request) => {
+            const sessionKeys = requireRecord(request.params).sessionKeys;
+            return Array.isArray(sessionKeys) && rows.every((row) => sessionKeys.includes(row.key));
+          });
+        })
+        .toBe(true);
+      await gateway.emitGatewayEvent(CONTROL_UI_SESSION_PULL_REQUESTS_CHANGED_EVENT, {
+        sessions: Object.fromEntries(
+          rows.map((row, index) => [
+            row.key,
+            pullRequestSnapshot(row.branch, row.state, index + 1),
+          ]),
+        ),
+      });
+
+      for (const row of rows) {
+        const session = page.locator(`[data-session-key="${row.key}"]`);
+        const pullRequest = session.locator(
+          `.sidebar-session-indicator [data-session-pr-state="${row.state}"]`,
+        );
+        await expect.poll(() => pullRequest.isVisible()).toBe(true);
+        await expect.poll(() => session.locator(".sidebar-session-fork-indicator").count()).toBe(0);
+        await expect
+          .poll(() => session.locator(".session-row-state [data-session-pr-state]").count())
+          .toBe(0);
+      }
+      await expect
+        .poll(() =>
+          page
+            .locator('[data-session-key="agent:main:pr-named-glyph"] .session-glyph__overlay')
+            .isVisible(),
+        )
+        .toBe(true);
+      await expect
+        .poll(() =>
+          page
+            .locator('[data-session-key="agent:main:pr-emoji"] .session-glyph__overlay')
+            .isVisible(),
+        )
+        .toBe(true);
+      await expect
+        .poll(() =>
+          page
+            .locator(
+              '[data-session-key="agent:main:pr-owner"] .session-glyph__overlay .session-owner-chip',
+            )
+            .isVisible(),
+        )
+        .toBe(true);
+      for (const key of [
+        "agent:main:pr-named-glyph",
+        "agent:main:pr-emoji",
+        "agent:main:pr-owner",
+      ]) {
+        const session = page.locator(`[data-session-key="${key}"]`);
+        const [primaryBounds, overlayBounds] = await Promise.all([
+          session.locator("[data-session-pr-state]").boundingBox(),
+          session.locator(".session-glyph__overlay").boundingBox(),
+        ]);
+        if (!primaryBounds || !overlayBounds) {
+          throw new Error(`Expected visible composite PR geometry for ${key}`);
+        }
+        expect(overlayBounds.x).toBeGreaterThan(primaryBounds.x + primaryBounds.width / 2);
+        expect(overlayBounds.y).toBeGreaterThan(primaryBounds.y + primaryBounds.height / 2);
+      }
+      expect(
+        await page
+          .locator('[data-session-key="agent:main:pr-plain"] .session-glyph__overlay')
+          .count(),
+      ).toBe(0);
+      await captureUiProof(page, "sidebar-pr-session-icon-combinations-dark.png");
+      await captureUiProofRegion(
+        codingSection,
+        "sidebar-pr-session-icon-combinations-dark-closeup.png",
+      );
+      await page.emulateMedia({ colorScheme: "light" });
+      await expect.poll(() => page.locator("html").getAttribute("data-theme-mode")).toBe("light");
+      await captureUiProof(page, "sidebar-pr-session-icon-combinations-light.png");
+      await captureUiProofRegion(
+        codingSection,
+        "sidebar-pr-session-icon-combinations-light-closeup.png",
+      );
+    } finally {
+      await context.close();
+    }
+  });
+
   it("keeps action-only text widest at rest and swaps active state for actions", async () => {
     const context = await suite.browser.newContext({
       locale: "en-US",
@@ -297,28 +478,32 @@ suite.define(() => {
       const state = row.locator(".session-row-state");
       await expect
         .poll(() =>
-          row.locator(".sidebar-recent-session__name .sidebar-session-fork-indicator").isVisible(),
+          row.locator(".sidebar-recent-session__name .sidebar-session-fork-indicator").count(),
         )
-        .toBe(true);
+        .toBe(0);
       await expect.poll(() => state.locator('[aria-label="Forked session"]').count()).toBe(0);
       await expect
-        .poll(() => state.locator("[data-session-pr-state='open']").isVisible())
+        .poll(() =>
+          row.locator(".sidebar-session-indicator [data-session-pr-state='open']").isVisible(),
+        )
         .toBe(true);
+      await expect.poll(() => state.locator("[data-session-pr-state]").count()).toBe(0);
       await expect.poll(() => state.locator(".session-run-spinner").isVisible()).toBe(true);
       await expect.poll(() => state.locator(".session-unread-dot").isVisible()).toBe(true);
-      const [endcapBounds, openPullRequestBounds, spinnerBounds, unreadBounds] = await Promise.all([
+      const [endcapBounds, spinnerBounds, unreadBounds] = await Promise.all([
         row.locator(".sidebar-recent-session__details-endcap").boundingBox(),
-        state.locator("[data-session-pr-state='open'] svg").boundingBox(),
         state.locator(".session-run-spinner").boundingBox(),
         state.locator(".session-unread-dot").boundingBox(),
       ]);
-      if (!endcapBounds || !openPullRequestBounds || !spinnerBounds || !unreadBounds) {
+      if (!endcapBounds || !spinnerBounds || !unreadBounds) {
         throw new Error("Expected visible combined session state geometry");
       }
-      for (const iconBounds of [openPullRequestBounds, spinnerBounds, unreadBounds]) {
-        expect(iconBounds.x).toBeGreaterThanOrEqual(endcapBounds.x);
+      // Fractional flex distribution can move a 12px spinner by under two
+      // device pixels; larger drift would mean the endcap clips status again.
+      for (const iconBounds of [spinnerBounds, unreadBounds]) {
+        expect(iconBounds.x).toBeGreaterThanOrEqual(endcapBounds.x - 2);
         expect(iconBounds.x + iconBounds.width).toBeLessThanOrEqual(
-          endcapBounds.x + endcapBounds.width,
+          endcapBounds.x + endcapBounds.width + 2,
         );
       }
       const link = row.locator(".sidebar-recent-session__link");

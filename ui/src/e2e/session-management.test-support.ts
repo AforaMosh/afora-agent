@@ -3,6 +3,7 @@ import path from "node:path";
 import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
 import type { Locator, Page } from "playwright";
 import { expect } from "vitest";
+import type { SessionCreatedActor } from "../../../packages/gateway-protocol/src/schema/sessions.js";
 import {
   controlUiSessionPath,
   controlUiSessionUrl,
@@ -51,6 +52,8 @@ export function sessionRow(
     childSessions?: string[];
     execNode?: string;
     forkSource?: { sessionKey: string; sessionId: string; entryId?: string };
+    icon?: string;
+    createdActor?: SessionCreatedActor;
     worktree?: { id?: string; branch?: string; repoRoot?: string };
   } = {},
 ) {
@@ -216,6 +219,17 @@ export async function captureUiProof(page: Page, fileName: string) {
   await page.screenshot({
     animations: "disabled",
     fullPage: true,
+    path: path.join(uiProofArtifactDir, fileName),
+  });
+}
+
+export async function captureUiProofRegion(region: Locator, fileName: string) {
+  if (!captureUiProofEnabled) {
+    return;
+  }
+  await mkdir(uiProofArtifactDir, { recursive: true });
+  await region.screenshot({
+    animations: "disabled",
     path: path.join(uiProofArtifactDir, fileName),
   });
 }

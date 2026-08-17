@@ -8,15 +8,17 @@ export type SessionGlyphContent = TemplateResult | typeof nothing;
  * attention glyph). Callers can carry run state as a ring when that surface
  * owns activity in the leading slot. Circular content already fits the ring;
  * arbitrary square icons and thumbnails scale down so their corners stay
- * inside it.
+ * inside it. Composite states can preserve that artwork in the bottom-right
+ * overlay while a semantic state glyph takes the primary slot.
  */
 export function renderSessionGlyph(options: {
   content: SessionGlyphContent;
   running: boolean;
   circular?: boolean;
   badge?: SessionGlyphContent;
+  overlay?: SessionGlyphContent;
 }): TemplateResult {
-  const { content, running, circular = false, badge = nothing } = options;
+  const { content, running, circular = false, badge = nothing, overlay = nothing } = options;
   const modifiers = `${circular ? " session-glyph--circular" : ""}${running ? " session-glyph--running" : ""}`;
   return html`<span class="session-glyph${modifiers}">
     <span class="session-glyph__content">${content}</span>
@@ -28,6 +30,7 @@ export function renderSessionGlyph(options: {
         ></span>`
       : nothing}
     ${badge}
+    ${overlay === nothing ? nothing : html`<span class="session-glyph__overlay">${overlay}</span>`}
   </span>`;
 }
 

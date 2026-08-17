@@ -146,6 +146,50 @@ openclaw-session-owner-chip {
   color: var(--accent);
 }
 
+.session-glyph__overlay {
+  position: absolute;
+  z-index: 2;
+  right: -4px;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  overflow: hidden;
+  border: 1.5px solid var(--bg);
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--border);
+  color: var(--text);
+}
+
+.session-glyph__overlay :is(.session-glyph__icon, .session-glyph__icon svg) {
+  width: 9px;
+  height: 9px;
+}
+
+.session-glyph__overlay .session-glyph__emoji {
+  font-size: 9px;
+}
+
+.session-glyph__overlay :is(openclaw-session-owner-chip, .session-owner-chip--row) {
+  width: 100%;
+  height: 100%;
+}
+
+.session-glyph__overlay .session-owner-chip--row {
+  border-width: 1px;
+  box-shadow: none;
+  font-size: 6px;
+}
+
+.session-glyph__overlay .sidebar-session-attention__icon,
+.session-glyph__overlay .sidebar-session-attention__icon svg {
+  width: 9px;
+  height: 9px;
+}
+
 .connect-splash__logo {
   width: 44px;
   height: 44px;

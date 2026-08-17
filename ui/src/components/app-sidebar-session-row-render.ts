@@ -175,6 +175,9 @@ export function renderRecentSession(params: {
   const pullRequestState = session.worktreeId
     ? host.sessionPullRequestIndicatorState(session.key, session.worktreeId)
     : "none";
+  // The leading PR glyph already communicates branch provenance; rendering
+  // forkSource beside the title would duplicate the same relationship.
+  const showForkSource = Boolean(session.forkSource) && pullRequestState === "none";
   const ownerAttribution = host.sessionsStatusFilter === "archived" ? "archived" : "created";
   const ownerActor = host.sessionOwnershipVisible
     ? host.sessionsStatusFilter === "archived"
@@ -305,7 +308,7 @@ export function renderRecentSession(params: {
                   title=${t("sessionsView.archived")}
                   >${icons.archive}</span
                 >`
-              : nothing}${session.forkSource
+              : nothing}${showForkSource
               ? html`<span
                   class="sidebar-session-fork-indicator"
                   role="img"

@@ -187,7 +187,7 @@ describe("AppSidebar session indicators", () => {
     const runningLead = runningRow?.querySelector(".sidebar-session-indicator");
     expect(pinnedLead).not.toBeNull();
     expect(pinnedLead?.innerHTML).toBe(runningLead?.innerHTML);
-    expect(pinnedLead?.querySelector("[data-session-pr-state]")).toBeNull();
+    expect(pinnedLead?.querySelector('[data-session-pr-state="open"]')).not.toBeNull();
     expect(pinnedRow?.querySelector(".session-row-state")).toBeNull();
   });
 
@@ -214,11 +214,15 @@ describe("AppSidebar session indicators", () => {
         row.status = "running";
         row.unread = true;
       } else if (row.key === keys.openPullRequest || row.key === keys.mergedPullRequest) {
+        row.icon = row.key === keys.openPullRequest ? "braces" : "🦞";
         row.worktree = {
           id: `wt-${row.key}`,
           branch: row.key.endsWith("open-pr") ? "feature/open" : "feature/merged",
           repoRoot: "/repo",
         };
+        if (row.key === keys.openPullRequest) {
+          row.forkSource = { sessionKey: "agent:main:main", sessionId: "source-session" };
+        }
       }
     }
     const request = vi.fn(() => Promise.resolve({ subscribed: true }));
@@ -322,12 +326,22 @@ describe("AppSidebar session indicators", () => {
 
     for (const key of [keys.openPullRequest, keys.mergedPullRequest]) {
       const row = sidebar.querySelector(`[data-session-key="${key}"]`);
-      expectEmptyLead(row);
-      expect(row?.querySelector(".session-row-state [data-session-pr-state]")).not.toBeNull();
+      expect(
+        row?.querySelector(".sidebar-session-indicator [data-session-pr-state]"),
+      ).not.toBeNull();
+      const overlay = row?.querySelector(".session-glyph__overlay");
+      expect(overlay).not.toBeNull();
+      expect(
+        overlay?.querySelector(
+          key === keys.openPullRequest ? ".session-glyph__icon svg" : ".session-glyph__emoji",
+        ),
+      ).not.toBeNull();
+      expect(row?.querySelector(".sidebar-session-fork-indicator")).toBeNull();
+      expect(row?.querySelector(".session-row-state [data-session-pr-state]")).toBeNull();
       expect(row?.querySelector("a")?.getAttribute("title")).toContain(
         key === keys.openPullRequest ? "Open PR" : "Merged",
       );
-      expect(row?.querySelector("[data-session-pr-state]")?.hasAttribute("title")).toBe(false);
+      expect(row?.querySelector("[data-session-pr-state]")?.hasAttribute("title")).toBe(true);
     }
 
     const openPullRequestRow = result.sessions.find((row) => row.key === keys.openPullRequest);
@@ -338,7 +352,11 @@ describe("AppSidebar session indicators", () => {
     sessions.publishList({ result });
     await waitForFast(() => {
       expect(sidebar.querySelector('[data-session-pr-state="open"]')).toBeNull();
-      expectEmptyLead(sidebar.querySelector(`[data-session-key="${keys.openPullRequest}"]`));
+      expect(
+        sidebar.querySelector(
+          `[data-session-key="${keys.openPullRequest}"] .session-glyph__icon svg`,
+        ),
+      ).not.toBeNull();
     });
   });
 });
