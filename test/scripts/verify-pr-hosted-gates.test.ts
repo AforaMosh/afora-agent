@@ -735,7 +735,10 @@ describe("verify-pr-hosted-gates", () => {
     ).toThrow(`Missing successful recent CI workflow for ${sha}`);
   });
 
-  it("loads complete pull-request commit membership from the local checkout", () => {
+  it("loads more than 250 pull-request commits from the local checkout", () => {
+    const commitShas = Array.from({ length: 300 }, (_, index) =>
+      (index + 1).toString(16).padStart(40, "0"),
+    ).concat(sha);
     const execGit = (args: string[]) => {
       switch (args[0]) {
         case "remote":
@@ -746,7 +749,7 @@ describe("verify-pr-hosted-gates", () => {
           return "";
         case "rev-list":
           expect(args).toEqual(["rev-list", "--reverse", `${previousSha}..${sha}`]);
-          return `${previousSha}\n${sha}\n`;
+          return `${commitShas.join("\n")}\n`;
         default:
           throw new Error(`Unexpected git command: ${args.join(" ")}`);
       }
@@ -758,7 +761,7 @@ describe("verify-pr-hosted-gates", () => {
         { baseSha: previousSha, headSha: sha },
         execGit,
       ),
-    ).toEqual([previousSha, sha]);
+    ).toEqual(commitShas);
   });
 
   it("accepts an empty membership when the head is already contained by the base", () => {
