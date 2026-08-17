@@ -2,11 +2,19 @@
 
 Against `afora-agent` at `fdc298b2b7c` (openclaw `1ea18c8cd8c`).
 
-Target deployment, from the existing Friday setup: one DigitalOcean droplet (`afora-friday-host`, 2 GB / 1 vCPU, Ubuntu 24.04), Caddy terminating TLS on `*.aforademo.com`, one agent instance per user at `u-<id>.aforademo.com`, spawned by the spine.
+Target deployment: a Hetzner server with 16 GB RAM, currently running two active accounts, Caddy terminating TLS, one agent instance per user, spawned by the spine.
 
-**Everything below is static analysis. I have measured nothing.** No instance was started, no RSS sampled, no build run. Each finding names the measurement that would confirm it, and the ones marked MEASURE FIRST should not be acted on until you have the number.
+**Everything below is static analysis. I have measured nothing.** No instance was started, no RSS sampled, no build run. Each finding names the measurement that would confirm it.
 
-The constraint that shapes every answer: **N instances share 2 GB.** Every megabyte of per-instance baseline multiplies by N. That makes startup footprint, not throughput, the thing to optimize.
+Memory is not the binding constraint. 16 GB across two instances is roughly 8 GB each, which is far more than an agent process needs. That means the reason to prune is **not** RAM pressure. It is:
+
+- **Attack surface.** 41 Dependabot advisories on first push (1 critical, 16 high, 20 moderate, 4 low), most of which will be in extension dependencies you never load.
+- **Startup time and image size**, which affect how fast the spine can bring a new user's instance up.
+- **Headroom for density**, if the plan is more than two accounts on this box.
+
+Optimize for those, not for megabytes.
+
+**Hard cap: 3 tenants per server.** Stated constraint, not a derived one. At 3 tenants that is roughly 5.3 GB per instance, still far more than an agent needs, so the cap is a blast-radius and noisy-neighbor decision rather than a memory one. Enforcement belongs in the spine's spawn path (it owns instance creation), not in this repo: it should refuse to provision a fourth tenant on a server that already has three, and the refusal must be a real check against current occupancy, not a config value someone can forget to update. Adding a fourth is a deliberate act that requires a second server.
 
 ---
 
@@ -45,20 +53,20 @@ Finding 1 removes these by not shipping them, which is the right fix. This findi
 
 **MEASURE:** startup wall time and RSS delta per extension. `active-memory` and `memory-wiki` are the two to watch, since gbrain replaces both and leaving them enabled would mean two memory systems racing for the same slot.
 
-## Finding 3: no runtime heap cap (this one is a real risk)
+## Finding 3: no runtime heap cap (low priority at this size)
 
 ```
 Dockerfile:13   ARG  ...BUILD_NODE_OPTIONS="--max-old-space-size=8192"   (build only)
 Dockerfile:90   NODE_OPTIONS=--max-old-space-size=2048 pnpm install      (build only)
 ```
 
-Nothing sets `--max-old-space-size` for the **running** agent. V8's default heap limit on a 64-bit host is derived from total system memory, not from a container share, so every instance believes it may grow toward roughly the whole box. With N instances on 2 GB, the failure mode is not graceful degradation, it is the OOM killer picking a victim, and the victim is whichever user happened to be mid-turn.
+Nothing sets `--max-old-space-size` for the **running** agent, so V8 sizes each instance's heap ceiling from total host memory rather than from its share. At 16 GB and a 3-tenant cap this is a non-issue: three processes each sizing against 16 GB will never collectively reach it in normal operation, and an agent that actually grows a multi-gigabyte heap has a leak, which a cap would only mask.
 
-**Fix:** set a runtime cap per instance, sized to `2 GB / expected N` with headroom, e.g. `NODE_OPTIONS=--max-old-space-size=384` for four instances. Set it in the spine's container spawn, not in the Dockerfile, so it can vary with density.
+**Do not set a cap now.** It buys nothing at this density and a badly-chosen value turns an unlikely OOM into a reliable crash.
 
-**MEASURE FIRST:** run one instance through a realistic session and watch peak RSS. Setting the cap too low turns an occasional OOM kill into a reliable crash, which is worse. Get the number before you pick it.
+Revisit if either changes: tenants per server goes above the cap, or the box gets smaller. At that point set it in the spine's spawn path so it varies with density, and size it from a measured peak RSS rather than a guess.
 
-Related: `src/gateway/server-idle-task.ts` and `src/gateway/active-sessions-shutdown-drain.ts` exist and are worth reading for idle eviction, since scaling to zero between sessions beats tuning a heap cap. I did not read either file.
+Worth reading regardless, because idle eviction beats heap tuning at any density: `src/gateway/server-idle-task.ts` and `src/gateway/active-sessions-shutdown-drain.ts`. If instances can scale to zero between sessions, three tenants cost roughly one tenant's memory most of the time. I did not read either file.
 
 ## Finding 4: what owning the agent actually unlocks
 
@@ -76,15 +84,15 @@ These are the things that were impossible as a pure openclaw consumer. This is t
 
 ## Finding 5: sequencing
 
-1. **Finding 1.** Build arg. Measure image size and idle RSS. One line, biggest win.
-2. **Finding 3 measurement.** Peak RSS for one real session. You need this number for capacity planning regardless.
-3. **Finding 3 fix.** Heap cap in the spawn path, sized from step 2.
-4. **gbrain** (`extensions/afora-gbrain`, per `AFORA-FORK-PLAN.md` section 6), with `active-memory` and `memory-wiki` excluded by step 1 so nothing contends for the memory slot.
-5. **Hermes port 1** (curator cron guard, `docs/afora/HERMES-PORTS.md`).
-6. **4b defaults.**
+1. **Finding 1.** Build arg. Measure image size and startup time. One line, biggest win, and it takes most of the 41 advisories with it.
+2. **3-tenant cap** enforced in the spine's spawn path, checked against live occupancy.
+3. **gbrain** (`extensions/afora-gbrain`, per `AFORA-FORK-PLAN.md` section 6), with `active-memory` and `memory-wiki` excluded by step 1 so nothing contends for the memory slot.
+4. **Hermes port 1** (curator cron guard, `docs/afora/HERMES-PORTS.md`).
+5. **4b defaults.**
+6. Idle eviction (`server-idle-task.ts`), if instances sitting warm turns out to cost anything.
 7. Everything else only if a measurement says so.
 
-Steps 1 through 3 are a day and are where the efficiency actually lives. Step 4c is a week and might buy nothing. Do not invert that order because 4c sounds more like real engineering.
+Steps 1 and 2 are an afternoon. Finding 4c (tearing out multi-agent scoping) is a week and might buy nothing. Do not invert that order because 4c sounds more like real engineering.
 
 ## What I did not audit
 
