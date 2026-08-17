@@ -1006,7 +1006,7 @@ describe("createSlackMessageHandler", () => {
         channel: "C111",
         user: "U111",
         ts: "1709000000.000800",
-        text: "relay message",
+        text: "enterprise message",
       } as never,
       {
         source: "message",
