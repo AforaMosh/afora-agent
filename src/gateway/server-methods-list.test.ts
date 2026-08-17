@@ -130,6 +130,8 @@ describe("listGatewayMethods", () => {
       "sessions.assignOwner",
       "progressCard.get",
       "progressCard.put",
+      "tools.github.status",
+      "tools.github.configure",
     ]);
     const methods = listGatewayMethods();
     expect(methods.indexOf("node.pluginSurface.refresh")).toBe(
@@ -300,6 +302,8 @@ describe("listGatewayMethods", () => {
       "sessions.assignOwner",
       "progressCard.get",
       "progressCard.put",
+      "tools.github.status",
+      "tools.github.configure",
     ]);
     expect(methods.indexOf("approval.get")).toBeGreaterThan(methods.indexOf("tts.speak"));
     expect(methods.indexOf("approval.resolve")).toBe(methods.indexOf("approval.get") + 1);
