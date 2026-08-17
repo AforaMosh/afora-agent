@@ -4,6 +4,12 @@ import path from "node:path";
 import { expectDefined } from "@openclaw/normalization-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  consumeDeviceBootstrapTokenWithSetupCompletion,
+  ensureDevicePairSetupBootstrapToken,
+  verifyDeviceBootstrapToken,
+} from "../../infra/device-bootstrap.js";
+import { CLOUD_WORKER_PAIRING_SETUP_BOOTSTRAP_PROFILE } from "../../shared/device-bootstrap-profile.js";
+import {
   closeOpenClawStateDatabaseForTest,
   openOpenClawStateDatabase,
   type OpenClawStateDatabase,
@@ -40,20 +46,35 @@ describe("worker environment node enrollment store", () => {
     await fs.rm(root, { recursive: true, force: true });
   });
 
-  it("binds setup completion to the exact environment identity across restart", () => {
+  it("binds setup completion to the exact environment identity across restart", async () => {
     const pending = store.ensureNodeEnrollment("worker-enrollment");
     const setupId = expectDefined(pending.nodeSetupId, "worker node enrollment setup id");
     expect(setupId).toMatch(/^[0-9a-f-]{36}$/u);
     expect(pending.nodeDeviceId).toBeNull();
     expect(store.ensureNodeEnrollment("worker-enrollment").nodeSetupId).toBe(setupId);
 
-    database.db
-      .prepare(
-        `INSERT INTO device_pair_setup_completions (
-          setup_id, device_id, access, completed_at_ms, delivery_state, retain_until_ms
-        ) VALUES (?, ?, 'node', ?, 'confirmed', ?)`,
-      )
-      .run(setupId, "cloud-device-1", 10, 20);
+    const issued = await ensureDevicePairSetupBootstrapToken({
+      baseDir: root,
+      setupId,
+      profile: CLOUD_WORKER_PAIRING_SETUP_BOOTSTRAP_PROFILE,
+    });
+    if (issued.status !== "pending") {
+      throw new Error("expected pending cloud worker setup");
+    }
+    await verifyDeviceBootstrapToken({
+      baseDir: root,
+      token: issued.token,
+      deviceId: "cloud-device-1",
+      publicKey: "cloud-public-key-1",
+      role: "node",
+      scopes: [],
+    });
+    await consumeDeviceBootstrapTokenWithSetupCompletion({
+      baseDir: root,
+      token: issued.token,
+      deviceId: "cloud-device-1",
+      completedAtMs: 10,
+    });
 
     expect(store.get("worker-enrollment")).toMatchObject({
       nodeSetupId: setupId,
