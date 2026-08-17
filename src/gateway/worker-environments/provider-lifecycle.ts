@@ -167,7 +167,9 @@ export function createWorkerProviderLifecycle(options: WorkerProviderLifecycleOp
 
   const finishProvenDestroy = async (record: WorkerEnvironmentRecord) => {
     const destroying = beginDestroy(record);
-    await options.retireNodeEnrollment?.(destroying);
+    if (destroying.nodeSetupId) {
+      await options.retireNodeEnrollment?.(destroying);
+    }
     if (destroying.teardownTerminalState !== "failed") {
       return move(destroying, "destroyed");
     }
