@@ -6,7 +6,6 @@ import type {
 import type { ControlUiSessionPullRequest } from "../../../../src/gateway/control-ui-contract.js";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import { selectApplicationSession } from "../../app/agent-selection.ts";
-import { parseGitHubLinkTarget } from "../../components/github-link-target.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { clampText } from "../../lib/format.ts";
 import { isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
@@ -42,9 +41,6 @@ import {
   listDismissedChatPullRequests,
 } from "./components/chat-pull-requests.ts";
 import { scheduleChatScroll } from "./scroll.ts";
-
-const GITHUB_PREVIEW_METHOD = "controlUi.githubPreview";
-const GITHUB_PREVIEW_PREWARM_LIMIT = 3;
 
 export abstract class ChatPaneSession extends ChatPaneTaskSuggestions {
   protected githubPreviewPrewarmAbortController = new AbortController();
@@ -155,7 +151,6 @@ export abstract class ChatPaneSession extends ChatPaneTaskSuggestions {
       state.connected &&
       state.client === client &&
       state.sessionKey === sessionKey;
-    const isPrewarmCurrent = () => isCurrent() && this.presented;
     const scheduleAfterTranscript = () => {
       if (!isCurrent()) {
         return;
@@ -168,64 +163,23 @@ export abstract class ChatPaneSession extends ChatPaneTaskSuggestions {
           void this.probeSessionDiscussion(sessionKey);
           this.hydrateSessionCompanion(sessionKey);
           void this.refreshSessionPullRequests();
-          this.prewarmSessionGitHubPreviews(state, prewarmController.signal, isPrewarmCurrent);
+          if (client && this.presented) {
+            void import("../../components/github-prewarm.runtime.ts").then(
+              ({ prewarm }) =>
+                prewarm(
+                  this,
+                  client,
+                  prewarmController.signal,
+                  () => isCurrent() && this.presented,
+                ),
+              () => undefined,
+            );
+          }
         }
         complete();
       });
     };
     void transcriptLoad.then(scheduleAfterTranscript, scheduleAfterTranscript);
-  }
-
-  private prewarmSessionGitHubPreviews(
-    state: ChatPageHost,
-    signal: AbortSignal,
-    isCurrent: () => boolean,
-  ): void {
-    const client = state.client;
-    if (!client || signal.aborted || !isCurrent()) {
-      return;
-    }
-    const anchors = this.querySelectorAll<HTMLAnchorElement>(
-      ".chat-thread a.markdown-github-link[href]",
-    );
-    const seen = new Set<string>();
-    const targets = [];
-    for (let index = anchors.length - 1; index >= 0; index -= 1) {
-      const target = parseGitHubLinkTarget(anchors[index]?.href ?? "");
-      if (!target) {
-        continue;
-      }
-      const key = `${target.kind}:${target.owner.toLowerCase()}/${target.repo.toLowerCase()}#${target.number}`;
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      targets.push(target);
-      if (targets.length === GITHUB_PREVIEW_PREWARM_LIMIT) {
-        break;
-      }
-    }
-    // Responses are discarded intentionally: these calls fill the Gateway-process
-    // LRU without loading the browser hovercard runtime during session startup.
-    void (async () => {
-      for (const target of targets) {
-        if (signal.aborted || !isCurrent()) {
-          return;
-        }
-        await client
-          .request(
-            GITHUB_PREVIEW_METHOD,
-            {
-              kind: target.kind,
-              number: target.number,
-              owner: target.owner,
-              repo: target.repo,
-            },
-            { signal },
-          )
-          .catch(() => undefined);
-      }
-    })();
   }
 
   protected markSessionRead(row: GatewaySessionRow | undefined) {
