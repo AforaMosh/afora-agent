@@ -3721,16 +3721,10 @@ button.chat-pr__diff {
   align-items: center;
   flex: 0 0 auto;
   border-radius: var(--radius-full);
-  transition: background var(--duration-fast) ease;
 }
 
-.agent-chat__input .chat-talk-control:hover:not(:has(.chat-send-btn:disabled)),
-.agent-chat__input .chat-talk-control:has(:focus-visible) {
-  background: var(--chat-composer-hover);
-}
-
-/* The half that is hovered must not paint a second, darker ground on top of the
-   pair's own. Colour still shifts per half, so the mic keeps its own feedback. */
+/* The microphone stays borderless on the shared composer surface; hover changes
+   only its foreground, never paints a circular button behind it. */
 .agent-chat__input .chat-talk-control .chat-send-btn--voice:hover:not(:disabled) {
   background: transparent;
 }
@@ -5793,6 +5787,14 @@ button.chat-pr__diff {
     height: 44px;
   }
 
+  /* Paint the committed action at desktop size inside its 44px touch target.
+     Voice retains its full box because it has no filled circle to read as large. */
+  .agent-chat__input
+    .chat-send-btn:not(.chat-send-btn--voice):not(.chat-send-btn--voice-live) {
+    padding: 4px;
+    background-clip: content-box;
+  }
+
   /* Keep the live voice pill wide enough for its 7-bar meter; the generic
      44px square above would crush it at phone widths. */
   .chat-send-btn.chat-send-btn--voice-live {
@@ -5802,7 +5804,7 @@ button.chat-pr__diff {
 
   .agent-chat__composer-shell {
     width: calc(100% - 8px);
-    margin: 6px 4px calc(14px + var(--safe-area-bottom));
+    margin: 6px 4px calc(6px + var(--safe-area-bottom));
     gap: 6px;
   }
 
@@ -5827,7 +5829,7 @@ button.chat-pr__diff {
 
 @media (display-mode: standalone) and (max-width: 768px) {
   .agent-chat__composer-shell {
-    margin-bottom: calc(14px + max(var(--safe-area-bottom), 34px));
+    margin-bottom: max(6px, var(--safe-area-bottom));
   }
 
   .agent-chat__composer-shell:has(.agent-chat__composer-combobox > :is(textarea, input):focus) {
