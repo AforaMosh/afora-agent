@@ -33,9 +33,9 @@ on:
         required: true
 
 concurrency:
-  # Alias promotion checks are read-then-write; serialize every Docker publish
-  # so an older stable run cannot overwrite a newer latest/main promotion.
-  group: docker-release-publish
+  # This temporary branch publishes immutable beta tags only, with no moving
+  # aliases, so it can run without disturbing the queued stable refresh.
+  group: docker-release-publish-beta-backfill-2026-8-1
   cancel-in-progress: false
   queue: max
 
