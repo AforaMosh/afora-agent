@@ -1,6 +1,6 @@
 import type { AgentRuntimeSessionSpawnContext } from "./agent-runtime-identity-token.js";
 
-export type AgentRuntimeExecutionLineage = {
+type AgentRuntimeExecutionLineage = {
   relation: "sessions_spawn";
   requesterRef: string;
   controllerRef: string;
