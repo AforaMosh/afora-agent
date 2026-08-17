@@ -9,12 +9,6 @@ import type {
   SessionsListResult,
   SessionsPatchResult,
 } from "../../api/types.ts";
-import { retireDurableComposerDraft } from "../chat/composer-draft-store.ts";
-import {
-  resolveStoredChatOutboxScope,
-  storedChatOutboxScopeKey,
-  storageTargetForGateway,
-} from "../chat/outbox-store.ts";
 import { formatUiError } from "../format-error.ts";
 import {
   requestSessionCreate,
@@ -57,7 +51,7 @@ type SessionMutationsHost = {
   retirePullRequestSummary: (key: string) => void;
 };
 
-function retireDeletedComposerDraft(
+function scheduleDeletedComposerDraftRetirement(
   client: GatewayBrowserClient,
   key: string,
   agentId?: string | null,
@@ -65,13 +59,16 @@ function retireDeletedComposerDraft(
   if (!client?.recoveryScopeReady || !client.recoveryScope) {
     return;
   }
-  const state = { settings: { gatewayUrl: client.gatewayUrl } };
-  const scope = resolveStoredChatOutboxScope(state, key, agentId ?? undefined);
-  void retireDurableComposerDraft({
-    gatewayOwner: storageTargetForGateway(client.gatewayUrl).gatewayOwner,
+  const target = {
+    gatewayUrl: client.gatewayUrl,
     recoveryScope: client.recoveryScope,
-    scopeKey: storedChatOutboxScopeKey(scope),
-  });
+    sessionKey: key,
+    ...(agentId ? { agentId } : {}),
+  };
+  void import("../chat/composer-draft-store.runtime.ts").then(
+    ({ retireDeletedComposerDraft }) => retireDeletedComposerDraft(target),
+    () => undefined,
+  );
 }
 
 export function createSessionMutations(host: SessionMutationsHost) {
@@ -437,7 +434,7 @@ export function createSessionMutations(host: SessionMutationsHost) {
       if (!host.connection.isCurrent(scope) || !confirmsSessionDeletion(response)) {
         return { deleted: false };
       }
-      retireDeletedComposerDraft(scope.client, key, options.agentId);
+      scheduleDeletedComposerDraftRetirement(scope.client, key, options.agentId);
       host.retirePullRequestSummary(key);
       confirmedArchives.delete(key.trim());
       preparedWorkSessionKeys.delete(key.trim());
@@ -478,7 +475,7 @@ export function createSessionMutations(host: SessionMutationsHost) {
         }
         if (confirmsSessionDeletion(response)) {
           deleted.push(target.key);
-          retireDeletedComposerDraft(scope.client, target.key, target.agentId);
+          scheduleDeletedComposerDraftRetirement(scope.client, target.key, target.agentId);
           if (response.worktreePreserved) {
             preservedWorktrees.push(response.worktreePreserved);
           }

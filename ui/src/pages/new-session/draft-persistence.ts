@@ -1,10 +1,8 @@
 import type { ChatAttachment } from "../../lib/chat/chat-types.ts";
-import {
-  readDurableComposerDraft,
-  retireDurableComposerDraft,
-  type DurableComposerDraftAttachment,
-  type DurableComposerDraftScope,
-} from "../../lib/chat/composer-draft-store.ts";
+import type {
+  DurableComposerDraftAttachment,
+  DurableComposerDraftScope,
+} from "../../lib/chat/composer-draft-store.runtime.ts";
 import { nextDraftRevision } from "../../lib/chat/outbox-store-draft-state.ts";
 import { storageTargetForGateway } from "../../lib/chat/outbox-store.ts";
 import { releaseChatAttachmentPayloads } from "../chat/attachment-payload-store.ts";
@@ -31,6 +29,8 @@ type DraftSnapshot = {
   attachments: DurableComposerDraftAttachment[] | null;
   writeId: string;
 };
+
+const loadDurableComposerStore = () => import("../../lib/chat/composer-draft-store.runtime.ts");
 
 export class NewSessionDraftPersistence {
   private gatewayOwner = "";
@@ -139,6 +139,7 @@ export class NewSessionDraftPersistence {
       return Promise.resolve();
     }
     return this.enqueueWrite(async () => {
+      const { retireDurableComposerDraft } = await loadDurableComposerStore();
       const identity = durableComposerScopeIdentity(scope);
       const minimumRevision = Math.max(requestedRevision, this.committedByScope.get(identity) ?? 0);
       const result = await retireDurableComposerDraft(scope, minimumRevision);
@@ -160,6 +161,7 @@ export class NewSessionDraftPersistence {
     const submitted = this.read();
     const submittedAttachments = captureDurableChatAttachments(submitted.attachments);
     return this.enqueueWrite(async () => {
+      const { readDurableComposerDraft } = await loadDurableComposerStore();
       const identity = durableComposerScopeIdentity(scope);
       let expectedRevision = this.committedByScope.get(identity) ?? 0;
       // A closing source page can finish an identical write between read and CAS.
@@ -280,6 +282,7 @@ export class NewSessionDraftPersistence {
     mutationGeneration: number,
     signature: string,
   ) {
+    const { readDurableComposerDraft } = await loadDurableComposerStore();
     const result = await readDurableComposerDraft(scope);
     if (result.status === "storage-failed") {
       reportDurableComposerStorageError(scope, this.onStorageError);

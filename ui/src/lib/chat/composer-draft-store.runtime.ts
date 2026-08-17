@@ -1,4 +1,10 @@
+// Keep IndexedDB outside the startup graph; composers and session deletion load it on demand.
 import type { BrowserAnnotationAttachment } from "./chat-types.ts";
+import {
+  resolveStoredChatOutboxScope,
+  storedChatOutboxScopeKey,
+  storageTargetForGateway,
+} from "./outbox-store.ts";
 
 const DATABASE_NAME = "openclaw-control-ui";
 const DATABASE_VERSION = 1;
@@ -374,4 +380,22 @@ export async function retireDurableComposerDraft(
   } catch {
     return { status: "storage-failed" };
   }
+}
+
+export function retireDeletedComposerDraft(params: {
+  gatewayUrl: string;
+  recoveryScope: string;
+  sessionKey: string;
+  agentId?: string;
+}) {
+  const scope = resolveStoredChatOutboxScope(
+    { settings: { gatewayUrl: params.gatewayUrl } },
+    params.sessionKey,
+    params.agentId,
+  );
+  return retireDurableComposerDraft({
+    gatewayOwner: storageTargetForGateway(params.gatewayUrl).gatewayOwner,
+    recoveryScope: params.recoveryScope,
+    scopeKey: storedChatOutboxScopeKey(scope),
+  });
 }

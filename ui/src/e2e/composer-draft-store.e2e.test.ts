@@ -15,8 +15,8 @@ suite.define(() => {
       await installMockGateway(page);
       await page.goto(`${suite.server.baseUrl}chat`);
       const storeHandle = await page.evaluateHandle<
-        typeof import("../lib/chat/composer-draft-store.ts")
-      >('import("/src/lib/chat/composer-draft-store.ts")');
+        typeof import("../lib/chat/composer-draft-store.runtime.ts")
+      >('import("/src/lib/chat/composer-draft-store.runtime.ts")');
       const composerHandle = await page.evaluateHandle<
         typeof import("../pages/chat/composer-persistence.ts")
       >('import("/src/pages/chat/composer-persistence.ts")');
@@ -110,8 +110,8 @@ suite.define(() => {
       await installMockGateway(page);
       await page.goto(`${suite.server.baseUrl}chat`);
       const storeHandle = await page.evaluateHandle<
-        typeof import("../lib/chat/composer-draft-store.ts")
-      >('import("/src/lib/chat/composer-draft-store.ts")');
+        typeof import("../lib/chat/composer-draft-store.runtime.ts")
+      >('import("/src/lib/chat/composer-draft-store.runtime.ts")');
       const persistenceHandle = await page.evaluateHandle<
         typeof import("../pages/new-session/draft-persistence.ts")
       >('import("/src/pages/new-session/draft-persistence.ts")');

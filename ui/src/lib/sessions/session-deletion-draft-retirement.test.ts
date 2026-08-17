@@ -39,7 +39,7 @@ it("schedules confirmed draft retirement without delaying session deletion", asy
   const sessions = createSessionCapability(gateway);
 
   await expect(sessions.delete(key)).resolves.toEqual({ deleted: true });
-  expect(open).toHaveBeenCalledOnce();
+  await vi.waitFor(() => expect(open).toHaveBeenCalledOnce());
 
   // Let the intentionally pending best-effort cleanup settle without leaking
   // IndexedDB module state into the shared isolate:false UI test worker.
