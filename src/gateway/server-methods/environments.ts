@@ -140,7 +140,7 @@ export function summarizeWorkerEnvironment(
 async function listEnvironments(context: GatewayRequestContext): Promise<EnvironmentSummary[]> {
   const [devices, nodes] = await Promise.all([listDevicePairing(), listNodePairing()]);
   const managedCloudNodeIds = new Set(
-    (context.workerEnvironmentService?.list() ?? []).flatMap((environment) =>
+    listWorkerEnvironments(context).flatMap((environment) =>
       environment.providerId !== "device" &&
       environment.nodeDeviceId &&
       environment.state !== "destroyed" &&
