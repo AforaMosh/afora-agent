@@ -117,6 +117,7 @@ describe("Crabbox worker provider", () => {
   it("advertises named machine classes and preserves a configured literal default", () => {
     const provider = createCrabboxWorkerProvider();
 
+    expect(provider.supportedExecutionModes).toEqual(["worker-turn"]);
     expect(provider.listMachineOptions?.(PROFILE)).toEqual([
       {
         id: "standard",
@@ -190,7 +191,8 @@ describe("Crabbox worker provider", () => {
       }),
     ).resolves.toMatchObject({ node: { deviceId: "device-bound" } });
     const setup = calls.find((call) => call.argv[1] === "run")?.options.input ?? "";
-    expect(String(setup)).toContain("node run --display-name 'Bound worker'");
+    expect(String(setup)).toContain("node run --ephemeral --display-name 'Bound worker'");
+    expect(String(setup)).not.toContain("config set nodeHost.workerRuns.enabled");
     expect(String(setup)).not.toContain("setup-code");
     expect(calls.flatMap((call) => call.argv)).not.toContain("ssh");
     expect(calls.flatMap((call) => call.argv)).not.toContain("scp");
@@ -890,6 +892,7 @@ describe("Crabbox worker provider", () => {
       'connect --target-file "$setup_code_file" --ephemeral',
     );
     expect(String(calls[2]?.options.input)).toContain("setsid -f sh -c");
+    expect(String(calls[2]?.options.input)).not.toContain("config set nodeHost.workerRuns.enabled");
     expect(String(calls[2]?.options.input)).not.toContain("nohup");
     expect(String(calls[2]?.options.input)).not.toContain("secret-setup-value");
     expect(calls[2]?.options.env).toMatchObject({

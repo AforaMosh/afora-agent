@@ -164,7 +164,7 @@ export type WorkerProvider = {
   id: string;
   /** Process-stable choices available for this profile; omit the hook to hide machine selection. */
   listMachineOptions?: (profile: WorkerProfile) => readonly WorkerMachineOption[];
-  /** Omit for both legacy modes; node-only providers advertise worker-turn explicitly. */
+  /** Omission advertises no session-placement modes; placement providers opt in explicitly. */
   supportedExecutionModes?: readonly WorkerExecutionMode[];
   /**
    * Provision before preparing an installation when the lease transport decides whether an

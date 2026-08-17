@@ -71,6 +71,7 @@ export type WorkerEnvironmentServiceContract = {
     profileId: string,
     idempotencyKey: string,
     machineClass?: string,
+    executionMode?: WorkerPlacementExecutionMode,
   ): Promise<WorkerEnvironmentServiceRecord>;
   destroy(environmentId: string): Promise<WorkerEnvironmentServiceRecord>;
   destroyUnattached(environmentId: string): Promise<WorkerEnvironmentServiceRecord>;

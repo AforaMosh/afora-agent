@@ -269,7 +269,7 @@ function nodeEnrollmentSetupCommand(params: {
   const launch =
     enrollment.mode === "connect"
       ? `connect --target-file "$setup_code_file" --ephemeral --display-name ${shellQuote(enrollment.displayName)}`
-      : `node run --display-name ${shellQuote(enrollment.displayName)}`;
+      : `node run --ephemeral --display-name ${shellQuote(enrollment.displayName)}`;
   return [
     "set -eu",
     `state_dir="$HOME/${stateDir}"`,
@@ -296,10 +296,8 @@ function nodeEnrollmentSetupCommand(params: {
     'test -s "$package_spec_file"',
     'package_spec="$(cat "$package_spec_file")"',
     'if [ "$package_spec" = "@global" ]; then',
-    '  OPENCLAW_STATE_DIR="$state_dir" openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
     `  setsid -f sh -c 'printf "%s\\n" "$$" >"$1"; shift; exec "$@"' sh "$pid_file" env OPENCLAW_STATE_DIR="$state_dir" openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null`,
     "else",
-    '  OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
     `  setsid -f sh -c 'printf "%s\\n" "$$" >"$1"; shift; exec "$@"' sh "$pid_file" env OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null`,
     "fi",
     'for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$pid_file" ] && break; sleep 0.1; done',

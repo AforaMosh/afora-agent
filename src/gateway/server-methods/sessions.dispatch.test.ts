@@ -201,6 +201,9 @@ describe("sessions.dispatch", () => {
     const dispatch = vi.fn().mockRejectedValue(new Error("remote dispatch reached"));
     const respond = await invoke(
       makeContext({
+        workerEnvironmentService: {
+          supportsExecutionMode: () => true,
+        } as never,
         workerPlacementDispatchService: { dispatch },
         workerSessionPlacementService: { getMany: () => new Map() },
       }),
@@ -220,7 +223,10 @@ describe("sessions.dispatch", () => {
     );
   });
 
-  it("rejects remote-exec before allocation when the profile is node-only", async () => {
+  it.each([
+    ["node-only", { supportsExecutionMode: () => false }],
+    ["undeclared", { supportsExecutionMode: undefined }],
+  ])("rejects remote-exec before allocation when the profile is %s", async (_name, service) => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
@@ -231,9 +237,7 @@ describe("sessions.dispatch", () => {
     const dispatch = vi.fn();
     const respond = await invoke(
       makeContext({
-        workerEnvironmentService: {
-          supportsExecutionMode: () => false,
-        } as never,
+        workerEnvironmentService: service as never,
         workerPlacementDispatchService: { dispatch },
         workerSessionPlacementService: { getMany: () => new Map() },
       }),

@@ -220,7 +220,7 @@ export const sessionDispatchHandlers: GatewayRequestHandlers = {
         context.workerEnvironmentService?.supportsExecutionMode?.(
           dispatchTarget.profileId,
           executionMode,
-        ) === false)
+        ) !== true)
     ) {
       respondInvalidWorkerSession(
         respond,

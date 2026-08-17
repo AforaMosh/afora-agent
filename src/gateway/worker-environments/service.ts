@@ -413,30 +413,65 @@ export function createWorkerEnvironmentService(options: WorkerEnvironmentService
     options.liveEvents?.clear();
   };
 
+  const providerSupportsExecutionMode = (providerId: string, mode: WorkerExecutionMode) =>
+    options.resolveProvider(providerId)?.supportedExecutionModes?.includes(mode) === true;
+  const requireProviderExecutionMode = (providerId: string, mode?: WorkerExecutionMode) => {
+    if (!mode) {
+      return;
+    }
+    const provider = options.resolveProvider(providerId);
+    if (!provider) {
+      throw serviceError("provider_not_found", `Unknown worker provider: ${providerId}`);
+    }
+    if (!provider.supportedExecutionModes?.includes(mode)) {
+      throw serviceError(
+        "invalid_profile",
+        `Worker provider ${providerId} does not support ${mode} placement`,
+      );
+    }
+  };
+  const configuredProfileProviderId = (profileId: string) => {
+    const profile = options.getConfig().cloudWorkers?.profiles?.[profileId];
+    if (!profile) {
+      throw serviceError("profile_not_found", `Unknown worker profile: ${profileId}`);
+    }
+    return profile.provider;
+  };
+
   const service = {
     list: environmentAccess.list,
     supportsExecutionMode: (profileId: string, mode: WorkerExecutionMode) => {
       const profile = options.getConfig().cloudWorkers?.profiles?.[profileId];
-      const provider = profile ? options.resolveProvider(profile.provider) : undefined;
-      return provider?.supportedExecutionModes?.includes(mode) ?? Boolean(provider);
+      return profile ? providerSupportsExecutionMode(profile.provider, mode) : false;
     },
     get: environmentAccess.get,
     listMachineOptions: async (profileId: string) =>
       providerLifecycle.listMachineOptions(profileId),
-    create: async (profileId: string, idempotencyKey: string, machineClass?: string) =>
-      environmentAccess.project(
+    create: async (
+      profileId: string,
+      idempotencyKey: string,
+      machineClass?: string,
+      executionMode?: WorkerExecutionMode,
+    ) => {
+      if (executionMode) {
+        requireProviderExecutionMode(configuredProfileProviderId(profileId), executionMode);
+      }
+      return environmentAccess.project(
         await providerLifecycle.createWithProfile(
           profileId,
           idempotencyKey,
           machineClass === undefined ? {} : { machineClass },
         ),
-      ),
+      );
+    },
     createFromProfileSnapshot: async (
       profile: { profileId: string; providerId: string; profileSnapshot: WorkerProfile },
       idempotencyKey: string,
       machineClass?: string,
-    ) =>
-      environmentAccess.project(
+      executionMode?: WorkerExecutionMode,
+    ) => {
+      requireProviderExecutionMode(profile.providerId, executionMode);
+      return environmentAccess.project(
         await providerLifecycle.createWithProfile(profile.profileId, idempotencyKey, {
           inherited: {
             providerId: profile.providerId,
@@ -444,7 +479,8 @@ export function createWorkerEnvironmentService(options: WorkerEnvironmentService
           },
           ...(machineClass === undefined ? {} : { machineClass }),
         }),
-      ),
+      );
+    },
     destroy: async (environmentId: string) =>
       environmentAccess.project(await providerLifecycle.destroy(environmentId)),
     destroyUnattached: async (environmentId: string) =>
