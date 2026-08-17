@@ -33,6 +33,20 @@ describe("GitHub tools protocol", () => {
     { scope: "system", agentId: "main", mode: "managed", secretName: "ONE_USE_HANDOFF" },
     { scope: "system", agentId: "main", mode: "managed", secretName: "github-setup-token" },
     { scope: "agent", agentId: "main", mode: "managed", secretName: "HANDOFF", extra: true },
+    {
+      scope: "system",
+      agentId: "main",
+      mode: "managed",
+      secretName: "github-setup-33333333333333333333333333333333",
+      gitAuthor: { name: "   " },
+    },
+    {
+      scope: "agent",
+      agentId: "main",
+      mode: "managed",
+      secretName: "github-setup-44444444444444444444444444444444",
+      gitAuthor: { email: "\t\n" },
+    },
   ])("rejects impossible configure action %#", (action) => {
     expect(Value.Check(ToolsGitHubConfigureParamsSchema, action)).toBe(false);
   });

@@ -1011,6 +1011,12 @@ const GitHubIdentitySourceSchema = Type.Union([
   Type.Literal("agent-override"),
 ]);
 
+const GitHubAuthorValueSchema = Type.String({ minLength: 1, pattern: "\\S" });
+const GitHubAuthorSchema = closedObject({
+  name: Type.Optional(GitHubAuthorValueSchema),
+  email: Type.Optional(GitHubAuthorValueSchema),
+});
+
 export const ToolsGitHubStatusResultSchema = closedObject({
   agentId: NonEmptyString,
   source: GitHubIdentitySourceSchema,
@@ -1046,12 +1052,7 @@ export const ToolsGitHubConfigureParamsSchema = Type.Union([
     agentId: NonEmptyString,
     mode: Type.Literal("managed"),
     secretName: GitHubSetupHandleSchema,
-    gitAuthor: Type.Optional(
-      closedObject({
-        name: Type.Optional(NonEmptyString),
-        email: Type.Optional(NonEmptyString),
-      }),
-    ),
+    gitAuthor: Type.Optional(GitHubAuthorSchema),
   }),
   closedObject({
     scope: Type.Literal("system"),
@@ -1063,12 +1064,7 @@ export const ToolsGitHubConfigureParamsSchema = Type.Union([
     agentId: NonEmptyString,
     mode: Type.Literal("managed"),
     secretName: GitHubSetupHandleSchema,
-    gitAuthor: Type.Optional(
-      closedObject({
-        name: Type.Optional(NonEmptyString),
-        email: Type.Optional(NonEmptyString),
-      }),
-    ),
+    gitAuthor: Type.Optional(GitHubAuthorSchema),
   }),
   closedObject({
     scope: Type.Literal("agent"),

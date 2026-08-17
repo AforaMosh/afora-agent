@@ -84,6 +84,14 @@ export const toolsGitHubHandlers: GatewayRequestHandlers = {
         return;
       }
 
+      const gitAuthor = params.gitAuthor
+        ? {
+            ...(params.gitAuthor.name !== undefined ? { name: params.gitAuthor.name.trim() } : {}),
+            ...(params.gitAuthor.email !== undefined
+              ? { email: params.gitAuthor.email.trim() }
+              : {}),
+          }
+        : undefined;
       const token = consumeGitHubSetupHandoff({ name: params.secretName });
       if (!token) {
         throw new Error("temporary GitHub credential is unavailable");
@@ -91,7 +99,7 @@ export const toolsGitHubHandlers: GatewayRequestHandlers = {
       const profileId = createManagedGitHubProfileId();
       const identity = {
         profileId,
-        ...(params.gitAuthor ? { gitAuthor: params.gitAuthor } : {}),
+        ...(gitAuthor ? { gitAuthor } : {}),
       };
       const profileDir = resolveManagedGitHubProfileDir({
         agentId: resolved.agentId,

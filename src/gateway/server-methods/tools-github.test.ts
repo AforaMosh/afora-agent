@@ -105,7 +105,7 @@ describe("tools.github handlers", () => {
       agentId: "main",
       mode: "managed",
       secretName: "github-setup-11111111111111111111111111111111",
-      gitAuthor: { name: "Managed Author" },
+      gitAuthor: { name: "  Managed Author  ", email: "  managed@example.test  " },
     });
 
     expect(github.updateConfig).toHaveBeenCalledWith({
@@ -113,13 +113,29 @@ describe("tools.github handlers", () => {
       agentId: "main",
       identity: {
         profileId: "ghp_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        gitAuthor: { name: "Managed Author" },
+        gitAuthor: { name: "Managed Author", email: "managed@example.test" },
       },
       expectedIdentity: null,
     });
     expect(github.status).toHaveBeenLastCalledWith({ config: { next: true }, agentId: "main" });
     expect(respond).toHaveBeenCalledWith(true, status);
     expect(JSON.stringify(respond.mock.calls)).not.toContain("temporary-test-token");
+  });
+
+  it("rejects blank author data without consuming the setup handoff", async () => {
+    const respond = await invoke("tools.github.configure", {
+      scope: "agent",
+      agentId: "main",
+      mode: "managed",
+      secretName: "github-setup-44444444444444444444444444444444",
+      gitAuthor: { name: "  \t" },
+    });
+
+    expect(secrets.consumeHandoff).not.toHaveBeenCalled();
+    expect(github.createProfileId).not.toHaveBeenCalled();
+    expect(github.install).not.toHaveBeenCalled();
+    expect(github.updateConfig).not.toHaveBeenCalled();
+    expect(respond.mock.calls[0]?.[0]).toBe(false);
   });
 
   it("removes an override without reading a handoff", async () => {
