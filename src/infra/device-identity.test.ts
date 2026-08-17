@@ -5,10 +5,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  closeOpenClawStateDatabaseForTest,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-} from "../state/openclaw-state-db.js";
+import { OPENCLAW_STATE_SCHEMA_VERSION } from "../state/openclaw-state-db-contract.js";
+import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
 import { withTempDir } from "../test-utils/temp-dir.js";
 import { resolveDeviceIdentityCoordinatorPaths } from "./device-identity-coordinator-paths.js";
 import { acquireDeviceIdentityCoordinator } from "./device-identity-coordinator.js";

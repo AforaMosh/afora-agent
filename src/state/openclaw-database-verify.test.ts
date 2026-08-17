@@ -27,10 +27,10 @@ import {
   readOpenClawDatabaseQuarantine,
   recordOpenClawDatabaseQuarantine,
 } from "./openclaw-quarantine-store.js";
+import { recordOpenClawStateDatabaseOpenFailure } from "./openclaw-state-db-cache.js";
 import {
   closeOpenClawStateDatabaseForTest,
   openOpenClawStateDatabase,
-  recordOpenClawStateDatabaseOpenFailure,
   repairOpenClawStateDatabaseSchema,
 } from "./openclaw-state-db.js";
 

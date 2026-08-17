@@ -297,6 +297,27 @@ describe("createGatewayCloseHandler", () => {
     expect(closed).toBe(true);
   });
 
+  it("drains the audit subscription before the final shared-state close", async () => {
+    const events: string[] = [];
+    const agentUnsub = vi.fn(async () => {
+      events.push("agent-unsub");
+    });
+    const stopMediaCleanup = vi.fn(async () => {
+      events.push("media-cleanup");
+      return "drained" as const;
+    });
+    mocks.closePluginStateDatabase.mockImplementationOnce(async () => {
+      events.push("shared-state-close");
+    });
+    const close = createGatewayCloseHandler(
+      createGatewayCloseTestDeps({ agentUnsub, stopMediaCleanup }),
+    );
+
+    await close({ reason: "test" });
+
+    expect(events).toEqual(["media-cleanup", "agent-unsub", "shared-state-close"]);
+  });
+
   it("retains shared state when media cleanup times out", async () => {
     const stopMediaCleanup = vi.fn(async () => "timed-out" as const);
     const close = createGatewayCloseHandler(createGatewayCloseTestDeps({ stopMediaCleanup }));

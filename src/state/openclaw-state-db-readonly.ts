@@ -1,9 +1,13 @@
-import { statSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { clearNodeSqliteKyselyCacheForDatabase } from "../infra/kysely-sync.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
-import { prepareSqliteReadOnlyLocationSync } from "../infra/sqlite-readonly-location.js";
+import { assertSqliteIntegrity } from "../infra/sqlite-integrity.js";
+import {
+  prepareSqliteReadOnlyLocation,
+  prepareSqliteReadOnlyLocationSync,
+} from "../infra/sqlite-readonly-location.js";
 import {
   createNewerSqliteSchemaVersionError,
   readSqliteUserVersion,
@@ -11,11 +15,15 @@ import {
 import {
   assertOpenClawStateDatabaseFreshOpenAllowed,
   evictOpenClawStateDatabaseAfterCorruption,
-  getOpenClawStateDatabaseIfOpen,
+  openClawStateDatabaseCache,
+} from "./openclaw-state-db-cache.js";
+import {
   OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
   OPENCLAW_STATE_SCHEMA_VERSION,
+  type OpenClawStateDatabase,
   type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
+} from "./openclaw-state-db-contract.js";
+import { assertOpenClawStateDatabaseForMaintenance } from "./openclaw-state-db-maintenance.js";
 import { resolveOpenClawStateSqlitePath } from "./openclaw-state-db.paths.js";
 
 type OpenClawStateReadOnlyDatabase = {
@@ -55,10 +63,9 @@ function assertSupportedSchemaVersion(db: DatabaseSync, pathname: string): void 
 
 function withOpenClawStateDatabaseReadOnlyIfOpen<T>(
   operation: (database: OpenClawStateReadOnlyDatabase) => T,
-  options: OpenClawStateDatabaseOptions,
   pathname: string,
 ): ReusedOpenClawStateReadOnlyDatabase<T> {
-  const opened = getOpenClawStateDatabaseIfOpen(options);
+  const opened = openClawStateDatabaseCache.getOpenClawStateDatabaseIfOpenAtPath(pathname);
   if (!opened || opened.db.isTransaction) {
     return { reused: false };
   }
@@ -108,7 +115,7 @@ export function withOpenClawStateDatabaseReadOnly<T>(
   // and closing a connection per call made shared-state reads scale with row
   // count. An in-flight transaction is skipped so callers never observe
   // uncommitted rows a fresh read-only connection could not have seen.
-  const reused = withOpenClawStateDatabaseReadOnlyIfOpen(operation, options, pathname);
+  const reused = withOpenClawStateDatabaseReadOnlyIfOpen(operation, pathname);
   if (reused.reused) {
     return reused.value;
   }
@@ -121,7 +128,7 @@ export function withExistingOpenClawStateDatabaseReadOnly<T>(
   options: OpenClawStateDatabaseOptions = {},
 ): T | undefined {
   const pathname = resolveReadOnlyPath(options);
-  const reused = withOpenClawStateDatabaseReadOnlyIfOpen(operation, options, pathname);
+  const reused = withOpenClawStateDatabaseReadOnlyIfOpen(operation, pathname);
   if (reused.reused) {
     return reused.value;
   }
@@ -141,7 +148,7 @@ export function withExistingOpenClawStateDatabaseArtifactPreservingReadOnly<T>(
   options: OpenClawStateDatabaseOptions = {},
 ): T | undefined {
   const pathname = resolveReadOnlyPath(options);
-  const reused = withOpenClawStateDatabaseReadOnlyIfOpen(operation, options, pathname);
+  const reused = withOpenClawStateDatabaseReadOnlyIfOpen(operation, pathname);
   if (reused.reused) {
     return reused.value;
   }
@@ -160,4 +167,65 @@ export function withExistingOpenClawStateDatabaseArtifactPreservingReadOnly<T>(
   } finally {
     prepared.cleanup();
   }
+}
+
+/** Open existing shared state without creating, migrating, chmodding, or configuring it. */
+export async function openExistingOpenClawStateDatabaseReadOnly(
+  options: OpenClawStateDatabaseOptions = {},
+): Promise<OpenClawStateDatabase | undefined> {
+  const pathname = resolveReadOnlyPath(options);
+  if (!existsSync(pathname)) {
+    return undefined;
+  }
+  assertOpenClawStateDatabaseFreshOpenAllowed(options);
+  const prepared = await prepareSqliteReadOnlyLocation(pathname);
+  let db: DatabaseSync;
+  try {
+    db = openNodeSqliteDatabase(prepared.location, { readOnly: true });
+  } catch (error) {
+    prepared.cleanup();
+    throw error;
+  }
+  try {
+    db.exec(`PRAGMA busy_timeout = ${OPENCLAW_SQLITE_BUSY_TIMEOUT_MS};`);
+    assertSupportedSchemaVersion(db, pathname);
+    assertSqliteIntegrity(db, pathname);
+    if (readSqliteUserVersion(db) === OPENCLAW_STATE_SCHEMA_VERSION) {
+      assertOpenClawStateDatabaseForMaintenance(db, { pathname });
+    }
+  } catch (error) {
+    try {
+      clearNodeSqliteKyselyCacheForDatabase(db);
+      db.close();
+    } catch {
+      // Preserve the verification failure that explains why the database was refused.
+    }
+    prepared.cleanup();
+    throw error;
+  }
+  let cleanupComplete = false;
+  return {
+    db,
+    path: pathname,
+    walMaintenance: {
+      checkpoint: () => false,
+      // Cleanup can fail transiently after the database closes. Keep the
+      // close contract retryable until one call finishes both responsibilities.
+      close: () => {
+        const wasOpen = db.isOpen;
+        if (!wasOpen && cleanupComplete) {
+          return false;
+        }
+        try {
+          if (wasOpen) {
+            clearNodeSqliteKyselyCacheForDatabase(db);
+            db.close();
+          }
+        } finally {
+          cleanupComplete = prepared.cleanup();
+        }
+        return cleanupComplete;
+      },
+    },
+  };
 }

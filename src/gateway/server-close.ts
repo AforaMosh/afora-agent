@@ -891,9 +891,7 @@ export function createGatewayCloseHandler(
         shutdownLog.warn(`media-cleanup: ${err instanceof Error ? err.message : String(err)}`);
         recordShutdownWarning(warnings, "media-cleanup");
       }
-      if (mediaCleanupStopResult === "drained") {
-        await shutdownStep("plugin-state-store", () => closePluginStateDatabase(), warnings);
-      } else {
+      if (mediaCleanupStopResult !== "drained") {
         // Timed-out cleanup still owns shared SQLite. Keep the process store open
         // so late completion cannot resume against a database torn down by shutdown.
         recordShutdownWarning(warnings, "media-cleanup");
@@ -942,6 +940,12 @@ export function createGatewayCloseHandler(
       }
       if (params.taskUnsub) {
         await shutdownStep("task-unsub", () => params.taskUnsub!(), warnings);
+      }
+      if (mediaCleanupStopResult === "drained") {
+        // Audit draining is part of agentUnsub and can reopen the process-cached owner
+        // for final maintenance. Close shared state only after every database-backed
+        // producer has finished.
+        await shutdownStep("plugin-state-store", () => closePluginStateDatabase(), warnings);
       }
       params.chatRunState.clear();
       let clientCloseFailures = 0;

@@ -17,7 +17,7 @@ import { recordOpenClawDatabaseQuarantine } from "./openclaw-quarantine-store.js
 import {
   confirmOpenClawStateDatabaseIntegrity,
   recordOpenClawStateDatabaseOpenFailure,
-} from "./openclaw-state-db.js";
+} from "./openclaw-state-db-cache.js";
 import { resolveOpenClawStateSqlitePath } from "./openclaw-state-db.paths.js";
 
 export const OPENCLAW_DATABASE_VERIFY_INITIAL_DELAY_MS = 5 * 60_000;

@@ -192,7 +192,7 @@ function pruneExecutionIdentityContextsAfterInsert(
   const remainingPruneBudget = Math.max(0, limits.pruneBatchRows - expiredCount);
   if (remainingPruneBudget > 0) {
     // Derive overflow from committed rows inside this transaction. A process-local
-    // count misses writes from the Gateway worker or a concurrent direct CLI.
+    // count misses writes committed by another state-database connection.
     const retainedIds = kysely
       .selectFrom("execution_identity_contexts")
       .select("context_id")
@@ -241,7 +241,7 @@ export function pruneExpiredExecutionIdentityContexts(
   );
 }
 
-/** Worker-owned canonicalization and persistence for one accepted admission envelope. */
+/** Queue-owned canonicalization and persistence for one accepted admission envelope. */
 function persistExecutionIdentityAdmissionEnvelope(
   input: unknown,
   options: ExecutionIdentityStoreOptions = {},
@@ -335,7 +335,7 @@ function verifyExecutionIdentityAdmissionRetry(
   return context;
 }
 
-/** Worker-owned persistence/verification for one accepted bounded queue item. */
+/** Queue-owned persistence/verification for one accepted bounded queue item. */
 export function processExecutionIdentityAdmissionWork(
   input: unknown,
   options: ExecutionIdentityStoreOptions = {},

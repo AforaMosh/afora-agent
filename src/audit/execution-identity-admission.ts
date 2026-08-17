@@ -303,7 +303,7 @@ export function parseExecutionIdentityAdmissionToken(
 
 function redactDisplayLabel(value: string): string {
   // The shared redactor's secret-prefix pass becomes stable on its second pass.
-  // Stabilizing here lets the worker reject any altered structured-clone payload.
+  // Stabilizing here lets the writer reject any altered structured-clone payload.
   return truncateUtf16Safe(
     redactSensitiveText(redactSensitiveText(value, { mode: "tools" }), { mode: "tools" }),
     128,
@@ -370,7 +370,7 @@ function captureExecutionIdentityAdmissionEnvelope(
   return freezeEnvelope(validateEnvelope(envelope));
 }
 
-/** Revalidate a structured-cloned worker message before any persistence work. */
+/** Revalidate a structured-cloned queue message before any persistence work. */
 export function parseExecutionIdentityAdmissionEnvelope(
   value: unknown,
 ): ExecutionIdentityAdmissionEnvelope {
@@ -389,7 +389,7 @@ export function parseExecutionIdentityAdmissionEnvelope(
   return parsed;
 }
 
-/** Revalidate either bounded worker message before schema, key, or database work. */
+/** Revalidate either bounded queue message before schema, key, or database work. */
 export function parseExecutionIdentityAdmissionWork(
   value: unknown,
 ): ExecutionIdentityAdmissionWork {

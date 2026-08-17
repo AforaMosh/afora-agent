@@ -15,10 +15,10 @@ import { sha256HexPrefixCore } from "../infra/crypto-digest.js";
 import { requireNodeSqlite, resolveImmutableSqliteFileUri } from "../infra/node-sqlite.js";
 import * as sqliteReadonlyLocation from "../infra/sqlite-readonly-location.js";
 import { withEnv, withEnvAsync } from "../test-utils/env.js";
+import { getOpenClawStateDatabaseIfOpen } from "./openclaw-state-db-cache.js";
 import { withOpenClawStateStartupMigrationCheckpointDatabase } from "./openclaw-state-db-startup-checkpoint.js";
 import {
   closeOpenClawStateDatabaseForTest,
-  getOpenClawStateDatabaseIfOpen,
   openExistingOpenClawStateDatabaseReadOnly,
   openOpenClawStateDatabase,
   repairOpenClawStateDatabaseSchema,

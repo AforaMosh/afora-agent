@@ -16,6 +16,12 @@ import {
   type OpenClawStateDatabaseOptions,
 } from "../state/openclaw-state-db.js";
 import {
+  AUDIT_EVENT_RETENTION_MS,
+  invalidateAuditEventRetentionCache,
+  pruneAuditEventsAfterInsert,
+  pruneExpiredAuditEventsBatch,
+} from "./audit-event-retention.js";
+import {
   AUDIT_EVENT_SCHEMA_VERSION,
   AUDIT_INBOUND_MESSAGE_COMPLETED_REASONS,
   AUDIT_INBOUND_MESSAGE_SKIPPED_REASONS,
@@ -46,12 +52,7 @@ type AuditEventsTable = OpenClawStateKyselyDatabase["audit_events"];
 type AuditDatabase = Pick<OpenClawStateKyselyDatabase, "audit_events">;
 type AuditEventRow = Selectable<AuditEventsTable>;
 
-export const AUDIT_EVENT_RETENTION_MS = 30 * 24 * 60 * 60_000;
-const AUDIT_EVENT_MAX_ROWS = 100_000;
-const AUDIT_EVENT_PRUNE_BATCH_ROWS = 1_024;
-// The single audit writer owns one DB handle. Invalidate on out-of-band
-// maintenance or rollback so the hot path avoids a 100k-row scan per message.
-const auditEventRowCounts = new WeakMap<DatabaseSync, number>();
+export { AUDIT_EVENT_RETENTION_MS } from "./audit-event-retention.js";
 
 function getAuditKysely(db: DatabaseSync) {
   return getNodeSqliteKysely<AuditDatabase>(db);
@@ -547,60 +548,6 @@ function bindAuditEvent(db: DatabaseSync, input: AuditEventInput): Insertable<Au
   };
 }
 
-function countAuditEvents(db: DatabaseSync): number {
-  const kysely = getAuditKysely(db);
-  const row = executeSqliteQueryTakeFirstSync(
-    db,
-    kysely
-      .selectFrom("audit_events")
-      .select((expression) => expression.fn.countAll<number>().as("count")),
-  );
-  return normalizeSqliteNumber(row?.count ?? null) ?? 0;
-}
-
-function pruneAuditEventsAfterInsert(
-  db: DatabaseSync,
-  now: number,
-  limits: { maxRows: number; pruneBatchRows: number } = {
-    maxRows: AUDIT_EVENT_MAX_ROWS,
-    pruneBatchRows: AUDIT_EVENT_PRUNE_BATCH_ROWS,
-  },
-): void {
-  const kysely = getAuditKysely(db);
-  const expired = executeSqliteQuerySync(
-    db,
-    kysely.deleteFrom("audit_events").where("occurred_at", "<", now - AUDIT_EVENT_RETENTION_MS),
-  );
-  const cachedCount = auditEventRowCounts.get(db);
-  let rowCount =
-    cachedCount === undefined
-      ? countAuditEvents(db)
-      : Math.max(0, cachedCount + 1 - Number(expired.numAffectedRows ?? 0n));
-  if (rowCount <= limits.maxRows) {
-    auditEventRowCounts.set(db, rowCount);
-    return;
-  }
-  const retainedRows = Math.max(0, limits.maxRows - limits.pruneBatchRows);
-  const overflowRow = executeSqliteQueryTakeFirstSync(
-    db,
-    kysely
-      .selectFrom("audit_events")
-      .select("sequence")
-      .orderBy("sequence", "desc")
-      .offset(retainedRows)
-      .limit(1),
-  );
-  const sequenceCutoff = overflowRow ? normalizeSqliteNumber(overflowRow.sequence) : undefined;
-  if (sequenceCutoff !== undefined) {
-    const pruned = executeSqliteQuerySync(
-      db,
-      kysely.deleteFrom("audit_events").where("sequence", "<=", sequenceCutoff),
-    );
-    rowCount = Math.max(0, rowCount - Number(pruned.numAffectedRows ?? 0n));
-  }
-  auditEventRowCounts.set(db, rowCount);
-}
-
 /** Persist one projected event idempotently and prune fixed retention bounds. */
 export function recordAuditEvent(
   input: AuditEventInput,
@@ -650,7 +597,7 @@ export function recordAuditEvent(
     }, options);
   } catch (error) {
     if (countCacheDatabase) {
-      auditEventRowCounts.delete(countCacheDatabase);
+      invalidateAuditEventRetentionCache(countCacheDatabase);
       clearAuditIdentityKeyCacheForDatabase(countCacheDatabase);
     }
     throw error;
@@ -720,20 +667,14 @@ export function listAuditEvents(params: {
   };
 }
 
-/** Delete expired metadata during Gateway startup and periodic worker maintenance. */
+/** Delete one bounded batch during Gateway startup and periodic audit maintenance. */
 export function pruneExpiredAuditEvents(
   params: {
     now?: number;
     database?: OpenClawStateDatabaseOptions;
   } = {},
-): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
-    executeSqliteQuerySync(
-      db,
-      getAuditKysely(db)
-        .deleteFrom("audit_events")
-        .where("occurred_at", "<", (params.now ?? Date.now()) - AUDIT_EVENT_RETENTION_MS),
-    );
-    auditEventRowCounts.delete(db);
+): number {
+  return runOpenClawStateWriteTransaction(({ db }) => {
+    return pruneExpiredAuditEventsBatch(db, params.now ?? Date.now());
   }, params.database);
 }

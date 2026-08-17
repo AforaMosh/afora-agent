@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { getNodeSqliteKysely } from "./kysely-sync.js";
 import { requireNodeSqlite } from "./node-sqlite.js";
+import { runWithSqliteBusyTimeout } from "./sqlite-busy-timeout.js";
 import {
   runSqliteDeferredTransactionSync,
   runSqliteImmediateTransactionSync,
@@ -261,6 +262,49 @@ describe("runSqliteImmediateTransactionSync", () => {
         step: "begin",
       }),
     );
+  });
+
+  it("suppresses expected lock-probe diagnostics inside a connection-local policy", () => {
+    const logger = { warn: vi.fn() };
+    const lockError = Object.assign(new Error("database is locked"), {
+      code: "ERR_SQLITE_ERROR",
+      errcode: 5,
+    });
+    const db = {
+      isOpen: true,
+      prepare() {
+        return { get: () => ({ timeout: 0 }) };
+      },
+      exec(sql: string) {
+        if (sql === "BEGIN IMMEDIATE") {
+          throw lockError;
+        }
+      },
+    } as unknown as import("node:sqlite").DatabaseSync;
+
+    expect(() =>
+      runWithSqliteBusyTimeout(
+        db,
+        0,
+        () =>
+          runSqliteImmediateTransactionSync(db, () => "blocked", {
+            busyTimeoutMs: 0,
+            logger,
+            operationLabel: "audit.retry-probe",
+          }),
+        { lockFailureReporting: "suppress" },
+      ),
+    ).toThrow(lockError);
+    expect(logger.warn).not.toHaveBeenCalled();
+
+    expect(() =>
+      runSqliteImmediateTransactionSync(db, () => "blocked", {
+        busyTimeoutMs: 0,
+        logger,
+        operationLabel: "terminal-write",
+      }),
+    ).toThrow(lockError);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 
   it("does not warn for busyTimeoutMs: 0 with fast successful transactions (regression)", () => {

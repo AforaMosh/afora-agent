@@ -88,7 +88,7 @@ export function startGatewayEventSubscriptions(params: {
   restartRecoveryCandidates: Map<string, RestartRecoveryCandidate>;
   terminalSessions: Pick<TerminalSessionManager, "closeAgentSessions">;
 }) {
-  // The worker always runs retention maintenance. audit.enabled only controls
+  // The audit writer always runs retention maintenance. audit.enabled only controls
   // producer subscriptions, so disabling collection cannot strand expired rows.
   const runtimeConfig = getRuntimeConfig();
   const auditEnabled = isAuditLedgerEnabled(runtimeConfig);

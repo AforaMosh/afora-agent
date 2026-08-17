@@ -54,15 +54,17 @@ their 30-day expiry.
 After session work admission succeeds, OpenClaw validates and freezes
 one bounded identity envelope, immediately offers it to the existing audit
 writer queue, and continues the run without waiting for writer readiness,
-SQLite, or persistence. The worker initializes schema and HMAC-key state,
+SQLite, or persistence. The queue drain initializes schema and HMAC-key state,
 pseudonymizes raw references, constructs the immutable context, validates its
-canonical bytes, and persists it. An accepted envelope can therefore be
-temporarily unavailable to inspection while queued work finishes.
+canonical bytes, and persists it through the process-owned shared-state
+connection. Gateway runtime uses the Gateway process's cached owner; direct-local
+execution uses the direct process's cached owner. An accepted envelope can therefore be temporarily unavailable to
+inspection while queued work finishes.
 
-Persistence remains best-effort. Queue saturation, worker or storage failure,
-and process crashes can lose evidence; they log only a bounded operational
-warning and never abort the run. Normal Gateway and direct-local CLI shutdown
-flushes accepted work when the writer lifecycle permits, but abrupt termination
+Persistence remains best-effort. Queue saturation, storage failure, shutdown
+timeout, and process crashes can lose evidence; they log only a bounded
+operational warning and never abort the run. Normal Gateway and direct-local CLI
+shutdown flushes accepted work when the writer lifecycle permits, but abrupt termination
 can still lose queued evidence.
 
 When identity collection is enabled, restart recovery stores only the safe
@@ -297,8 +299,9 @@ Message records intentionally omit both.
 
 Execution identity contexts use the same installation-local key owner with a
 separate HMAC domain. Raw runtime, invoker, ingress-source, assurance, and grant
-references exist only in a deeply frozen, in-process worker message capped at
-16 KiB and 16 entries in each grant/assurance array. The worker replaces them with keyed
+references exist only in a deeply frozen queue payload capped at 16 KiB and 16
+entries in each grant/assurance array. A structured clone strips prototypes at
+the queue boundary. The queue drain replaces raw references with keyed
 pseudonyms before persistence; they are never stored, exported, inspected, or
 logged. Configured agent ids plus context, execution, and run ids remain
 operator-visible.
@@ -319,8 +322,9 @@ what was recorded, not as proof of what happened:
 - **Absence of a row proves nothing.** Pre-admission inbound drops, sends from
   plugin-local or direct-send paths that bypass shared durable delivery, a
   dropped admission envelope, and crash-lost queued work can leave no record.
-- Writes go through a bounded background worker; worker failure or queue
-  saturation drops records and logs one operational warning.
+- Writes go through a bounded asynchronous process-owned queue; queue saturation,
+  storage failure, or a bounded shutdown timeout can drop records and logs one
+  operational warning.
 - Crash-ambiguous outbound sends are recorded as `unknown` rather than
   invented outcomes.
 
@@ -361,7 +365,9 @@ additive table is created lazily on first use without a schema-version bump.
 Fresh and upgraded installations do not populate identity contexts until an
 operator enables collection.
 First-use schema creation, HMAC-key access, canonical context construction, and
-all SQLite work happen in the audit worker, never in agent admission.
+SQLite persistence happen in the process-owned audit queue drain, never in
+agent admission. Lock attempts fail fast and retry asynchronously with bounded
+backoff so SQLite contention does not synchronously wait on the Gateway thread.
 Contexts are retained for 30 days and capped at 100,000 rows. Exact-execution
 inspection and run discovery never return a context, candidate, or admission
 decision after that context is older than 30 days, even if physical cleanup
@@ -388,7 +394,7 @@ first generic fact write, retains facts for 30 days, caps the table at 250,000
 rows, and prunes at most 1,024 rows per write or maintenance tick. Approval
 paths never write this table. Its facts and approval rows are authoritative for
 their recorded decisions. Delivery to the generic table uses the bounded audit
-worker and remains best-effort until persisted; approval-owner writes do not
+queue and remains best-effort until persisted; approval-owner writes do not
 depend on that queue. The activity ledger cannot recreate either source after
 loss.
 

@@ -8,12 +8,12 @@ import {
   clearOpenClawDatabaseQuarantine,
   recordOpenClawDatabaseQuarantine,
 } from "../state/openclaw-quarantine-store.js";
+import { recordOpenClawStateDatabaseOpenFailure } from "../state/openclaw-state-db-cache.js";
+import { OPENCLAW_STATE_SCHEMA_VERSION } from "../state/openclaw-state-db-contract.js";
 import {
   clearOpenClawStateDatabaseOpenFailure,
   isOpenClawStateDatabaseOpen,
-  OPENCLAW_STATE_SCHEMA_VERSION,
   openOpenClawStateDatabase,
-  recordOpenClawStateDatabaseOpenFailure,
 } from "../state/openclaw-state-db.js";
 import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
 import {

@@ -26,7 +26,10 @@ import { loadTaskRegistryStateFromSqlite } from "../tasks/task-registry.store.sq
 import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
 import { VERSION } from "../version.js";
 import { listOpenClawRegisteredAgentDatabases } from "./openclaw-agent-db-registry.js";
-import { FIRST_USE_STATE_TABLES } from "./openclaw-state-db-contract.js";
+import {
+  FIRST_USE_STATE_TABLES,
+  OPENCLAW_STATE_SCHEMA_VERSION,
+} from "./openclaw-state-db-contract.js";
 import {
   findOpenClawStateDatabaseSchemaMigrationRequiredError,
   OpenClawStateDatabaseSchemaMigrationRequiredError,
@@ -40,7 +43,6 @@ import {
   OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
   openExistingOpenClawStateDatabaseReadOnly,
   openOpenClawStateDatabase,
-  OPENCLAW_STATE_SCHEMA_VERSION,
   repairOpenClawStateDatabaseSchema,
   repairOpenClawStateDatabaseSchemaIfNeeded,
   runOpenClawStateWriteTransaction,

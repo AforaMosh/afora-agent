@@ -1,4 +1,4 @@
-/** Worker-only canonical context construction and bounded value helpers. */
+/** Queue-only canonical context construction and bounded value helpers. */
 import type { DatabaseSync } from "node:sqlite";
 import type { ExecutionIdentityContextV1 } from "../../packages/gateway-protocol/src/index.js";
 import { validateExecutionIdentityContextV1 } from "../../packages/gateway-protocol/src/index.js";

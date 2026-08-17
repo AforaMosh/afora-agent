@@ -287,6 +287,32 @@ describe("audit event persistence", () => {
     pruneExpiredAuditEvents({ database, now: expiredAt });
     expect(listAuditEvents({ database, limit: 10, now: occurredAt }).events).toEqual([]);
   });
+
+  it("bounds each expired-row maintenance transaction", () => {
+    const database = createDatabaseOptions();
+    const { db } = openOpenClawStateDatabase(database);
+    const now = Date.now();
+    const expiredAt = now - AUDIT_EVENT_RETENTION_MS_CONTRACT - 1;
+    db.prepare(
+      `WITH RECURSIVE numbers(n) AS (
+         SELECT 1
+         UNION ALL
+         SELECT n + 1 FROM numbers WHERE n < ?
+       )
+       INSERT INTO audit_events (
+         event_id, source_id, source_sequence, occurred_at, kind, action, status,
+         actor_type, actor_id, agent_id, run_id
+       )
+       SELECT 'expired-event-' || n, 'expired-source-' || n, n, ?, 'agent_run',
+              'agent.run.started', 'started', 'agent', 'main', 'main', 'expired-run-' || n
+       FROM numbers`,
+    ).run(AUDIT_EVENT_PRUNE_BATCH_ROWS_CONTRACT + 1, expiredAt);
+
+    expect(pruneExpiredAuditEvents({ database, now })).toBe(AUDIT_EVENT_PRUNE_BATCH_ROWS_CONTRACT);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM audit_events").get()).toEqual({ count: 1 });
+    expect(pruneExpiredAuditEvents({ database, now })).toBe(1);
+    expect(pruneExpiredAuditEvents({ database, now })).toBe(0);
+  });
 });
 
 describe("agent activity audit projection", () => {

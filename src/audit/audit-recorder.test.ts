@@ -1,9 +1,40 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuditEventInput } from "./audit-event-types.js";
 import type { AuditEventWriter } from "./audit-event-writer.js";
 import { createAuditEventRecorder } from "./audit-recorder.js";
 import { emitTrustedMessageAuditEvent } from "./message-audit-events.js";
 import { onTrustedMessageAuditEventForTest as onTrustedMessageAuditEvent } from "./message-audit-events.test-support.js";
+
+const recorderMocks = vi.hoisted(() => ({
+  onContention: (_message: string) => {},
+  onError: (_error: string) => {},
+  warn: vi.fn(),
+}));
+
+vi.mock("../logging/subsystem.js", () => ({
+  createSubsystemLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: recorderMocks.warn,
+  }),
+}));
+
+vi.mock("./audit-event-writer.js", () => ({
+  createAuditEventWriter: (options: {
+    onContention?: (message: string) => void;
+    onError?: (error: string) => void;
+  }) => {
+    recorderMocks.onContention = options.onContention ?? (() => {});
+    recorderMocks.onError = options.onError ?? (() => {});
+    return {
+      ready: Promise.resolve(),
+      record: () => true,
+      recordExecutionIdentity: () => true,
+      recordExecutionDecision: () => true,
+      stop: async () => {},
+    };
+  },
+}));
 
 function captureWriter(inputs: AuditEventInput[]): AuditEventWriter {
   return {
@@ -34,6 +65,25 @@ function emitMessage(conversationKind: "direct" | "group") {
 }
 
 describe("message audit recorder", () => {
+  beforeEach(() => {
+    recorderMocks.warn.mockReset();
+    recorderMocks.onContention = () => {};
+    recorderMocks.onError = () => {};
+  });
+
+  it("keeps recoverable contention separate from metadata-loss warnings", async () => {
+    const recorder = createAuditEventRecorder({ messageMode: "off" });
+
+    recorderMocks.onContention("audit event persistence delayed by SQLite lock contention");
+    recorderMocks.onError("audit writer shutdown timed out with pending metadata");
+
+    expect(recorderMocks.warn.mock.calls).toEqual([
+      ["audit event persistence delayed by SQLite lock contention"],
+      ["audit event persistence failed: audit writer shutdown timed out with pending metadata"],
+    ]);
+    await recorder.stop();
+  });
+
   it("keeps message events off by default policy", async () => {
     const inputs: AuditEventInput[] = [];
     const recorder = createAuditEventRecorder({

@@ -15,15 +15,15 @@ const outro = (message: string) => clackOutro(stylePromptTitle(message) ?? messa
 const loadConfigModule = createLazyRuntimeModule(() => import("../config/config.js"));
 
 async function assertDoctorDatabaseSchemasCompatible(): Promise<void> {
-  const [databasePreflight, agentDatabase, stateDatabase] = await Promise.all([
+  const [databasePreflight, agentDatabase, stateDatabaseContract] = await Promise.all([
     import("../state/openclaw-database-preflight.js"),
     import("../state/openclaw-agent-db.js"),
-    import("../state/openclaw-state-db.js"),
+    import("../state/openclaw-state-db-contract.js"),
   ]);
   const databaseSchemas = databasePreflight.preflightOpenClawDatabaseSchemas({
     env: process.env,
     supportedVersions: {
-      state: stateDatabase.OPENCLAW_STATE_SCHEMA_VERSION,
+      state: stateDatabaseContract.OPENCLAW_STATE_SCHEMA_VERSION,
       agent: agentDatabase.OPENCLAW_AGENT_SCHEMA_VERSION,
     },
   });
