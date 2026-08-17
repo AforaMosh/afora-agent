@@ -61,6 +61,18 @@ const WizardDeviceCodeSchema = closedObject({
   message: Type.Optional(Type.String()),
 });
 
+const WizardQrStepSchema = closedObject({
+  id: NonEmptyString,
+  type: Type.Literal("qr"),
+  title: Type.Optional(Type.String()),
+  message: Type.Optional(Type.String()),
+  /** PNG QR image rendered by clients that negotiated QR support. */
+  qrDataUrl: QrPngDataUrlSchema,
+  /** Remaining lifetime when the Gateway emits this step. */
+  expiresInMs: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+  executor: Type.Literal("client"),
+});
+
 /** UI contract for one wizard step rendered by gateway clients. */
 const WizardStepObjectSchema = Type.Object(
   {
@@ -94,11 +106,7 @@ const WizardStepObjectSchema = Type.Object(
     additionalProperties: false,
     if: Type.Object({ type: Type.Literal("qr") }),
     // oxlint-disable-next-line unicorn/no-thenable -- `then` is the JSON Schema conditional keyword.
-    then: Type.Object({
-      qrDataUrl: QrPngDataUrlSchema,
-      expiresInMs: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
-      executor: Type.Literal("client"),
-    }),
+    then: WizardQrStepSchema,
     else: {
       not: {
         anyOf: [{ required: ["qrDataUrl"] }, { required: ["expiresInMs"] }],
@@ -108,17 +116,17 @@ const WizardStepObjectSchema = Type.Object(
 );
 
 type WizardStepWire = Static<typeof WizardStepObjectSchema>;
-type WizardStepBase = Omit<WizardStepWire, "type" | "executor" | "qrDataUrl" | "expiresInMs">;
-export type WizardStep = WizardStepBase &
-  (
-    | {
-        type: Exclude<WizardStepWire["type"], "qr">;
-        executor?: "gateway" | "client";
-        qrDataUrl?: never;
-        expiresInMs?: never;
-      }
-    | { type: "qr"; executor: "client"; qrDataUrl: string; expiresInMs: number }
-  );
+type WizardNonQrStep = Omit<WizardStepWire, "type" | "executor" | "qrDataUrl" | "expiresInMs"> & {
+  type: Exclude<WizardStepWire["type"], "qr">;
+  executor?: "gateway" | "client";
+  qrDataUrl?: never;
+  expiresInMs?: never;
+};
+type WizardQrStepWire = Static<typeof WizardQrStepSchema>;
+type WizardQrStep = WizardQrStepWire & {
+  [Field in Exclude<keyof WizardStepWire, keyof WizardQrStepWire>]?: never;
+};
+export type WizardStep = WizardNonQrStep | WizardQrStep;
 
 // Preserve the object schema for native code generation while giving TypeBox's
 // static type the same QR requirements enforced by the JSON Schema conditional.

@@ -1,6 +1,7 @@
 // Wizard session helpers track onboarding session ids and state.
 import { randomUUID } from "node:crypto";
 import type { WizardStep as ProtocolWizardStep } from "../../packages/gateway-protocol/src/index.js";
+import { isValidQrPngDataUrl } from "../../packages/gateway-protocol/src/schema/qr.js";
 import { createDeferredCore, type Deferred } from "../shared/deferred.js";
 import { WizardCancelledError, type WizardProgress, type WizardPrompter } from "./prompts.js";
 
@@ -431,6 +432,9 @@ export class WizardSession {
   }
 
   pushStep(step: WizardStep) {
+    if (step.type === "qr" && !isValidQrPngDataUrl(step.qrDataUrl)) {
+      throw new Error("wizard: invalid QR step");
+    }
     this.currentStep = step;
     this.resolveStep(step);
   }

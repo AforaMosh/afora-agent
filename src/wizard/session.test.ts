@@ -58,6 +58,23 @@ describe("WizardSession", () => {
     await expect(session.next()).resolves.toMatchObject({ done: true, status: "done" });
   });
 
+  test("rejects malformed QR image data before exposing a step", async () => {
+    const session = new WizardSession(async (_prompter, _signal, owner) => {
+      owner.pushStep({
+        ...qrStep(),
+        // CRC-correct IDAT payload, but not a zlib stream.
+        qrDataUrl:
+          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAABElEQVTerb7vt/ubQQAAAABJRU5ErkJggg==",
+      });
+    });
+
+    await expect(session.next()).resolves.toEqual({
+      done: true,
+      status: "error",
+      error: "Error: wizard: invalid QR step",
+    });
+  });
+
   test.each(["done", "error"] as const)(
     "scrubs a delivered QR when its runner reaches %s",
     async (outcome) => {

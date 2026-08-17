@@ -21,6 +21,31 @@ const PNG_PLTE = 0x504c5445;
 const PNG_IDAT = 0x49444154;
 const PNG_IEND = 0x49454e44;
 
+type PngHeader = {
+  width: number;
+  height: number;
+  bitDepth: number;
+  colorType: number;
+  interlaceMethod: number;
+};
+
+type PngZlib = {
+  inflateSync: (
+    input: Uint8Array,
+    options: { info: true; maxOutputLength: number },
+  ) => { buffer: Uint8Array; engine: { bytesWritten: number } };
+};
+
+const ADAM7_PASSES = [
+  [0, 0, 8, 8],
+  [4, 0, 8, 8],
+  [0, 4, 4, 8],
+  [2, 0, 4, 4],
+  [0, 2, 2, 4],
+  [1, 0, 2, 2],
+  [0, 1, 1, 2],
+] as const;
+
 function readUint32Be(bytes: Uint8Array, offset: number): number {
   return (
     (((bytes[offset] ?? 0) << 24) |
@@ -54,30 +79,38 @@ function decodeQrPngDataUrl(value: string): Uint8Array | undefined {
   }
 }
 
-function isValidPngIhdr(bytes: Uint8Array, dataOffset: number, length: number): boolean {
+function readValidPngHeader(
+  bytes: Uint8Array,
+  dataOffset: number,
+  length: number,
+): PngHeader | undefined {
   if (length !== 13) {
-    return false;
+    return undefined;
   }
   const width = readUint32Be(bytes, dataOffset);
   const height = readUint32Be(bytes, dataOffset + 4);
-  const bitDepth = bytes[dataOffset + 8];
-  const colorType = bytes[dataOffset + 9];
+  const bitDepth = bytes[dataOffset + 8] ?? -1;
+  const colorType = bytes[dataOffset + 9] ?? -1;
+  const interlaceMethod = bytes[dataOffset + 12] ?? -1;
   const validColorFormat =
-    (colorType === 0 && [1, 2, 4, 8, 16].includes(bitDepth ?? -1)) ||
+    (colorType === 0 && [1, 2, 4, 8, 16].includes(bitDepth)) ||
     ((colorType === 2 || colorType === 4 || colorType === 6) &&
       (bitDepth === 8 || bitDepth === 16)) ||
-    (colorType === 3 && [1, 2, 4, 8].includes(bitDepth ?? -1));
-  return (
-    width > 0 &&
-    height > 0 &&
-    width <= QR_PNG_MAX_DIMENSION &&
-    height <= QR_PNG_MAX_DIMENSION &&
-    width * height <= QR_PNG_MAX_PIXELS &&
-    validColorFormat &&
-    bytes[dataOffset + 10] === 0 &&
-    bytes[dataOffset + 11] === 0 &&
-    (bytes[dataOffset + 12] === 0 || bytes[dataOffset + 12] === 1)
-  );
+    (colorType === 3 && [1, 2, 4, 8].includes(bitDepth));
+  if (
+    width === 0 ||
+    height === 0 ||
+    width > QR_PNG_MAX_DIMENSION ||
+    height > QR_PNG_MAX_DIMENSION ||
+    width * height > QR_PNG_MAX_PIXELS ||
+    !validColorFormat ||
+    bytes[dataOffset + 10] !== 0 ||
+    bytes[dataOffset + 11] !== 0 ||
+    (interlaceMethod !== 0 && interlaceMethod !== 1)
+  ) {
+    return undefined;
+  }
+  return { width, height, bitDepth, colorType, interlaceMethod };
 }
 
 function isValidPngPalette(colorType: number, bitDepth: number, length: number): boolean {
@@ -96,19 +129,116 @@ function isCriticalPngChunk(bytes: Uint8Array, typeOffset: number): boolean {
   return ((bytes[typeOffset] ?? 0) & 0x20) === 0;
 }
 
+function pngBitsPerPixel(header: PngHeader): number {
+  const channels =
+    header.colorType === 0 || header.colorType === 3
+      ? 1
+      : header.colorType === 2
+        ? 3
+        : header.colorType === 4
+          ? 2
+          : 4;
+  return channels * header.bitDepth;
+}
+
+function pngPassDimension(size: number, start: number, step: number): number {
+  return size <= start ? 0 : Math.ceil((size - start) / step);
+}
+
+function pngPasses(header: PngHeader): ReadonlyArray<readonly [number, number]> {
+  if (header.interlaceMethod === 0) {
+    return [[header.width, header.height]];
+  }
+  return ADAM7_PASSES.map(([xStart, yStart, xStep, yStep]) => [
+    pngPassDimension(header.width, xStart, xStep),
+    pngPassDimension(header.height, yStart, yStep),
+  ]);
+}
+
+function validatePngImageData(
+  header: PngHeader,
+  idatChunks: readonly Uint8Array[],
+  idatLength: number,
+): boolean {
+  const bitsPerPixel = pngBitsPerPixel(header);
+  const passes = pngPasses(header);
+  const expectedLength = passes.reduce(
+    (total, [width, height]) =>
+      width === 0 || height === 0
+        ? total
+        : total + height * (1 + Math.ceil((width * bitsPerPixel) / 8)),
+    0,
+  );
+  if (idatLength === 0 || expectedLength === 0) {
+    return false;
+  }
+
+  const compressed = new Uint8Array(idatLength);
+  let compressedOffset = 0;
+  for (const chunk of idatChunks) {
+    compressed.set(chunk, compressedOffset);
+    compressedOffset += chunk.length;
+  }
+
+  const runtimeProcess = (
+    globalThis as typeof globalThis & {
+      process?: { getBuiltinModule?: (id: "node:zlib") => PngZlib };
+    }
+  ).process;
+  const zlib = runtimeProcess?.getBuiltinModule?.("node:zlib");
+  if (!zlib || typeof zlib.inflateSync !== "function") {
+    return false;
+  }
+
+  try {
+    // A CRC-valid compressed stream can still expand far beyond its declared
+    // dimensions. Bound allocation to the exact scanline budget before decoding.
+    const decoded = zlib.inflateSync(compressed, {
+      info: true,
+      maxOutputLength: expectedLength,
+    });
+    if (
+      decoded.buffer.length !== expectedLength ||
+      decoded.engine.bytesWritten !== compressed.length
+    ) {
+      return false;
+    }
+    let decodedOffset = 0;
+    for (const [width, height] of passes) {
+      if (width === 0 || height === 0) {
+        continue;
+      }
+      const rowLength = Math.ceil((width * bitsPerPixel) / 8);
+      for (let row = 0; row < height; row += 1) {
+        const filter = decoded.buffer[decodedOffset];
+        if (filter === undefined || filter > 4) {
+          return false;
+        }
+        decodedOffset += 1 + rowLength;
+      }
+    }
+    return decodedOffset === decoded.buffer.length;
+  } catch {
+    return false;
+  }
+}
+
 /** Validates the bounded PNG structure that QR-capable protocol clients consume. */
-function isValidQrPngDataUrl(value: string): boolean {
+export function isValidQrPngDataUrl(value: string): boolean {
   const bytes = decodeQrPngDataUrl(value);
   if (!bytes || !PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)) {
     return false;
   }
 
   let offset: number = PNG_SIGNATURE.length;
+  let header: PngHeader | undefined;
   let bitDepth = -1;
   let colorType = -1;
   let sawPlte = false;
   let sawIdat = false;
   let finishedIdat = false;
+  const idatChunks: Uint8Array[] = [];
+  let idatLength = 0;
   while (offset + 12 <= bytes.length) {
     const length = readUint32Be(bytes, offset);
     const typeOffset = offset + 4;
@@ -125,11 +255,12 @@ function isValidQrPngDataUrl(value: string): boolean {
     }
 
     if (offset === PNG_SIGNATURE.length) {
-      if (type !== PNG_IHDR || !isValidPngIhdr(bytes, dataOffset, length)) {
+      header = type === PNG_IHDR ? readValidPngHeader(bytes, dataOffset, length) : undefined;
+      if (!header) {
         return false;
       }
-      bitDepth = bytes[dataOffset + 8] ?? -1;
-      colorType = bytes[dataOffset + 9] ?? -1;
+      bitDepth = header.bitDepth;
+      colorType = header.colorType;
     } else if (type === PNG_IHDR) {
       return false;
     }
@@ -148,10 +279,18 @@ function isValidQrPngDataUrl(value: string): boolean {
         return false;
       }
       sawIdat = true;
+      idatChunks.push(bytes.subarray(dataOffset, crcOffset));
+      idatLength += length;
     } else {
       finishedIdat = sawIdat;
       if (type === PNG_IEND) {
-        return length === 0 && sawIdat && nextOffset === bytes.length;
+        return (
+          length === 0 &&
+          sawIdat &&
+          nextOffset === bytes.length &&
+          header !== undefined &&
+          validatePngImageData(header, idatChunks, idatLength)
+        );
       }
       if (isCriticalPngChunk(bytes, typeOffset)) {
         return false;
