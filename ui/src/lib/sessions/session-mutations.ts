@@ -1,9 +1,9 @@
-import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type {
   SessionOwner,
   SessionsAssignOwnerParams,
   SessionsAssignOwnerResult,
 } from "../../../../packages/gateway-protocol/src/index.js";
+import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type {
   GatewaySessionRow,
   SessionsListResult,
