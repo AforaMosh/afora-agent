@@ -49,6 +49,7 @@ function createChatComposerState(): ChatComposerState {
     dictation: null,
     dictationDraftKey: null,
     completionDraftKey: null,
+    completionGatewayClient: null,
     dictationSelection: null,
   };
 }
@@ -158,6 +159,13 @@ export function releaseMicrophoneDeviceWatch(state: ChatComposerState) {
   state.microphoneDeviceWatch = null;
 }
 
+function invalidatePendingCompletionRefreshes(state: ChatComposerState): void {
+  state.slashCommandRefreshGeneration += 1;
+  state.slashCommandRefreshPending = false;
+  state.skillCommandRefreshGeneration += 1;
+  state.skillCommandRefreshPending = false;
+}
+
 export function resetChatComposerState(paneId?: string) {
   if (paneId) {
     // Goal elapsed timers are keyed by element and cleaned up when their
@@ -165,6 +173,7 @@ export function resetChatComposerState(paneId?: string) {
     const paneState = composerStates.get(paneId);
     paneState?.dictation?.dispose();
     if (paneState) {
+      invalidatePendingCompletionRefreshes(paneState);
       if (paneState.composerInput) {
         disconnectComposerPopoverAnchorObserver(paneState.composerInput);
       }
@@ -178,6 +187,7 @@ export function resetChatComposerState(paneId?: string) {
   }
   for (const state of composerStates.values()) {
     state.dictation?.dispose();
+    invalidatePendingCompletionRefreshes(state);
     if (state.composerInput) {
       disconnectComposerPopoverAnchorObserver(state.composerInput);
     }

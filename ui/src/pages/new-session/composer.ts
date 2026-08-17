@@ -5,7 +5,7 @@ import { t } from "../../i18n/index.ts";
 import "../../components/tooltip.ts";
 import type { ChatAttachment } from "../../lib/chat/chat-types.ts";
 import { formatUiError } from "../../lib/format-error.ts";
-import { activateSlashCommands, refreshSlashCommands } from "../chat/chat-commands.ts";
+import { loadSlashCommandCatalog, readSlashCommandCatalog } from "../chat/chat-commands.ts";
 import { renderChatAttachmentMenu } from "../chat/components/chat-attachments.ts";
 import { renderChatComposer } from "../chat/components/chat-composer.ts";
 import type { NewSessionAttachmentDraft } from "./attachment-draft.ts";
@@ -188,6 +188,7 @@ function renderNewSessionComposer(options: NewSessionComposerOptions) {
     paneId: "new-session",
     sessionKey: "new-session",
     currentAgentId: options.agentId,
+    gatewayClient: client,
     connected: context ? context.gateway.snapshot.phase === "connected" : true,
     canSend: canCompose,
     canSubmit: options.canSubmit,
@@ -209,26 +210,18 @@ function renderNewSessionComposer(options: NewSessionComposerOptions) {
     onPendingReadsChange: options.onPendingReadsChange,
     onOpenImage: options.onOpenImage,
     composerControls,
+    getCommandCatalog: () =>
+      readSlashCommandCatalog({ client, agentId: options.getCurrentAgentId() }),
     getDraft: () => options.message,
     onDraftChange: options.onInput,
     onRequestUpdate: options.onRequestUpdate,
-    onCompletionOwnerChange: () =>
-      activateSlashCommands({ client, agentId: options.getCurrentAgentId() }),
     onSlashIntent: client
       ? () => {
-          const agentId = options.agentId;
-          return refreshSlashCommands({
+          const agentId = options.getCurrentAgentId();
+          return loadSlashCommandCatalog({
             client,
             agentId,
-            shouldApply: () => {
-              const snapshot = options.context?.gateway.snapshot;
-              return (
-                snapshot?.phase === "connected" &&
-                snapshot.client === client &&
-                options.getCurrentAgentId() === agentId
-              );
-            },
-          });
+          }).then(() => undefined);
         }
       : undefined,
     onSubmitShortcut: () => {

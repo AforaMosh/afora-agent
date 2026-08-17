@@ -260,16 +260,32 @@ function loadRemoteSlashCommands(
   return inFlight;
 }
 
-export function activateSlashCommands(params: {
+export function readSlashCommandCatalog(params: {
   client: GatewayBrowserClient | null;
   agentId?: string | null;
-}): void {
+}): readonly SlashCommandDef[] {
+  if (!params.client) {
+    return buildFallbackSlashCommands();
+  }
   const agentId = params.agentId?.trim();
-  const cached = params.client
-    ? getRemoteSlashCommandCache(params.client).get(remoteSlashCommandCacheKey(agentId))
-    : undefined;
-  refreshSeq += 1;
-  replaceSlashCommands(cached?.commands ?? buildFallbackSlashCommands());
+  const metadata = peekChatMetadata(params.client, agentId);
+  if (Array.isArray(metadata?.commands)) {
+    return buildSlashCommandsFromEntries(getRemoteCommandEntries(metadata));
+  }
+  return (
+    getRemoteSlashCommandCache(params.client).get(remoteSlashCommandCacheKey(agentId))?.commands ??
+    buildFallbackSlashCommands()
+  );
+}
+
+export async function loadSlashCommandCatalog(params: {
+  client: GatewayBrowserClient | null;
+  agentId?: string | null;
+}): Promise<readonly SlashCommandDef[]> {
+  if (!params.client) {
+    return buildFallbackSlashCommands();
+  }
+  return await loadRemoteSlashCommands(params.client, params.agentId?.trim());
 }
 
 export function applyRemoteSlashCommandsResult(params: {

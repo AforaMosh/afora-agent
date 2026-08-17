@@ -11,13 +11,15 @@ export function syncChatComposerCompletionOwner(params: {
 }): void {
   const { draftKey, props, requestUpdate, state } = params;
   const previousDraftKey = state.completionDraftKey;
-  const ownerChanged = previousDraftKey !== draftKey;
+  const gatewayClient = props.gatewayClient ?? null;
+  const ownerChanged =
+    previousDraftKey !== draftKey || state.completionGatewayClient !== gatewayClient;
   state.completionDraftKey = draftKey;
+  state.completionGatewayClient = gatewayClient;
   if (!ownerChanged) {
     return;
   }
 
-  props.onCompletionOwnerChange?.();
   if (previousDraftKey === null) {
     return;
   }
@@ -25,7 +27,10 @@ export function syncChatComposerCompletionOwner(params: {
   resetSkillMenuState(state);
   queueMicrotask(() => {
     const currentState = getChatComposerState(props.paneId);
-    if (currentState.completionDraftKey !== draftKey) {
+    if (
+      currentState.completionDraftKey !== draftKey ||
+      currentState.completionGatewayClient !== gatewayClient
+    ) {
       return;
     }
     const currentDraft = props.getDraft?.() ?? props.draft;

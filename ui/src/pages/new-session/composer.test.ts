@@ -5,7 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CommandsListResult } from "../../../../packages/gateway-protocol/src/index.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { ApplicationContext } from "../../app/context.ts";
-import { buildFallbackSlashCommands, replaceSlashCommands } from "../../lib/chat/commands.ts";
+import { rememberChatMetadata } from "../../lib/chat/chat-metadata-store.ts";
+import {
+  buildFallbackSlashCommands,
+  replaceSlashCommands,
+  SLASH_COMMANDS,
+} from "../../lib/chat/commands.ts";
 import { waitForFast } from "../../test-helpers/wait-for.ts";
 import { adjustTextareaHeight } from "../chat/components/chat-composer-dom.ts";
 import { resetChatComposerState } from "../chat/components/chat-composer.ts";
@@ -92,12 +97,29 @@ afterEach(() => {
 });
 
 describe("new-session composer prompt authoring", () => {
-  it("shares slash and skill completion while omitting existing-session actions", () => {
+  it("shares slash and skill completion while omitting existing-session actions", async () => {
     const container = document.createElement("div");
     const attachmentDraft = new NewSessionAttachmentDraft(() => draw());
     const onSubmit = vi.fn();
     let message = "";
     attachmentDrafts.push(attachmentDraft);
+    const client = { request: vi.fn() } as unknown as GatewayBrowserClient;
+    rememberChatMetadata(client, "main", {
+      commands: [
+        {
+          name: "prose",
+          textAliases: ["/prose"],
+          description: "Draft polished prose.",
+          source: "skill",
+          scope: "text",
+          acceptsArgs: true,
+          skillModelVisible: true,
+        },
+      ],
+    });
+    const context = {
+      gateway: { snapshot: { client, phase: "connected" } },
+    } as unknown as ApplicationContext;
 
     const draw = () => {
       render(
@@ -106,7 +128,7 @@ describe("new-session composer prompt authoring", () => {
           getCurrentAgentId: () => "main",
           attachmentDraft,
           canSubmit: true,
-          context: undefined,
+          context,
           isCatalogTarget: true,
           message,
           modelControl: new NewSessionModelControl(draw),
@@ -132,17 +154,6 @@ describe("new-session composer prompt authoring", () => {
       textarea.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
     };
     draw();
-    replaceSlashCommands([
-      ...buildFallbackSlashCommands(),
-      {
-        key: "prose",
-        name: "prose",
-        description: "Draft polished prose.",
-        source: "skill",
-        skillModelVisible: true,
-      },
-    ]);
-
     const shell = container.querySelector<HTMLElement>(".agent-chat__composer-shell");
     expect(shell?.dataset.composerStyle).toBe("new-session");
     expect(container.querySelector(".agent-chat__composer-status-stack")).toBeNull();
@@ -161,7 +172,9 @@ describe("new-session composer prompt authoring", () => {
     input("Polish this with $pro");
     const skillMenu = container.querySelector<HTMLElement>("[role='listbox']");
     expect(skillMenu?.getAttribute("aria-label")).toBe("Skill references");
-    expect(skillMenu?.querySelector(".slash-menu-name")?.textContent).toBe("prose");
+    await waitForFast(() =>
+      expect(skillMenu?.querySelector(".slash-menu-name")?.textContent).toBe("prose"),
+    );
 
     const textarea = container.querySelector<HTMLTextAreaElement>("textarea");
     textarea?.dispatchEvent(
@@ -277,9 +290,118 @@ describe("new-session composer prompt authoring", () => {
       expect(names).not.toContain("/agent-a-only");
       expect(names).toContain("/agent-b-only");
     });
+    expect(SLASH_COMMANDS.map((entry) => entry.name)).toContain("previous-agent-only");
+    expect(SLASH_COMMANDS.map((entry) => entry.name)).not.toContain("agent-a-only");
+    expect(SLASH_COMMANDS.map((entry) => entry.name)).not.toContain("agent-b-only");
     expect(message).toBe("/");
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { kind: "slash", draft: "/", resetBeforeSwitch: false },
+    { kind: "skill", draft: "Use $", resetBeforeSwitch: false },
+    { kind: "slash", draft: "/", resetBeforeSwitch: true },
+    { kind: "skill", draft: "Use $", resetBeforeSwitch: true },
+  ] as const)(
+    "fences delayed $kind completion across a Gateway client replacement (reset=$resetBeforeSwitch)",
+    async ({ kind, draft, resetBeforeSwitch }) => {
+      const remoteCommand = (owner: "a" | "b") =>
+        kind === "skill"
+          ? {
+              name: `${owner}-skill`,
+              textAliases: [`/${owner}-skill`],
+              description: `Only available from client ${owner.toUpperCase()}.`,
+              source: "skill" as const,
+              scope: "text" as const,
+              acceptsArgs: true,
+              skillModelVisible: true,
+            }
+          : {
+              name: `${owner}-only`,
+              textAliases: [`/${owner}-only`],
+              description: `Only available from client ${owner.toUpperCase()}.`,
+              source: "plugin" as const,
+              scope: "text" as const,
+              acceptsArgs: false,
+            };
+      let resolveClientA: (value: CommandsListResult) => void = () => undefined;
+      const clientAResult = new Promise<CommandsListResult>((resolve) => {
+        resolveClientA = resolve;
+      });
+      const requestA = vi.fn(async () => await clientAResult);
+      const requestB = vi.fn(async () => ({ commands: [remoteCommand("b")] }));
+      const clientA = { request: requestA } as unknown as GatewayBrowserClient;
+      const clientB = { request: requestB } as unknown as GatewayBrowserClient;
+      let activeClient = clientA;
+      const container = document.createElement("div");
+      const attachmentDraft = new NewSessionAttachmentDraft(() => draw());
+      attachmentDrafts.push(attachmentDraft);
+      let message = "";
+
+      const draw = () => {
+        const context = {
+          gateway: { snapshot: { client: activeClient, phase: "connected" } },
+        } as unknown as ApplicationContext;
+        render(
+          renderNewSessionDraftComposer({
+            agentId: "main",
+            getCurrentAgentId: () => "main",
+            attachmentDraft,
+            canSubmit: true,
+            context,
+            isCatalogTarget: true,
+            message,
+            modelControl: new NewSessionModelControl(draw),
+            requiresModifier: false,
+            submitting: false,
+            onInput: (next) => {
+              message = next;
+              draw();
+            },
+            onRequestUpdate: draw,
+            onSubmit: () => undefined,
+          }),
+          container,
+        );
+      };
+      const input = () => {
+        const textarea = container.querySelector<HTMLTextAreaElement>("textarea");
+        if (!textarea) {
+          throw new Error("Expected composer textarea");
+        }
+        textarea.value = draft;
+        textarea.setSelectionRange(draft.length, draft.length);
+        textarea.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      };
+      const menuNames = () =>
+        Array.from(container.querySelectorAll<HTMLElement>(".slash-menu-name")).map((entry) =>
+          entry.textContent?.trim(),
+        );
+
+      draw();
+      input();
+      await waitForFast(() => expect(requestA).toHaveBeenCalledOnce());
+
+      if (resetBeforeSwitch) {
+        resetChatComposerState("new-session");
+      }
+      activeClient = clientB;
+      draw();
+      input();
+      await waitForFast(() => expect(requestB).toHaveBeenCalledOnce());
+      await waitForFast(() =>
+        expect(menuNames()).toContain(kind === "skill" ? "b-skill" : "/b-only"),
+      );
+
+      resolveClientA({ commands: [remoteCommand("a")] });
+      await clientAResult;
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(menuNames()).not.toContain(kind === "skill" ? "a-skill" : "/a-only");
+      expect(menuNames()).toContain(kind === "skill" ? "b-skill" : "/b-only");
+    },
+  );
 });
 
 describe("new-session composer keyboard submission", () => {

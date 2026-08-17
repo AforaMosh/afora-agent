@@ -123,7 +123,7 @@ describe("new session draft route ownership", () => {
     expect(page.querySelector('[role="listbox"][aria-label="Slash commands"]')).toBeNull();
   });
 
-  it("retires the open command menu through the actual agent selector", async () => {
+  it("keeps active-chat commands out through the actual agent selector", async () => {
     const page = document.createElement("openclaw-new-session-page") as NewSessionElement;
     page.place.agents = () =>
       [
@@ -141,8 +141,13 @@ describe("new session draft route ownership", () => {
         source: "plugin",
       },
     ]);
-    await enterMessage(page, "/agent-a");
-    expect(page.querySelector(".slash-menu-name")?.textContent?.trim()).toBe("/agent-a-only");
+    await enterMessage(page, "/");
+    expect(page.querySelector('[role="listbox"][aria-label="Slash commands"]')).not.toBeNull();
+    expect(
+      Array.from(page.querySelectorAll<HTMLElement>(".slash-menu-name")).map((entry) =>
+        entry.textContent?.trim(),
+      ),
+    ).not.toContain("/agent-a-only");
 
     const selector = page.querySelector<HTMLElement & { onSelect: (agentId: string) => void }>(
       "openclaw-agent-select",

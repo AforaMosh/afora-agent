@@ -18,7 +18,6 @@ import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import "../../styles/chat.css";
 import "../../styles/new-session.css";
-import { resetChatComposerState } from "../chat/components/chat-composer.ts";
 import { renderChatImageLightbox } from "../chat/components/chat-image-lightbox.ts";
 import { renderWelcomeState } from "../chat/components/chat-welcome.ts";
 import * as catalog from "./catalog-target.ts";
@@ -237,7 +236,6 @@ class NewSessionPage extends OpenClawLightDomElement {
     this.browser.disconnect();
     this.submission.disconnect();
     this.closeConnectMachine();
-    resetChatComposerState("new-session");
     super.disconnectedCallback();
   }
 
@@ -310,7 +308,6 @@ class NewSessionPage extends OpenClawLightDomElement {
   }
 
   private resetDraft() {
-    resetChatComposerState("new-session");
     this.place.resetDraft();
     this.submission.resetDraft();
     this.messageOwnerKey = catalog.routeKey(this.data);
@@ -324,13 +321,9 @@ class NewSessionPage extends OpenClawLightDomElement {
     });
   }
 
-  private setMessage(message: string, ownerKey = catalog.routeKey(this.data)) {
-    this.submission.setMessage(message);
-    this.messageOwnerKey = ownerKey;
-  }
-
   private setMessageFromUser(message: string) {
-    this.setMessage(message, catalog.routeKeyFromSearch(window.location.search));
+    this.submission.setMessage(message);
+    this.messageOwnerKey = catalog.routeKeyFromSearch(window.location.search);
   }
 
   private renderAgentSelect() {

@@ -141,7 +141,7 @@ export function updateSkillMenu(
     state.skillCommandRefreshTargetStart = target.start;
     requestSkillCommandRefresh(props, requestUpdate, getCurrentValue, getCurrentCaret);
   }
-  const items = getSkillCommandCompletions(target.query).filter(
+  const items = getSkillCommandCompletions(target.query, props.getCommandCatalog?.()).filter(
     (command) => props.commandFilter?.(command) ?? true,
   );
   state.skillMenuTarget = target;

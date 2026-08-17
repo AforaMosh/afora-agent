@@ -62,9 +62,7 @@ type ChatComposerDisabledBannerContent = {
 export type ChatComposerDisabledBanner = ChatComposerDisabledBannerContent &
   ({ kind: "above-composer" } | { kind: "composer-replacement" });
 
-export type ChatComposerProps = ChatAttachmentControlsProps & {
-  /** Lightweight first-turn rendering omits controls that require an existing session. */
-  style?: "session" | "new-session";
+type ChatComposerCommonProps = ChatAttachmentControlsProps & {
   shellClass?: string;
   textareaClass?: string;
   placeholder?: string;
@@ -125,8 +123,8 @@ export type ChatComposerProps = ChatAttachmentControlsProps & {
   typingActors?: readonly { id: string; label: string }[];
   onTypingChange?: (typing: boolean) => void;
   composerControls?: TemplateResult | typeof nothing;
+  getCommandCatalog?: () => readonly SlashCommandDef[];
   onDraftChange: (next: string) => void;
-  onCompletionOwnerChange?: () => void;
   onHistoryKeydown?: (input: ChatInputHistoryKeyInput) => ChatInputHistoryKeyResult;
   onSlashIntent?: () => void | Promise<void>;
   /** Route-owned Enter semantics that run before ordinary message submission. */
@@ -139,7 +137,6 @@ export type ChatComposerProps = ChatAttachmentControlsProps & {
   onDismissRealtimeTalkError?: () => void;
   onDictationError?: (message: string) => void;
   onAbort?: () => void;
-  onQueueRemove?: (id: string) => void;
   onQueueRetry?: (id: string) => void;
   onQueueSteer?: (id: string) => void;
   onQueueMove?: (id: string, toIndex: number) => void;
@@ -150,6 +147,20 @@ export type ChatComposerProps = ChatAttachmentControlsProps & {
   onGatewayQuestionSubmit?: (id: string, answers: Record<string, string[]>) => void | Promise<void>;
   onGatewayQuestionSkip?: (id: string) => void | Promise<void>;
 };
+
+type ChatComposerModeProps =
+  | {
+      /** Existing-session rendering includes queue, run, reply, and context controls. */
+      style?: "session";
+      onQueueRemove: (id: string) => void;
+    }
+  | {
+      /** Lightweight first-turn rendering omits controls that require an existing session. */
+      style: "new-session";
+      onQueueRemove?: never;
+    };
+
+export type ChatComposerProps = ChatComposerCommonProps & ChatComposerModeProps;
 
 type PendingClearedSubmittedDraft = {
   key: string;
@@ -210,5 +221,6 @@ export type ChatComposerState = {
   dictation: ComposerDictationController | null;
   dictationDraftKey: string | null;
   completionDraftKey: string | null;
+  completionGatewayClient: GatewayBrowserClient | null;
   dictationSelection: { start: number; end: number } | null;
 };

@@ -170,7 +170,7 @@ export function renderChatComposerView(context: ChatComposerViewContext) {
           onQueueMove: props.onQueueMove,
           onQueueEdit: props.queuedEdit?.onEdit,
           editingId: props.queuedEdit?.editingId ?? null,
-          onQueueRemove: props.onQueueRemove ?? (() => undefined),
+          onQueueRemove: props.onQueueRemove,
         })
       : nothing}
     ${isSessionStyle && props.runError

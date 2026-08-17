@@ -517,14 +517,15 @@ function getSlashCommandRelevance(command: SlashCommandDef, filter: string): num
 export function getSlashCommandCompletions(
   filter: string,
   options?: { showAll?: boolean },
+  catalog: readonly SlashCommandDef[] = SLASH_COMMANDS,
 ): SlashCommandDef[] {
   const lower = normalizeLowercaseStringOrEmpty(filter);
   const showAll = options?.showAll ?? false;
   let commands = lower
-    ? SLASH_COMMANDS.filter(
+    ? catalog.filter(
         (command) => getSlashCommandRelevance(command, lower) < NON_MATCHING_COMMAND_RANK,
       )
-    : SLASH_COMMANDS;
+    : catalog;
 
   // When no filter text and not explicitly showing all, hide "power" tier commands
   if (!lower && !showAll) {
@@ -556,12 +557,14 @@ export function getSkillDisplayName(command: SlashCommandDef): string {
   return command.skillDisplayName?.trim() || command.name;
 }
 
-export function getSkillCommandCompletions(filter: string): SlashCommandDef[] {
+export function getSkillCommandCompletions(
+  filter: string,
+  catalog: readonly SlashCommandDef[] = SLASH_COMMANDS,
+): SlashCommandDef[] {
   const lower = normalizeLowercaseStringOrEmpty(filter);
   const normalized = lower.replace(/[\s_]+/gu, "-");
-  return SLASH_COMMANDS.filter(
-    (command) => command.source === "skill" && command.skillModelVisible === true,
-  )
+  return catalog
+    .filter((command) => command.source === "skill" && command.skillModelVisible === true)
     .filter((command) => {
       const displayName = normalizeLowercaseStringOrEmpty(getSkillDisplayName(command));
       const displayLookup = displayName.replace(/[\s_]+/gu, "-");

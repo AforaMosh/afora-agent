@@ -128,7 +128,7 @@ suite.define(() => {
       ];
       const gateway = await installMockGateway(page, {
         methodResponses: {
-          "commands.list": { commands },
+          "chat.metadata": { commands, models: [] },
         },
       });
       await page.goto(`${suite.server.baseUrl}new`);
@@ -138,7 +138,6 @@ suite.define(() => {
       await composer.fill("/");
       const slashPicker = page.getByRole("listbox", { name: "Slash commands" });
       await slashPicker.waitFor({ state: "visible" });
-      await expect.poll(() => gateway.getRequests("commands.list")).toHaveLength(1);
       await expect
         .poll(() => slashPicker.getByRole("option", { name: /\/status/u }).count())
         .toBe(1);

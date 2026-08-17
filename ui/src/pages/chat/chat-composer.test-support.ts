@@ -4,8 +4,11 @@ import { i18n } from "../../i18n/index.ts";
 import { renderChatComposer, resetChatComposerState } from "./components/chat-composer.ts";
 
 type ComposerProps = Parameters<typeof renderChatComposer>[0];
+type SessionComposerProps = Extract<ComposerProps, { style?: "session" }>;
 
-export function createComposerProps(overrides: Partial<ComposerProps> = {}): ComposerProps {
+export function createComposerProps(
+  overrides: Partial<SessionComposerProps> = {},
+): SessionComposerProps {
   return {
     paneId: crypto.randomUUID(),
     sessionKey: "main",
@@ -27,7 +30,7 @@ export function createComposerProps(overrides: Partial<ComposerProps> = {}): Com
   };
 }
 
-export function renderComposerFixture(overrides: Partial<ComposerProps> = {}) {
+export function renderComposerFixture(overrides: Partial<SessionComposerProps> = {}) {
   const container = document.createElement("div");
   const props = createComposerProps(overrides);
   render(renderChatComposer(props), container);

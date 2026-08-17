@@ -19,6 +19,7 @@ import { isTerminalAvailable } from "../../lib/terminal-availability.ts";
 import { createManagedWorktree } from "../../lib/worktrees/create-worktree.ts";
 import { buildChatApiAttachments, restoreChatApiAttachments } from "../chat/attachment-api.ts";
 import { requiresChatModelSetup } from "../chat/chat-model-setup.ts";
+import { resetChatComposerState } from "../chat/components/chat-composer-state.ts";
 import { prepareInitialUserMessageHandoff } from "../chat/initial-turn-handoff.ts";
 import { NewSessionAttachmentDraft } from "./attachment-draft.ts";
 import * as catalog from "./catalog-target.ts";
@@ -302,6 +303,7 @@ export class DraftSubmissionFlow {
   }
 
   resetDraft() {
+    resetChatComposerState("new-session");
     const preservePendingCloud = Boolean(this.pendingCloud.sessionKey);
     this.blockedSubmitGate = null;
     this.invalidate();
@@ -667,6 +669,7 @@ export class DraftSubmissionFlow {
   }
 
   disconnect() {
+    resetChatComposerState("new-session");
     this.attachmentDraft.reset({ release: true });
   }
 
