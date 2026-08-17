@@ -49,7 +49,7 @@ const CRABBOX_KEY_REF_PROVIDER = "crabbox";
 
 const READY_POLL_INTERVAL_MS = 2_000;
 const MAX_ERROR_DETAIL_CHARS = 512;
-const CLOUD_SETUP_CODE_ENV = "OPENCLAW_CLOUD_SETUP_CODE";
+const CLOUD_SETUP_CODE_ENV = "CRABBOX_WORKER_SETUP_CODE";
 // Only states that prove the resource is gone or stopped map to `destroyed`. Crabbox also
 // treats `deleting` and `failed` as unable to become ready, but those can retain resources
 // that still need an explicit stop during teardown.
@@ -256,6 +256,8 @@ function nodeEnrollmentSetupCommand(params: {
   if (!packageCandidates) {
     throw new Error("Worker node enrollment has no OpenClaw package source");
   }
+  const versionLabel = shellQuote(`OpenClaw ${enrollment.openclawVersion}`);
+  const versionMetadataPrefix = shellQuote(`OpenClaw ${enrollment.openclawVersion} `);
   const setupCodeLines =
     enrollment.mode === "connect"
       ? [
@@ -277,8 +279,10 @@ function nodeEnrollmentSetupCommand(params: {
     'package_spec_file="$state_dir/package-spec"',
     'if [ -s "$pid_file" ] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then exit 0; fi',
     ...setupCodeLines,
-    `if command -v openclaw >/dev/null 2>&1 && [ "$(openclaw --version)" = ${shellQuote(enrollment.openclawVersion)} ]; then`,
-    '  printf "%s\\n" "@global" >"$package_spec_file"',
+    "if command -v openclaw >/dev/null 2>&1; then",
+    '  case "$(openclaw --version 2>/dev/null || true)" in',
+    `    ${versionLabel}|${versionMetadataPrefix}*) printf "%s\\n" "@global" >"$package_spec_file" ;;`,
+    "  esac",
     "fi",
     'if [ ! -s "$package_spec_file" ]; then',
     '  rm -f "$package_spec_file"',
@@ -293,12 +297,13 @@ function nodeEnrollmentSetupCommand(params: {
     'package_spec="$(cat "$package_spec_file")"',
     'if [ "$package_spec" = "@global" ]; then',
     '  OPENCLAW_STATE_DIR="$state_dir" openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
-    `  nohup env OPENCLAW_STATE_DIR="$state_dir" openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null &`,
+    `  setsid -f sh -c 'printf "%s\\n" "$$" >"$1"; shift; exec "$@"' sh "$pid_file" env OPENCLAW_STATE_DIR="$state_dir" openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null`,
     "else",
     '  OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw config set nodeHost.workerRuns.enabled true --strict-json >/dev/null',
-    `  nohup env OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null &`,
+    `  setsid -f sh -c 'printf "%s\\n" "$$" >"$1"; shift; exec "$@"' sh "$pid_file" env OPENCLAW_STATE_DIR="$state_dir" npx --yes --package "$package_spec" -- openclaw ${launch} >"$state_dir/node.log" 2>&1 </dev/null`,
     "fi",
-    'printf "%s\\n" "$!" >"$pid_file"',
+    'for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$pid_file" ] && break; sleep 0.1; done',
+    'test -s "$pid_file"',
   ].join("\n");
 }
 

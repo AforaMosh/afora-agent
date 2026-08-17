@@ -882,18 +882,21 @@ describe("Crabbox worker provider", () => {
     ]);
     expect(calls[2]?.argv[1]).toBe("run");
     expect(String(calls[2]?.options.input)).toContain("openclaw@2026.8.1");
+    expect(String(calls[2]?.options.input)).toContain("'OpenClaw 2026.8.1'|'OpenClaw 2026.8.1 '*");
     expect(String(calls[2]?.options.input)).toContain(
       'npx --yes --package "$package_spec" -- openclaw',
     );
     expect(String(calls[2]?.options.input)).toContain(
       'connect --target-file "$setup_code_file" --ephemeral',
     );
+    expect(String(calls[2]?.options.input)).toContain("setsid -f sh -c");
+    expect(String(calls[2]?.options.input)).not.toContain("nohup");
     expect(String(calls[2]?.options.input)).not.toContain("secret-setup-value");
     expect(calls[2]?.options.env).toMatchObject({
-      OPENCLAW_CLOUD_SETUP_CODE: "secret-setup-value",
+      CRABBOX_WORKER_SETUP_CODE: "secret-setup-value",
     });
     expect(calls[2]?.argv).toEqual(
-      expect.arrayContaining(["--allow-env", "OPENCLAW_CLOUD_SETUP_CODE"]),
+      expect.arrayContaining(["--allow-env", "CRABBOX_WORKER_SETUP_CODE"]),
     );
     expect(calls[2]?.argv.join(" ")).not.toContain("setup-code");
     expect(calls[3]?.argv[1]).toBe("inspect");
