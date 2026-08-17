@@ -1,10 +1,10 @@
-name: Docker Image Refresh
+name: Docker Beta Backfill
 
 on:
   workflow_dispatch:
     inputs:
       channel:
-        description: Release channel to rebuild
+        description: Temporary recovery selector; use both for beta.1 and beta.2
         required: false
         default: both
         type: choice
@@ -36,13 +36,13 @@ jobs:
       image_tag_suffix: ${{ steps.plan.outputs.image_tag_suffix }}
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
-      - name: Require a main-branch run
+      - name: Require the dedicated recovery branch
         env:
           WORKFLOW_REF: ${{ github.ref }}
         run: |
           set -euo pipefail
-          if [[ "${WORKFLOW_REF}" != "refs/heads/main" ]]; then
-            echo "::error::Docker image refresh must run from main; got ${WORKFLOW_REF}."
+          if [[ "${WORKFLOW_REF}" != "refs/heads/pe/docker-beta-backfill-2026-8-1" ]]; then
+            echo "::error::Docker beta backfill must run from the dedicated recovery branch; got ${WORKFLOW_REF}."
             exit 1
           fi
 
@@ -61,59 +61,56 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
         run: |
           set -euo pipefail
-          current="$(git tag --list 'v*' | node scripts/lib/docker-release-policy.mjs --current)"
-          stable_tag="$(jq -er '.stable.tag' <<< "${current}")"
-          extended_stable_tag="$(jq -er '.extendedStable.tag' <<< "${current}")"
-          stable_sha="$(git rev-parse "refs/tags/${stable_tag}^{commit}")"
-          extended_stable_sha="$(git rev-parse "refs/tags/${extended_stable_tag}^{commit}")"
-          suffix="-r$(date -u +%Y%m%d)"
+          if [[ "${CHANNEL}" != "both" ]]; then
+            echo "::error::This temporary recovery workflow publishes beta.1 and beta.2 together; select both."
+            exit 1
+          fi
 
-          stable_entry="$(
-            jq -cn \
-              --arg channel stable \
-              --arg tag "${stable_tag}" \
-              --arg release_sha "${stable_sha}" \
-              '{channel: $channel, tag: $tag, release_sha: $release_sha}'
-          )"
-          extended_stable_entry="$(
-            jq -cn \
-              --arg channel extended-stable \
-              --arg tag "${extended_stable_tag}" \
-              --arg release_sha "${extended_stable_sha}" \
-              '{channel: $channel, tag: $tag, release_sha: $release_sha}'
-          )"
-          case "${CHANNEL}" in
-            stable)
-              matrix="$(jq -cn --argjson stable "${stable_entry}" '[$stable]')"
-              ;;
-            extended-stable)
-              matrix="$(jq -cn --argjson extended "${extended_stable_entry}" '[$extended]')"
-              ;;
-            both)
-              matrix="$(
-                jq -cn \
-                  --argjson stable "${stable_entry}" \
-                  --argjson extended "${extended_stable_entry}" \
-                  '[$stable, $extended]'
-              )"
-              ;;
-            *)
-              echo "::error::Unsupported Docker refresh channel: ${CHANNEL}"
+          beta1_tag="v2026.8.1-beta.1"
+          beta1_sha="ff8a3fe9d03eff4a70f5464714c3a389b06bfec8"
+          beta2_tag="v2026.8.1-beta.2"
+          beta2_sha="8f382a202ff1e15833394b481615dcdda99b04d7"
+          for target in "${beta1_tag}:${beta1_sha}" "${beta2_tag}:${beta2_sha}"; do
+            tag="${target%%:*}"
+            expected_sha="${target#*:}"
+            actual_sha="$(git rev-parse "refs/tags/${tag}^{commit}")"
+            if [[ "${actual_sha}" != "${expected_sha}" ]]; then
+              echo "::error::${tag} resolved to ${actual_sha}; expected ${expected_sha}."
               exit 1
-              ;;
-          esac
+            fi
+          done
+
+          beta1_entry="$(
+            jq -cn \
+              --arg channel beta.1 \
+              --arg tag "${beta1_tag}" \
+              --arg release_sha "${beta1_sha}" \
+              '{channel: $channel, tag: $tag, release_sha: $release_sha}'
+          )"
+          beta2_entry="$(
+            jq -cn \
+              --arg channel beta.2 \
+              --arg tag "${beta2_tag}" \
+              --arg release_sha "${beta2_sha}" \
+              '{channel: $channel, tag: $tag, release_sha: $release_sha}'
+          )"
+          matrix="$(
+            jq -cn \
+              --argjson beta1 "${beta1_entry}" \
+              --argjson beta2 "${beta2_entry}" \
+              '[$beta1, $beta2]'
+          )"
 
           {
             echo "dry_run=${DRY_RUN}"
-            echo "image_tag_suffix=${suffix}"
+            echo "image_tag_suffix="
             echo "matrix=${matrix}"
           } >> "${GITHUB_OUTPUT}"
           {
-            echo "## Docker image refresh plan"
-            echo "- Stable: ${stable_tag} (${stable_sha})"
-            echo "- Extended stable: ${extended_stable_tag} (${extended_stable_sha})"
-            echo "- Image tag suffix: ${suffix}"
-            echo "- Selected channel: ${CHANNEL}"
+            echo "## Docker beta backfill plan"
+            echo "- beta.1: ${beta1_tag} (${beta1_sha})"
+            echo "- beta.2: ${beta2_tag} (${beta2_sha})"
+            echo "- Image tag suffix: none"
             echo "- Dry run: ${DRY_RUN}"
           } >> "${GITHUB_STEP_SUMMARY}"
 
@@ -123,6 +120,7 @@ jobs:
     if: needs.plan.outputs.dry_run != 'true'
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     uses: ./.github/workflows/docker-release.yml
