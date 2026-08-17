@@ -10,6 +10,101 @@ const suite = createControlUiE2eSuite({
 });
 
 suite.define(() => {
+  it("keeps existing-session Incognito drafts memory-only across restart", async () => {
+    await suite.withPage({ locale: "en-US", serviceWorkers: "block" }, async ({ page }) => {
+      await installMockGateway(page);
+      await page.goto(`${suite.server.baseUrl}chat`);
+      const storeHandle = await page.evaluateHandle<
+        typeof import("../lib/chat/composer-draft-store.ts")
+      >('import("/src/lib/chat/composer-draft-store.ts")');
+      const composerHandle = await page.evaluateHandle<
+        typeof import("../pages/chat/composer-persistence.ts")
+      >('import("/src/pages/chat/composer-persistence.ts")');
+      const durableHandle = await page.evaluateHandle<
+        typeof import("../pages/chat/durable-composer-persistence.ts")
+      >('import("/src/pages/chat/durable-composer-persistence.ts")');
+      const result = await page.evaluate(
+        async ({ draftStore, composer, durable }) => {
+          const waitFor = async (predicate: () => Promise<boolean>) => {
+            for (let attempt = 0; attempt < 100; attempt += 1) {
+              if (await predicate()) {
+                return;
+              }
+              await new Promise((resolve) => {
+                setTimeout(resolve, 10);
+              });
+            }
+            throw new Error("existing-session Incognito draft state did not settle");
+          };
+          const state = {
+            settings: { gatewayUrl: "incognito-chat-gateway" },
+            sessionKey: "agent:main:incognito-chat",
+            chatMessage: "",
+            chatAttachments: [] as import("../lib/chat/chat-types.ts").ChatAttachment[],
+            chatQueue: [],
+            client: {
+              recoveryScope: "incognito-chat-credential",
+              recoveryScopeReady: true,
+            },
+            connected: true,
+            selectedChatSessionIncognito: false,
+          };
+          const storedScope = composer.resolveStoredChatOutboxScope(state, state.sessionKey);
+          const scope = {
+            gatewayOwner: state.settings.gatewayUrl,
+            recoveryScope: state.client.recoveryScope,
+            scopeKey: composer.storedChatOutboxScopeKey(storedScope),
+          };
+          const persistence = new composer.ChatComposerPersistence(() => state);
+          persistence.start();
+          state.chatMessage = "private existing-session draft";
+          state.chatAttachments = await durable.hydrateDurableComposerAttachments([
+            {
+              blob: new Blob(["private attachment"], { type: "text/plain" }),
+              mimeType: "text/plain",
+              fileName: "private.txt",
+              sizeBytes: 18,
+            },
+          ]);
+          persistence.schedule();
+          persistence.persistNow();
+          await waitFor(async () => {
+            const read = await draftStore.readDurableComposerDraft(scope);
+            return read.status === "found" && read.draft.attachments.length === 1;
+          });
+
+          state.selectedChatSessionIncognito = true;
+          persistence.persistChangedState();
+          await waitFor(async () => {
+            const read = await draftStore.readDurableComposerDraft(scope);
+            return read.status === "not-found" && read.revision !== undefined;
+          });
+          persistence.stop();
+
+          const restartedState = {
+            ...state,
+            chatMessage: "",
+            chatAttachments: [] as import("../lib/chat/chat-types.ts").ChatAttachment[],
+          };
+          const restarted = new composer.ChatComposerPersistence(() => restartedState);
+          restarted.start();
+          await waitFor(async () => {
+            const read = await draftStore.readDurableComposerDraft(scope);
+            return read.status === "not-found";
+          });
+          restarted.stop();
+          return {
+            message: restartedState.chatMessage,
+            attachments: restartedState.chatAttachments.length,
+          };
+        },
+        { draftStore: storeHandle, composer: composerHandle, durable: durableHandle },
+      );
+
+      expect(result).toEqual({ message: "", attachments: 0 });
+    });
+  });
+
   it("fences stale writes and expires or evicts bounded durable drafts", async () => {
     await suite.withPage({ locale: "en-US", serviceWorkers: "block" }, async ({ page }) => {
       await installMockGateway(page);

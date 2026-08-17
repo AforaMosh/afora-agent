@@ -1,6 +1,7 @@
 import type { ChatAttachment } from "../../lib/chat/chat-types.ts";
 import {
   readDurableComposerDraft,
+  retireDurableComposerDraft,
   writeDurableComposerDraft,
   type DurableComposerDraftAttachment,
   type DurableComposerDraftScope,
@@ -210,6 +211,17 @@ export class DurableChatComposerPersistence {
       } else if (result.status === "conflict") {
         this.resetRestoreScope();
         this.onConflict();
+      }
+    };
+    this.writeChain = this.writeChain.then(run, run);
+  }
+
+  retire(scope: DurableComposerDraftScope, minimumRevision: number) {
+    this.resetRestoreScope();
+    const run = async () => {
+      const result = await retireDurableComposerDraft(scope, minimumRevision);
+      if (result.status === "storage-failed") {
+        reportDurableComposerStorageError(scope, this.onStorageError);
       }
     };
     this.writeChain = this.writeChain.then(run, run);

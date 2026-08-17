@@ -43,6 +43,7 @@ import {
   captureDurableChatAttachments,
   chatAttachmentDraftSignature,
   DurableChatComposerPersistence,
+  durableComposerScopeIdentity,
   type DurableChatComposerSnapshot,
 } from "./durable-composer-persistence.ts";
 import { isInflightSteer } from "./steered-chip.ts";
@@ -79,6 +80,10 @@ type ChatComposerPersistenceState = {
   lastError?: string | null;
   chatError?: string | null;
   requestUpdate?: () => void;
+};
+
+type DurableChatComposerPersistenceState = ChatComposerPersistenceState & {
+  selectedChatSessionIncognito: boolean;
 };
 
 type RestoreOptions = {
@@ -683,6 +688,7 @@ export class ChatComposerPersistence {
   private latestDraftRevision = 0;
   private durableRestoreProtected = false;
   private durableOwnerKey = "";
+  private durableRetiredScopeKey = "";
   private forceDurableOwnerRestore = false;
   private readonly durablePersistence = new DurableChatComposerPersistence(
     () => {
@@ -697,7 +703,7 @@ export class ChatComposerPersistence {
     () => this.getState()?.requestUpdate?.(),
   );
 
-  constructor(private readonly getState: () => ChatComposerPersistenceState | undefined) {}
+  constructor(private readonly getState: () => DurableChatComposerPersistenceState | undefined) {}
 
   start() {
     const state = this.getState();
@@ -895,7 +901,7 @@ export class ChatComposerPersistence {
   }
 
   private persistSnapshot(
-    state: ChatComposerPersistenceState,
+    state: DurableChatComposerPersistenceState,
     snapshot: ChatComposerDraftSnapshot,
     enforceExpectedRevision = false,
   ): ChatComposerPersistResult {
@@ -943,7 +949,7 @@ export class ChatComposerPersistence {
   }
 
   private snapshot(
-    state: ChatComposerPersistenceState,
+    state: DurableChatComposerPersistenceState,
     draftRevision: number = this.latestDraftRevision,
     expectedDraftRevision: number = this.committedDraftRevision,
   ): ChatComposerDraftSnapshot {
@@ -981,7 +987,17 @@ export class ChatComposerPersistence {
   }
 
   private resolveDurableScope(
-    state: ChatComposerPersistenceState,
+    state: DurableChatComposerPersistenceState,
+    scope: StoredChatOutboxScope = resolveStoredChatOutboxScope(state, state.sessionKey),
+  ) {
+    if (state.selectedChatSessionIncognito) {
+      return null;
+    }
+    return this.resolveConnectedDurableScope(state, scope);
+  }
+
+  private resolveConnectedDurableScope(
+    state: DurableChatComposerPersistenceState,
     scope: StoredChatOutboxScope = resolveStoredChatOutboxScope(state, state.sessionKey),
   ) {
     const recoveryScope = state.client?.recoveryScope?.trim();
@@ -1000,7 +1016,22 @@ export class ChatComposerPersistence {
     if (!this.ready || !state) {
       return;
     }
-    const scope = this.resolveDurableScope(state);
+    const connectedScope = this.resolveConnectedDurableScope(state);
+    if (state.selectedChatSessionIncognito) {
+      if (connectedScope) {
+        const scopeKey = durableComposerScopeIdentity(connectedScope);
+        if (this.durableRetiredScopeKey !== scopeKey) {
+          this.durableRetiredScopeKey = scopeKey;
+          this.durableOwnerKey = "";
+          this.forceDurableOwnerRestore = false;
+          this.durableRestoreProtected = false;
+          this.durablePersistence.retire(connectedScope, this.latestDraftRevision);
+        }
+      }
+      return;
+    }
+    this.durableRetiredScopeKey = "";
+    const scope = connectedScope;
     if (!scope) {
       return;
     }
@@ -1089,7 +1120,7 @@ export class ChatComposerPersistence {
   }
 
   private readDraftRevisions(
-    state: ChatComposerPersistenceState,
+    state: DurableChatComposerPersistenceState,
     sessionKey: string = state.sessionKey,
     agentId?: string,
   ): ChatComposerDraftRevisionState {
