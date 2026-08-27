@@ -45,6 +45,9 @@ importers:
 
   .:
     dependencies:
+      '@afora/ai':
+        specifier: workspace:*
+        version: link:packages/ai
       '@agentclientprotocol/sdk':
         specifier: 1.3.0
         version: 1.3.0(zod@4.4.3)
@@ -84,9 +87,6 @@ importers:
       '@mozilla/readability':
         specifier: 0.6.0
         version: 0.6.0
-      '@openclaw/ai':
-        specifier: workspace:*
-        version: link:packages/ai
       '@openclaw/fs-safe':
         specifier: 0.5.5
         version: 0.5.5
@@ -241,6 +241,9 @@ importers:
       '@a2ui/lit':
         specifier: 0.10.2
         version: 0.10.2(signal-polyfill@0.2.2)
+      '@afora/session-url-contract':
+        specifier: workspace:*
+        version: link:packages/session-url-contract
       '@copilotkit/aimock':
         specifier: 1.37.4
         version: 1.37.4(vitest@4.1.10)
@@ -256,9 +259,6 @@ importers:
       '@mdx-js/mdx':
         specifier: 3.1.1
         version: 3.1.1(supports-color@10.2.2)
-      '@openclaw/session-url-contract':
-        specifier: workspace:*
-        version: link:packages/session-url-contract
       '@opentelemetry/sdk-node':
         specifier: 0.221.0
         version: 0.221.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
@@ -383,7 +383,7 @@ importers:
 
   examples/ai-chat:
     dependencies:
-      '@openclaw/ai':
+      '@afora/ai':
         specifier: workspace:*
         version: link:../../packages/ai
 
@@ -405,19 +405,19 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/admin-http-rpc:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/alibaba:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -442,7 +442,7 @@ importers:
         specifier: 4.16.1
         version: 4.16.1
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -455,13 +455,13 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/anthropic:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -477,31 +477,31 @@ importers:
         specifier: 8.9.0
         version: 8.9.0
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/arcee:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/azure-speech:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/baseten:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/beam:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -511,13 +511,13 @@ importers:
         specifier: 1.3.10
         version: 1.3.10(supports-color@10.2.2)
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/brave:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -542,7 +542,7 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       undici:
@@ -558,16 +558,16 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/byteplus:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -592,25 +592,25 @@ importers:
         specifier: 8.21.1
         version: 8.21.1
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/cerebras:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/chutes:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/clawrouter:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -623,16 +623,16 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/cloudflare-ai-gateway:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -654,19 +654,19 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/cohere:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/comfy:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -676,19 +676,19 @@ importers:
         specifier: 1.0.7
         version: 1.0.7
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/copilot-proxy:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/crabbox:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -704,25 +704,25 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/deepgram:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/deepinfra:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/deepseek:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -771,13 +771,13 @@ importers:
         specifier: 1.43.0
         version: 1.43.0
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/diagnostics-prometheus:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -799,13 +799,13 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/diffs-language-pack:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -842,10 +842,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -855,37 +855,37 @@ importers:
         specifier: 0.3.0
         version: 0.3.0
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/duckduckgo:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/elevenlabs:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/exa:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/fal:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/featherless:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -910,10 +910,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -926,7 +926,7 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -939,31 +939,31 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/fireworks:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/fish-audio-speech:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/github-copilot:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/gmi:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -979,7 +979,7 @@ importers:
         specifier: 10.9.1
         version: 10.9.1(supports-color@10.2.2)
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -995,10 +995,10 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1011,34 +1011,34 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/gradium:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/groq:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/huggingface:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/image-generation-core:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1051,16 +1051,16 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/inworld:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1070,19 +1070,19 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/kilocode:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/kimi-coding:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1098,10 +1098,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1111,7 +1111,7 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1121,13 +1121,13 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/litellm:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1140,7 +1140,7 @@ importers:
         specifier: 7.5.22
         version: 7.5.22
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1150,7 +1150,7 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1165,22 +1165,22 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/logbook:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/longcat:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1211,10 +1211,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1227,10 +1227,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1249,10 +1249,10 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1271,7 +1271,7 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1293,19 +1293,19 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/memory-core':
+      '@afora/memory-core':
         specifier: workspace:*
         version: link:../memory-core
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/meta:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1315,22 +1315,22 @@ importers:
         specifier: 1.2.10
         version: 1.2.10(supports-color@10.2.2)
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/microsoft-foundry:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/migrate-claude:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1343,28 +1343,28 @@ importers:
         specifier: 2.9.0
         version: 2.9.0
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/minimax:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/mistral:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/moonshot:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1389,18 +1389,18 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
+      '@afora/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
       '@microsoft/teams.common':
         specifier: 2.0.14
         version: 2.0.14(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
-      '@openclaw/plugin-sdk':
+      afora-agent:
         specifier: workspace:*
-        version: link:../../packages/plugin-sdk
+        version: link:../..
       jose:
         specifier: 6.2.4
         version: 6.2.4
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/mxc:
     dependencies:
@@ -1411,7 +1411,7 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1421,10 +1421,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1437,22 +1437,22 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/novita:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/nvidia:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1468,10 +1468,10 @@ importers:
         specifier: 2.9.0
         version: 2.9.0
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1481,7 +1481,7 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1494,13 +1494,13 @@ importers:
         specifier: 10.0.0
         version: 10.0.0
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/open-prose:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1519,25 +1519,25 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/opencode:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/opencode-go:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/openrouter:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1550,28 +1550,28 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/parallel:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/perplexity:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/pixverse:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1581,10 +1581,10 @@ importers:
         specifier: 2.2.3
         version: 2.2.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1597,10 +1597,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1640,22 +1640,22 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/discord':
+      '@afora/discord':
         specifier: workspace:*
         version: link:../discord
-      '@openclaw/matrix':
+      '@afora/matrix':
         specifier: workspace:*
         version: link:../matrix
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      '@openclaw/slack':
+      '@afora/slack':
         specifier: workspace:*
         version: link:../slack
-      '@openclaw/whatsapp':
+      '@afora/whatsapp':
         specifier: workspace:*
         version: link:../whatsapp
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
       vite:
@@ -1664,13 +1664,13 @@ importers:
 
   extensions/qianfan:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/qwen:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1680,10 +1680,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1705,31 +1705,31 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/runway:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/searxng:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/senseaudio:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/sglang:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1742,7 +1742,7 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1779,10 +1779,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1792,13 +1792,13 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/stepfun:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1808,13 +1808,13 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/synthetic:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1824,7 +1824,7 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1834,10 +1834,10 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -1862,13 +1862,13 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/tencent:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1890,16 +1890,16 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/together:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1909,16 +1909,16 @@ importers:
         specifier: 0.8.1
         version: 0.8.1
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/tts-local-cli:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1937,31 +1937,31 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/vault:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/venice:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/vercel-ai-gateway:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/vllm:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -1977,28 +1977,28 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   extensions/volcengine:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/voyage:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/vydra:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -2011,7 +2011,7 @@ importers:
         specifier: 0.18.13
         version: 0.18.13
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -2021,7 +2021,7 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -2037,10 +2037,10 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -2050,13 +2050,13 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      '@openclaw/workboard-contract':
+      '@afora/workboard-contract':
         specifier: workspace:*
         version: link:../../packages/workboard-contract
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -2069,19 +2069,19 @@ importers:
         specifier: 8.21.1
         version: 8.21.1
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/xiaomi:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
   extensions/zai:
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
@@ -2091,10 +2091,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -2110,10 +2110,10 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
@@ -2123,28 +2123,28 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/plugin-sdk':
+      '@afora/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   packages/acp-core:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
   packages/agent-core:
     dependencies:
-      '@openclaw/ai':
+      '@afora/ai':
         specifier: workspace:*
         version: link:../ai
-      '@openclaw/llm-core':
+      '@afora/llm-core':
         specifier: workspace:*
         version: link:../llm-core
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
       typebox:
@@ -2172,16 +2172,16 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/model-catalog-core':
+      '@afora/model-catalog-core':
         specifier: workspace:*
         version: link:../model-catalog-core
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
   packages/gateway-client:
     dependencies:
-      '@openclaw/gateway-protocol':
+      '@afora/gateway-protocol':
         specifier: workspace:*
         version: link:../gateway-protocol
       ipaddr.js:
@@ -2191,7 +2191,7 @@ importers:
         specifier: 8.21.1
         version: 8.21.1
     devDependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
@@ -2201,7 +2201,7 @@ importers:
         specifier: 1.3.6
         version: 1.3.6
     devDependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
@@ -2213,7 +2213,7 @@ importers:
 
   packages/markdown-core:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
       markdown-it:
@@ -2237,7 +2237,7 @@ importers:
 
   packages/media-core:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
       file-type:
@@ -2246,7 +2246,7 @@ importers:
 
   packages/media-generation-core:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
@@ -2254,23 +2254,23 @@ importers:
 
   packages/memory-host-sdk:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
-      '@openclaw/retry':
+      '@afora/retry':
         specifier: workspace:*
         version: link:../retry
       p-map:
         specifier: 7.0.6
         version: 7.0.6
     devDependencies:
-      openclaw:
+      afora-agent:
         specifier: workspace:*
         version: link:../..
 
   packages/model-catalog-core:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
       zod:
@@ -2279,7 +2279,7 @@ importers:
 
   packages/net-policy:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
       ipaddr.js:
@@ -2303,30 +2303,30 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@openclaw/gateway-client':
+      '@afora/gateway-client':
         specifier: workspace:*
         version: link:../gateway-client
-      '@openclaw/gateway-protocol':
+      '@afora/gateway-protocol':
         specifier: workspace:*
         version: link:../gateway-protocol
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
   packages/session-url-contract:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
   packages/terminal-core:
     dependencies:
+      '@afora/normalization-core':
+        specifier: workspace:*
+        version: link:../normalization-core
       '@clack/prompts':
         specifier: 1.7.0
         version: 1.7.0
-      '@openclaw/normalization-core':
-        specifier: workspace:*
-        version: link:../normalization-core
       chalk:
         specifier: 6.0.0
         version: 6.0.0
@@ -2336,7 +2336,7 @@ importers:
 
   packages/tool-call-repair:
     dependencies:
-      '@openclaw/normalization-core':
+      '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
 
@@ -2344,6 +2344,30 @@ importers:
 
   ui:
     dependencies:
+      '@afora/gateway-client':
+        specifier: workspace:*
+        version: link:../packages/gateway-client
+      '@afora/gateway-protocol':
+        specifier: workspace:*
+        version: link:../packages/gateway-protocol
+      '@afora/media-core':
+        specifier: workspace:*
+        version: link:../packages/media-core
+      '@afora/model-catalog-core':
+        specifier: workspace:*
+        version: link:../packages/model-catalog-core
+      '@afora/net-policy':
+        specifier: workspace:*
+        version: link:../packages/net-policy
+      '@afora/normalization-core':
+        specifier: workspace:*
+        version: link:../packages/normalization-core
+      '@afora/session-url-contract':
+        specifier: workspace:*
+        version: link:../packages/session-url-contract
+      '@afora/workboard-contract':
+        specifier: workspace:*
+        version: link:../packages/workboard-contract
       '@awesome.me/webawesome':
         specifier: 3.10.0
         version: 3.10.0(@floating-ui/utils@0.2.12)(@types/node@24.13.3)(@types/react@19.2.17)
@@ -2386,36 +2410,12 @@ importers:
       '@novnc/novnc':
         specifier: 1.7.0
         version: 1.7.0
-      '@openclaw/gateway-client':
-        specifier: workspace:*
-        version: link:../packages/gateway-client
-      '@openclaw/gateway-protocol':
-        specifier: workspace:*
-        version: link:../packages/gateway-protocol
       '@openclaw/libterminal':
         specifier: 0.3.2
         version: 0.3.2
-      '@openclaw/media-core':
-        specifier: workspace:*
-        version: link:../packages/media-core
-      '@openclaw/model-catalog-core':
-        specifier: workspace:*
-        version: link:../packages/model-catalog-core
-      '@openclaw/net-policy':
-        specifier: workspace:*
-        version: link:../packages/net-policy
-      '@openclaw/normalization-core':
-        specifier: workspace:*
-        version: link:../packages/normalization-core
-      '@openclaw/session-url-contract':
-        specifier: workspace:*
-        version: link:../packages/session-url-contract
       '@openclaw/uirouter':
         specifier: 0.1.1
         version: 0.1.1
-      '@openclaw/workboard-contract':
-        specifier: workspace:*
-        version: link:../packages/workboard-contract
       '@tanstack/lit-virtual':
         specifier: 3.13.36
         version: 3.13.36(lit@3.3.3)
@@ -2459,15 +2459,15 @@ importers:
       '@vitest/browser-playwright':
         specifier: 4.1.10
         version: 4.1.10(playwright@1.62.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))(vitest@4.1.10)
+      afora-agent:
+        specifier: workspace:*
+        version: link:..
       fake-indexeddb:
         specifier: 6.2.5
         version: 6.2.5
       jsdom:
         specifier: 29.1.1
         version: 29.1.1(@noble/hashes@2.2.0)
-      openclaw:
-        specifier: workspace:*
-        version: link:..
       playwright:
         specifier: 1.62.1
         version: 1.62.1
